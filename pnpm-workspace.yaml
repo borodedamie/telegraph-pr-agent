@@ -1,0 +1,6 @@
+packages:
+  - bot
+  - web
+
+allowBuilds:
+  esbuild: true
