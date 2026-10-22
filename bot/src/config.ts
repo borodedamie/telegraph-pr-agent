@@ -4,7 +4,9 @@ const envSchema = z.object({
   CHAIN_ID: z.coerce.number().int().positive(),
   USDC_ADDRESS: z.string().regex(/^0x[0-9a-fA-F]{40}$/, "must be a 0x-prefixed 40-hex address"),
   NODE_URL: z.string().url(),
-  MODEL_CUTOFF: z.string().datetime({ message: "must be an ISO 8601 datetime" }),
+  MODEL_CUTOFF: z.string().refine((v) => !Number.isNaN(Date.parse(v)), {
+    message: 'must be a human-readable date like "January 1, 2026"',
+  }),
   BUDGET_CAP_USDC: z.coerce.number().positive(),
   MAX_PRICE_PER_CALL_USDC: z.coerce.number().positive(),
   TELEGRAPH_EVM_PRIVATE_KEY: z.string().regex(/^0x[0-9a-fA-F]{64}$/, "must be a 0x-prefixed 64-hex key"),
@@ -28,6 +30,17 @@ export interface Config {
   demoRepo: string;
 }
 
+// Human dates ("January 1, 2026") parse as local midnight, which would mean
+// different instants on different machines. Pin the intended calendar date to
+// UTC midnight so the cutoff is reproducible everywhere. Explicit ISO strings
+// are kept exactly as written.
+export function parseCutoff(raw: string): Date {
+  const trimmed = raw.trim();
+  if (/^\d{4}-\d{2}-\d{2}(T|$)/.test(trimmed)) return new Date(trimmed);
+  const d = new Date(trimmed);
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const parsed = envSchema.safeParse(env);
   if (!parsed.success) {
@@ -41,7 +54,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     chainId: e.CHAIN_ID,
     usdcAddress: e.USDC_ADDRESS,
     nodeUrl: e.NODE_URL.replace(/\/$/, ""),
-    modelCutoff: new Date(e.MODEL_CUTOFF),
+    modelCutoff: parseCutoff(e.MODEL_CUTOFF),
     budgetCapUsdc: e.BUDGET_CAP_USDC,
     maxPricePerCallUsdc: e.MAX_PRICE_PER_CALL_USDC,
     evmPrivateKey: e.TELEGRAPH_EVM_PRIVATE_KEY as `0x${string}`,

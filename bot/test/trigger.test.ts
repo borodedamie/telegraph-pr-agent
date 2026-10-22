@@ -78,4 +78,25 @@ describe("detectCutoffTriggers", () => {
     expect(triggers).toHaveLength(1);
     expect(triggers[0].status).toBe("past-cutoff");
   });
+
+  it("resolves a caret range to the bare version when looking up its release date", async () => {
+    const triggers = await detectCutoffTriggers(
+      { basePackageJson: pkg({ zod: "^3.24.0" }), headPackageJson: pkg({ zod: "^4.6.7" }) },
+      CUTOFF,
+      registryFetch({ "4.6.7": "2025-05-01T00:00:00Z" })
+    );
+    expect(triggers).toEqual([
+      { package: "zod", version: "^4.6.7", releaseDate: "2025-05-01T00:00:00Z", status: "past-cutoff" },
+    ]);
+  });
+
+  it("resolves a tilde range to the bare version when looking up its release date", async () => {
+    const triggers = await detectCutoffTriggers(
+      { basePackageJson: pkg({ zod: "~3.24.0" }), headPackageJson: pkg({ zod: "~4.6.7" }) },
+      CUTOFF,
+      registryFetch({ "4.6.7": "2025-05-01T00:00:00Z" })
+    );
+    expect(triggers[0].status).toBe("past-cutoff");
+    expect(triggers[0].releaseDate).toBe("2025-05-01T00:00:00Z");
+  });
 });

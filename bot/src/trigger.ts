@@ -5,6 +5,13 @@ export interface CutoffTrigger {
   status: "past-cutoff" | "unverifiable";
 }
 
+// package.json holds range specs ("^4.6.7"), but registry.time is keyed by the
+// bare version that was published ("4.6.7"). Resolve the spec to that key.
+function bareVersion(spec: string): string {
+  const m = spec.match(/\d+(?:\.\d+){0,2}(?:[-+][0-9A-Za-z.-]+)?/);
+  return m ? m[0] : spec;
+}
+
 function depsOf(packageJson: string): Record<string, string> {
   const parsed = JSON.parse(packageJson) as {
     dependencies?: Record<string, string>;
@@ -36,7 +43,7 @@ export async function detectCutoffTriggers(
       continue;
     }
     const registry = (await res.json()) as { time?: Record<string, string> };
-    const releaseDate = registry.time?.[version];
+    const releaseDate = registry.time?.[bareVersion(version)];
     if (!releaseDate) {
       unverifiable();
       continue;

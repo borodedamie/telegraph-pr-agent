@@ -1,6 +1,3 @@
-// M1 vertical-slice runner: trigger → one settled QUESTION_ANSWERING buy → ledger row.
-// Usage: pnpm exec tsx src/slice.ts <base-package.json> <head-package.json> <prNumber> <headSha>
-// Requires bot/.env (or shell env) with all config values; spends real testnet USDC.
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -12,7 +9,9 @@ import { commitLedgerRow, LEDGER_FILE, type LedgerRow } from "./ledger.js";
 
 const [baseFile, headFile, prNumberArg, headSha] = process.argv.slice(2);
 if (!baseFile || !headFile || !prNumberArg || !headSha) {
-  console.error("usage: tsx src/slice.ts <base-package.json> <head-package.json> <prNumber> <headSha>");
+  console.error(
+    "usage: tsx src/slice.ts <base-package.json> <head-package.json> <prNumber> <headSha>",
+  );
   process.exit(1);
 }
 
@@ -24,13 +23,15 @@ const triggers = await detectCutoffTriggers(
     basePackageJson: readFileSync(baseFile, "utf8"),
     headPackageJson: readFileSync(headFile, "utf8"),
   },
-  cfg.modelCutoff
+  cfg.modelCutoff,
 );
 console.log("triggers:", JSON.stringify(triggers, null, 2));
 
 const pastCutoff = triggers.filter((t) => t.status === "past-cutoff");
 if (pastCutoff.length === 0) {
-  console.log("AC-2: no past-cutoff trigger → zero spend, exiting without any purchase.");
+  console.log(
+    "AC-2: no past-cutoff trigger → zero spend, exiting without any purchase.",
+  );
   process.exit(0);
 }
 
@@ -63,7 +64,6 @@ const row: LedgerRow = {
   status: purchase.status,
 };
 
-// Work in a throwaway clone so the local working tree is never switched to the ledger branch.
 const dir = mkdtempSync(join(tmpdir(), "ledger-clone-"));
 try {
   execFileSync("git", ["init", "-q", dir]);
@@ -80,5 +80,9 @@ try {
 }
 
 await commitLedgerRow(dir, row);
-console.log(`ledger row committed: PR #${row.prNumber} ${row.intent} ${row.txHash}`);
-console.log(`dashboard: https://raw.githubusercontent.com/${cfg.demoRepo}/ledger/${LEDGER_FILE}`);
+console.log(
+  `ledger row committed: PR #${row.prNumber} ${row.intent} ${row.txHash}`,
+);
+console.log(
+  `dashboard: https://raw.githubusercontent.com/${cfg.demoRepo}/ledger/${LEDGER_FILE}`,
+);

@@ -37,8 +37,15 @@ describe("loadConfig", () => {
     expect(() => loadConfig({ ...validEnv, BUDGET_CAP_USDC: "abc" })).toThrow(/BUDGET_CAP_USDC/);
   });
 
-  it("rejects a non-ISO modelCutoff", () => {
+  it("rejects an unparseable modelCutoff", () => {
     expect(() => loadConfig({ ...validEnv, MODEL_CUTOFF: "last tuesday" })).toThrow(/MODEL_CUTOFF/);
+  });
+
+  it("accepts a human-readable modelCutoff and pins it to UTC midnight of that date", () => {
+    const cfg = loadConfig({ ...validEnv, MODEL_CUTOFF: "January 1, 2026" });
+    expect(cfg.modelCutoff.toISOString()).toBe("2026-01-01T00:00:00.000Z");
+    const short = loadConfig({ ...validEnv, MODEL_CUTOFF: "1 Jan 2026" });
+    expect(short.modelCutoff.toISOString()).toBe("2026-01-01T00:00:00.000Z");
   });
 
   it("rejects a malformed private key naming the field", () => {
