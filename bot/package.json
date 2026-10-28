@@ -12,7 +12,7 @@
   "dependencies": {
     "@x402/evm": "^2.11.0",
     "@x402/fetch": "^2.11.0",
-    "viem": "^2.21.0",
+    "viem": "^2.57.12",
     "zod": "^3.25.0"
   },
   "devDependencies": {
