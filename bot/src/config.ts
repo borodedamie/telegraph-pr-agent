@@ -30,10 +30,6 @@ export interface Config {
   demoRepo: string;
 }
 
-// Human dates ("January 1, 2026") parse as local midnight, which would mean
-// different instants on different machines. Pin the intended calendar date to
-// UTC midnight so the cutoff is reproducible everywhere. Explicit ISO strings
-// are kept exactly as written.
 export function parseCutoff(raw: string): Date {
   const trimmed = raw.trim();
   if (/^\d{4}-\d{2}-\d{2}(T|$)/.test(trimmed)) return new Date(trimmed);

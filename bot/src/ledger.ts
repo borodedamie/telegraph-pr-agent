@@ -15,9 +15,13 @@ export interface LedgerRow {
   intent: string;
   minerId: string;
   minerName: string;
+  minerRank: number;
+  minerScore: number;
   amountUsdc: number;
   txHash: string;
-  answerPreview: string;
+  receiptHash: string;
+  signalHash: string;
+  answer: string;
   timestamp: string;
   status: "settled" | "failed";
 }
@@ -28,6 +32,24 @@ export interface LedgerDeps {
 
 export function appendLedgerRow(existing: string, row: LedgerRow): string {
   return `${existing}${JSON.stringify(row)}\n`;
+}
+
+export function hasLedgerRow(
+  existing: string,
+  prNumber: number,
+  headSha: string
+): boolean {
+  for (const line of existing.split("\n")) {
+    if (!line.trim()) continue;
+    let row: Partial<LedgerRow>;
+    try {
+      row = JSON.parse(line) as Partial<LedgerRow>;
+    } catch {
+      continue;
+    }
+    if (row.prNumber === prNumber && row.headSha === headSha) return true;
+  }
+  return false;
 }
 
 export async function commitLedgerRow(

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   appendLedgerRow,
   commitLedgerRow,
+  hasLedgerRow,
   LEDGER_FILE,
   type LedgerRow,
 } from "../src/ledger.js";
@@ -17,10 +18,39 @@ const row: LedgerRow = {
   minerName: "ChainSight",
   amountUsdc: 0.01,
   txHash: "0xdeadbeef",
-  answerPreview: "the answer",
+  receiptHash: "0xreceipt",
+  signalHash: "0xsignal",
+  minerRank: 1,
+  minerScore: 0.9,
+  answer: "the answer",
   timestamp: "2026-10-21T00:00:00.000Z",
   status: "settled",
 };
+
+describe("hasLedgerRow", () => {
+  it("finds an existing row for the same PR and head SHA", () => {
+    expect(hasLedgerRow(appendLedgerRow("", row), row.prNumber, row.headSha)).toBe(true);
+  });
+
+  it("returns false when the head SHA differs (re-pushed PR must re-buy)", () => {
+    expect(hasLedgerRow(appendLedgerRow("", row), row.prNumber, "different-sha")).toBe(false);
+  });
+
+  it("returns false when the PR number differs", () => {
+    expect(hasLedgerRow(appendLedgerRow("", row), 8, row.headSha)).toBe(false);
+  });
+
+  it("returns false for an empty ledger and tolerates malformed lines", () => {
+    expect(hasLedgerRow("", row.prNumber, row.headSha)).toBe(false);
+    expect(hasLedgerRow("not-json\n", row.prNumber, row.headSha)).toBe(false);
+  });
+
+  it("finds the row anywhere in the ledger, not just the last line", () => {
+    const older: LedgerRow = { ...row, prNumber: 6, headSha: "oldsha" };
+    const existing = appendLedgerRow(appendLedgerRow("", older), row);
+    expect(hasLedgerRow(existing, older.prNumber, older.headSha)).toBe(true);
+  });
+});
 
 describe("appendLedgerRow", () => {
   it("appends the row as exactly one JSON line to existing content", () => {
@@ -35,7 +65,11 @@ describe("appendLedgerRow", () => {
     expect(Object.keys(JSON.parse(line)).sort()).toEqual(
       [
         "amountUsdc",
-        "answerPreview",
+        "answer",
+        "minerRank",
+        "minerScore",
+        "receiptHash",
+        "signalHash",
         "headSha",
         "intent",
         "minerId",

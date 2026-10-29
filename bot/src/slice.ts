@@ -1,11 +1,16 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "./config.js";
 import { detectCutoffTriggers } from "./trigger.js";
 import { IntelligenceClient } from "./x402.js";
-import { commitLedgerRow, LEDGER_FILE, type LedgerRow } from "./ledger.js";
+import {
+  commitLedgerRow,
+  hasLedgerRow,
+  LEDGER_FILE,
+  type LedgerRow,
+} from "./ledger.js";
 
 const [baseFile, headFile, prNumberArg, headSha] = process.argv.slice(2);
 if (!baseFile || !headFile || !prNumberArg || !headSha) {
@@ -42,33 +47,23 @@ const client = new IntelligenceClient({
   budgetCapUsdc: cfg.budgetCapUsdc,
 });
 
-const t = pastCutoff[0];
-const purchase = await client.buy("QUESTION_ANSWERING", {
-  query:
-    `Package ${t.package}@${t.version} was released ${t.releaseDate}, after the model cutoff ` +
-    `${cfg.modelCutoff.toISOString()}. What notable API changes or upgrade risks should a maintainer ` +
-    `know before merging a dependency bump to this version?`,
-});
-console.log("purchase:", JSON.stringify(purchase, null, 2));
-
-const row: LedgerRow = {
-  prNumber: Number(prNumberArg),
-  headSha,
-  intent: purchase.intent,
-  minerId: purchase.minerId,
-  minerName: purchase.minerName,
-  amountUsdc: purchase.amountUsdc,
-  txHash: purchase.txHash,
-  answerPreview: purchase.answerPreview,
-  timestamp: new Date().toISOString(),
-  status: purchase.status,
-};
-
+// Clone and read the ledger BEFORE spending: the guard's whole point is to
+// detect an existing (pr, headSha) row without paying twice.
+const prNumber = Number(prNumberArg);
 const dir = mkdtempSync(join(tmpdir(), "ledger-clone-"));
 try {
   execFileSync("git", ["init", "-q", dir]);
   execFileSync("git", ["-C", dir, "remote", "add", "origin", authUrl]);
   execFileSync("git", ["-C", dir, "fetch", "-q", "origin", "ledger"]);
+  execFileSync("git", [
+    "-C",
+    dir,
+    "checkout",
+    "-q",
+    "-B",
+    "ledger",
+    "origin/ledger",
+  ]);
 } catch {
   console.log("ledger branch missing — bootstrapping empty ledger.jsonl");
   execFileSync("git", ["-C", dir, "symbolic-ref", "HEAD", "refs/heads/ledger"]);
@@ -78,6 +73,43 @@ try {
   execFileSync("git", ["-C", dir, "push", "-q", "origin", "ledger"]);
   execFileSync("git", ["-C", dir, "fetch", "-q", "origin", "ledger"]);
 }
+
+const ledgerPath = join(dir, LEDGER_FILE);
+const existingLedger = existsSync(ledgerPath)
+  ? readFileSync(ledgerPath, "utf8")
+  : "";
+if (hasLedgerRow(existingLedger, prNumber, headSha)) {
+  console.log(
+    `idempotency: PR #${prNumber} @ ${headSha} already has a ledger row → skipping buy (zero spend).`,
+  );
+  process.exit(0);
+}
+
+const t = pastCutoff[0];
+// No cutoff date in the query: the miner echoed it back as its own limit.
+const purchase = await client.buy(
+  "QUESTION_ANSWERING",
+  `What notable API changes or upgrade risks does ${t.package}@${t.version} ` +
+    `(released ${t.releaseDate}) introduce compared with earlier versions? Cite sources.`,
+);
+console.log("purchase:", JSON.stringify(purchase, null, 2));
+
+const row: LedgerRow = {
+  prNumber,
+  headSha,
+  intent: purchase.intent,
+  minerId: purchase.minerId,
+  minerName: purchase.minerName,
+  minerRank: purchase.minerRank,
+  minerScore: purchase.minerScore,
+  amountUsdc: purchase.amountUsdc,
+  txHash: purchase.txHash,
+  receiptHash: purchase.receiptHash,
+  signalHash: purchase.signalHash,
+  answer: purchase.answer,
+  timestamp: new Date().toISOString(),
+  status: purchase.status,
+};
 
 await commitLedgerRow(dir, row);
 console.log(
