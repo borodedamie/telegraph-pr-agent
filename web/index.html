@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Telegraph PR Agent — Spend Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Condensed:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: dark;
+        --desk: #14262b;     /* telegraph-office felt */
+        --desk-line: #24414a;
+        --form: #e9e4d4;     /* telegram blank */
+        --tape: #f1d86a;     /* pasted ticker strip */
+        --ink: #1a1712;
+        --brass: #c9a55f;
+        --muted: #8fa7a8;
+        --stamp-ok: #2f5fa8;
+        --stamp-bad: #c42b55;
+        --display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+        --body: "IBM Plex Sans Condensed", system-ui, sans-serif;
+        --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 3rem 1rem 4rem;
+        background: var(--desk);
+        color: var(--form);
+        font: 400 1rem/1.5 var(--body);
+      }
+      #app { max-width: 760px; margin: 0 auto; }
+      a { color: inherit; }
+      :focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
+
+      .masthead { border-bottom: 1px solid var(--desk-line); padding-bottom: 1rem; }
+      h1 {
+        font: 800 clamp(3.5rem, 14vw, 7rem)/0.85 var(--display);
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        margin: 0;
+        color: var(--tape);
+      }
+      .sub { margin: 0.5rem 0 0; color: var(--muted); font-size: 0.95rem; }
+
+      .boundary {
+        margin: 1.5rem 0;
+        padding: 0.75rem 1rem;
+        border: 1px dashed var(--brass);
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .boundary strong { color: var(--brass); font-weight: 600; }
+
+      .tally {
+        font: 500 0.8rem var(--mono);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--brass);
+        margin: 2rem 0 1rem;
+      }
+
+      .feed { display: grid; gap: 1.5rem; }
+      .telegram {
+        position: relative;
+        background: var(--form);
+        color: var(--ink);
+        padding: 1rem 1.25rem 0.9rem;
+        box-shadow: 0 1px 0 #0004, 0 10px 24px -12px #0009;
+        animation: arrive 0.4s ease-out both;
+        animation-delay: calc(var(--i) * 70ms);
+      }
+      .form-head, .form-foot {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0.25rem 1rem;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .form-head { border-bottom: 2px solid var(--ink); padding-bottom: 0.4rem; margin-bottom: 0.9rem; font-weight: 600; }
+      .form-head span { font: 800 1.4rem/1 var(--display); letter-spacing: 0.03em; }
+      .form-foot { margin-top: 0.9rem; color: #5b5546; }
+
+      /* Signature: copy printed on pasted strips, telegram style. */
+      .tape {
+        display: inline;
+        font: 500 0.9rem/2.1 var(--mono);
+        background: var(--tape);
+        padding: 0.2rem 0.4rem;
+        box-decoration-break: clone;
+        -webkit-box-decoration-break: clone;
+        margin: 0;
+      }
+      .telegram > .tape { display: block; width: fit-content; max-width: 100%; margin-bottom: 0.5rem; line-height: 1.6; }
+      .tape.answer { background: #f6ebb4; overflow-wrap: anywhere; }
+
+      .stamp {
+        position: absolute;
+        top: 2.6rem;
+        right: 1rem;
+        font: 800 1.1rem/1 var(--display);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        padding: 0.3rem 0.6rem;
+        border: 3px double currentColor;
+        color: var(--stamp-ok);
+        transform: rotate(-8deg);
+        opacity: 0.8;
+        pointer-events: none;
+      }
+      .failed .stamp { color: var(--stamp-bad); }
+      .failed { background: #e2dccc; }
+
+      .empty {
+        margin-top: 2rem;
+        padding: 2rem 1.25rem;
+        border: 1px solid var(--desk-line);
+        text-align: center;
+      }
+      .empty p:first-child { font: 800 2rem/1 var(--display); text-transform: uppercase; color: var(--tape); margin: 0; }
+      .empty .detail { color: var(--muted); font-size: 0.9rem; margin: 0.75rem 0 0; }
+
+      @keyframes arrive { from { opacity: 0; transform: translateY(8px); } }
+      @media (prefers-reduced-motion: reduce) { .telegram { animation: none; } }
+      @media (max-width: 520px) {
+        .stamp { position: static; display: inline-block; margin-top: 0.75rem; transform: rotate(-3deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
