@@ -5,8 +5,6 @@ export interface CutoffTrigger {
   status: "past-cutoff" | "unverifiable";
 }
 
-// package.json holds range specs ("^4.6.7"), but registry.time is keyed by the
-// bare version that was published ("4.6.7"). Resolve the spec to that key.
 function bareVersion(spec: string): string {
   const m = spec.match(/\d+(?:\.\d+){0,2}(?:[-+][0-9A-Za-z.-]+)?/);
   return m ? m[0] : spec;
