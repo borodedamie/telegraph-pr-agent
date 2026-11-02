@@ -1,6 +1,6 @@
 # Software specification
 
-Revised 2 Nov 2026 after external review. Plan: [HACKATHON-PLAN.md](HACKATHON-PLAN.md). Owners: [TEAM.md](TEAM.md). Live rules and docs are authoritative: [rules](https://hackathon.telegraphprotocol.com/rules), [Model Economy mission](https://hackathon.telegraphprotocol.com/missions/model-economy), [Telegraph docs](https://anjoman.ai/docs/introduction), [miner registration](https://anjoman.ai/docs/miners/miner-registration), [validation API](https://anjoman.ai/docs/miners/validation-api). Recheck them before submission; do not rely on copied endpoint examples or old notes.
+Revised 2 Nov 2026 after external review, and again after the second review ([docs/reviews/2026-11-02-docs-review.md](reviews/2026-11-02-docs-review.md)). Plan: [HACKATHON-PLAN.md](HACKATHON-PLAN.md). Owners: [TEAM.md](TEAM.md). Live QA intent contract: [telegraph/qa-intent-contract-2026-11-02.md](telegraph/qa-intent-contract-2026-11-02.md). Live rules and docs are authoritative: [rules](https://hackathon.telegraphprotocol.com/rules), [Model Economy mission](https://hackathon.telegraphprotocol.com/missions/model-economy), [Telegraph docs](https://anjoman.ai/docs/introduction), [miner registration](https://anjoman.ai/docs/miners/miner-registration), [validation API](https://anjoman.ai/docs/miners/validation-api). Recheck them before submission; do not rely on copied endpoint examples or old notes.
 
 **Labels.** Every requirement carries one:
 
@@ -15,13 +15,19 @@ Nothing labelled [PRODUCT] or [SCORE] is mandated by Telegraph.
 
 **The vertical slice to protect.** Package release → model knowledge gap → autonomous Telegraph purchase → purchased release intelligence → actual repository migration → independent tests → human merge → auditable economic result. Do not spend the event on multiple paid verification integrations or dashboard polish before this slice reliably buys one useful answer and turns it into a passing migration.
 
-## 0. Blockers (resolve in week 1 before implementation is unblocked)
+## 0. Blockers
 
-1. [MISSION] Resolve exact Telegraph intent ids, schemas, scoring modules, routing and provider discovery from the live node. Do not assume family names, `_GENERAL` names or API response fields.
-2. [PRODUCT] Prove the miner can be scored and ranked. Preference-pair rows alone may be insufficient for a hybrid intent without an eligible truth source and an active evaluation snapshot.
-3. [PRODUCT] Purchase idempotency. Daily scheduled runs must not repeatedly buy the same package/version answer.
+Two separate gates. The App never waits on the Miner gate.
+
+**App gate (blocks the Apps & Agents entry):**
+
+1. [MISSION] Exact canonical Q&A intent, request shape and provider discovery resolved from the live node and saved as a dated contract snapshot. Done for 2 Nov: `QUESTION_ANSWERING_GENERAL`, free-form `query`, no request/response schema ([snapshot](telegraph/qa-intent-contract-2026-11-02.md)). Recheck before each milestone.
+2. [MISSION] One useful package-release answer purchased through a supported Telegraph flow and materially used in a passing migration.
+3. [PRODUCT] Purchase idempotency with crash-safe attempt records (§2.6). Scheduled runs never buy the same package/version answer twice, and an ambiguous attempt never triggers an automatic repurchase.
 4. [PRODUCT] Complete the GitHub Actions trust boundary: secret-bearing payment/LLM job, secretless repository execution, privileged commit/push, merge accounting.
 5. [SCORE] `CODE_GENERATION` and paid verification are conditional on demonstrated provider quality. Unavailable or unsuitable miners are never mandatory for the core product.
+
+**Miner gate (blocks only the Provider entry; go/no-go 9 Nov, proposed):** a compatible canonical intent exists; the miner's response matches its contract; the evaluation pool is eligible (≥ `min_submitters` distinct submitters); a truth-source path exists if the scoring class needs one; the intent's test questions are ones a package-release miner can answer well; active snapshot, score and rank are observable. On 2 Nov `QUESTION_ANSWERING_GENERAL` had 3 of 5 submitters, so no miner on it had a QA score, and its test set is general questions, on which a package-only miner would rank last (§3.5).
 
 ## 1. Hackathon scoring (checked 2 Nov 2026)
 
@@ -49,15 +55,18 @@ Nothing labelled [PRODUCT] or [SCORE] is mandated by Telegraph.
 ### 2.2 Installation and trigger
 
 - [PRODUCT] One workflow file installs it. Initial scope: public GitHub repositories only.
-- [PRODUCT] Runs on a daily schedule and manual `workflow_dispatch`; one run per repository at a time via concurrency controls.
+- [PRODUCT] Runs on a schedule the developer sets in their workflow file (`on: schedule` cron; the example workflow uses weekly) and on manual `workflow_dispatch`; one run per repository at a time via concurrency controls. The Action does not trigger on human PRs: a developer who has already bumped a dependency gets nothing useful from it (decided 2 Nov; [ADR 0001 amendment](adr/0001-deterministic-cutoff-detection.md)).
 - [PRODUCT] The Action is pinned to a release or immutable commit SHA; installers never execute an unpinned latest.
 - [PRODUCT] Document repository Actions permissions, the setting allowing Actions to create pull requests, required `contents` and `pull-requests` permissions, fork limitations and unsupported layouts.
 
 ### 2.3 Dependency eligibility and `MODEL_CUTOFF`
 
-- [MISSION] `Eligible(A, B) = semver(B) > semver(A) AND releaseDate(B) > MODEL_CUTOFF`, where A is the installed version from the lockfile and B the latest eligible stable version from the registry. Release timestamps come from registry metadata, never the LLM. Prereleases excluded. Missing or ambiguous dates fail closed. If B equals A, do nothing.
+- [PRODUCT] `Eligible(A, B) = semver(B) > semver(A) AND releaseDate(B) > MODEL_CUTOFF`, where A is the installed version from the lockfile and B the latest eligible stable version from the registry. Release timestamps come from registry metadata, never the LLM. Prereleases excluded. Missing or ambiguous dates fail closed. If B equals A, do nothing. This rule is our design, not a Telegraph or hackathon requirement; the eligibility requirement is the autonomous purchase and its meaningful use (§1).
+- [PRODUCT] A comes from the lockfile, never from stripping `^`/`~` off a `package.json` range.
+- [PRODUCT] Edge cases, MVP behaviour: B is the registry `latest` dist-tag when it is stable, otherwise the highest stable version; aliases (`npm:`), Git URLs, `file:`, `link:` and `workspace:` specifiers are skipped with a diagnostic; invalid or non-semver ranges are skipped; scoped packages are supported; lockfile and `package.json` disagreeing (lockfile out of date) fails closed for that package; a version missing from the registry is skipped; release timestamp missing fails closed.
+- [PRODUCT] Multi-major jumps: if B is more than one major version above A, the question and report cover every intervening major release (or the PR targets the next major only); asking only "A to B" may miss intermediate deprecations. The target stays B, the eligible post-cutoff version; the question and report cover every intervening major release. Never retarget a PR to an intermediate version released before the cutoff: that would pay for something the model already knows. Splitting large jumps into steps is open.
 - [PRODUCT] Internal classification is `post_cutoff_candidate`, not `unknown_to_model`: a published cutoff is a heuristic, not proof the model cannot know later information.
-- [PRODUCT] Config records provider, exact model identifier, cutoff date, cutoff source URL, whether the cutoff is provider-documented or team-assumed, and configuration timestamp.
+- [PRODUCT] Config records provider, exact model identifier, cutoff date, cutoff source URL, whether the cutoff is provider-documented or team-assumed, and configuration timestamp. The cutoff belongs to the installer's configured model; there is no project-wide universal cutoff. If the provider documents none, the date is labelled team-assumed.
 - [PRODUCT] Do not require unused credentials: either the LLM call is implemented or `LLM_API_KEY` is not required.
 
 | Dependency type | MVP policy |
@@ -80,13 +89,15 @@ Never scan incomplete dependency information silently.
 | Required fact | Live source |
 | --- | --- |
 | Exact canonical intent ids | `GET /engine/v1/intents` |
-| Description, request and response schema | `GET /engine/v1/intents/{intentId}` |
-| Scoring module and evaluation type | `GET /api/wasm?resolve={intentId}` |
-| Providers and rankings for the intent | `GET /engine/v1/intents/{intentId}/miners` |
+| Class, request and response schema | `GET /engine/v1/intents/{intentId}` (`class`, `request`, `response`, `wasm`) |
+| Registered providers with activation, price and per-intent scores | `GET /api/miners?intent={canonicalId}` |
+| Providers competing for the intent | `GET /engine/v1/intents/{intentId}/miners` |
+| Registration detail and activation | `GET /api/miners/{registrationId}` |
 | Evaluation-pool status | `GET /api/evalpool/status?intent_id={intentId}` |
 
-- [PRODUCT] `/api/miners` is not a substitute for the intent-specific provider endpoint. Do not repair `rankMiners()` by guessing which field replaced `scores`.
-- [PRODUCT] Config entries `QA_INTENT_ID`, `CODEGEN_INTENT_ID`, `PATCH_VERIFY_INTENT_ID`, `REGRESSION_VERIFY_INTENT_ID`, validated at startup. A missing, unranked, unavailable or schema-incompatible intent disables that capability with an explicit diagnostic. Never substitute another intent silently.
+- [PRODUCT] Always query with the canonical id. `/api/miners?intent=QUESTION_ANSWERING` returns `[]` because that is the family prefix; with `QUESTION_ANSWERING_GENERAL` it returns the 10 registered providers with `scores[]`. On 2 Nov `/engine/v1/intents/{id}/miners` returned no rank or score fields, and no provider had a `QUESTION_ANSWERING_GENERAL` score. Do not repair `rankMiners()` by guessing fields; read rank from `scores[]` for the exact intent id, or report "rank unavailable".
+- [MISSION] Intent fit is a gate, not just canonicality. The chosen intent must accept the package/version question the agent sends, and its response must be usable. `QUESTION_ANSWERING_GENERAL` has no input schema: the node rejects `params` (400 `no_input_schema`) and takes a free-form `query`. It has no response schema, so there are no canonical fields to validate; the agent validates the answer itself (package, version, sources, claims). If a future canonical child adds schemas, re-snapshot and adapt.
+- [PRODUCT] Config entries `QA_INTENT_ID`, `CODEGEN_INTENT_ID`, `PATCH_VERIFY_INTENT_ID`, `REGRESSION_VERIFY_INTENT_ID`, validated at startup against the live catalogue. A missing, unavailable or schema-incompatible intent disables that capability with an explicit diagnostic. Never substitute another intent silently.
 - [PRODUCT] Routing policy, one of two, chosen explicitly:
 
 | Approach | Meaning |
@@ -94,7 +105,9 @@ Never scan incomplete dependency information silently.
 | Engine auto-routing | Telegraph selects the provider by its routing policy; record the actual miner and its rank/score snapshot |
 | Manual top-rank selection | Our own policy: pick a miner and call its id endpoint; not Telegraph's weighted routing |
 
-Recommendation: Engine auto-routing for the qualifying purchase unless a concrete reason needs a specific miner. Documentation describes weighted routing (example 70/20/10 across top providers) but weights may be governance-dependent; verify live, never hardcode. If manual selection is kept, record the ranking snapshot (rank, score, timestamp) immediately before each call, and step down only on an explicitly classified failure. A delivered but low-quality answer is not a transport failure; retrying it causes extra charges.
+Open, not yet decided by the team. Recommendation: Engine auto-routing (`POST /engine/v1/ask` with `intent` = the canonical id and a free-form `query`) for the qualifying purchase, because it matches the mission's procurement story. Counter-evidence: the current client calls a ranked miner directly because on 28 Oct a routed QA query was re-classified to `SECURITY_REVIEW` (comment in `bot/src/x402.ts`), and on 2 Nov none of the routable QA providers knew package releases. Re-test routing with the canonical id before deciding. Higher-scoring providers receive proportionally more traffic; the weights are not hardcoded or quoted. Never claim the Engine chose a miner when the application did; a direct `POST /engine/v1/ask/{minerId}` purchase is labelled as our choice and steps down only on an explicitly classified failure. A delivered but low-quality answer is not a transport failure; retrying it causes extra charges.
+
+- [PRODUCT] Ranking snapshot per purchase: the miner registration id the Engine returned; the raw provider/score response fetched immediately before or after the request, with capture timestamp and content hash; rank and score mapped from it only when present for the exact intent id, otherwise "rank unavailable". The snapshot is observational, not a guarantee of what the router evaluated at that instant. Never show a rank the evidence does not contain.
 
 ### 2.5 Quote, payment and accounting
 
@@ -102,7 +115,8 @@ Recommendation: Engine auto-routing for the qualifying purchase unless a concret
 - [PRODUCT] Enforce `MAX_PRICE_PER_CALL_USDC` and the remaining run/stage budget in the application and in the x402 client's spend controls where supported.
 - [PRODUCT] Store `min_price_usdc`, quoted amount and actual charged amount separately; a floor is not the payment, demand multipliers change the quote.
 - [PRODUCT] A successful HTTP response is not a useful answer. Inspect the Engine `result_shape` and `field_status`; an HTTP 200 with an error-like body can still be delivered and billable.
-- [PRODUCT] Payment may settle before the miner call; failed delivery may be credited to escrow. Record settlement, delivery and refund/credit as separate states.
+- [PRODUCT] Payment may settle before the miner call; failed delivery may be credited to escrow. Record settlement, delivery and refund/credit as separate states. The x402 guide and the protocol overview describe settlement timing differently: a controlled failed-delivery test against the current node (payment response, settlement, escrow balance, receipt absence) is required before the docs state the behaviour as fact.
+- [PRODUCT] On 2 Nov the challenge offered two schemes on Ethereum Sepolia: `exact` (per-request x402) and `escrow` (deducted from a pre-funded Telegraph escrow balance at the next epoch close). Which scheme the MVP uses is open; attempt and ledger records must be able to represent both.
 - [PRODUCT] A transaction hash is not a unique purchase id; one transaction can settle several requests. `receipt_hash` identifies a delivered purchase; `signal_hash` and `tx_hash` are separate evidence links.
 
 ### 2.6 Purchase idempotency
@@ -111,6 +125,15 @@ Recommendation: Engine auto-routing for the qualifying purchase unless a concret
 - [PRODUCT] A new Q&A purchase is allowed only when the installed version changes, the proposed target changes, a refresh is explicitly requested, or the previous attempt delivered no usable result and the retry policy allows another provider/attempt.
 - [PRODUCT] Generation and verification operations are keyed on patch digest + operation name + attempt number.
 - [PRODUCT] The ledger, not Actions concurrency alone, is the source of truth for duplicate suppression.
+- [PRODUCT] Crash safety. The logical key above stops repeat purchases after a result is recorded; it does not stop a second payment if the process dies after paying but before recording. Each paid call is a durable attempt with a state machine:
+
+```text
+reserved → request_sent → delivered
+                       ↘ failed_and_credited
+                       ↘ unknown_needs_reconciliation
+```
+
+- [PRODUCT] Persist the attempt as `reserved` before the external request and as `request_sent` immediately before sending. Persist payment response, receipt and signal immediately after the call. A run that finds an attempt in `request_sent` or `unknown_needs_reconciliation` for the same key halts automatic retries for that key and reports it; a person reconciles it against settlement, escrow and signal evidence. Where attempt state is persisted (the ledger branch or a run artifact) and who reconciles are part of C's ledger design. No exactly-once claim unless the payment rail offers an idempotency key and we use it.
 
 ### 2.7 Q&A result and `not_found` handling
 
@@ -124,6 +147,7 @@ Recommendation: Engine auto-routing for the qualifying purchase unless a concret
 - [PRODUCT] Fixture acceptance test: a source file containing a deprecated or renamed API; the report must name the correct file and symbol.
 - [PRODUCT] One PR per package and target version, with a stable branch/PR identity, updated on later runs, never duplicated. Define behaviour when the installed base SHA changes while the draft is open.
 - [PRODUCT] Report contents: version bump, why upgrade, known vulnerabilities in the installed version (OSV, free), changed functions/methods, affected files and call sites, what to change, spend so far, estimated fix cost, and the `telegraph:fix` instruction. Only users with write access can add labels; closing the PR ends the flow.
+- [PRODUCT] OSV is used only to strengthen the upgrade report ("this upgrade also fixes CVE-…") and to process vulnerable packages first. No standalone vulnerability PRs and no general vulnerability scanner: that space is crowded (Dependabot alerts, `npm audit`, Snyk, Socket); our niche is the upgrade plus the code migration.
 
 ### 2.9 Fix stage and paid provider availability
 
@@ -176,6 +200,7 @@ Recommendation: Engine auto-routing for the qualifying purchase unless a concret
 - [PRODUCT] Public HTTPS endpoint answering package/version-specific release intelligence for npm and PyPI; deterministic use of registry metadata.
 - [PRODUCT] Source priority: registry metadata (release date, repository URL) → GitHub Releases → repository `CHANGELOG.md` → git tag comparison. Dates and repository URLs come from registries, source URLs from retrieved material, never from the LLM.
 - [PRODUCT] Return `not_found` when no usable notes exist; never imply notes exist or let the model infer them.
+- [PRODUCT] Source fetching is an SSRF and prompt-injection boundary. Package metadata URLs are untrusted. Allow only `https` and the hosts actually needed (npm and PyPI registries, `github.com`, `api.github.com`, `raw.githubusercontent.com`); block loopback, private, link-local and cloud-metadata addresses after DNS resolution and after every redirect; cap redirects, response size and time; strip credentials from URLs; validate content type; never execute fetched scripts or package code; treat release-note text as data, never as instructions to the model.
 - [PRODUCT] Internal response shape (illustrative; the external response must satisfy the live canonical intent `response.fields`, result shape and `field_status` contract):
 
 ```json
@@ -197,7 +222,7 @@ Recommendation: Engine auto-routing for the qualifying purchase unless a concret
 ### 3.3 Cache and latency
 
 - [PRODUCT] Cache key includes package, ecosystem, version and a source revision/content hash, so edited notes or tags do not serve stale answers.
-- [PRODUCT] Targets: cached under 500 ms; warm under 2 s; cold path p50/p95 measured and published (10 s is an initial ceiling, not a competitive target). Verify the live intent's latency expectation before claiming compliance.
+- [PRODUCT] Targets: the mission lists `< 2 s` for QUESTION_ANSWERING, so cached under 500 ms and warm under 2 s are the normal targets; cold path p50/p95 measured through the Engine, not only against the local endpoint, and published. A cold path that fetches several APIs and runs an LLM will miss 2 s: pre-index and cache release material for popular packages. Do not advertise `< 2 s` until measured through the Engine.
 - [PRODUCT] Health checks and structured failure logs; timeouts, rate limits and graceful degradation. Telegraph spot-checks about hourly and may stop routing after consecutive failures.
 
 ### 3.4 YAML and canonical intent contract
@@ -209,10 +234,13 @@ Recommendation: Engine auto-routing for the qualifying purchase unless a concret
 
 ### 3.5 Hybrid scoring and evaluation pool (stop-ship)
 
-- [PRODUCT] The mission describes its QA capability as hybrid: preference-style judging plus truth-source evaluation. Twenty preference-pair rows alone may not make the miner rankable. Before building the dataset, verify `GET /api/wasm?resolve={exactIntentId}` and `GET /api/evalpool/status?intent_id={exactIntentId}`.
+- [PRODUCT] The mission page describes its QA capability as hybrid, but on 2 Nov the live `QUESTION_ANSWERING_GENERAL` was class `judgment`, and its pool had 232 eligible rows from 3 eligible submitters against `min_submitters` 5 (active snapshot epoch 1981, current epoch 1983). The live node wins. The intent's `wasm` field is empty, but it is empty for every intent checked, including `CODE_REVIEW_GENERAL`, whose miners are scored and ranked; judgment intents are scored once the pool is eligible, so the pool is the blocker, not `wasm`. Rows from the team's own wallets do not count as independent submitters; the rules treat related wallets as one group. Before building the dataset, re-check `GET /engine/v1/intents/{exactIntentId}` and `GET /api/evalpool/status?intent_id={exactIntentId}`.
+- [PRODUCT] Fit of the test set. The pool for `QUESTION_ANSWERING_GENERAL` is general questions (news, science, economics) drawn evenly across contributors. A miner that only answers package-release questions would score near the bottom even after scoring starts, and Engine would route package questions to strong general answerers. Options, in order: (1) a dedicated sub-intent such as `QUESTION_ANSWERING_PACKAGE_RELEASE` requested from Telegraph (sent 2 Nov), with npm and GitHub releases as a truth source; (2) a general QA miner (LLM plus web search) that is strong on packages via registry and release-note data; (3) additionally register on `SECURITY_REVIEW_GENERAL` (pool eligible on 2 Nov, 5 of 5) for known vulnerabilities in dependency versions, which the scan already queries from OSV.
+- [PRODUCT] If the class is or becomes hybrid, define the truth source end to end: the public keyless API, what it returns for a package/version question, which answer fields it checks and how. A truth source that only returns a release-note URL is not a reference for checkable fields. Prove one complete example from Engine request through truth-source response to score.
 - [PRODUCT] Dataset plan: rows in the exact current schema with `label_kind`, `provenance.source_kind` and `provenance.source_url`; eligible public keyless truth-source APIs if the hybrid module requires them; successful pool submission; evidence that rows are eligible and present in the active snapshot. A truth source is a separately defined public HTTPS API with the documented configuration, not a URL in a question row.
 - [PRODUCT] Check live `min_submitters`, `eligible_submitters`, active snapshot and epoch. Five contributors means five distinct eligible contributors, not twenty rows from one wallet. New rows may not enter the active snapshot until epoch rollover.
-- [PRODUCT] Do not approve miner implementation until the exact chosen intent is proven to score a package-release answer with the proposed materials. If no truth source exists or the pool cannot become eligible in time, drop the miner track rather than build an unrankable provider.
+- [PRODUCT] Do not approve miner implementation until the exact chosen intent is proven to score a package-release answer with the proposed materials. If none of the options above gives a scorable intent whose test set fits the miner, decide at the 9 Nov gate between option (2) and dropping the miner track, rather than build an unrankable provider.
+- [MISSION] A miner cannot extend the intent's public result shape. Rich internal JSON (`breaking_changes`, `sources`, …) is either mapped into the intent's declared response fields or reaches the caller only as free text or raw miner output. With no response schema on `QUESTION_ANSWERING_GENERAL`, prove through the Engine what the caller actually receives before writing the PR generator against it.
 
 ### 3.6 Registration, activation and ranking
 
@@ -248,7 +276,7 @@ Recommendation: Engine auto-routing for the qualifying purchase unless a concret
 
 ### 4.3 Cost per merged PR
 
-Cost per merged PR = total net automation expenditure ÷ number of merged bot PRs.
+Cost per merged PR = total net automation expenditure ÷ number of merged bot PRs. Default window: cumulative over the repository's whole ledger; a dated reporting window (for example the event period) is shown as a separate figure with its dates.
 
 | Item | Treatment |
 | --- | --- |
@@ -266,7 +294,11 @@ Cost per merged PR = total net automation expenditure ÷ number of merged bot PR
 
 ### 4.4 LLM cost attribution
 
-- [PRODUCT] Per LLM operation: provider and model, input/output tokens, billed amount or documented rate, repository/PR/operation identity, timestamp, success state. Otherwise Telegraph spend is accurate while total automation cost is undercounted.
+- [PRODUCT] Per LLM operation: provider and model, input/output tokens, billed amount or documented rate with its rate-card version, repository/PR/operation identity, timestamp, success state. Otherwise Telegraph spend is accurate while total automation cost is undercounted.
+
+### 4.4a Three kinds of success
+
+Recorded separately, never inferred from one another: **payment delivered** (valid response and receipt), **answer useful** (source checks and quality evaluation pass), **migration successful** (patch applies and repository tests pass). A receipt proves neither answer quality nor migration correctness; HTTP 200 is not a product success state.
 
 ### 4.5 Public data and network metadata
 
@@ -283,7 +315,8 @@ Cost per merged PR = total net automation expenditure ÷ number of merged bot PR
 | Scenario | Expected result |
 | --- | --- |
 | Q&A purchase | One delivered purchase record |
-| Same daily run repeated | No duplicate purchase |
+| Same scheduled run repeated | No duplicate purchase |
+| Process dies after payment, before recording | Attempt left `request_sent`; next run halts retries for that key until reconciled |
 | Patch generation | Separate operation/attempt |
 | Second paid request | Separate receipt |
 | Retry | New attempt, correctly linked |
@@ -299,13 +332,17 @@ Cost per merged PR = total net automation expenditure ÷ number of merged bot PR
 
 - [ELIGIBILITY] Disclose: buyer wallet, miner wallet, common ownership/control, that the team runs the miner, any self-purchases, code written before 1 Nov, reused open-source components and licences. Self-purchases never count as third-party adoption; the rules group related wallets and prohibit manufactured activity.
 - [SCORE] At least three original public updates on separate dates: build announcement; working result with a real purchase and meaningful outcome; an educational/technical update showing how another developer reproduces or uses the integration. Add onboarding and quickstart material and seek independent developer trials.
-- [ELIGIBILITY] Final materials with owners and acceptance criteria: public submission summary; README/quickstart; 2–5 minute demo video; reproducible fixture repository; evidence pack dated 1 Nov–1 Dec 2026; ledger export and receipt CSV; network/testnet disclosures; wallet and related-party disclosures; licence list; five-question commercial summary (target user, improvement over alternatives, current functionality, reason to adopt, how to try it), not left to the last minute.
+- [ELIGIBILITY] Final materials with owners and acceptance criteria: public submission summary; README/quickstart; 2–5 minute demo video; reproducible fixture repository; evidence pack whose purchases, transactions, usage, demos and adoption evidence fall in 1 Nov–1 Dec 2026 (package release notes and registry records keep their original dates); ledger export and receipt CSV; network/testnet disclosures; wallet and related-party disclosures; licence list; five-question commercial summary (target user, improvement over alternatives, current functionality, reason to adopt, how to try it), not left to the last minute.
 - 14 Nov: internal target for one full cycle on a fixture repository. 1 Dec 23:59 UTC: final deadline, reconfirmed on the official site before submitting.
 
 ## 6. Decisions
 
 | Decision | Choice | Reason |
 | --- | --- | --- |
+| Trigger | Developer-configured schedule (default weekly) + manual run; lockfile A vs registry B; no PR-diff trigger in the Action | A developer who already bumped a dependency gets nothing from the bot; CLI v0 stays a prototype |
+| Purchase route | Open: Engine auto-routing (recommended) or direct call to a chosen miner (current client) | Re-test routing with the canonical id first (§2.4) |
+| Vulnerabilities | OSV only inside upgrade PRs; no standalone vulnerability PRs | Scanners are a crowded space; our niche is the code migration |
+| Miner track | Separate entry; go/no-go 9 Nov (proposed) | Never blocks the App |
 | Spend approval | Buy Q&A automatically; `telegraph:fix` label for patch work | Qualifying purchase stays autonomous; maintainers control spend |
 | Who pays Telegraph | Installer's dedicated low-balance wallet in repo secrets | No custody or relay; disclose testnet funding |
 | Who pays LLM | Installer's own key for MVP | Dashboard economics match the real payer |
@@ -319,13 +356,15 @@ Cost per merged PR = total net automation expenditure ÷ number of merged bot PR
 
 ## 7. Week-one checks (1–7 Nov 2026), in order
 
-**Check 1 — live intent catalogue.** `GET $NODE/engine/v1/intents`; for each candidate id: `/engine/v1/intents/$INTENT`, `/engine/v1/intents/$INTENT/miners`, `/api/miners?intent=$INTENT`, `/api/wasm?resolve=$INTENT`, `/api/evalpool/status?intent_id=$INTENT`. Inspect schemas, result shape, scoring module, providers, rank fields, pool requirements, active snapshot. Kill: intent not canonical, no usable provider, cannot be scored, or no compatible contract.
+**Check 1 — live intent catalogue.** Done 2 Nov for the QA intent ([snapshot](telegraph/qa-intent-contract-2026-11-02.md)); repeat for any other intent and before each milestone. `GET $NODE/engine/v1/intents`; for each candidate id: `/engine/v1/intents/$INTENT`, `/engine/v1/intents/$INTENT/miners`, `/api/miners?intent=$INTENT`, `/api/evalpool/status?intent_id=$INTENT`. Inspect class, schemas, scoring modules, providers, score fields, pool requirements, active snapshot. Save the result as a dated snapshot. Kill: intent not canonical, no usable provider, or no compatible request shape.
 
-**Check 2 — miner evaluation eligibility.** For the exact QA intent: scoring module, `min_submitters`, `eligible_submitters`, active snapshot and epoch, row schema and `label_kind`, provenance, truth-source configuration. Kill: no truth-source path, no contributor path, or no realistic chance of a ranked miner in the window.
+**Check 2 — miner evaluation eligibility.** For the exact QA intent: class, test-set fit, `min_submitters`, `eligible_submitters`, active snapshot and epoch, row schema and `label_kind`, provenance, truth-source configuration. Kill: no truth-source path, no contributor path, or no realistic chance of a ranked miner in the window.
 
 **Check 3 — payment network and quote without spending.** `POST $NODE/engine/v1/ask` with a valid request and no payment header; expect 402; decode `accepts[]` and confirm network/chain id, USDC asset, amount, pay-to, scheme and facilitator. Sign nothing. Kill: no valid quote on a usable network, or payment schema incompatible with the client.
 
-**Check 4 — package-release answer quality.** A few paid requests for realistic npm transitions; verify package/version identity, dates against the registry, every breaking-change claim against cited sources, deprecations and migration steps, resolving links; record price, latency, receipt, signal; retrieve and validate the signal by hash. Kill: providers repeatedly return generic or unsupported answers.
+**Check 3b — failed delivery.** One valid paid request that is expected to fail at the miner; inspect payment response, settlement, escrow balance, receipt absence and retry behaviour. Kill: payment/credit accounting cannot be determined.
+
+**Check 4 — package-release answer quality.** Start with one tightly capped request (Engine routing with the canonical id, and LiveCert directly as the only general web-search QA provider); continue only if useful. A few paid requests for realistic npm transitions; verify package/version identity, dates against the registry, every breaking-change claim against cited sources, deprecations and migration steps, resolving links; record price, latency, receipt, signal; retrieve and validate the signal by hash. Kill: providers repeatedly return generic or unsupported answers.
 
 **Check 5 — our miner.** Validate YAML; confirm registration is open on the current chain; register; query activation; call the service directly; call it through the Engine; validate canonical result shape and signal mapping; check grace, scoring, rank. Kill: cannot activate promptly, cannot return a compatible result, or answers are inaccurate.
 
@@ -335,9 +374,9 @@ Cost per merged PR = total net automation expenditure ÷ number of merged bot PR
 
 ## 8. Execution order
 
-1. B and A jointly resolve exact intent ids, schemas, payment network and provider discovery.
-2. A proves whether the QA miner can be scored/ranked and answers package-release questions accurately.
-3. B proves one useful paid Q&A purchase and uses it in a real migration with the team's/installer's LLM.
+1. B and A jointly resolve exact intent ids, schemas, payment network and provider discovery (QA done 2 Nov).
+2. A proves whether the QA miner can be scored/ranked and answers package-release questions accurately, by the 9 Nov gate. This runs in parallel and never blocks steps 3–5.
+3. B proves one useful paid Q&A purchase and uses it in a real migration with the installer's LLM.
 4. B completes the secure Action vertical slice and fixture failure cases.
 5. C finalises attempt/receipt accounting and the dashboard on real data structures.
 6. A continues miner-track work only while the scoring/registration path stays viable.
