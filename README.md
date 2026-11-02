@@ -25,7 +25,7 @@ Status is a snapshot, not a promise.
 | Append-only purchase ledger on a `ledger` git branch | Works; one row per CLI run, keyed on (PR, commit). Prototype schema: replaced by attempt and per-receipt records ([SPEC §4](docs/SPEC.md)) before the Action uses it. |
 | Purchase dashboard | Works locally: `pnpm install`, then `pnpm --filter @telegraph-pr-agent/web dev`; it reads `ledger.jsonl` from GitHub raw for a public repository. Not deployed to a public URL yet. Shows purchases only, not cost per merged PR. |
 | GitHub Action (developer-configured schedule and manual run, lockfile scan), draft PR, `telegraph:fix` label, fix job, merge accounting, cost per merged PR | Planned. |
-| Package-release Q&A miner | Planned, behind a go/no-go gate. On 2 Nov the live QA intent had no scoring module and too few evaluation contributors for a new miner to be ranked. The network's current Q&A providers have not shown package-release competence. |
+| Package-release Q&A miner | Planned, behind a go/no-go gate. On 2 Nov the live QA intent had too few evaluation contributors (3 of 5) for any miner to be scored, and its test set is general questions; we asked Telegraph for a dedicated package-release intent. The network's current Q&A providers have not shown package-release competence. |
 
 **About the one purchase so far.** On 28 Oct 2026 the CLI paid 0.01 testnet USDC through the devnode to Crossref QA, which was third in the provider list the old client read for question answering on that date (the client's ordering, not a saved Telegraph ranking snapshot), and recorded the tx hash, receipt hash and signal hash. The returned answer was academic search results unrelated to the package. That run is a pre-event integration test: it shows the payment flow was exercised. It is not event-period hackathon evidence and not a successful package-release answer. It also used the node interface as it stood on that date; the request shape and intent ids have to be rechecked against the live node before any new run.
 
@@ -34,7 +34,7 @@ Status is a snapshot, not a promise.
 Each stage is marked current or planned.
 
 1. **Scan** (planned): on a schedule the developer sets in the workflow (the example uses weekly) or a manual run, read the installed version A of each direct dependency from `package-lock.json`, look up the latest stable version B on npm, and query OSV for known advisories in A. Current slice: compares two `package.json` files only.
-2. **Learn** (current, partly): when B is newer than A *and* B was released after the configured cutoff, buy one question-answering request through Telegraph Engine routing on the live canonical intent (`QUESTION_ANSWERING_GENERAL` on 2 Nov). The quote comes from the 402 challenge and can vary; 0.01 USDC is an observed example, not a price.
+2. **Learn** (current, partly): when B is newer than A *and* B was released after the configured cutoff, buy one question-answering request on Telegraph on the live canonical intent (`QUESTION_ANSWERING_GENERAL` on 2 Nov). The current client calls a chosen miner directly; whether the Action uses Engine routing instead is still open ([SPEC §2.4](docs/SPEC.md)). The quote comes from the 402 challenge and can vary; 0.01 USDC is an observed example, not a price.
 3. **Report** (planned): open one draft PR per package and target version, updated on later runs, never duplicated. It lists why to upgrade, known advisories, which changed symbols the repository uses (found by a local search, not by the miner), what to change, spend so far and an estimated fix cost. If the answer is `not_found`, the purchase and receipt are kept, the PR is report-only, and no migration is invented.
 4. **Fix** (planned, after a maintainer with write access adds `telegraph:fix`): generate a patch with the purchased answer as input. Paid `CODE_GENERATION`, `CODE_PATCH_VERIFY` and `REGRESSION_VERIFY` calls are conditional on a provider passing our quality tests; until then the installer's own LLM writes the patch. The repository's install, typecheck and tests run in a job with no secrets. Nothing is pushed unless they pass.
 5. **Merge** (planned): a human reviews and merges. The bot never merges.
@@ -46,13 +46,13 @@ Each stage is marked current or planned.
 
 - diffs declared dependencies (`dependencies` and `devDependencies`), resolves each changed range to its bare version, and asks the npm registry for that version's release date;
 - picks the first dependency released after `MODEL_CUTOFF` (one purchase per run);
-- lists providers for the intent, pays the first one in its list through `POST /engine/v1/ask/{minerId}` with the provider's native request (the application's choice, not Engine routing), and records the answer plus tx, receipt and signal hashes;
+- lists providers for the intent, keeps only those with a Telegraph score for that intent, sorts them by rank and pays the top one through `POST /engine/v1/ask/{minerId}` with the provider's native request, stepping down to the next (up to 3) on a failed call. This is the application's choice, not Engine routing. It records the answer plus tx, receipt and signal hashes;
 - appends one ledger row and pushes it to the `ledger` branch, after the answer has been received.
 
 Known gaps in this slice, kept here so nobody mistakes them for features:
 
 - The client sends the family prefix `QUESTION_ANSWERING`. The live canonical id on 2 Nov is `QUESTION_ANSWERING_GENERAL`, a judgment-class intent with no request or response schema; the node rejects `params` for it and expects a free-form `query`. The client must be updated before the next paid run.
-- Provider listing reads `/api/miners?intent=QUESTION_ANSWERING`, which returns nothing because that is the family prefix, not because the endpoint is broken. With the canonical id it returns the 10 registered providers with activation, price and scores. `GET /engine/v1/intents/{id}/miners` lists the same providers without rank or score fields. On 2 Nov no provider had a QA score, so there is no QA rank to show.
+- Provider listing reads `/api/miners?intent=QUESTION_ANSWERING`, which returns nothing because that is the family prefix, not because the endpoint is broken. With the canonical id it returns the 10 registered providers with activation, price and scores. `GET /engine/v1/intents/{id}/miners` lists the same providers without rank or score fields. On 2 Nov no provider had a QA score, so the client's ranking step drops all 10 and the run fails with "none ranked", even after the intent id and request shape are fixed. Selection also has to change before the next paid run.
 - If the payment succeeds but the ledger push fails, a rerun can pay again. The ledger key (PR, commit) only suppresses an exact repeat of a completed run.
 - Explorer links are hardcoded to Basescan; they must follow the chain named in the 402 challenge.
 
@@ -110,10 +110,10 @@ pnpm --filter ./bot exec tsx --env-file=.env src/slice.ts \
 
 This command spends testnet USDC and pushes to the ledger branch of `DEMO_REPO`. Until fixtures and the updated client are committed, this is not a one-command reviewer reproduction.
 
-Expected output, post-cutoff case (shape from the 28 Oct run, values redacted; the intent id, provider and rank field will differ once the client is updated to the live catalogue, and on 2 Nov no QA rank existed):
+Expected output, post-cutoff case with the fixtures above (the purchase line is the shape of the 28 Oct run, values redacted; the intent id, provider and rank field will differ once the client is updated to the live catalogue, and on 2 Nov no QA rank existed):
 
 ```
-triggers: [{ package: "zod", version: "^4.6.7", releaseDate: "2026-03-14T…", status: "past-cutoff" }]
+triggers: [{ package: "zod", version: "4.6.7", releaseDate: "2026-10-12T16:29:37.778Z", status: "past-cutoff" }]
 purchase: { intent: "QUESTION_ANSWERING", minerId: "…", minerName: "…", minerRank: 3,
             amountUsdc: 0.01, txHash: "0x…", receiptHash: "0x…", signalHash: "0x…",
             answer: "…", status: "settled" }
@@ -188,7 +188,7 @@ To be filled in as each item exists; nothing below is claimed yet.
 | --- | --- |
 | Tested commit and public repository | this repository, commit listed under Status |
 | Public dashboard URL | not deployed |
-| Testnet and token in use | from the live 402 challenge; Ethereum Sepolia test USDC as of 1 Nov 2026 |
+| Testnet and token in use | from the live 402 challenge; Ethereum Sepolia test USDC as of 2 Nov 2026 |
 | One command for a new realistic input | the slice command above, once fixtures and the updated client are committed |
 | No-post-cutoff, no-spend case | the slice command with `examples/head-pre-cutoff-package.json` |
 | Failing typecheck, no push case | planned with the Action |

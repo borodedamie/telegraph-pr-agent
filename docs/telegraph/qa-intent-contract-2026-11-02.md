@@ -1,6 +1,6 @@
 # QA intent contract, live snapshot
 
-Captured 2026-11-02 08:20–08:37 UTC from `https://devnode.telegraphprotocol.com` with unauthenticated GET requests and one unpaid `POST /engine/v1/ask` (402 challenge only; nothing signed or paid). The live node is authoritative; rerun the commands below before implementing against this or submitting, and add a new dated file when the answers change.
+Captured 2026-11-02 08:20–08:37 UTC from `https://devnode.telegraphprotocol.com` with unauthenticated GET requests and a few unpaid `POST /engine/v1/ask` requests in the request shapes listed below (responses were 400 or 402 only; nothing signed or paid). The live node is authoritative; rerun the commands below before implementing against this or submitting, and add a new dated file when the answers change.
 
 ## Commands
 
@@ -26,7 +26,7 @@ curl -sS -D - -o /dev/null -X POST "$NODE/engine/v1/ask" -H 'Content-Type: appli
 | Class | `judgment` (the mission page describes the QA capability as hybrid; the live node does not) |
 | Request schema | `null` |
 | Response schema | `null`; `onchain.ready: false`, reason "the intent has no response format" |
-| Scoring module | none (`wasm: []`, `wasm_count: 0`) |
+| `wasm` field | empty (`wasm: []`, `wasm_count: 0`). Not a scoring blocker: it is empty for every intent checked, including `CODE_REVIEW_GENERAL`, whose miners are scored and ranked |
 | Miner count | 10 |
 
 ## Request shape
@@ -51,7 +51,7 @@ curl -sS -D - -o /dev/null -X POST "$NODE/engine/v1/ask" -H 'Content-Type: appli
 | Active snapshot | corpus `6853644d…`, 232 rows, activation epoch 1981 |
 | Current epoch | 1983 |
 
-The pool is below the five-submitter threshold, and the intent has no scoring module. A team miner registered on this intent has no visible path to a QA score until both change.
+The pool is below the five-submitter threshold, so no miner on this intent can be scored until two more independent contributors upload questions. Its questions are general, so a package-release-only miner would rank low even then.
 
 ## Payment challenge (402 `accepts[]`)
 
@@ -66,4 +66,4 @@ The pool is below the five-submitter threshold, and the intent has no scoring mo
 
 - Client: send `QUESTION_ANSWERING_GENERAL` with a free-form `query` to `POST /engine/v1/ask`; do not send `params`; read the miner from the response.
 - Result handling: with no response schema there is no canonical field shape to validate. Treat the answer as free text and validate it ourselves (package, version, sources); record `result_shape` and `field_status` only if the response carries them.
-- Miner track: blocked on this intent (judgment class, no scoring module, 3 of 5 submitters). See SPEC §3.5.
+- Miner track: not scorable on this intent yet (3 of 5 submitters), and its general test set does not fit a package-release miner. Options in SPEC §3.5.

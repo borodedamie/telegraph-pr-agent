@@ -9,7 +9,7 @@ A GitHub Action, installed with one workflow file. It finds dependencies with a 
 ## The flow (developer-configured schedule, default weekly, or manual run)
 
 1. **Scan (free).** Read the installed version A from `package-lock.json` and the latest stable version B from npm. Eligible when B > A and B was released after `MODEL_CUTOFF` (SPEC §2.3). Known vulnerabilities in A come from OSV.
-2. **Learn (paid, automatic).** One Q&A purchase through Telegraph Engine routing on the live canonical intent (`QUESTION_ANSWERING_GENERAL` on 2 Nov): "what changed from A to B: breaking changes, renamed or removed functions, migration steps, sources". This is the one mandatory paid operation.
+2. **Learn (paid, automatic).** One Q&A purchase on Telegraph (routing policy still open, SPEC §2.4) on the live canonical intent (`QUESTION_ANSWERING_GENERAL` on 2 Nov): "what changed from A to B: breaking changes, renamed or removed functions, migration steps, sources". This is the one mandatory paid operation.
 3. **Report (free).** Open or update one draft PR per package and target: why upgrade, vulnerabilities in A, which symbols changed, which files in this repo use them (local search), what to change, spend so far, estimated fix cost, and "add the label `telegraph:fix` to continue". Closing the PR stops all spend.
 4. **Fix (after the label).** The installer's LLM writes the patch with the purchased answer as a material input. The repository's install, typecheck and tests run in a job with no secrets. All pass: push and mark ready for review. Otherwise nothing is pushed; comment with the diff and what failed. Telegraph `CODE_GENERATION` and paid verification are optional experiments until a provider passes our tests (SPEC §2.9).
 5. **Merge.** A human reviews and merges.
@@ -29,14 +29,14 @@ A GitHub Action, installed with one workflow file. It finds dependencies with a 
 ## Two tracks, two gates
 
 - **Apps & Agents (primary).** Never waits on our miner. It may buy from any suitable provider.
-- **Miner (secondary).** Go/no-go on **9 Nov** (proposed; owner in TEAM.md). Go only if the chosen canonical QA intent can score a package-release answer: scoring module present, evaluation pool eligible (≥ 5 distinct submitters), truth-source path defined, response contract compatible. On 2 Nov none of these held for `QUESTION_ANSWERING_GENERAL` ([contract snapshot](telegraph/qa-intent-contract-2026-11-02.md)). No-go: stop the miner build; A moves to App work.
+- **Miner (secondary).** Go/no-go on **9 Nov** (proposed; owner in TEAM.md). Go only if the miner can be scored on an intent whose test questions it answers well: evaluation pool eligible (≥ 5 distinct independent submitters), response contract compatible. On 2 Nov `QUESTION_ANSWERING_GENERAL` had 3 of 5 submitters and a general test set ([contract snapshot](telegraph/qa-intent-contract-2026-11-02.md)). We asked Telegraph for a dedicated package-release sub-intent; fallbacks are a general QA miner strong on packages, or `SECURITY_REVIEW_GENERAL` for dependency vulnerabilities (SPEC §3.5). No-go: stop the miner build; A moves to App work.
 
 ## 14 Nov internal milestone — acceptance
 
 On one public fixture repository:
 
 - [ ] One npm package with a documented installed version A, target B and the release-note sources for A→B.
-- [ ] One delivered paid Q&A answer through Engine routing, with receipt, signal and tx recorded.
+- [ ] One delivered paid Q&A answer from a provider other than our own, with receipt, signal and tx recorded.
 - [ ] The answer is checked against its sources and visibly changes the generated patch.
 - [ ] One draft PR, one human `telegraph:fix` label, one generated migration.
 - [ ] Install, typecheck and tests pass in the secretless job; the validated patch is pushed.
