@@ -82,7 +82,7 @@ Correlation then follows the spec's User Story 4 table; with no evidence, no cla
 
 | Field | Type | Rule |
 | --- | --- | --- |
-| `status` | `complete` \| `partial` \| `unavailable` | `partial` when the OSV response was truncated or a referenced record could not be read |
+| `status` | `complete` \| `partial` \| `unavailable` \| `not_checked` | `partial` when the OSV response was truncated or a referenced record could not be read. `not_checked` when no package was resolved (`out_of_scope`, `needs_clarification`) |
 | `checkedAt` | ISO timestamp \| null | When OSV was queried (both queries, A and B) |
 | `advisories` | Advisory[] | Empty means "none known" only when `status = complete` |
 | `documentedFixes` | number | Count of `security_fix` ChangeItems |
@@ -103,7 +103,7 @@ Correlation then follows the spec's User Story 4 table; with no evidence, no cla
 | `summary` | string | One or two sentences |
 | `outcome` | `found` \| `not_found` \| `needs_clarification` \| `out_of_scope` \| `temporarily_unavailable` | Exactly one (FR-014). `temporarily_unavailable` is a delivery failure and is not charged (FR-025) |
 | `confidence` | number 0–1 | Deterministic, see below. Never a model's self-reported confidence |
-| `request` | NormalizedRequest | |
+| `request` | NormalizedRequest \| null | Null when the question names no resolvable package (`out_of_scope`, some `needs_clarification`) |
 | `targetReleasedAt` | ISO timestamp \| null | From the registry |
 | `changes` | ChangeItem[] | |
 | `security` | Security | FR-016 |
