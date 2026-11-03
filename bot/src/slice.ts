@@ -43,6 +43,8 @@ if (pastCutoff.length === 0) {
 const client = new IntelligenceClient({
   nodeUrl: cfg.nodeUrl,
   evmPrivateKey: cfg.evmPrivateKey,
+  chainId: cfg.chainId,
+  usdcAddress: cfg.usdcAddress,
   maxPricePerCallUsdc: cfg.maxPricePerCallUsdc,
   budgetCapUsdc: cfg.budgetCapUsdc,
 });
@@ -88,7 +90,7 @@ if (hasLedgerRow(existingLedger, prNumber, headSha)) {
 const t = pastCutoff[0];
 // No cutoff date in the query: the miner echoed it back as its own limit.
 const purchase = await client.buy(
-  "QUESTION_ANSWERING",
+  "QUESTION_ANSWERING_GENERAL",
   `What notable API changes or upgrade risks does ${t.package}@${t.version} ` +
     `(released ${t.releaseDate}) introduce compared with earlier versions? Cite sources.`,
 );

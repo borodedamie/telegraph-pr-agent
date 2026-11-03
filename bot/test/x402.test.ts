@@ -4,19 +4,22 @@ import {
   BudgetCapError,
   IntelligenceClient,
   PriceGuardError,
+  paymentConfig,
   rankMiners,
 } from "../src/x402.js";
 
-const CHAIN = "eip155:84532";
+const CHAIN_ID = 11155111;
+const CHAIN = `eip155:${CHAIN_ID}`;
+const USDC = "0xcc194e1a843B658526D0D5C431f670028582Ae17";
 
 // Real devnode wire format: the 402 challenge rides the `payment-required`
-// header as base64 JSON, amount in atomic units, and accepts[] carries both an
-// EVM and a Solana entry.
+// header as base64 JSON, amount in atomic units, and accepts[] carries an EVM
+// `exact` entry plus other options (Solana here; `escrow` in other tests).
 function challengeBody(evmAmountAtomic: string, solAmountAtomic = "999999") {
   return {
     x402Version: 2,
     accepts: [
-      { scheme: "exact", network: CHAIN, amount: evmAmountAtomic, asset: "0xUsdc", payTo: "0xPayTo" },
+      { scheme: "exact", network: CHAIN, amount: evmAmountAtomic, asset: USDC, payTo: "0xPayTo", extra: { name: "USD Coin", version: "2" } },
       { scheme: "exact", network: "solana:EtWTRAB", amount: solAmountAtomic, asset: "4zMM", payTo: "G53E" },
     ],
   };
@@ -83,6 +86,8 @@ function makeClient(overrides: Partial<ConstructorParameters<typeof Intelligence
   const client = new IntelligenceClient({
     nodeUrl: "https://devnode.test/",
     evmPrivateKey: `0x${"a".repeat(64)}`,
+    chainId: CHAIN_ID,
+    usdcAddress: USDC,
     maxPricePerCallUsdc: 0.05,
     budgetCapUsdc: 0.5,
     fetchImpl: fetchImpl as unknown as typeof fetch,
@@ -177,6 +182,31 @@ describe("IntelligenceClient.buy", () => {
     expect((await client.buy("QUESTION_ANSWERING", "x")).amountUsdc).toBeCloseTo(0.01);
   });
 
+  it("quotes the `exact` accept when the `escrow` accept is listed first", async () => {
+    const body = challengeBody("10000");
+    body.accepts.unshift({ scheme: "escrow", network: CHAIN, amount: "99999999", asset: USDC, payTo: "0xDiamond" });
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) =>
+      String(input).includes("/api/miners")
+        ? new Response(JSON.stringify(API_MINERS))
+        : new Response("null", { status: 402, headers: { "payment-required": b64(body) } })
+    ) as unknown as typeof fetch;
+    const { client } = makeClient({ fetchImpl });
+    expect((await client.buy("QUESTION_ANSWERING", "x")).amountUsdc).toBeCloseTo(0.01);
+  });
+
+  it("refuses and never pays when the challenge only offers another chain's USDC", async () => {
+    const body = challengeBody("10000");
+    body.accepts[0] = { ...body.accepts[0], network: "eip155:84532", asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e" };
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) =>
+      String(input).includes("/api/miners")
+        ? new Response(JSON.stringify(API_MINERS))
+        : new Response("null", { status: 402, headers: { "payment-required": b64(body) } })
+    ) as unknown as typeof fetch;
+    const { client, paymentFetch } = makeClient({ fetchImpl });
+    await expect(client.buy("QUESTION_ANSWERING", "x")).rejects.toThrow(/no exact payment on eip155:11155111/);
+    expect(paymentFetch).not.toHaveBeenCalled();
+  });
+
   it("honours the x-payment-response spelling too (x402 spec variant)", async () => {
     const paymentFetch = vi.fn(async () =>
       engine200({}, { "payment-response": "", "x-payment-response": settle(true, "0xspec") })
@@ -199,5 +229,68 @@ describe("IntelligenceClient.buy", () => {
     client.spentUsdc = 0.495;
     await expect(client.buy("QUESTION_ANSWERING", "x")).rejects.toBeInstanceOf(BudgetCapError);
     expect(paymentFetch).not.toHaveBeenCalled();
+  });
+
+  it("records the settled amount from the receipt, not the quote (dynamic pricing)", async () => {
+    // The quote says 0.01 but the node repriced the paid call to 0.0125; the
+    // receipt's amount_uusdc is what was actually charged and must win.
+    const paymentFetch = vi.fn(async () =>
+      engine200({}, { "x-telegraph-receipt": b64({ receipt_hash: "0xreceipt", amount_uusdc: "12500" }) })
+    );
+    const { client } = makeClient({ paymentFetch });
+    const p = await client.buy("QUESTION_ANSWERING", "x");
+    expect(p.amountUsdc).toBe(0.0125);
+    expect(client.spentUsdc).toBe(0.0125);
+  });
+
+  it("routes the quote AND the paid request through an injected fetch (real wrap path)", async () => {
+    // No paymentFetch injected: the constructor's wrapFetchWithPaymentFromConfig
+    // must wrap the injected fetch, so both legs stay on it and global fetch —
+    // the only transport a harness cannot observe — is never touched.
+    const body = challengeBody("10000");
+    body.accepts[0] = { ...body.accepts[0], payTo: `0x${"11".repeat(20)}` };
+    let askCalls = 0;
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("/api/miners")) return new Response(JSON.stringify(API_MINERS));
+      askCalls += 1;
+      return askCalls === 1
+        ? new Response("null", { status: 402, headers: { "payment-required": b64(body) } })
+        : engine200();
+    }) as unknown as typeof fetch;
+    const globalFetch = vi.fn();
+    vi.stubGlobal("fetch", globalFetch);
+    try {
+      const client = new IntelligenceClient({
+        nodeUrl: "https://devnode.test/",
+        evmPrivateKey: `0x${"a".repeat(64)}`,
+        chainId: CHAIN_ID,
+        usdcAddress: USDC,
+        maxPricePerCallUsdc: 0.05,
+        budgetCapUsdc: 0.5,
+        fetchImpl,
+        paymentFetch: undefined,
+      });
+      const p = await client.buy("QUESTION_ANSWERING", "x");
+      expect(p.status).toBe("settled");
+      expect(p.txHash).toBe("0xdeadbeef");
+      expect(globalFetch).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe("paymentConfig", () => {
+  it("allow-lists only our USDC on our chain, capped at maxPricePerCallUsdc in atomic units", () => {
+    const cfg = paymentConfig({
+      evmPrivateKey: `0x${"a".repeat(64)}`,
+      chainId: CHAIN_ID,
+      usdcAddress: USDC,
+      maxPricePerCallUsdc: 0.1,
+    });
+    expect(cfg.schemes.map((s) => s.network)).toEqual([CHAIN]);
+    expect(cfg.spendControls).toEqual({
+      allowedAssets: [{ network: CHAIN, asset: USDC, maxAmountPerPayment: "100000" }],
+    });
   });
 });

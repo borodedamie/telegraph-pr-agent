@@ -1,6 +1,8 @@
 const REPO = "borodedamie/telegraph-pr-agent";
 const LEDGER_URL = `https://raw.githubusercontent.com/${REPO}/ledger/ledger.jsonl`;
-const EXPLORER = "https://sepolia.basescan.org/tx/";
+// ponytail: devnode moved Base Sepolia → Ethereum Sepolia on 1 Nov 2026; rows carry no chain, so date decides (mirrors bot/src/memo.ts).
+const explorerTx = (row) =>
+  `${row.timestamp < "2026-11-01" ? "https://sepolia.basescan.org" : "https://sepolia.etherscan.io"}/tx/${row.txHash}`;
 const SIGNAL_URL = "https://devnode.telegraphprotocol.com/engine/v1/signal/";
 
 const app = document.getElementById("app");
@@ -100,7 +102,7 @@ function fields(row) {
     ["Amount", `${row.amountUsdc} USDC`],
     [
       "Tx hash",
-      el("a", { href: `${EXPLORER}${row.txHash}`, target: "_blank", rel: "noopener" }, `${row.txHash} ↗`),
+      el("a", { href: explorerTx(row), target: "_blank", rel: "noopener" }, `${row.txHash} ↗`),
     ],
     ["Receipt hash", row.receiptHash],
     [
@@ -197,8 +199,8 @@ async function main() {
         el(
           "p",
           { class: "sub" },
-          "PR agent spend ledger · Base Sepolia ",
-          el("code", {}, "eip155:84532")
+          "PR agent spend ledger · Ethereum Sepolia ",
+          el("code", {}, "eip155:11155111")
         )
       ),
       el(

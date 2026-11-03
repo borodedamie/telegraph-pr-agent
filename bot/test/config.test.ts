@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { loadConfig } from "../src/config.js";
 
 const validEnv = {
-  CHAIN_ID: "84532",
+  CHAIN_ID: "11155111",
   USDC_ADDRESS: "0x3129e6d4f5d3e75a3B5eD3D7eF0A1B2C3D4E5F60",
   NODE_URL: "https://devnode.telegraphprotocol.com",
   MODEL_CUTOFF: "2025-01-01T00:00:00Z",
@@ -18,7 +18,7 @@ const validEnv = {
 describe("loadConfig", () => {
   it("parses a complete env into a typed config", () => {
     const cfg = loadConfig(validEnv);
-    expect(cfg.chainId).toBe(84532);
+    expect(cfg.chainId).toBe(11155111);
     expect(cfg.usdcAddress).toBe(validEnv.USDC_ADDRESS);
     expect(cfg.nodeUrl).toBe(validEnv.NODE_URL);
     expect(cfg.modelCutoff.getTime()).toBe(Date.parse(validEnv.MODEL_CUTOFF));

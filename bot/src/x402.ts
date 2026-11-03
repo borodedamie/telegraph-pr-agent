@@ -1,4 +1,4 @@
-import { wrapFetchWithPayment, x402Client } from "@x402/fetch";
+import { wrapFetchWithPaymentFromConfig } from "@x402/fetch";
 import { ExactEvmScheme, toClientEvmSigner } from "@x402/evm";
 import { privateKeyToAccount } from "viem/accounts";
 
@@ -32,6 +32,8 @@ export class AskFailedError extends Error {}
 export interface IntelligenceClientDeps {
   nodeUrl: string;
   evmPrivateKey: `0x${string}`;
+  chainId: number;
+  usdcAddress: string;
   maxPricePerCallUsdc: number;
   budgetCapUsdc: number;
   fetchImpl?: typeof fetch;
@@ -64,15 +66,26 @@ function decodeB64Json<T>(raw: string | null): T | null {
   }
 }
 
-function quotedAmountAtomic(res: Response): string | null {
+interface Accept {
+  scheme?: unknown;
+  network?: unknown;
+  asset?: unknown;
+  amount?: unknown;
+}
+
+// accepts[] also lists `escrow` and non-EVM entries; we only quote the one the
+// payment client is allowed to pay: `exact` on our network in our USDC.
+function quotedAmountAtomic(res: Response, network: string, asset: string): string | null {
   const parsed = decodeB64Json<{ accepts?: unknown }>(res.headers.get("payment-required"));
   if (!Array.isArray(parsed?.accepts)) return null;
-  const evm = parsed.accepts.find(
+  const match = (parsed.accepts as Accept[]).find(
     (a) =>
-      typeof (a as { network?: unknown })?.network === "string" &&
-      (a as { network: string }).network.startsWith("eip155:")
-  ) as { amount?: unknown } | undefined;
-  return typeof evm?.amount === "string" ? evm.amount : null;
+      a?.scheme === "exact" &&
+      a.network === network &&
+      typeof a.asset === "string" &&
+      a.asset.toLowerCase() === asset.toLowerCase()
+  );
+  return typeof match?.amount === "string" ? match.amount : null;
 }
 
 function settleHeader(res: Response): { success?: boolean; transaction?: string } | null {
@@ -104,11 +117,31 @@ export function rankMiners(intent: string, miners: ApiMiner[]): RankedMiner[] {
   return ranked.sort((a, b) => a.rank - b.rank);
 }
 
+// The testnet USDC isn't one of @x402's built-in assets, so it must be allow-listed
+// or the client refuses to sign. The per-payment cap re-checks MAX_PRICE inside the
+// signer, covering a price change between our quote request and the paid one.
+export function paymentConfig(deps: Pick<IntelligenceClientDeps, "evmPrivateKey" | "chainId" | "usdcAddress" | "maxPricePerCallUsdc">) {
+  const network = `eip155:${deps.chainId}` as const;
+  return {
+    schemes: [{ network, client: new ExactEvmScheme(toClientEvmSigner(privateKeyToAccount(deps.evmPrivateKey))) }],
+    spendControls: {
+      allowedAssets: [
+        {
+          network,
+          asset: deps.usdcAddress,
+          maxAmountPerPayment: String(Math.round(deps.maxPricePerCallUsdc * USDC_DECIMALS)),
+        },
+      ],
+    },
+  };
+}
+
 export class IntelligenceClient {
   spentUsdc = 0;
 
   private readonly nodeUrl: string;
-  private readonly evmPrivateKey: `0x${string}`;
+  private readonly network: string;
+  private readonly usdcAddress: string;
   private readonly maxPricePerCallUsdc: number;
   private readonly budgetCapUsdc: number;
   private readonly fetchImpl: typeof fetch;
@@ -116,11 +149,12 @@ export class IntelligenceClient {
 
   constructor(deps: IntelligenceClientDeps) {
     this.nodeUrl = deps.nodeUrl.replace(/\/$/, "");
-    this.evmPrivateKey = deps.evmPrivateKey;
+    this.network = `eip155:${deps.chainId}`;
+    this.usdcAddress = deps.usdcAddress;
     this.maxPricePerCallUsdc = deps.maxPricePerCallUsdc;
     this.budgetCapUsdc = deps.budgetCapUsdc;
     this.fetchImpl = deps.fetchImpl ?? fetch;
-    this.paymentFetch = deps.paymentFetch ?? this.buildPaymentFetch();
+    this.paymentFetch = deps.paymentFetch ?? wrapFetchWithPaymentFromConfig(this.fetchImpl, paymentConfig(deps));
   }
 
   async rankedMiners(intent: string): Promise<RankedMiner[]> {
@@ -160,9 +194,12 @@ export class IntelligenceClient {
 
     // Quote: unsigned request → 402 challenge carries the live price.
     const quoteRes = await this.fetchImpl(url, init);
-    const atomic = quoteRes.status === 402 ? quotedAmountAtomic(quoteRes) : null;
-    if (atomic === null) {
+    if (quoteRes.status !== 402) {
       throw new AskFailedError(`expected a 402 quote, got HTTP ${quoteRes.status}`);
+    }
+    const atomic = quotedAmountAtomic(quoteRes, this.network, this.usdcAddress);
+    if (atomic === null) {
+      throw new AskFailedError(`402 offers no exact payment on ${this.network} in ${this.usdcAddress}`);
     }
     const amountUsdc = Number(atomic) / USDC_DECIMALS;
 
@@ -187,9 +224,21 @@ export class IntelligenceClient {
     if (!settle?.success || typeof settle.transaction !== "string") {
       throw new AskFailedError("answered without a settlement proof");
     }
-    this.spentUsdc += amountUsdc;
+    // Dynamic pricing can make the settled amount differ from the quote; the
+    // receipt carries what was actually charged, so the record must use it.
+    const receipt = decodeB64Json<{ receipt_hash?: string; amount_uusdc?: string | number }>(
+      res.headers.get("x-telegraph-receipt")
+    );
+    const rawSettled = receipt?.amount_uusdc;
+    const settledAtomic =
+      typeof rawSettled === "number"
+        ? rawSettled
+        : typeof rawSettled === "string" && rawSettled !== ""
+          ? Number(rawSettled)
+          : NaN;
+    const settledUsdc = Number.isFinite(settledAtomic) ? settledAtomic / USDC_DECIMALS : amountUsdc;
+    this.spentUsdc += settledUsdc;
 
-    const receipt = decodeB64Json<{ receipt_hash?: string }>(res.headers.get("x-telegraph-receipt"));
     const body = (await res.json().catch(() => ({}))) as EngineAnswer;
     return {
       intent,
@@ -197,25 +246,12 @@ export class IntelligenceClient {
       minerName: body.miner_name ?? miner.name,
       minerRank: miner.rank,
       minerScore: miner.score,
-      amountUsdc,
+      amountUsdc: settledUsdc,
       txHash: settle.transaction,
       receiptHash: receipt?.receipt_hash ?? "",
       signalHash: body.signal_hash ?? "",
       answer: answerText(body.result),
       status: "settled",
     };
-  }
-
-  private buildPaymentFetch(): (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> {
-    const account = privateKeyToAccount(this.evmPrivateKey);
-    const client = x402Client.fromConfig({
-      schemes: [
-        {
-          network: "eip155:*",
-          client: new ExactEvmScheme(toClientEvmSigner(account)),
-        },
-      ],
-    });
-    return wrapFetchWithPayment(fetch, client);
   }
 }
