@@ -143,6 +143,7 @@ description: "Task list for the package-release miner"
   - changelog headings `## 4.0.0`, `## [4.0.0] - 2025-07-09` and `# v4.0.0` are split correctly.
 - [ ] T027 [P] [US1] Unit tests for `verify.ts` in `miner/test/unit/verify.test.ts`. One policy applies: normalize the source once (data-model.md), then require exact substrings.
   - An exact substring passes; CRLF and NFC differences in the source pass after normalization; a paraphrase fails.
+  - An excerpt that only lacks the source's backticks (as `302` returned) matches, and is stored as the original span with backticks.
   - An item without an excerpt fails unless it is `inferred` with an existing `inferredFrom`.
   - A step without a verified `migrationExcerpt` becomes `inferred` when `migrationInferredFrom` names existing ids, and `manual_review` otherwise.
   - A valid change excerpt paired with an unsupported migration ("replace every string schema with z.email()") does not yield a `documented` migration.

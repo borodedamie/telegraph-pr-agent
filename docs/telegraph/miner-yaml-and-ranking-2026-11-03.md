@@ -52,3 +52,13 @@ Catalogue entries for the existing QA miners had `auth`, `errors` and `rate_limi
   - Result: `200` after 43 s (`duration_ms` 33413). The body was `"Temporary inference error; please retry. Detail: AuthenticationError"`, with model `openai/gpt-oss-20b` and zero tokens.
   - Settled and charged, 0.01 test USDC, tx `0x89b471e3db68047fa3a3fdebc37e57e085b4a647dc423b7b95bf164f070f928b`.
   - Takeaway: a `200` from an LLM miner can hide a failure.
+- **Paid tests, 3 Nov, same prompt (zod-style 4.0.0 section)**:
+  - `7413`, `GET /language-generation` with `{prompt}`:
+    - `200` in 27 s total (`duration_ms` 7716), model MiniMax-M2.5-highspeed.
+    - The JSON in `result.summary` had verbatim excerpts, backticks included, but was cut at 876 characters, so the last items were lost.
+    - tx `0x0167c13415fec591b86d601b71a4edbffd80500a1c889a475354dbd7f9a60227`.
+  - `302`, `POST /gen` with `{query}`:
+    - `200` in 20 s total (`duration_ms` 2116), with complete JSON in `result.answer` and `choices[0].message.content`.
+    - Excerpts were verbatim apart from dropped inline backticks.
+    - tx `0xab8e65715687c0843d7d9ae1102b332f8de15ae8ad36eeb84ff0c67ac1f4b32c`.
+  - Each call cost 0.01 test USDC, paid with the `exact` scheme from the bot wallet.

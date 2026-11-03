@@ -30,7 +30,7 @@ All types are validated with zod at the boundaries (incoming query, every upstre
 | `snapshotKey` | string | `snap:<contentHash>`: the persistent snapshot of that same document. Version sections (one release, one changelog section) are derived from it deterministically, never stored as separate hashes |
 | `trust` | `official` \| `repository_evidence` \| `advisory_db` | `tag_compare` is always `repository_evidence`; `advisory` is always `advisory_db` |
 
-**Text normalization**: before hashing, snapshotting or excerpt checks, source text is normalized once: line endings to `\n`, Unicode NFC, trailing whitespace stripped per line. Excerpts must be exact substrings of the normalized text, and the normalized text is what the snapshot keeps.
+**Text normalization**: before hashing, snapshotting or excerpt checks, source text is normalized once: line endings to `\n`, Unicode NFC, trailing whitespace stripped per line. Excerpts must be exact substrings of the normalized text, and the normalized text is what the snapshot keeps. For matching only, inline markdown (backticks, `*`, `_`, a leading list marker) is ignored on both sides. The stored `excerpt` is then replaced by the original source span it matched.
 
 ## ChangeItem
 

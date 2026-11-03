@@ -88,12 +88,16 @@ There are two contracts, and they are kept apart:
 
   **Where the model comes from**: it is bought on Telegraph itself, paid in test USDC, so the hackathon costs no real money and the miner is itself a buyer on the network.
   - An ordered list of LLM miners comes from `LLM_MINERS`, as `<minerId>:<method>:<path>`. Each one is called directly via `POST /engine/v1/ask/<minerId>`, using the same x402 client as `bot/src/x402.ts`, from the miner's spend wallet (R11).
-  - Live candidates on 3 Nov:
-    - `901` `groq-llama31-instant-miner` (`POST /chat`, OpenAI-style `messages`): the paid test returned `200` with "Temporary inference error … AuthenticationError" after 43 s, and was charged;
-    - `7413` `aiwire-language-generation` (`GET /language-generation?prompt=`);
-    - `302` `chainsight-oracle` (`POST /gen`).
+  - Paid tests on 3 Nov, one release-note section each ([snapshot](../../../docs/telegraph/miner-yaml-and-ranking-2026-11-03.md)):
 
-    7413 and 302 are not tested yet.
+    | Miner | Result | Miner time / total |
+    | --- | --- | --- |
+    | `302` `chainsight-oracle`, `POST /gen` `{query}` | Complete JSON, all items found; excerpts verbatim except that inline backticks were dropped | 2 s / 20 s |
+    | `7413` `aiwire-language-generation`, `GET ?prompt=` (MiniMax-M2.5) | Exact verbatim excerpts, but the reply is cut at ~876 characters, so the JSON was incomplete | 8 s / 27 s |
+    | `901` `groq-llama31-instant-miner`, `POST /chat` | `200` with "AuthenticationError" inside, charged | 33 s / 43 s |
+
+  - Default order: `LLM_MINERS=302:POST:/gen,7413:GET:/language-generation`. With 7413, prompts ask for the compact line format `kind|excerpt|migration`, so one reply fits its length limit.
+  - Most of the total time was x402 `exact` settlement before the miner was called. Production uses the `escrow` scheme, which skips per-request on-chain settlement; its latency is measured in T063.
   - The chosen miner id is part of `PROCESSING_VERSION`.
   - **A `200` is not trusted.** A miner that answers `200` with an error inside counts as delivered and is charged. So a reply only counts if it parses into the zod item schema. Otherwise the call is a failure, and that miner is skipped for 15 minutes (a circuit breaker in Redis).
   - **One model call per first-time answer** (`MAX_MODEL_CALLS = 1`): one call costs 0.01, the same as our price.
@@ -105,6 +109,7 @@ There are two contracts, and they are kept apart:
   For a multi-release request, the version-specific sections are batched into as few calls as the token budget allows. Each section is labelled with an opaque section id, never a version. Releases fully handled by the deterministic pass are not sent to the model.
 - **Verification**:
   - Every `excerpt` and every `migrationExcerpt` must be an exact substring of the normalized source text, or it is dropped.
+  - Matching is markup-insensitive: inline markdown (backticks, `*`, `_`, a leading list marker) is ignored on both sides. The excerpt shown is the original source span, never the model's copy. Words still have to match exactly. This handles models that drop backticks, as `302` did.
   - A migration step without its own verified excerpt is downgraded: to `inferred` if `migrationInferredFrom` names existing items or sources, otherwise to `manual_review` (FR-010a).
   - The model never sees or produces versions, dates or links; code attaches them via the section id.
 - **Rationale**: the model is used only where judgment helps, and the verbatim checks enforce the governing principle mechanically, for changes and for migration steps.
