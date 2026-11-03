@@ -8,7 +8,7 @@ description: >
   What changed in an npm package between two versions: breaking changes, deprecations
   and security fixes, each with a verbatim quote and a link to the official release notes,
   plus known advisories (OSV) and whether the upgrade fixes them. Says "not found" instead of guessing.
-base_url: https://telegraph-pr-miner-mc5rppoiv-n30sk.vercel.app
+base_url: https://telegraph-pr-miner-pjq4sqnhf-n30sk.vercel.app
 protocol: generic
 auth:
   type: header
