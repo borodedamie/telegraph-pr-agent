@@ -1,6 +1,7 @@
 packages:
   - bot
   - web
+  - miner
 
 allowBuilds:
   esbuild: true
