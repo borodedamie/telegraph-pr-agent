@@ -29,10 +29,22 @@ describe("extractRules", () => {
   });
 
   it("finds marked bullets outside headings and leaves plain notes to the model", () => {
-    const text = "- feat!: drop the default export\n- **BREAKING**: rename `a` to `b`\n- Bump min TS version to 5.0";
+    const text = [
+      "- feat!: drop the default export",
+      "- **BREAKING**: rename `a` to `b`",
+      "- **Deprecated API methods removed**: old signatures are gone",
+      "- remove duplicate location test",
+      "- Bump min TS version to 5.0",
+    ].join("\n");
     const { candidates, handled } = extractRules([{ version: "1.0.0", consulted: 0, text }], () => false);
-    expect(candidates).toHaveLength(2);
+    expect(candidates.map((c) => c.kind)).toEqual(["breaking", "breaking", "breaking"]);
     expect(handled.size).toBe(0);
+  });
+
+  it("treats a label bullet as a heading, not as an item", () => {
+    const text = "- **Breaking Changes**\n  - `getQueryData` takes a queryKey only";
+    const { candidates } = extractRules([{ version: "5.0.0", consulted: 0, text }], () => false);
+    expect(candidates.map((c) => c.excerpt)).toEqual(["`getQueryData` takes a queryKey only"]);
   });
 
   it("reads the zod v4 migration guide headings as verified changes", () => {

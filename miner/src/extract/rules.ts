@@ -17,11 +17,21 @@ function headingKind(title: string): Kind | "migration" | "other" {
   return "other";
 }
 
+// Outside a headed section only explicit markers count: "BREAKING", a conventional-commit "!:", or a
+// leading "Deprecated". A bare "remove ..." is too often a chore ("remove duplicate test").
 function bulletKind(text: string): Kind | null {
   if (ADVISORY_ID.test(text)) return "security_fix";
   if (/\bbreaking\b|^\[?break\]?|^\w+(\([^)]*\))?!:/i.test(text)) return "breaking";
-  if (/^(\*\*|`)?(deprecat|removed?\b|drop(s|ped)?\b)/i.test(text)) return /^(\*\*|`)?deprecat/i.test(text) ? "deprecation" : "breaking";
+  if (/^(\*\*|`)?deprecat/i.test(text)) return /\b(remov\w*|dropped)\b/i.test(text) ? "breaking" : "deprecation";
   return null;
+}
+
+/** A bullet that is only a label ("**Breaking Changes**:") opens a section like a heading. */
+function labelKind(text: string): ReturnType<typeof headingKind> | null {
+  const label = text.replace(/[*_`:]/g, "").trim();
+  return /^(breaking changes?|deprecations?|deprecated|removed|removals|security( fixes)?|migration( guide)?)$/i.test(label)
+    ? headingKind(label)
+    : null;
 }
 
 // In a migration guide every heading names one change; its first words say which kind.
@@ -97,7 +107,14 @@ export function extractRules(sections: Section[], isGuide: (section: Section) =>
         continue;
       }
       const bullet = BULLET.exec(line);
-      if (!bullet || current === "migration") continue;
+      if (!bullet) continue;
+      const label = labelKind(bullet[1]);
+      if (label !== null) {
+        current = label;
+        if (current !== "other" && current !== "migration") handled.add(index);
+        continue;
+      }
+      if (current === "migration") continue;
       const text = bullet[1];
       const kind = current === "other" ? bulletKind(text) : ADVISORY_ID.test(text) ? "security_fix" : current;
       if (kind === null) continue;
