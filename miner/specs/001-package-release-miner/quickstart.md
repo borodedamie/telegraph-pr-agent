@@ -6,7 +6,7 @@ Run from the repository root. Node 20, pnpm 9.
 
 ```bash
 pnpm install
-cp miner/.env.example miner/.env        # MINER_API_KEY, GITHUB_TOKEN, MINER_SPEND_KEY, LLM_MINERS, REDIS_URL (optional locally)
+cp miner/.env.example miner/.env        # MINER_API_KEY, GITHUB_TOKEN, MINER_SPEND_KEY, LLM_MINERS, KV_REST_API_URL (optional locally)
 pnpm --filter ./miner test               # unit + fixture tests, no network
 pnpm --filter ./miner dev                # vercel dev, serves http://localhost:3000/api/*
 ```
@@ -20,7 +20,7 @@ curl -i "http://localhost:3000/api/answer?query=x"            # no key → 401
 curl http://localhost:3000/api/health
 ```
 
-Without `REDIS_URL` the miner uses an in-memory cache. Without `MINER_SPEND_KEY` or `LLM_MINERS` it runs the deterministic extractor only and buys nothing. Unit and fixture tests never buy: the LLM miner is stubbed. The answer says prose changes may be missing, and the extractor mode is part of `PROCESSING_VERSION`, so these answers never share a cache entry with full ones.
+Without `KV_REST_API_URL` the miner uses an in-memory cache. Without `MINER_SPEND_KEY` or `LLM_MINERS` it runs the deterministic extractor only and buys nothing. Unit and fixture tests never buy: the LLM miner is stubbed. The answer says prose changes may be missing, and the extractor mode is part of `PROCESSING_VERSION`, so these answers never share a cache entry with full ones.
 
 ## Smoke checks
 

@@ -34,7 +34,7 @@ description: "Task list for the package-release miner"
   - Dev: `typescript`, `vitest`, `tsx`, `@types/node`, `@types/semver`, `@vercel/node`.
 - [x] T003 [P] Create `miner/tsconfig.json`, copied from `bot/tsconfig.json`, with `include: ["src", "api", "test", "bench"]`
 - [x] T004 [P] Create `miner/.env.example`, each variable with a one-line comment, and confirm `miner/.env` is ignored by the root `.gitignore` (`.env*`). Variables:
-  - `MINER_API_KEY`, `GITHUB_TOKEN`, `REDIS_URL`, `REDIS_TOKEN`;
+  - `MINER_API_KEY`, `GITHUB_TOKEN`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`;
   - `TELEGRAPH_NODE_URL`, `MINER_SPEND_KEY` (spend wallet, never the payout wallet) and `LLM_MINERS` (ordered `<minerId>:<method>:<path>` list, research R7);
   - `PROCESSING_VERSION`;
   - the R9 budget overrides, including `LOCK_WAIT_MS`;
@@ -76,7 +76,7 @@ description: "Task list for the package-release miner"
   - It owns an `AbortController` that fires at the time budget (the hard deadline).
   - `canCallModel(inputChars)` refuses a call that would cross any model limit, or that would not finish within `LLM_TIMEOUT_MS` before the deadline.
   - `exhausted(kind)` reports which limit stopped the work.
-- [ ] T011 [P] Implement the cache in `miner/src/cache.ts`, per research R3. Use Upstash Redis when `REDIS_URL` is set, and an in-memory Map otherwise.
+- [ ] T011 [P] Implement the cache in `miner/src/cache.ts`, per research R3. Use Upstash Redis when `KV_REST_API_URL` is set, and an in-memory Map otherwise.
   - **Source manifest**: keyed by URL, or by the query body for OSV, storing `{etag, lastModified, fetchedAt, contentHash, snapshotKey}`. Entries are fresh for 1 h; stale ones are revalidated by conditional GET, and OSV entries are re-queried.
   - **Snapshots**: content-addressed `snap:<hash>`, with no TTL, holding whole normalized documents. For the registry, only the fields used.
   - **Answers**: `getAnswer` / `putAnswer`, keyed by `sha256(canonical NormalizedRequest + sorted contentHashes of all consulted sources + PROCESSING_VERSION)`, stored and returned as exact JSON strings. `putAnswer` refuses answers with `security.status ≠ complete` or `outcome = temporarily_unavailable`.
