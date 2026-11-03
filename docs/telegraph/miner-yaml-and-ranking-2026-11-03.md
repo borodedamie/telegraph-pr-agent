@@ -23,6 +23,11 @@ Read on 3 Nov 2026 from https://anjoman.ai/docs/miners/yaml-config and the devno
   - `transform` (`direct` or `llm`) is required when the block exists.
   - `min_price_usdc` is a decimal amount, e.g. `0.01`.
 
+## Intent definition and validation (3 Nov, afternoon)
+
+- `GET /engine/v1/intents/QUESTION_ANSWERING_GENERAL`: `class: judgment`, `request: null`, `response: null`, `miner_count: 10`, `wasm_count: 0`, and `onchain.ready: false` ("the intent has no response format"). Unchanged from 2 Nov. No latency or timeout is declared.
+- The public YAML validator `POST https://anjoman.ai/dashboard/validate` answered `405` (the docs say it currently returns `404`). Validation therefore goes through the dashboard at anjoman.ai/dashboard/earn. Its sandbox calls the real `base_url`, with the key injected the way the YAML's `auth` block declares.
+
 ## Ranking endpoints (devnode, intent `QUESTION_ANSWERING_GENERAL`)
 
 | Endpoint | Status | Ranking data |

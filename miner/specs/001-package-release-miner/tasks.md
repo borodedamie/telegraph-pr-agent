@@ -99,15 +99,15 @@ description: "Task list for the package-release miner"
 - [x] T017 Implement the endpoints per contracts/answer-endpoint.md:
   - `GET /api/answer` in `miner/api/answer.ts`: runs `checkKey` and `admit` first (`401` / `429`), validates `query` (required, at most 2,000 chars, otherwise `400`), and returns a fixed `Answer` with `outcome: "out_of_scope"` until T043;
   - `GET /api/health` in `miner/api/health.ts`: public, served from `probe.ts`.
-- [ ] T018 Deploy the stub to a Vercel preview from `miner/`, with a preview `MINER_API_KEY`. Record the URL in `miner/bench/network.md`, and check that calls without the key get `401`
+- [x] T018 Deploy the stub to a Vercel preview from `miner/`, with a preview `MINER_API_KEY`. Record the URL in `miner/bench/network.md`, and check that calls without the key get `401`
 - [ ] T019 Capture the Telegraph contract before registration (plan phase 1):
   1. Read the live intent definition for `QUESTION_ANSWERING_GENERAL`, including any latency or timeout requirement, and save it as a dated snapshot under `docs/telegraph/`.
   2. Paste `contracts/telegraph-miner.yaml` into the anjoman.ai/dashboard/earn validator, with the preview `base_url`, `external_path: /api/answer`, the header auth and the errors block.
   3. Sandbox-test the endpoint. Record the validation result and the exact request the sandbox sends (path, query param, headers) in `miner/bench/network.md`.
 
   No registration and no payment. If the dashboard asks for a signature or a payment, stop and ask.
-- [ ] T020 With what T019 found, update research R1 and R9 in `miner/specs/001-package-release-miner/research.md` (the time budget and `LOCK_WAIT_MS` must fit the Engine timeout), and update `contracts/telegraph-miner.yaml`
-- [ ] T021 Check Vercel Hobby eligibility for a payment-taking provider (research R2) and record the decision in `miner/bench/network.md`: stay on Hobby, or move to Pro (that is done in T059, with approval)
+- [x] T020 With what T019 found, update research R1 and R9 in `miner/specs/001-package-release-miner/research.md` (the time budget and `LOCK_WAIT_MS` must fit the Engine timeout), and update `contracts/telegraph-miner.yaml`
+- [x] T021 Check Vercel Hobby eligibility for a payment-taking provider (research R2) and record the decision in `miner/bench/network.md`: stay on Hobby, or move to Pro (that is done in T059, with approval)
 
 **Checkpoint**: schemas, safe fetch, budget, cache, auth, probes and an authenticated stub are deployed; the pre-registration contract is validated.
 

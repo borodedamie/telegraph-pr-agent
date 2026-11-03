@@ -15,6 +15,8 @@ There are two contracts, and they are kept apart:
   - On 3 Nov a direct paid call to LiveCert reached it as `{method, endpoint, payload: {query}}`, and the Engine returned the miner's own JSON unchanged with `result_shape: "raw"`. This is preliminary evidence that the Engine passes our JSON through and the buyer reads `answer`.
   - `signal_mapping` allows only `confidence_field`, `label_field` and `reason_field`.
 - **Known before registration**: the intent's live definition, the YAML validation result and the request the dashboard sandbox sends to our upstream.
+  - On 3 Nov the definition was unchanged: no request or response schema, and no declared timeout. So the 20 s budget stays until the first paid routed call (T063) measures the Engine's real limit.
+  - The public validation API answered `405`, so validation runs in the dashboard.
 - **Known only after registration**: the request the Engine sends when it routes a real purchase to us, and whether it wraps or normalizes the result. These are captured in the first paid test (plan phase 10), and the rendering is adjusted if needed (FR-017).
 - **Alternatives**: one endpoint per question kind was rejected, because buyers send one free-form query. Returning plain text only was rejected, because the PR bot needs the structured items.
 
