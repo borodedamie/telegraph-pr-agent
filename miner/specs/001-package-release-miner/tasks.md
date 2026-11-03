@@ -76,7 +76,7 @@ description: "Task list for the package-release miner"
   - It owns an `AbortController` that fires at the time budget (the hard deadline).
   - `canCallModel(inputChars)` refuses a call that would cross any model limit, or that would not finish within `LLM_TIMEOUT_MS` before the deadline.
   - `exhausted(kind)` reports which limit stopped the work.
-- [x] T011 [P] Implement the cache in `miner/src/cache.ts`, per research R3. Use Upstash Redis when `KV_REST_API_URL` is set, and an in-memory Map otherwise.
+- [x] T011 [P] Implement the cache in `miner/src/cache.ts`, per research R3. Use Upstash Redis when `KV_REST_API_URL` is set, and an in-memory Map otherwise (local runs only: on Vercel a missing Redis config is an error).
   - **Source manifest**: keyed by URL, or by the query body for OSV, storing `{etag, lastModified, fetchedAt, contentHash, snapshotKey}`. Entries are fresh for 1 h; stale ones are revalidated by conditional GET, and OSV entries are re-queried.
   - **Snapshots**: content-addressed `snap:<hash>`, with no TTL, holding whole normalized documents. For the registry, only the fields used.
   - **Answers**: `getAnswer` / `putAnswer`, keyed by `sha256(canonical NormalizedRequest + sorted contentHashes of all consulted sources + PROCESSING_VERSION)`, stored and returned as exact JSON strings. `putAnswer` refuses answers with `security.status ≠ complete` or `outcome = temporarily_unavailable`.
@@ -100,12 +100,14 @@ description: "Task list for the package-release miner"
   - `GET /api/answer` in `miner/api/answer.ts`: runs `checkKey` and `admit` first (`401` / `429`), validates `query` (required, at most 2,000 chars, otherwise `400`), and returns a fixed `Answer` with `outcome: "out_of_scope"` until T043;
   - `GET /api/health` in `miner/api/health.ts`: public, served from `probe.ts`.
 - [x] T018 Deploy the stub to a Vercel preview from `miner/`, with a preview `MINER_API_KEY`. Record the URL in `miner/bench/network.md`, and check that calls without the key get `401`
-- [x] T019 Capture the Telegraph contract before registration (plan phase 1):
+- [ ] T019 Capture the Telegraph contract before registration (plan phase 1):
   1. Read the live intent definition for `QUESTION_ANSWERING_GENERAL`, including any latency or timeout requirement, and save it as a dated snapshot under `docs/telegraph/`.
   2. Paste `contracts/telegraph-miner.yaml` into the anjoman.ai/dashboard/earn validator, with the preview `base_url`, `external_path: /api/answer`, the header auth and the errors block.
   3. Sandbox-test the endpoint. Record the validation result and the exact request the sandbox sends (path, query param, headers) in `miner/bench/network.md`.
 
   No registration and no payment. If the dashboard asks for a signature or a payment, stop and ask.
+
+  Status 3 Nov: steps 1 and 2 done and validation passed (`miner/bench/network.md`). Step 3 is open: the validator sent no `query` param, so the param name and headers the Engine sends on a real ask are still unknown. Capture them from the first sandbox or test ask before T062.
 - [x] T020 With what T019 found, update research R1 and R9 in `miner/specs/001-package-release-miner/research.md` (the time budget and `LOCK_WAIT_MS` must fit the Engine timeout), and update `contracts/telegraph-miner.yaml`
 - [x] T021 Check Vercel Hobby eligibility for a payment-taking provider (research R2) and record the decision in `miner/bench/network.md`: stay on Hobby, or move to Pro (that is done in T059, with approval)
 
