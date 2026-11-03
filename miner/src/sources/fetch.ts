@@ -17,10 +17,12 @@ export interface Retrieval {
   now: () => number;
   upstreamRequests: number;
   conditionalHits: number;
+  /** Every document read for this answer, used or not: their hashes are part of the answer-cache key. */
+  documents: SourceDocument[];
 }
 
 export function newRetrieval(store: Store, budget: Budget, fetcher: typeof safeFetch = safeFetch): Retrieval {
-  return { store, budget, fetcher, now: Date.now, upstreamRequests: 0, conditionalHits: 0 };
+  return { store, budget, fetcher, now: Date.now, upstreamRequests: 0, conditionalHits: 0, documents: [] };
 }
 
 export interface SourceDocument {
@@ -52,7 +54,7 @@ export async function fetchDocument(
   const snapshot = entry ? await getSnapshot(retrieval.store, entry.snapshotKey) : null;
 
   if (entry && snapshot !== null && isFresh(entry, retrieval.now())) {
-    return { url, text: snapshot, contentHash: entry.contentHash, snapshotKey: entry.snapshotKey, retrievedAt: entry.fetchedAt };
+    return record(retrieval, { url, text: snapshot, contentHash: entry.contentHash, snapshotKey: entry.snapshotKey, retrievedAt: entry.fetchedAt });
   }
 
   if (!retrieval.budget.takeSourceRequest()) throw new BudgetExhausted(url);
@@ -72,7 +74,7 @@ export async function fetchDocument(
   if (response.notModified && entry && snapshot !== null) {
     retrieval.conditionalHits++;
     await putManifest(retrieval.store, manifestId, { ...entry, fetchedAt });
-    return { url, text: snapshot, contentHash: entry.contentHash, snapshotKey: entry.snapshotKey, retrievedAt: fetchedAt };
+    return record(retrieval, { url, text: snapshot, contentHash: entry.contentHash, snapshotKey: entry.snapshotKey, retrievedAt: fetchedAt });
   }
   if (response.status === 404 || response.status === 410) return null;
   if (response.status < 200 || response.status >= 300) throw new Upstream(response.status, url);
@@ -86,5 +88,10 @@ export async function fetchDocument(
     contentHash,
     snapshotKey,
   });
-  return { url, text, contentHash, snapshotKey, retrievedAt: fetchedAt };
+  return record(retrieval, { url, text, contentHash, snapshotKey, retrievedAt: fetchedAt });
+}
+
+function record(retrieval: Retrieval, document: SourceDocument): SourceDocument {
+  retrieval.documents.push(document);
+  return document;
 }
