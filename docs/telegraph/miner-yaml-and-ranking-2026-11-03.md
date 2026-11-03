@@ -26,6 +26,7 @@ Read on 3 Nov 2026 from https://anjoman.ai/docs/miners/yaml-config and the devno
 ## Intent definition and validation (3 Nov, afternoon)
 
 - `GET /engine/v1/intents/QUESTION_ANSWERING_GENERAL`: `class: judgment`, `request: null`, `response: null`, `miner_count: 10`, `wasm_count: 0`, and `onchain.ready: false` ("the intent has no response format"). Unchanged from 2 Nov. No latency or timeout is declared.
+- The dashboard validator (anjoman.ai/dashboard/earn) takes a public YAML URL, not pasted text. It requires `on_chain.fields` (error `on_chain: fields is required`) although the docs call the block legacy; recent QA miners use `fields.strings[]` with `index`, `name`, `description`, `source_path`. It calls the first endpoint with the stored key; a `400` from our endpoint (no `query` param sent) still passed.
 - The public YAML validator `POST https://anjoman.ai/dashboard/validate` answered `405` (the docs say it currently returns `404`). Validation therefore goes through the dashboard at anjoman.ai/dashboard/earn. Its sandbox calls the real `base_url`, with the key injected the way the YAML's `auth` block declares.
 
 ## Ranking endpoints (devnode, intent `QUESTION_ANSWERING_GENERAL`)

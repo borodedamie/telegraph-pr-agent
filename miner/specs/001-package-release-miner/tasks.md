@@ -100,7 +100,7 @@ description: "Task list for the package-release miner"
   - `GET /api/answer` in `miner/api/answer.ts`: runs `checkKey` and `admit` first (`401` / `429`), validates `query` (required, at most 2,000 chars, otherwise `400`), and returns a fixed `Answer` with `outcome: "out_of_scope"` until T043;
   - `GET /api/health` in `miner/api/health.ts`: public, served from `probe.ts`.
 - [x] T018 Deploy the stub to a Vercel preview from `miner/`, with a preview `MINER_API_KEY`. Record the URL in `miner/bench/network.md`, and check that calls without the key get `401`
-- [ ] T019 Capture the Telegraph contract before registration (plan phase 1):
+- [x] T019 Capture the Telegraph contract before registration (plan phase 1):
   1. Read the live intent definition for `QUESTION_ANSWERING_GENERAL`, including any latency or timeout requirement, and save it as a dated snapshot under `docs/telegraph/`.
   2. Paste `contracts/telegraph-miner.yaml` into the anjoman.ai/dashboard/earn validator, with the preview `base_url`, `external_path: /api/answer`, the header auth and the errors block.
   3. Sandbox-test the endpoint. Record the validation result and the exact request the sandbox sends (path, query param, headers) in `miner/bench/network.md`.
