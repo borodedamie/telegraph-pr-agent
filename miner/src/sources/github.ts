@@ -51,6 +51,8 @@ export interface Section {
 export interface Material {
   consulted: Consulted[];
   sections: Section[];
+  /** How this repository names release tags, learned from a matched release, e.g. `v{v}` or `zod@{v}`. */
+  tagTemplate?: string;
 }
 
 export function githubHeaders(env: NodeJS.ProcessEnv): Record<string, string> {
@@ -119,6 +121,8 @@ export async function retrieveReleaseNotes(
       const version = matchRelease(release.tag, release.body, packument.name, monorepo);
       if (version === null || !wanted.has(version) || release.body.trim() === "") continue;
       wanted.delete(version);
+      tracker.covered(version);
+      material.tagTemplate ??= release.tag.replace(version, "{v}");
       material.consulted.push({
         type: "release",
         url: release.url,
@@ -154,6 +158,7 @@ export async function retrieveReleaseNotes(
       });
       for (const section of sections) {
         wanted.delete(section.version);
+        tracker.covered(section.version);
         material.sections.push({ version: section.version, consulted: material.consulted.length - 1, text: section.text });
       }
     }
@@ -165,6 +170,7 @@ export async function retrieveReleaseNotes(
     const guide = await findMigrationGuide(retrieval, repo, packument.name, lineStart, headers);
     if (guide !== null) {
       wanted.delete(lineStart);
+      tracker.covered(lineStart);
       material.consulted.push({
         type: "migration_guide",
         url: guide.url,
