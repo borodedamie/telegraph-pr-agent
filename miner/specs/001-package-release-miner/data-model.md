@@ -21,7 +21,7 @@ All types are validated with zod at the boundaries (incoming query, every upstre
 | Field | Type | Rule |
 | --- | --- | --- |
 | `id` | string | `s1`, `s2`, … within one answer |
-| `type` | `registry` \| `release` \| `changelog` \| `tag_compare` \| `advisory` | |
+| `type` | `registry` \| `release` \| `changelog` \| `tag_compare` \| `advisory` | A migration guide found in the repository (research R5, step 3) is stored as `changelog` |
 | `url` | string | The URL actually fetched (FR-009) |
 | `retrievedAt` | ISO timestamp | |
 | `versionFrom` | string \| null | Range the material applies to |
@@ -82,7 +82,7 @@ Correlation then follows the spec's User Story 4 table; with no evidence, no cla
 
 | Field | Type | Rule |
 | --- | --- | --- |
-| `status` | `complete` \| `partial` \| `unavailable` \| `not_checked` | `partial` when the OSV response was truncated or a referenced record could not be read. `not_checked` when no package was resolved (`out_of_scope`, `needs_clarification`) |
+| `status` | `complete` \| `partial` \| `unavailable` \| `not_checked` | `partial` when the OSV response was truncated or a referenced record could not be read. `not_checked` when no package was resolved (`out_of_scope`, `needs_clarification`). Until OSV is wired in (T053) every answer is `not_checked`, carries no confidence penalty and is cacheable; adding OSV changes the processing version |
 | `checkedAt` | ISO timestamp \| null | When OSV was queried (both queries, A and B) |
 | `advisories` | Advisory[] | Empty means "none known" only when `status = complete` |
 | `documentedFixes` | number | Count of `security_fix` ChangeItems |
