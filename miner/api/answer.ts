@@ -1,10 +1,10 @@
 // GET /api/answer — Telegraph path /answer (contracts/answer-endpoint.md).
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { admit, admitLimitsFromEnv, checkKey } from "../src/auth.js";
-import { getStore, sha256Hex } from "../src/cache.js";
+import { ComputeRefused, answerQuestion } from "../src/answer.js";
+import { admit, admitLimitsFromEnv, checkKey, enterCompute, leaveCompute } from "../src/auth.js";
+import { limitsFromEnv } from "../src/budget.js";
+import { getStore, lockTtlSec, sha256Hex } from "../src/cache.js";
 import { writeMetrics } from "../src/metrics.js";
-import { stubAnswer } from "../src/stub.js";
-import { Answer } from "../src/types.js";
 
 const MAX_QUERY_CHARS = 2_000;
 
@@ -22,16 +22,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   let limits;
+  let budgetLimits;
   try {
     limits = admitLimitsFromEnv();
+    budgetLimits = limitsFromEnv();
   } catch (err) {
     console.error(JSON.stringify({ kind: "config_invalid", error: String(err) }));
     res.status(500).json({ error: "miner misconfigured" });
     return;
   }
 
+  let store;
   try {
-    const admission = await admit(getStore(), limits);
+    store = getStore();
+    const admission = await admit(store, limits);
     if (!admission.ok) {
       res.status(429).json({ error: admission.reason });
       return;
@@ -53,26 +57,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  const answer = Answer.parse(stubAnswer());
-  writeMetrics({
-    requestHash: sha256Hex(query),
-    authOk: true,
-    cacheHit: false,
-    outcome: answer.outcome,
-    declaredFailure: false,
-    extractorMode: null,
-    msResolve: 0,
-    msFetch: 0,
-    msModel: 0,
-    msTotal: Date.now() - startedAt,
-    upstreamRequests: 0,
-    conditionalHits: 0,
-    llmMinerId: null,
-    modelCalls: 0,
-    modelInputChars: 0,
-    modelCostUsdc: 0,
-    llmFailure: null,
-    budgetExhausted: null,
-  });
-  res.status(200).json(answer);
+  const requestHash = sha256Hex(query);
+  try {
+    const result = await answerQuestion(query, {
+      store,
+      env: process.env,
+      limits: budgetLimits,
+      startedAt,
+      enterCompute: async () => {
+        const slot = await enterCompute(store, limits, lockTtlSec(budgetLimits.maxTimeMs));
+        if (!slot.ok) throw new ComputeRefused(slot.reason);
+        return () => leaveCompute(store, slot.slot);
+      },
+    });
+    writeMetrics({ requestHash, authOk: true, msTotal: Date.now() - startedAt, ...result.metrics });
+    // Send the stored string itself, so a cache hit is byte-identical (FR-018).
+    res.status(200).setHeader("content-type", "application/json; charset=utf-8").send(result.json);
+  } catch (err) {
+    if (err instanceof ComputeRefused) {
+      res.status(429).json({ error: err.reason });
+      return;
+    }
+    console.error(JSON.stringify({ kind: "answer_failed", requestHash, error: String(err), stack: (err as Error).stack }));
+    res.status(500).json({ error: "internal error", requestHash });
+  }
 }
