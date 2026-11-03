@@ -42,4 +42,20 @@ describe("getHealth", () => {
     expect(health.upstreams.npm).toBe("down");
     expect(health.ok).toBe(false);
   });
+
+  it("probes at most once per window per instance when the shared cache is down", async () => {
+    const { fetcher, calls } = fetcherCounting();
+    const broken = new MemoryStore();
+    broken.get = async () => {
+      throw new Error("redis down");
+    };
+    broken.setNx = async () => {
+      throw new Error("redis down");
+    };
+    const t0 = Date.parse("2026-11-03T12:00:00Z");
+    await getHealth(broken, fetcher, t0, {});
+    await getHealth(broken, fetcher, t0 + 1_000, {});
+    await getHealth(broken, fetcher, t0 + 2_000, {});
+    expect(calls).toHaveLength(3);
+  });
 });

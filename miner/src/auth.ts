@@ -26,8 +26,9 @@ export interface AdmitLimits {
 }
 
 export function admitLimitsFromEnv(env: NodeJS.ProcessEnv = process.env): AdmitLimits {
-  const rate = Number(env.ORIGIN_RATE_PER_MIN ?? "120");
-  const concurrent = Number(env.MAX_CONCURRENT_COMPUTE ?? "4");
+  // An empty value means the default, as in budget.ts.
+  const rate = Number(env.ORIGIN_RATE_PER_MIN || "120");
+  const concurrent = Number(env.MAX_CONCURRENT_COMPUTE || "4");
   if (!Number.isInteger(rate) || rate < 1) throw new Error(`ORIGIN_RATE_PER_MIN must be a positive integer`);
   if (!Number.isInteger(concurrent) || concurrent < 1) {
     throw new Error(`MAX_CONCURRENT_COMPUTE must be a positive integer`);
@@ -45,19 +46,23 @@ export async function admit(store: Store, limits: AdmitLimits, now: number = Dat
   return { ok: true };
 }
 
-const COMPUTE_KEY = "compute:inflight";
-const COMPUTE_TTL_SEC = 60;
-
-/** Reserves a slot for a first-time computation; call leaveCompute when done. */
-export async function enterCompute(store: Store, limits: AdmitLimits): Promise<Admission> {
-  const inflight = await store.incr(COMPUTE_KEY, COMPUTE_TTL_SEC);
-  if (inflight > limits.maxConcurrentCompute) {
-    await store.decr(COMPUTE_KEY);
-    return { ok: false, reason: "too many concurrent first-time requests" };
-  }
-  return { ok: true };
+function computeSlotKey(slot: number): string {
+  return `compute:slot:${slot}`;
 }
 
-export async function leaveCompute(store: Store): Promise<void> {
-  await store.decr(COMPUTE_KEY);
+export type ComputeSlot = { ok: true; slot: number } | { ok: false; reason: string };
+
+/**
+ * Reserves one of maxConcurrentCompute slots for a first-time computation; call leaveCompute when done.
+ * Each slot is its own key with a TTL (pass lockTtlSec), so a slot left by a killed instance frees itself.
+ */
+export async function enterCompute(store: Store, limits: AdmitLimits, ttlSec: number): Promise<ComputeSlot> {
+  for (let slot = 0; slot < limits.maxConcurrentCompute; slot++) {
+    if (await store.setNx(computeSlotKey(slot), "1", ttlSec)) return { ok: true, slot };
+  }
+  return { ok: false, reason: "too many concurrent first-time requests" };
+}
+
+export async function leaveCompute(store: Store, slot: number): Promise<void> {
+  await store.del(computeSlotKey(slot));
 }

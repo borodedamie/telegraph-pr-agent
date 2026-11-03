@@ -21,14 +21,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
+  let limits;
   try {
-    const admission = await admit(getStore(), admitLimitsFromEnv());
+    limits = admitLimitsFromEnv();
+  } catch (err) {
+    console.error(JSON.stringify({ kind: "config_invalid", error: String(err) }));
+    res.status(500).json({ error: "miner misconfigured" });
+    return;
+  }
+
+  try {
+    const admission = await admit(getStore(), limits);
     if (!admission.ok) {
       res.status(429).json({ error: admission.reason });
       return;
     }
   } catch (err) {
-    // The miner's own store is down: a miner failure, not an upstream outage.
+    // The miner's own store is down or not configured: a miner failure, not an upstream outage.
     console.error(JSON.stringify({ kind: "admission_failed", error: String(err) }));
     res.status(503).json({ error: "miner storage unavailable" });
     return;

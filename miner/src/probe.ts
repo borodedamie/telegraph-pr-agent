@@ -72,6 +72,16 @@ async function readCached(store: Store): Promise<Health | null> {
   }
 }
 
+// Last probe per store (one store per instance), so each instance probes at most once per window
+// even when the shared cache cannot be read or written.
+const instanceHealth = new WeakMap<Store, Health>();
+
+function newer(a: Health | null, b: Health | undefined): Health | null {
+  if (!b) return a;
+  if (!a) return b;
+  return Date.parse(b.probedAt) > Date.parse(a.probedAt) ? b : a;
+}
+
 /** Serves probes at most PROBE_TTL_MS old; unauthenticated callers trigger at most one refresh per window. */
 export async function getHealth(
   store: Store,
@@ -79,7 +89,7 @@ export async function getHealth(
   now: number = Date.now(),
   env: NodeJS.ProcessEnv = process.env
 ): Promise<Health> {
-  const cached = await readCached(store);
+  const cached = newer(await readCached(store), instanceHealth.get(store));
   if (cached && now - Date.parse(cached.probedAt) < PROBE_TTL_MS) return cached;
 
   let mayRefresh = true;
@@ -91,6 +101,7 @@ export async function getHealth(
   if (!mayRefresh && cached) return cached;
 
   const fresh = await runProbes(store, fetcher, now, env);
+  instanceHealth.set(store, fresh);
   try {
     await store.set(PROBE_KEY, JSON.stringify(fresh));
   } catch (err) {

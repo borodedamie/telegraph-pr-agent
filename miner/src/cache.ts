@@ -9,9 +9,8 @@ export interface Store {
   set(key: string, value: string, ttlSec?: number): Promise<void>;
   setNx(key: string, value: string, ttlSec: number): Promise<boolean>;
   del(key: string): Promise<void>;
-  /** Increments and (re)sets the expiry, so a counter left by a crashed instance still runs out. */
+  /** Increments and sets the expiry in one atomic step, so the counter can never be left without a TTL. */
   incr(key: string, ttlSec: number): Promise<number>;
-  decr(key: string): Promise<number>;
   ping(): Promise<boolean>;
 }
 
@@ -50,13 +49,6 @@ export class MemoryStore implements Store {
     return next;
   }
 
-  async decr(key: string): Promise<number> {
-    const entry = this.entries.get(key);
-    const next = Number((await this.get(key)) ?? "0") - 1;
-    this.entries.set(key, { value: String(next), expiresAt: entry?.expiresAt ?? null });
-    return next;
-  }
-
   async ping(): Promise<boolean> {
     return true;
   }
@@ -83,13 +75,8 @@ export class RedisStore implements Store {
   }
 
   async incr(key: string, ttlSec: number): Promise<number> {
-    const value = await this.redis.incr(key);
-    await this.redis.expire(key, ttlSec);
-    return value;
-  }
-
-  async decr(key: string): Promise<number> {
-    return this.redis.decr(key);
+    const [value] = await this.redis.multi().incr(key).expire(key, ttlSec).exec();
+    return Number(value);
   }
 
   async ping(): Promise<boolean> {
@@ -98,12 +85,14 @@ export class RedisStore implements Store {
 }
 
 // One store per function instance: Redis when configured, otherwise an in-memory fallback for local runs.
+// On Vercel a missing Redis is a misconfiguration: limits and the cache would silently become per instance.
 let instanceStore: Store | null = null;
 
 export function getStore(env: NodeJS.ProcessEnv = process.env): Store {
   if (instanceStore) return instanceStore;
   const url = env.KV_REST_API_URL;
   const token = env.KV_REST_API_TOKEN;
+  if (env.VERCEL && !(url && token)) throw new Error("KV_REST_API_URL and KV_REST_API_TOKEN are required on Vercel");
   // automaticDeserialization off: answers must come back as the exact bytes that were stored.
   instanceStore =
     url && token ? new RedisStore(new Redis({ url, token, automaticDeserialization: false })) : new MemoryStore();
@@ -178,8 +167,9 @@ export function answerKey(request: NormalizedRequest, contentHashes: string[], p
 }
 
 /**
- * Outages are never cached, and an answer whose security check did not complete is retried next time.
- * Answers that never reach OSV (out_of_scope, needs_clarification) are cacheable as they are.
+ * Outages are never cached, and a found or not_found answer whose security check did not complete is retried
+ * next time. Answers that never reach OSV (out_of_scope, needs_clarification, security not_checked) are cacheable;
+ * the caller keys them only when it has a NormalizedRequest (answerKey), and skips the cache otherwise.
  */
 export function isCacheable(answer: Answer): boolean {
   if (answer.outcome === "temporarily_unavailable") return false;
@@ -232,7 +222,8 @@ export async function waitForAnswer(
   for (;;) {
     const answer = await getAnswer(store, answerCacheKey);
     if (answer !== null) return answer;
-    if ((await store.get(lockKey(answerCacheKey))) === null) return null;
+    // The holder stores the answer before releasing the lock, so look once more after the lock is gone.
+    if ((await store.get(lockKey(answerCacheKey))) === null) return getAnswer(store, answerCacheKey);
     if (now() >= deadline) return null;
     await sleep(pollMs);
   }

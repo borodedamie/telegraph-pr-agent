@@ -47,6 +47,26 @@ describe("safeFetch", () => {
     expect(transport.requests[0].address).toBe(PUBLIC_V4);
   });
 
+  it("follows GitHub's redirect for a renamed repo", async () => {
+    const transport = transportReplying([
+      { status: 301, headers: { location: "https://api.github.com/repositories/123/releases" } },
+      { status: 200, body: "[]" },
+    ]);
+    const response = await safeFetch("https://api.github.com/repos/old/name/releases", {
+      resolver: publicResolver(),
+      transport,
+    });
+    expect(response.status).toBe(200);
+    expect(transport.requests[1].url.pathname).toBe("/repositories/123/releases");
+  });
+
+  it("times out a DNS lookup that never answers", async () => {
+    const hanging: Resolver = () => new Promise(() => {});
+    await expect(
+      safeFetch("https://registry.npmjs.org/zod", { resolver: hanging, transport: transportReplying([]), timeoutMs: 50 })
+    ).rejects.toBeInstanceOf(Timeout);
+  });
+
   it("refuses hosts outside the allowlist", async () => {
     await expect(
       safeFetch("https://example.com/", { resolver: publicResolver(), transport: transportReplying([]) })

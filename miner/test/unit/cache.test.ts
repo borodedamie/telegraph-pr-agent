@@ -6,11 +6,13 @@ import {
   canonicalJson,
   getAnswer,
   getManifest,
+  getStore,
   getSnapshot,
   isFresh,
   putAnswer,
   putManifest,
   putSnapshot,
+  releaseLock,
   waitForAnswer,
 } from "../../src/cache.js";
 import { stubAnswer } from "../../src/stub.js";
@@ -137,6 +139,23 @@ describe("in-flight lock", () => {
     expect(await waitForAnswer(store, "answer:k", 5_000, 250, Date.now, sleep)).toBe('{"done":true}');
   });
 
+  it("returns an answer stored just before the lock was released", async () => {
+    const store = new MemoryStore();
+    await acquireLock(store, "answer:k", 20_000);
+    // The holder finishes between the waiter's answer read and its lock read.
+    const racing = Object.create(store) as MemoryStore;
+    let reads = 0;
+    racing.get = async (key: string) => {
+      const value = await store.get(key);
+      if (++reads === 1) {
+        await store.set("answer:k", '{"done":true}');
+        await releaseLock(store, "answer:k");
+      }
+      return value;
+    };
+    expect(await waitForAnswer(racing, "answer:k", 5_000)).toBe('{"done":true}');
+  });
+
   it("gives up after the wait time", async () => {
     const store = new MemoryStore();
     await acquireLock(store, "answer:k", 20_000);
@@ -147,5 +166,11 @@ describe("in-flight lock", () => {
     };
     expect(await waitForAnswer(store, "answer:k", 5_000, 250, now, sleep)).toBeNull();
     expect(clock).toBe(5_000);
+  });
+});
+
+describe("getStore", () => {
+  it("refuses to fall back to memory on Vercel", () => {
+    expect(() => getStore({ VERCEL: "1" })).toThrow(/KV_REST_API_URL/);
   });
 });

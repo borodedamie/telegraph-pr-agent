@@ -92,7 +92,8 @@ const HOST_RULES: Record<string, HostRule> = {
   "registry.npmjs.org": { methods: ["GET"], path: /^\/.+/, maxBytes: 64 * MB },
   "api.github.com": {
     methods: ["GET"],
-    path: new RegExp(`^/(rate_limit$|repos/${OWNER_REPO}(/.*)?$)`),
+    // A renamed or transferred repo redirects to /repositories/<id>/...
+    path: new RegExp(`^/(rate_limit$|repos/${OWNER_REPO}(/.*)?$|repositories/\\d+(/.*)?$)`),
     maxBytes: 2 * MB,
   },
   "github.com": { methods: ["GET"], path: new RegExp(`^/${OWNER_REPO}(/.*)?$`), maxBytes: 2 * MB },
@@ -155,6 +156,15 @@ function checkUrl(url: URL, method: "GET" | "POST"): HostRule {
   if (!rule.methods.includes(method)) throw new BlockedHost(`${method} to ${url.hostname}`);
   if (!rule.path.test(url.pathname)) throw new BlockedHost(`path ${url.pathname} on ${url.hostname}`);
   return rule;
+}
+
+// getaddrinfo takes no signal, so the deadline is enforced around it.
+function untilAborted<T>(work: Promise<T>, signal: AbortSignal, url: URL): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const onAbort = () => reject(new Timeout(url.toString()));
+    signal.addEventListener("abort", onAbort, { once: true });
+    work.then(resolve, reject).finally(() => signal.removeEventListener("abort", onAbort));
+  });
 }
 
 const systemResolver: Resolver = async (hostname) => {
@@ -249,7 +259,7 @@ export async function safeFetch(input: string, options: SafeFetchOptions = {}): 
     const rule = checkUrl(url, method);
     if (signal.aborted) throw new Timeout(url.toString());
 
-    const addresses = await resolver(url.hostname);
+    const addresses = await untilAborted(resolver(url.hostname), signal, url);
     if (addresses.length === 0) throw new BlockedHost(`no address for ${url.hostname}`);
     const blocked = addresses.find((a) => isBlockedAddress(a.address));
     if (blocked) throw new BlockedHost(`${url.hostname} resolves to ${blocked.address}`);

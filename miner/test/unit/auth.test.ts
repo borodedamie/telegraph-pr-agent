@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { admit, checkKey, enterCompute, leaveCompute } from "../../src/auth.js";
+import { admit, admitLimitsFromEnv, checkKey, enterCompute, leaveCompute } from "../../src/auth.js";
 import { MemoryStore } from "../../src/cache.js";
 
 const env = { MINER_API_KEY: "right-key" };
@@ -37,9 +37,32 @@ describe("enterCompute", () => {
   it("caps concurrent first-time computations and frees the slot on leave", async () => {
     const store = new MemoryStore();
     const limits = { ratePerMinute: 100, maxConcurrentCompute: 1 };
-    expect(await enterCompute(store, limits)).toEqual({ ok: true });
-    expect(await enterCompute(store, limits)).toMatchObject({ ok: false });
-    await leaveCompute(store);
-    expect(await enterCompute(store, limits)).toEqual({ ok: true });
+    const first = await enterCompute(store, limits, 25);
+    expect(first).toEqual({ ok: true, slot: 0 });
+    expect(await enterCompute(store, limits, 25)).toMatchObject({ ok: false });
+    if (first.ok) await leaveCompute(store, first.slot);
+    expect(await enterCompute(store, limits, 25)).toEqual({ ok: true, slot: 0 });
+  });
+
+  it("frees a slot left by a killed instance after its TTL, even under steady traffic", async () => {
+    let clock = 0;
+    const store = new MemoryStore(() => clock);
+    const limits = { ratePerMinute: 100, maxConcurrentCompute: 1 };
+    expect(await enterCompute(store, limits, 25)).toMatchObject({ ok: true });
+    for (clock = 1_000; clock < 25_000; clock += 5_000) {
+      expect(await enterCompute(store, limits, 25)).toMatchObject({ ok: false });
+    }
+    clock = 25_001;
+    expect(await enterCompute(store, limits, 25)).toMatchObject({ ok: true });
+  });
+});
+
+describe("admitLimitsFromEnv", () => {
+  it("treats empty values as the defaults and rejects invalid ones", () => {
+    expect(admitLimitsFromEnv({ ORIGIN_RATE_PER_MIN: "", MAX_CONCURRENT_COMPUTE: "" })).toEqual({
+      ratePerMinute: 120,
+      maxConcurrentCompute: 4,
+    });
+    expect(() => admitLimitsFromEnv({ ORIGIN_RATE_PER_MIN: "120/min" })).toThrow();
   });
 });
