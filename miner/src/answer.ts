@@ -85,7 +85,8 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
   const startedAt = deps.startedAt ?? now();
   const metrics = emptyMetrics();
   const limits = deps.limits ?? limitsFromEnv(deps.env);
-  const processingBase = `${PROCESSING_VERSION}-${(deps.env.LLM_MINERS ?? "").replace(/[^0-9,]/g, "") || "nollm"}`;
+  // The configured LLM miners are part of every key; the miner actually used and the mode are added per answer.
+  const processingBase = `${PROCESSING_VERSION}-miners_${(deps.env.LLM_MINERS ?? "").replace(/[^0-9,]/g, "").replace(/,/g, "_") || "none"}`;
 
   const finish = (answer: Answer): PipelineResult => {
     const parsed = Answer.parse(answer);
