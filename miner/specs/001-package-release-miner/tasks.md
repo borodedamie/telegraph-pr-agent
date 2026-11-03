@@ -26,21 +26,21 @@ description: "Task list for the package-release miner"
 
 **Purpose**: Create the `miner` package next to `bot/` and `web/`.
 
-- [ ] T001 Add `miner` to `pnpm-workspace.yaml` packages, and create `miner/package.json` mirroring `bot/package.json`:
+- [x] T001 Add `miner` to `pnpm-workspace.yaml` packages, and create `miner/package.json` mirroring `bot/package.json`:
   - name `@telegraph-pr-agent/miner`, `type: module`, Node ≥20;
   - scripts `test`, `build`, `dev` (`vercel dev`) and `bench`.
-- [ ] T002 ⚠ Add dependencies to `miner/package.json`. Justification: plan.md Complexity Tracking.
+- [x] T002 ⚠ Add dependencies to `miner/package.json`. Justification: plan.md Complexity Tracking.
   - Runtime: `zod`, `@x402/fetch`, `@x402/evm` and `viem` (same versions as `bot/`), `semver`, `@upstash/redis`. Approved 3 Nov.
   - Dev: `typescript`, `vitest`, `tsx`, `@types/node`, `@types/semver`, `@vercel/node`.
-- [ ] T003 [P] Create `miner/tsconfig.json`, copied from `bot/tsconfig.json`, with `include: ["src", "api", "test", "bench"]`
-- [ ] T004 [P] Create `miner/.env.example`, each variable with a one-line comment, and confirm `miner/.env` is ignored by the root `.gitignore` (`.env*`). Variables:
+- [x] T003 [P] Create `miner/tsconfig.json`, copied from `bot/tsconfig.json`, with `include: ["src", "api", "test", "bench"]`
+- [x] T004 [P] Create `miner/.env.example`, each variable with a one-line comment, and confirm `miner/.env` is ignored by the root `.gitignore` (`.env*`). Variables:
   - `MINER_API_KEY`, `GITHUB_TOKEN`, `REDIS_URL`, `REDIS_TOKEN`;
   - `TELEGRAPH_NODE_URL`, `MINER_SPEND_KEY` (spend wallet, never the payout wallet) and `LLM_MINERS` (ordered `<minerId>:<method>:<path>` list, research R7);
   - `PROCESSING_VERSION`;
   - the R9 budget overrides, including `LOCK_WAIT_MS`;
   - `SIMULATE_UPSTREAM_OUTAGE` (default unset; used only in T063).
-- [ ] T005 [P] Create `miner/vercel.json` mapping `api/*.ts` to the Node runtime with `maxDuration: 30`. No rewrites: the routes are `/api/answer` and `/api/health`, and the YAML maps `/answer` to `external_path: /api/answer`
-- [ ] T006 [P] Create the empty directories from plan.md: `miner/src/sources`, `miner/src/extract`, `miner/test/unit`, `miner/test/fixtures`, `miner/bench`
+- [x] T005 [P] Create `miner/vercel.json` mapping `api/*.ts` to the Node runtime with `maxDuration: 30`. No rewrites: the routes are `/api/answer` and `/api/health`, and the YAML maps `/answer` to `external_path: /api/answer`
+- [x] T006 [P] Create the empty directories from plan.md: `miner/src/sources`, `miner/src/extract`, `miner/test/unit`, `miner/test/fixtures`, `miner/bench`
 
 ---
 
