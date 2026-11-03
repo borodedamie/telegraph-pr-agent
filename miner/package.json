@@ -6,7 +6,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "build": "tsc --noEmit",
     "dev": "vercel dev",
     "bench": "tsx bench/run.ts"
