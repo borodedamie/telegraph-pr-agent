@@ -53,3 +53,13 @@ semantics:
 on_chain:
   transform: direct
   min_price_usdc: 0.01                  # decimal USDC; keep only if measured cost allows (FR-027)
+  fields:                               # legacy, unread by jobs, but the validator requires it
+    strings:
+      - index: 0
+        name: outcome
+        description: found, not_found, needs_clarification, out_of_scope or temporarily_unavailable
+        source_path: outcome
+      - index: 1
+        name: summary
+        description: One-line summary of the answer
+        source_path: summary
