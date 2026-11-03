@@ -231,6 +231,13 @@ describe("IntelligenceClient.buy", () => {
     expect(paymentFetch).not.toHaveBeenCalled();
   });
 
+  it("reserves maxPricePerCallUsdc, not the quote, since a repriced call can settle up to it", async () => {
+    const { client, paymentFetch } = makeClient(); // quote 0.01, max 0.05, cap 0.5
+    client.spentUsdc = 0.46; // 0.46 + 0.01 fits; 0.46 + 0.05 does not
+    await expect(client.buy("QUESTION_ANSWERING", "x")).rejects.toBeInstanceOf(BudgetCapError);
+    expect(paymentFetch).not.toHaveBeenCalled();
+  });
+
   it("records the settled amount from the receipt, not the quote (dynamic pricing)", async () => {
     // The quote says 0.01 but the node repriced the paid call to 0.0125; the
     // receipt's amount_uusdc is what was actually charged and must win.

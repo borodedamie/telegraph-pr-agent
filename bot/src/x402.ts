@@ -208,9 +208,12 @@ export class IntelligenceClient {
         `quote ${amountUsdc} USDC exceeds maxPricePerCallUsdc ${this.maxPricePerCallUsdc} (${intent}, miner ${miner.id})`
       );
     }
-    if (this.spentUsdc + amountUsdc > this.budgetCapUsdc) {
+    // The signer may settle anything up to maxPricePerCallUsdc (a repriced call),
+    // so reserve that worst case against the budget, not the quote.
+    const worstCaseUsdc = Math.max(amountUsdc, this.maxPricePerCallUsdc);
+    if (this.spentUsdc + worstCaseUsdc > this.budgetCapUsdc) {
       throw new BudgetCapError(
-        `spend ${this.spentUsdc} + quote ${amountUsdc} USDC exceeds budgetCapUsdc ${this.budgetCapUsdc}`
+        `spend ${this.spentUsdc} + worst-case ${worstCaseUsdc} USDC (quote ${amountUsdc}) exceeds budgetCapUsdc ${this.budgetCapUsdc}`
       );
     }
 
