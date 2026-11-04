@@ -166,6 +166,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
       ];
       for (const step of steps) {
         if (tracker.missing().length === 0) break;
+        const saved = tracker.save();
         try {
           const found = await step();
           material.consulted.push(...found.consulted);
@@ -173,6 +174,8 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
           material.sections.push(...found.sections.map((s) => ({ ...s, consulted: s.consulted + offset })));
           material.tagTemplate ??= found.tagTemplate;
         } catch (err) {
+          // The step's material is lost with it, so the releases it marked covered are not.
+          tracker.restore(saved);
           if (err instanceof BudgetExhausted || budget.exhausted() === "time") {
             for (const version of tracker.missing()) tracker.notCovered(version, "budget");
             break;

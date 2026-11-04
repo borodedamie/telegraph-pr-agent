@@ -115,4 +115,14 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     expect(second.cacheHit).toBe(false);
     expect(model.calls()).toBe(2);
   });
+
+  it("does not count releases as covered when a later fetch of the same step fails", async () => {
+    const { fetcher } = fixtureFetcher(FILES);
+    const page2 = "https://api.github.com/repos/colinhacks/zod/releases?per_page=100&page=2";
+    const failing: typeof fetcher = async (url) =>
+      url === page2 ? { status: 502, url, headers: {}, body: "", notModified: false } : fetcher(url);
+    const { answer } = await answerQuestion(QUESTION, { ...deps(new MemoryStore(), stubModel().caller), fetcher: failing });
+    expect(answer.outcome).toBe("temporarily_unavailable");
+    expect(answer.changes).toEqual([]);
+  });
 });

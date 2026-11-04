@@ -41,6 +41,16 @@ export class CoverageTracker {
     this.states.set(version, reason);
   }
 
+  /** The current states, for restore when a retrieval step fails and its material is thrown away. */
+  save(): Map<string, "covered" | NotCoveredReason> {
+    return new Map(this.states);
+  }
+
+  restore(saved: Map<string, "covered" | NotCoveredReason>): void {
+    this.states.clear();
+    for (const [version, state] of saved) this.states.set(version, state);
+  }
+
   state(version: string): "covered" | NotCoveredReason | undefined {
     return this.states.get(version);
   }
