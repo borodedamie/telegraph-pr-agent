@@ -100,7 +100,12 @@ export async function retrieveComparisons(
     const url = `https://api.github.com/repos/${repo.owner}/${repo.repo}/compare/${encodeURIComponent(tagFor(base))}...${encodeURIComponent(tagFor(head))}`;
     let document: SourceDocument | null;
     try {
-      document = await fetchDocument(retrieval, url, { headers, toText: (body) => reduceCompare(body, repo.directory) });
+      document = await fetchDocument(retrieval, url, {
+        headers,
+        // The stored text is filtered to the package directory, so packages sharing tags need their own manifest.
+        manifestId: `${url}#${repo.directory ?? ""}`,
+        toText: (body) => reduceCompare(body, repo.directory),
+      });
     } catch (err) {
       // A comparison over the size cap cannot be read in full: its releases are truncated, not failed.
       if (!(err instanceof TooLarge)) throw err;

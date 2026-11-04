@@ -83,4 +83,22 @@ describe("retrieveComparisons", () => {
       expect(tracker.result().notCovered).toEqual([{ version: "1.0.1", reason: "truncated" }]);
     }
   });
+
+  it("gives packages that share tags in one repository their own filtered comparison", async () => {
+    const store = new MemoryStore();
+    const body = compareBody([
+      { filename: "packages/a/index.d.ts", patch: "-export a" },
+      { filename: "packages/b/index.d.ts", patch: "-export b" },
+    ]);
+    const forDirectory = async (directory: string) => {
+      const retrieval = newRetrieval(store, new Budget(limitsFromEnv({})), fetcherFor(body).fetcher);
+      const tracker = new CoverageTracker(["1.0.1"]);
+      const material = await retrieveComparisons(retrieval, { owner: "o", repo: "r", directory }, "1.0.0", tracker, (v) => `v${v}`, {});
+      return material.sections[0].text;
+    };
+    expect(await forDirectory("packages/a")).toContain("packages/a/");
+    const b = await forDirectory("packages/b");
+    expect(b).toContain("packages/b/");
+    expect(b).not.toContain("packages/a/");
+  });
 });
