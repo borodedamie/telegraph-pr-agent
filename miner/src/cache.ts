@@ -177,7 +177,7 @@ export function answerKey(request: NormalizedRequest, contentHashes: string[], p
  */
 export function isCacheable(answer: Answer): boolean {
   if (answer.outcome === "temporarily_unavailable") return false;
-  // not_checked: the OSV check is not wired into the pipeline yet (T053); its key changes when it is.
+  // not_checked: a version was not resolved, so OSV was never queried and the registry hash keys the answer.
   if (answer.outcome === "found" || answer.outcome === "not_found") {
     return answer.security.status === "complete" || answer.security.status === "not_checked";
   }

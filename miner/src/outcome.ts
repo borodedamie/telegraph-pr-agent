@@ -48,7 +48,7 @@ export function confidence(
     case "temporarily_unavailable":
       return 0;
   }
-  // The OSV check is not wired in yet (T053); not_checked answers carry no security penalty until it is.
+  // not_checked: both versions were never resolved, so there was nothing to check; only a failed check costs confidence.
   if (answer.security.status !== "complete" && answer.security.status !== "not_checked") value -= 0.1;
   return Math.round(value * 100) / 100;
 }

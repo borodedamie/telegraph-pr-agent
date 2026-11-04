@@ -25,6 +25,8 @@ import { Timeout, TooLarge, Upstream, safeFetch } from "./safeFetch.js";
 import { retrieveComparisons } from "./sources/compare.js";
 import { BudgetExhausted, newRetrieval, type Retrieval, type SourceDocument } from "./sources/fetch.js";
 import { githubHeaders, repoIdentity, retrieveReleaseNotes, type Consulted, type Material } from "./sources/github.js";
+import { OSV_QUERY_URL, advisoriesFor, type OsvResult } from "./sources/osv.js";
+import { correlate } from "./correlate.js";
 import { Answer, type ChangeItem, type MetricsRecord, type NormalizedRequest, type ReleaseSource, type Security } from "./types.js";
 import { PROCESSING_VERSION } from "./version.js";
 
@@ -161,8 +163,9 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
       if (!budget.takeRelease()) tracker.notCovered(version, "budget");
     }
 
-    // 4. Retrieval, decided before any extraction.
+    // 4. Retrieval, decided before any extraction. OSV first: two small queries whose hashes join the key.
     const fetchStart = now();
+    const osv = await advisoriesFor(retrieval, request.package, [from, to]);
     const material: Material = { consulted: [], sections: [] };
     let upstreamFailed = false;
     let retrievalCut = false;
@@ -245,7 +248,12 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
       const { answer, complete } = await compute(request, resolved.targetReleasedAt, registrySource, material, tracker, budget, deps, metrics, processingBase, {
         // Both lower the confidence band; only an outage (retried next time) also keeps the answer out of the cache.
         optionalSourceFailed: tooLargeFor.size > 0 || material.optionalSourceFailed === true,
-        lookups: { checked: retrieval.checked, unreadable: retrieval.unreadable },
+        // The advisory check has its own line; these lists name the release material looked up.
+        lookups: {
+          checked: retrieval.checked.filter((url) => url !== OSV_QUERY_URL),
+          unreadable: retrieval.unreadable.filter((url) => url !== OSV_QUERY_URL),
+        },
+        osv,
       });
       const result = finish(answer);
       // An optional source that was down is retried next time rather than cached around.
@@ -290,7 +298,7 @@ async function compute(
   deps: PipelineDeps,
   metrics: PipelineResult["metrics"],
   processingBase: string,
-  { optionalSourceFailed, lookups }: { optionalSourceFailed: boolean; lookups: Lookups }
+  { optionalSourceFailed, lookups, osv }: { optionalSourceFailed: boolean; lookups: Lookups; osv: OsvResult }
 ): Promise<{ answer: Answer; complete: boolean }> {
   const sources: ReleaseSource[] = [registrySource];
   const verifySources: VerifySource[] = material.consulted.map((c: Consulted, i) => {
@@ -300,6 +308,12 @@ async function compute(
     sources.push(toSource(id, type, c.document, c.versionFrom, c.versionTo, c.trust, c.url));
     return { id, type: c.type };
   });
+  const advisorySourceIds = new Map<SourceDocument, string>();
+  for (const document of osv.documents) {
+    const id = `s${sources.length + 1}`;
+    advisorySourceIds.set(document, id);
+    sources.push(toSource(id, "advisory", document, null, null, "advisory_db"));
+  }
 
   // 6. Extraction: rules first; the model reads only what the rules did not handle.
   const rules = extractRules(material.sections, (s) => material.consulted[s.consulted].type);
@@ -326,7 +340,17 @@ async function compute(
   const coverage = tracker.result();
   const state: OutcomeState = { stage: "retrieved", coverage, optionalSourceFailed };
   const outcome = selectOutcome(state);
-  const security: Security = { ...NOT_CHECKED, documentedFixes: changes.filter((c) => c.kind === "security_fix").length };
+  const security: Security = {
+    status: osv.status,
+    checkedAt: osv.checkedAt,
+    advisories: correlate(
+      osv.vulns.map(({ vuln, document }) => ({ vuln, sourceId: advisorySourceIds.get(document)! })),
+      changes,
+      request.fromResolved!,
+      request.toResolved!
+    ),
+    documentedFixes: changes.filter((c) => c.kind === "security_fix").length,
+  };
   const processingVersion = `${processingBase}-${model.minerId && modelRan ? `llm${model.minerId}` : "nollm"}-${mode}-s1`;
   const base = { outcome, request, targetReleasedAt, changes, security, coverage, sources, clarification: null, processingVersion };
   const unassessed = rules.unassessed.map((gap) => ({ version: material.sections[gap.section].version, url: gap.url }));

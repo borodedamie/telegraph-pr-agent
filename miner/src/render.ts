@@ -1,5 +1,5 @@
 // Plain-text rendering of an answer (FR-013): the `answer` field, readable without the structured parts.
-import type { Answer, ChangeItem } from "./types.js";
+import type { Advisory, Answer, ChangeItem } from "./types.js";
 
 type Renderable = Omit<Answer, "answer" | "summary" | "confidence">;
 
@@ -49,6 +49,38 @@ function securityLine(security: Answer["security"]): string {
   }
 }
 
+function conclusionText(advisory: Advisory, from: string, to: string): string {
+  switch (advisory.conclusion) {
+    case "fixed_by_upgrade":
+      return `Fixed by this upgrade: ${from} is affected, ${to} is not.`;
+    case "still_affected":
+      return `Warning: ${to} is still affected; upgrading from ${from} does not resolve it.`;
+    case "introduced_by_upgrade":
+      return `Warning: the upgrade introduces it: ${from} is not affected, ${to} is.`;
+    case "not_applicable":
+      return `Neither ${from} nor ${to} is in its affected ranges.`;
+    case "unknown":
+      return "Its affected ranges could not be read; check the advisory before relying on this upgrade.";
+  }
+}
+
+/** One line per advisory, most serious conclusions first; the release-note quote when a note names it. */
+function advisoryLines(answer: Renderable): string[] {
+  const { security, request } = answer;
+  if (security.advisories.length === 0 || request?.fromResolved == null || request.toResolved === null) return [];
+  const order: Advisory["conclusion"][] = ["introduced_by_upgrade", "still_affected", "unknown", "fixed_by_upgrade", "not_applicable"];
+  const sorted = [...security.advisories].sort((a, b) => order.indexOf(a.conclusion) - order.indexOf(b.conclusion));
+  const lines = ["", "Advisories (OSV):"];
+  for (const advisory of sorted) {
+    const names = [...advisory.aliases, advisory.displaySeverity].join(", ");
+    const title = advisory.summary ? ` ${advisory.summary}.` : "";
+    const note = answer.changes.find((c) => c.id === advisory.releaseNoteItemId);
+    const quote = note ? ` Release notes: "${note.excerpt}" [${note.sourceId}]` : "";
+    lines.push(`- ${advisory.id} (${names}) [${advisory.sourceId}].${title} ${conclusionText(advisory, request.fromResolved, request.toResolved)}${quote}`);
+  }
+  return lines;
+}
+
 function migrationText(item: ChangeItem): string {
   if (item.migrationEvidence === "manual_review") return "Migration: manual review needed.";
   return `Migrate (${item.migrationEvidence}): ${item.migration}`;
@@ -82,6 +114,8 @@ export function render(
         lines.push(`Could not read, so material may exist that this answer did not see: ${lookups.unreadable.join(", ")}.`);
       }
       lines.push(NOT_SAFE);
+      // The advisory check stands on its own: a missing change list does not make it less true.
+      if (answer.security.status !== "not_checked") lines.push(securityLine(answer.security), ...advisoryLines(answer));
     }
     if (answer.outcome === "temporarily_unavailable") {
       lines.push("This is not an answer about the upgrade: its release material could not be read yet.");
@@ -124,6 +158,7 @@ export function render(
     }
   }
   if (answer.changes.length === 0) lines.push("", "No breaking changes or deprecations are documented in the covered releases.");
+  lines.push(...advisoryLines(answer));
   lines.push("", sourcesLine(answer));
   return { answer: lines.join("\n"), summary: summaryFor(answer) };
 }

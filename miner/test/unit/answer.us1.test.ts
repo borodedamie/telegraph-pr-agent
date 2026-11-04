@@ -6,9 +6,9 @@ import type { ModelCaller } from "../../src/extract/model.js";
 import { findSpan } from "../../src/extract/verify.js";
 import { registryUrl } from "../../src/resolve.js";
 import { TooLarge } from "../../src/safeFetch.js";
-import { ZOD_GITHUB, fixtureFetcher } from "../fixtures.js";
+import { ZOD_GITHUB, ZOD_OSV, fixtureFetcher } from "../fixtures.js";
 
-const FILES: Record<string, string> = { [registryUrl("zod")]: "npm/zod.json", ...ZOD_GITHUB };
+const FILES: Record<string, string> = { [registryUrl("zod")]: "npm/zod.json", ...ZOD_GITHUB, ...ZOD_OSV };
 
 /** Answers like an LLM miner: one real item quoted from the first section, with a step the source does not state. */
 function stubModel(): { caller: ModelCaller; calls: () => number; excerpt: () => string | null } {
@@ -122,8 +122,8 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
   it("does not count releases as covered when a later fetch of the same step fails", async () => {
     const { fetcher } = fixtureFetcher(FILES);
     const page2 = "https://api.github.com/repos/colinhacks/zod/releases?per_page=100&page=2";
-    const failing: typeof fetcher = async (url) =>
-      url === page2 ? { status: 502, url, headers: {}, body: "", notModified: false } : fetcher(url);
+    const failing: typeof fetcher = async (url, options) =>
+      url === page2 ? { status: 502, url, headers: {}, body: "", notModified: false } : fetcher(url, options);
     const { answer } = await answerQuestion(QUESTION, { ...deps(new MemoryStore(), stubModel().caller), fetcher: failing });
     expect(answer.outcome).toBe("temporarily_unavailable");
     expect(answer.changes).toEqual([]);
@@ -140,9 +140,9 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     const { fetcher } = fixtureFetcher(FILES);
     const guide = "https://raw.githubusercontent.com/colinhacks/zod/HEAD/packages/docs/content/v4/changelog.mdx";
     const page1 = "https://api.github.com/repos/colinhacks/zod/releases?per_page=100&page=1";
-    const capped: typeof fetcher = async (url) => {
+    const capped: typeof fetcher = async (url, options) => {
       if (url === guide || url === page1) throw new TooLarge(url, 2 * 1024 * 1024);
-      return fetcher(url);
+      return fetcher(url, options);
     };
     const { answer } = await answerQuestion(QUESTION, { ...deps(new MemoryStore(), stubModel().caller), fetcher: capped });
     expect(answer.outcome).not.toBe("temporarily_unavailable");
@@ -154,10 +154,10 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     const { fetcher } = fixtureFetcher(FILES);
     const guide = "https://raw.githubusercontent.com/colinhacks/zod/HEAD/packages/docs/content/v4/changelog.mdx";
     const requested: string[] = [];
-    const capped: typeof fetcher = async (url) => {
+    const capped: typeof fetcher = async (url, options) => {
       requested.push(url);
       if (url === guide) throw new TooLarge(url, 2 * 1024 * 1024);
-      return fetcher(url);
+      return fetcher(url, options);
     };
     const { answer } = await answerQuestion(QUESTION, { ...deps(new MemoryStore(), stubModel().caller), fetcher: capped });
     expect(requested).toContain(guide);
@@ -168,8 +168,8 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
   });
 
   it("keeps the release notes already read when the source budget runs out on a later fetch", async () => {
-    // Registry and releases page 1 fit; page 2 does not.
-    const tight = { ...deps(new MemoryStore(), stubModel().caller), limits: limitsFromEnv({ MAX_SOURCE_REQUESTS: "2" }) };
+    // Registry, the two OSV queries and releases page 1 fit; page 2 does not.
+    const tight = { ...deps(new MemoryStore(), stubModel().caller), limits: limitsFromEnv({ MAX_SOURCE_REQUESTS: "4" }) };
     const { answer } = await answerQuestion(QUESTION, tight);
     expect(answer.outcome).toBe("found");
     expect(answer.coverage!.covered.length).toBeGreaterThan(0);

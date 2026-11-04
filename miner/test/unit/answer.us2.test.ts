@@ -5,19 +5,21 @@ import { MemoryStore } from "../../src/cache.js";
 import { registryUrl } from "../../src/resolve.js";
 import { Timeout, type SafeResponse } from "../../src/safeFetch.js";
 import { Outcome } from "../../src/types.js";
-import { fixtureFetcher } from "../fixtures.js";
+import { OSV_NONE, fixtureFetcher } from "../fixtures.js";
 
 const NO_NOTES = {
   [registryUrl("no-notes")]: "negative/npm/no-notes.json",
   "https://api.github.com/repos/example/no-notes/releases?per_page=100&page=1": "negative/github/empty.releases.json",
   "https://api.github.com/repos/example/no-notes/git/trees/HEAD?recursive=1": "negative/github/empty.tree.json",
+  ...OSV_NONE,
 };
 const MONO = {
   [registryUrl("@mono/a")]: "negative/npm/@mono__a.json",
   "https://api.github.com/repos/example/mono/releases?per_page=100&page=1": "negative/github/mono.releases.json",
   "https://api.github.com/repos/example/mono/git/trees/HEAD?recursive=1": "negative/github/empty.tree.json",
+  ...OSV_NONE,
 };
-const ZOD = { [registryUrl("zod")]: "npm/zod.json" };
+const ZOD = { [registryUrl("zod")]: "npm/zod.json", ...OSV_NONE };
 
 function deps(store: MemoryStore, fetcher: PipelineDeps["fetcher"], env: NodeJS.ProcessEnv = {}): PipelineDeps {
   return { store, env, fetcher, caller: null };
@@ -26,8 +28,8 @@ function deps(store: MemoryStore, fetcher: PipelineDeps["fetcher"], env: NodeJS.
 /** Serves fixtures, but answers `status` for every URL `failing` matches. */
 function failingFetcher(files: Record<string, string>, failing: (url: string) => boolean, status: number) {
   const { fetcher } = fixtureFetcher(files);
-  return async (url: string): Promise<SafeResponse> =>
-    failing(url) ? { status, url, headers: {}, body: "", notModified: false } : fetcher(url);
+  return async (url: string, options?: { body?: string }): Promise<SafeResponse> =>
+    failing(url) ? { status, url, headers: {}, body: "", notModified: false } : fetcher(url, options);
 }
 
 describe("US2: honest not found", () => {
@@ -89,9 +91,9 @@ describe("US2: honest not found", () => {
 
   it("declares a GitHub timeout temporarily unavailable", async () => {
     const { fetcher } = fixtureFetcher(NO_NOTES);
-    const timingOut = async (url: string): Promise<SafeResponse> => {
+    const timingOut = async (url: string, options?: { body?: string }): Promise<SafeResponse> => {
       if (url.startsWith("https://api.github.com/")) throw new Timeout(url);
-      return fetcher(url);
+      return fetcher(url, options);
     };
     const { answer, metrics } = await answerQuestion("no-notes 1.0.0 to 2.0.0", deps(new MemoryStore(), timingOut));
     expect(answer.outcome).toBe("temporarily_unavailable");
