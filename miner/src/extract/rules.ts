@@ -4,8 +4,11 @@ import type { Candidate } from "./candidate.js";
 
 type Kind = Candidate["kind"];
 
-const HEADING = /^\s*(?:#{1,6}\s+(.+?)\s*#*\s*$|\*\*(.+?)\*\*:?\s*$)/;
-const BULLET = /^\s*(?:[-*+]|\d+[.)])\s+(.+?)\s*$/;
+// Release notes are untrusted: these patterns must stay linear on any line, so the captured text starts at
+// a non-space and runs to the end of the line (callers trim it). A heading's closing hashes stay in the
+// title; only its kind is read from it.
+const HEADING = /^\s*(?:#{1,6}\s+(\S.*)|\*\*([^*]+)\*\*:?\s*)$/;
+const BULLET = /^\s*(?:[-*+]|\d+[.)])\s+(\S.*)$/;
 const ADVISORY_ID = /\b(CVE-\d{4}-\d{4,}|GHSA(?:-[23456789cfghjmpqrvwx]{4}){3})\b/i;
 const MIGRATION_HINT = /\b(instead|replace[sd]?|use|migrate to|switch to|rename[sd]? to)\b/i;
 
@@ -81,13 +84,14 @@ export function extractRules(sections: Section[], isGuide: (section: Section) =>
     if (isGuide(section)) {
       handled.add(index);
       lines.forEach((line, i) => {
-        const heading = /^#{2,4}\s+(.+?)\s*$/.exec(line);
+        const heading = /^#{2,4}\s+(\S.*)$/.exec(line);
         if (!heading) return;
-        const kind = guideHeadingKind(heading[1]);
+        const title = heading[1].trimEnd();
+        const kind = guideHeadingKind(title);
         if (kind === null) return;
         const body: string[] = [];
         for (let j = i + 1; j < lines.length && !/^#{1,4}\s/.test(lines[j]); j++) body.push(lines[j]);
-        add(index, kind, heading[1], migrationLine(body));
+        add(index, kind, title, migrationLine(body));
       });
       return;
     }
@@ -108,14 +112,14 @@ export function extractRules(sections: Section[], isGuide: (section: Section) =>
       }
       const bullet = BULLET.exec(line);
       if (!bullet) continue;
-      const label = labelKind(bullet[1]);
+      const text = bullet[1].trimEnd();
+      const label = labelKind(text);
       if (label !== null) {
         current = label;
         if (current !== "other" && current !== "migration") handled.add(index);
         continue;
       }
       if (current === "migration") continue;
-      const text = bullet[1];
       const kind = current === "other" ? bulletKind(text) : ADVISORY_ID.test(text) ? "security_fix" : current;
       if (kind === null) continue;
       add(index, kind, text, MIGRATION_HINT.test(text) ? text : null);

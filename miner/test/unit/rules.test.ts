@@ -57,4 +57,13 @@ describe("extractRules", () => {
     expect(items.find((i) => i.excerpt === "drops `errorMap`")?.kind).toBe("breaking");
     expect(items.every((i) => text.includes(i.excerpt!))).toBe(true);
   });
+
+  it("stays fast on long lines of untrusted release-note text", () => {
+    const long = " ".repeat(20_000);
+    const text = [`# a${long}b`, `# a${long}#${long}b`, `- a${long}b`, `**a${long}b`, `## a${long}`].join("\n");
+    const started = Date.now();
+    extractRules([{ version: "1.0.0", consulted: 0, text }], () => false);
+    extractRules([{ version: "1.0.0", consulted: 0, text }], () => true);
+    expect(Date.now() - started).toBeLessThan(500);
+  });
 });
