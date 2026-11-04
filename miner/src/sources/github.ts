@@ -153,7 +153,7 @@ export async function retrieveReleaseNotes(
         continue;
       }
       if (document === null) continue;
-      const sections = splitChangelog(document.text).filter((s) => wanted.has(s.version));
+      const sections = splitChangelog(document.text, packument.name).filter((s) => wanted.has(s.version));
       if (sections.length === 0) continue;
       const versions = sections.map((s) => s.version).sort(semver.compare);
       material.consulted.push({

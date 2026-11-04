@@ -36,16 +36,22 @@ export interface ChangelogSection {
 }
 
 const HEADING = new RegExp(
-  String.raw`^#{1,4}\s+\[?(?:[\w@/.-]+@)?v?` + VERSION + String.raw`\]?(?:\([^)]*\))?(?:\s.*)?$`,
+  String.raw`^#{1,4}\s+\[?(?:([\w@/.-]+)@)?v?` + VERSION + String.raw`\]?(?:\([^)]*\))?(?:\s.*)?$`,
   "gm"
 );
 
-/** Splits a changelog into version sections; each section runs from its heading to the next version heading. */
-export function splitChangelog(text: string): ChangelogSection[] {
+/**
+ * Splits a changelog into this package's version sections; each runs from its heading to the next version
+ * heading. A heading naming another package (`## @scope/other@2.0.0` in a monorepo root changelog) is skipped.
+ */
+export function splitChangelog(text: string, packageName: string): ChangelogSection[] {
+  const shortName = packageName.replace(/^@[^/]+\//, "");
   const headings = [...text.matchAll(HEADING)];
   const sections: ChangelogSection[] = [];
   headings.forEach((heading, i) => {
-    const version = semver.valid(heading[1]);
+    const prefix = heading[1];
+    if (prefix !== undefined && prefix !== packageName && prefix !== shortName) return;
+    const version = semver.valid(heading[2]);
     if (version === null) return;
     const end = i + 1 < headings.length ? headings[i + 1].index : text.length;
     sections.push({ version, text: text.slice(heading.index, end).trimEnd() });
