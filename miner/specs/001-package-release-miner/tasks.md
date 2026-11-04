@@ -240,24 +240,29 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 
 **Independent Test**: ask about a package with registry metadata but no release notes. The outcome is `not_found`, the checked sources are listed, and nothing says the upgrade is safe.
 
-- [ ] T045 [P] [US2] Record negative fixtures into `miner/test/fixtures/negative/`:
+- [x] T045 [P] [US2] Record negative fixtures into `miner/test/fixtures/negative/`:
   - a package without releases or changelog;
   - a nonexistent version;
   - a monorepo release that doesn't name the package;
   - a registry `500` and a GitHub timeout;
   - a changelog `500` while releases work (optional source failure).
-- [ ] T046 [US2] Extend `selectOutcome` in `miner/src/outcome.ts`:
+- [x] T046 [US2] Extend `selectOutcome` in `miner/src/outcome.ts`:
   - `not_found` when no release in range has version-matched material, listing the sources checked;
   - an unknown version → `not_found`, naming the closest published versions;
   - `out_of_scope` and `needs_clarification` from `parse` and `resolve`;
   - any `Upstream`/`Timeout` error on a required source → `temporarily_unavailable`, never cached, with `declaredFailure: true` in the metrics record;
   - `SIMULATE_UPSTREAM_OUTAGE=1` (environment only, never a request parameter) forces that path, for T063.
-- [ ] T047 [US2] Make `render.ts` produce explicit text for each non-`found` outcome. None may suggest the upgrade is safe
-- [ ] T048 [US2] Fixture tests in `miner/test/unit/answer.us2.test.ts`:
+- [x] T047 [US2] Make `render.ts` produce explicit text for each non-`found` outcome. None may suggest the upgrade is safe
+- [x] T048 [US2] Fixture tests in `miner/test/unit/answer.us2.test.ts`:
   - each negative fixture maps to its outcome and confidence band;
   - `temporarily_unavailable` is not written to the answer cache, and `not_found` is;
   - the `outcome` values match the YAML `errors.success_values` (every billable outcome listed, `temporarily_unavailable` not);
   - the outage flag works only from the environment.
+
+**Status (2026-11-04)**: Phase 4 is done, with these notes:
+- the negative fixtures in `miner/test/fixtures/negative/` are hand-written, not recorded: the packages `no-notes` and `@mono/a` are invented, and the registry `500`, GitHub timeout and changelog `500` are simulated by the test fetcher;
+- a changelog or migration guide that is down is an optional source failure: the answer goes on with the 0.6 `not_found` band and is not cached, so it is retried;
+- a `not_found` answer lists every URL looked up, including those that returned 404; the 404s are not part of the answer-cache key, so a cached `not_found` stays until the registry metadata or another consulted document changes.
 
 **Checkpoint**: US1 and US2 together give an honest miner for ordinary transitions.
 
