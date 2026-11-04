@@ -123,13 +123,13 @@ description: "Task list for the package-release miner"
 
 ### Tests for User Story 1
 
-- [ ] T022 [P] [US1] Record registry fixtures (reduced to the fields used) into `miner/test/fixtures/npm/`:
+- [x] T022 [P] [US1] Record registry fixtures (reduced to the fields used) into `miner/test/fixtures/npm/`:
   - `zod`, `@tanstack/react-query`, one monorepo package (e.g. `@babel/core`) and one 0.x package;
   - one package that skipped a major;
   - the full-size `typescript` document, to test the size cap.
-- [ ] T023 [P] [US1] Record GitHub fixtures (releases pages, `CHANGELOG.md`, one compare response with patches) for the same packages into `miner/test/fixtures/github/`
-- [ ] T024 [P] [US1] Unit tests for `parse.ts` in `miner/test/unit/parse.test.ts`, covering the FR-002 input forms: an exact pair, a scoped name, a range, "to" only, and an ambiguous question such as "React after 18"
-- [ ] T025 [P] [US1] Unit tests for `resolve.ts` in `miner/test/unit/resolve.test.ts`:
+- [x] T023 [P] [US1] Record GitHub fixtures (releases pages, `CHANGELOG.md`, one compare response with patches) for the same packages into `miner/test/fixtures/github/`
+- [x] T024 [P] [US1] Unit tests for `parse.ts` in `miner/test/unit/parse.test.ts`, covering the FR-002 input forms: an exact pair, a scoped name, a range, "to" only, and an ambiguous question such as "React after 18"
+- [x] T025 [P] [US1] Unit tests for `resolve.ts` in `miner/test/unit/resolve.test.ts`:
   - an exact version, and a range resolving to the highest match;
   - every FR-004 default, with `fromAssumed`:
     - `5.0.0` → highest stable below `5.0.0`, including when 4.x was never published;
@@ -139,51 +139,51 @@ description: "Task list for the package-release miner"
   - a prerelease;
   - no substitution of similar names;
   - the full `typescript` document is accepted under the registry cap.
-- [ ] T026 [P] [US1] Unit tests for `match.ts` in `miner/test/unit/match.test.ts`:
+- [x] T026 [P] [US1] Unit tests for `match.ts` in `miner/test/unit/match.test.ts`:
   - tag patterns `v1.2.3`, `1.2.3`, `pkg@1.2.3`, `pkg-v1.2.3` and `pkg/v1.2.3` match;
   - a monorepo release naming another package is rejected;
   - changelog headings `## 4.0.0`, `## [4.0.0] - 2025-07-09` and `# v4.0.0` are split correctly.
-- [ ] T027 [P] [US1] Unit tests for `verify.ts` in `miner/test/unit/verify.test.ts`. One policy applies: normalize the source once (data-model.md), then require exact substrings.
+- [x] T027 [P] [US1] Unit tests for `verify.ts` in `miner/test/unit/verify.test.ts`. One policy applies: normalize the source once (data-model.md), then require exact substrings.
   - An exact substring passes; CRLF and NFC differences in the source pass after normalization; a paraphrase fails.
   - An excerpt that only lacks the source's backticks (as `302` returned) matches, and is stored as the original span with backticks.
   - An item without an excerpt fails unless it is `inferred` with an existing `inferredFrom`.
   - A step without a verified `migrationExcerpt` becomes `inferred` when `migrationInferredFrom` names existing ids, and `manual_review` otherwise.
   - A valid change excerpt paired with an unsupported migration ("replace every string schema with z.email()") does not yield a `documented` migration.
-- [ ] T028 [P] [US1] Unit tests for `compare.ts` in `miner/test/unit/compare.test.ts`:
+- [x] T028 [P] [US1] Unit tests for `compare.ts` in `miner/test/unit/compare.test.ts`:
   - only patches under the package `directory` are used;
   - commit messages alone produce no item;
   - a truncated response (300 files, 250 commits or a missing patch) puts the affected releases in `notCovered` with reason `truncated`;
   - items are `repository_evidence`.
-- [ ] T029 [P] [US1] Unit tests for `coverage.ts` in `miner/test/unit/coverage.test.ts`:
+- [x] T029 [P] [US1] Unit tests for `coverage.ts` in `miner/test/unit/coverage.test.ts`:
   - `releasesBetween` includes every stable release with A < v ≤ B, minors and 0.x included, and excludes prereleases unless B is one;
   - releases without material get `no_material`, and releases with unmatched material get `unmatched`.
 
 ### Implementation for User Story 1
 
-- [ ] T030 [US1] Implement `parse(query)` in `miner/src/parse.ts`.
+- [x] T030 [US1] Implement `parse(query)` in `miner/src/parse.ts`.
   - It is deterministic and regex-based: npm package names (scoped included), versions and ranges, and "from…to", "A → B" and "upgrade to" phrasings.
   - It returns an unresolved `NormalizedRequest`, or a reason for `needs_clarification` / `out_of_scope`.
-- [ ] T031 [US1] Implement `resolve(req)` in `miner/src/resolve.ts`.
+- [x] T031 [US1] Implement `resolve(req)` in `miner/src/resolve.ts`.
   - It reads `https://registry.npmjs.org/<encoded name>` via `safeFetch` and the manifest, and reduces it to the fields used.
   - It resolves both versions with `semver` and applies the FR-004 defaults.
   - It returns the resolved request, `targetReleasedAt`, the published version list and the registry `ReleaseSource`.
-- [ ] T032 [US1] Implement `releasesBetween(versions, A, B)` and coverage tracking in `miner/src/coverage.ts`, per T029
-- [ ] T033 [US1] Implement repository identity in `miner/src/sources/github.ts`: parse the registry `repository` field (GitHub only, keep `directory`). It returns `{owner, repo, directory}`, or null with a reason
-- [ ] T034 [US1] Implement `matchRelease` and `splitChangelog` in `miner/src/sources/match.ts`, per research R5
-- [ ] T035 [US1] Implement release retrieval in `miner/src/sources/github.ts`, for every release in `releasesBetween`:
+- [x] T032 [US1] Implement `releasesBetween(versions, A, B)` and coverage tracking in `miner/src/coverage.ts`, per T029
+- [x] T033 [US1] Implement repository identity in `miner/src/sources/github.ts`: parse the registry `repository` field (GitHub only, keep `directory`). It returns `{owner, repo, directory}`, or null with a reason
+- [x] T034 [US1] Implement `matchRelease` and `splitChangelog` in `miner/src/sources/match.ts`, per research R5
+- [x] T035 [US1] Implement release retrieval in `miner/src/sources/github.ts`, for every release in `releasesBetween`:
   1. Paged `GET /repos/{o}/{r}/releases` with `GITHUB_TOKEN`.
   2. Otherwise `CHANGELOG.md` from `raw.githubusercontent.com`: the package directory first, then the root.
 
   Every fetch goes through `safeFetch`, the budget and the manifest. Whole documents are snapshotted, and the version sections are derived from the snapshot. The output is the consulted set of `ReleaseSource`s, decided before any extraction.
-- [ ] T036 [US1] Implement the tag-comparison fallback in `miner/src/sources/compare.ts`, per research R5, for releases still without material:
+- [x] T036 [US1] Implement the tag-comparison fallback in `miner/src/sources/compare.ts`, per research R5, for releases still without material:
   - resolve the exact from/to tags, then `GET /repos/{o}/{r}/compare/{base}...{head}`;
   - keep only `files[].patch` under the package `directory`, prioritizing `*.d.ts`, entry points and `package.json`;
   - bound commits and files, and mark truncation;
   - emit sources with trust `repository_evidence`.
-- [ ] T037 [US1] Implement the deterministic extractor in `miner/src/extract/rules.ts`.
+- [x] T037 [US1] Implement the deterministic extractor in `miner/src/extract/rules.ts`.
   - It finds Breaking, Removed, Deprecated, Migration and Security sections, their bullet items, and the CVE/GHSA ids in them.
   - It emits `documented` items with exact excerpts. A migration step is `documented` only when the same bullet or a Migration section states it.
-- [ ] T038 [US1] Implement the model extractor in `miner/src/extract/model.ts`:
+- [x] T038 [US1] Implement the model extractor in `miner/src/extract/model.ts`:
   - It buys one call from the first available miner in `LLM_MINERS` via `POST /engine/v1/ask/<minerId>`, with the x402 client from the spend wallet. The quote is refused above `MAX_MODEL_COST_USDC`, and `spendControls.allowedAssets` is limited to test USDC.
   - The system prompt says the text is data, not instructions.
   - A reply that doesn't parse into the item schema is a failure, even with `200`, and trips a 15-minute circuit breaker for that miner in Redis.
@@ -194,28 +194,28 @@ description: "Task list for the package-release miner"
   - It asks `budget.canCallModel` before every call, and records the miner id, calls, input size, cost and failure reason.
   - Without `MINER_SPEND_KEY` or `LLM_MINERS`, or after a failure, it is skipped. The extractor mode `rules_only` then goes into `PROCESSING_VERSION`, and that answer is not cached.
   - Tests stub the LLM miner and never buy.
-- [ ] T039 [US1] Implement `verify(items, sources)` in `miner/src/extract/verify.ts`.
+- [x] T039 [US1] Implement `verify(items, sources)` in `miner/src/extract/verify.ts`.
   - It normalizes each source once and drops every item whose `excerpt` is not an exact substring.
   - It downgrades migration steps per T027.
   - It assigns `ChangeItem.id`s, resolves section ids to versions and source ids, and logs every drop and downgrade.
-- [ ] T040 [US1] Implement `miner/src/outcome.ts`:
+- [x] T040 [US1] Implement `miner/src/outcome.ts`:
   - `selectOutcome(state)`, with no hardcoded `found`: inputs are the resolution result, the coverage, upstream errors and the security status;
   - `confidence(answer)`, using the deterministic bands in data-model.md.
-- [ ] T041 [US1] Implement the pipeline in `miner/src/answer.ts`, in the data-model.md lifecycle order:
+- [x] T041 [US1] Implement the pipeline in `miner/src/answer.ts`, in the data-model.md lifecycle order:
   1. parse → resolve → `releasesBetween` → retrieval through the manifest (releases, changelog, compare; OSV is added in T053) → consulted set and hashes;
   2. answer-cache lookup; on a miss, take the in-flight lock, or `waitForAnswer` and then compute only if a full budget still fits before `maxDuration`, returning `temporarily_unavailable` otherwise;
   3. derive sections → rules + model extraction → verify → coverage → `selectOutcome` → assemble → `putAnswer`.
 
   Any budget cut is recorded in `notCovered` with reason `budget`.
-- [ ] T042 [US1] Implement `render(answer)` in `miner/src/render.ts`. It builds the plain-text `answer` field, readable on its own:
+- [x] T042 [US1] Implement `render(answer)` in `miner/src/render.ts`. It builds the plain-text `answer` field, readable on its own:
   - a header with package, requested versus resolved versions, the target date and counts;
   - "(from version assumed: …)" when `fromAssumed`;
   - a coverage line: "Coverage complete", or "Coverage partial: not covered 3.0.0 (no material), …";
   - numbered items with version, migration (marked documented, inferred or manual review needed), excerpt and `[sN]`;
   - a notice in `rules_only` mode;
   - the sources list.
-- [ ] T043 [US1] Wire `miner/api/answer.ts` to the pipeline. Keep auth, admission and the `400` on bad input; return `200` with the JSON answer; write the metrics record
-- [ ] T044 [US1] Fixture test in `miner/test/unit/answer.us1.test.ts`, for zod 3.23.8 → 4.0.0 with recorded fixtures and a stubbed model:
+- [x] T043 [US1] Wire `miner/api/answer.ts` to the pipeline. Keep auth, admission and the `400` on bad input; return `200` with the JSON answer; write the metrics record
+- [x] T044 [US1] Fixture test in `miner/test/unit/answer.us1.test.ts`, for zod 3.23.8 → 4.0.0 with recorded fixtures and a stubbed model:
   - every release from 3.24.0 to 4.0.0 is in `covered` or `notCovered`;
   - documented items are present and all excerpts verify;
   - the version and date come from the registry;
@@ -226,6 +226,12 @@ description: "Task list for the package-release miner"
 
 **Checkpoint**: MVP. One real transition, with its intermediate releases, is answered with verified evidence and honest coverage.
 
+Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in research R5, R7 and data-model.md:
+- the full 15 MB `typescript` document is replaced in tests by a generated 16 MB document, to keep the repository small;
+- a migration-guide step was added to retrieval (zod 4.0.0 has no GitHub release or changelog, only a guide in the repository);
+- until T053 adds OSV, `security.status` is `not_checked` for every answer, and such found/not_found answers are cached;
+- the model pass is tested with a stub only. No paid LLM call has been made from the pipeline yet; the preview runs without `MINER_SPEND_KEY` and `LLM_MINERS`, so every live answer there is `rules_only`.
+
 ---
 
 ## Phase 4: User Story 2 — Honest "not found" (P1)
@@ -234,24 +240,31 @@ description: "Task list for the package-release miner"
 
 **Independent Test**: ask about a package with registry metadata but no release notes. The outcome is `not_found`, the checked sources are listed, and nothing says the upgrade is safe.
 
-- [ ] T045 [P] [US2] Record negative fixtures into `miner/test/fixtures/negative/`:
+- [x] T045 [P] [US2] Record negative fixtures into `miner/test/fixtures/negative/`:
   - a package without releases or changelog;
   - a nonexistent version;
   - a monorepo release that doesn't name the package;
   - a registry `500` and a GitHub timeout;
   - a changelog `500` while releases work (optional source failure).
-- [ ] T046 [US2] Extend `selectOutcome` in `miner/src/outcome.ts`:
+- [x] T046 [US2] Extend `selectOutcome` in `miner/src/outcome.ts`:
   - `not_found` when no release in range has version-matched material, listing the sources checked;
   - an unknown version → `not_found`, naming the closest published versions;
   - `out_of_scope` and `needs_clarification` from `parse` and `resolve`;
   - any `Upstream`/`Timeout` error on a required source → `temporarily_unavailable`, never cached, with `declaredFailure: true` in the metrics record;
   - `SIMULATE_UPSTREAM_OUTAGE=1` (environment only, never a request parameter) forces that path, for T063.
-- [ ] T047 [US2] Make `render.ts` produce explicit text for each non-`found` outcome. None may suggest the upgrade is safe
-- [ ] T048 [US2] Fixture tests in `miner/test/unit/answer.us2.test.ts`:
+- [x] T047 [US2] Make `render.ts` produce explicit text for each non-`found` outcome. None may suggest the upgrade is safe
+- [x] T048 [US2] Fixture tests in `miner/test/unit/answer.us2.test.ts`:
   - each negative fixture maps to its outcome and confidence band;
   - `temporarily_unavailable` is not written to the answer cache, and `not_found` is;
   - the `outcome` values match the YAML `errors.success_values` (every billable outcome listed, `temporarily_unavailable` not);
   - the outage flag works only from the environment.
+
+**Status (2026-11-04), model step and phrase rules**: four paid model calls (0.04 test USDC, `miner/bench/network.md`) showed miner 302 takes 8–28 s and was given the wrong text: a release with any marked heading was never sent to it. The model stays off the live answer path. Instead the deterministic pass now reads breaking-change phrases in line-start releases (research R7, `miner/bench/phrase-rules.md`); on 284 major releases it finds items in 236 instead of 177. `PROCESSING_VERSION` is now `p2`.
+
+**Status (2026-11-04)**: Phase 4 is done, with these notes:
+- the negative fixtures in `miner/test/fixtures/negative/` are hand-written, not recorded: the packages `no-notes` and `@mono/a` are invented, and the registry `500`, GitHub timeout and changelog `500` are simulated by the test fetcher;
+- a changelog or migration guide that is down is an optional source failure: the answer goes on with the 0.6 `not_found` band and is not cached, so it is retried;
+- a `not_found` answer lists every URL looked up, including those that returned 404; the 404s are not part of the answer-cache key, so a cached `not_found` stays until the registry metadata or another consulted document changes.
 
 **Checkpoint**: US1 and US2 together give an honest miner for ordinary transitions.
 

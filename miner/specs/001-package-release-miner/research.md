@@ -30,7 +30,7 @@ There are two contracts, and they are kept apart:
 ## R3. Cache, snapshots and reproducibility
 
 - **Decision**: Upstash Redis via the Vercel Marketplace (Vercel's KV product is now provided this way). Three stores:
-  1. **Source manifest**, keyed by request URL (for OSV, by the query body): `{etag, lastModified, fetchedAt, contentHash, snapshotKey}`.
+  1. **Source manifest**, keyed by processing version and request URL (for OSV, by the query body; a snapshot holds reduced text, so a reducer change must not reuse an old-shape snapshot on a `304`): `{etag, lastModified, fetchedAt, contentHash, snapshotKey}`.
      - An entry younger than the freshness window (default 1 h) is reused without a request.
      - An older one is revalidated with a conditional GET (`If-None-Match` / `If-Modified-Since`), and a `304` keeps the hash and the snapshot. GitHub does not count `304` responses against the rate limit. OSV has no conditional requests, so a stale OSV entry is simply re-queried.
   2. **Snapshots**, content-addressed (`snap:<contentHash>`): the whole normalized document as fetched (a releases page, a `CHANGELOG.md`, a compare response, an OSV response). For the registry, only the fields used (`versions` keys, `time`, `dist-tags`, `repository`), because the full document can be tens of MB. Version sections are derived from the snapshot on every use, so a manifest hit or a `304` always has the text for any version. No TTL during the hackathon evaluation period (FR-019).
@@ -59,7 +59,8 @@ There are two contracts, and they are kept apart:
 - **Decision**: Resolve the repository from the registry's `repository` field: GitHub only, with `directory` noted for monorepos. Then try, in order:
   1. **GitHub Releases** via `GET /repos/{o}/{r}/releases`, paged. A release is matched to the package version by tag pattern (`v1.2.3`, `1.2.3`, `<pkg>@1.2.3`, `<pkg>-v1.2.3`, `<pkg>/v1.2.3`). In monorepos it is also used only if the release body or tag names the package.
   2. **`CHANGELOG.md`** in the package directory, falling back to the repo root, via `raw.githubusercontent.com`, split into sections by version headings.
-  3. **Tag comparison** via `GET /repos/{o}/{r}/compare/{base}...{head}` as a last resort, with the exact tags found by step 1's patterns.
+  3. **Migration guide** (added 3 Nov, after zod 4.0.0 turned out to have no GitHub release and no `CHANGELOG.md`): for the first release of a new major line (or 0.y line), one `GET /repos/{o}/{r}/git/trees/HEAD?recursive=1`, then the shortest Markdown/MDX file whose name says migration, upgrade, changelog or breaking and whose path names the new line (`v4`, `4.0`, `version-4`), preferring paths that name the package (`react` for `@tanstack/react-query`). It is fetched from `raw.githubusercontent.com` and each of its change headings becomes a documented item. A tree above the 2 MB cap skips this step.
+  4. **Tag comparison** via `GET /repos/{o}/{r}/compare/{base}...{head}` as a last resort, with the exact tags found by step 1's patterns.
      - Evidence comes from the changed code: `files[].patch` for files under the package `directory`, prioritizing type declarations (`*.d.ts`), entry points and `package.json` (`exports`, `main`, `engines`, `peerDependencies`). Commit messages and file names alone are never evidence.
      - GitHub returns at most 300 files and 250 commits per comparison, and omits large patches. Hitting any of these limits makes coverage `partial`, with reason `truncated`.
      - Items from this step are `repository_evidence`.
@@ -85,7 +86,7 @@ There are two contracts, and they are kept apart:
 ## R7. Change extraction and the language model
 
 - **Decision**: Use a two-step extractor behind a `ChangeExtractor` interface.
-  1. **Deterministic pass**: find sections headed Breaking, Removed, Deprecated, Migration or Security, and CVE/GHSA patterns.
+  1. **Deterministic pass**: find sections headed Breaking, Removed, Deprecated, Migration or Security, and CVE/GHSA patterns. Since 4 Nov it also reads common breaking-change phrases ("no longer", "has been removed", "drop support for", "requires Node", "renamed", "use X instead" …) in bullets and prose sentences of line-start releases (x.0.0, 0.y.0), outside Fixes headings and maintenance lines. The phrases were chosen from 284 major-release notes of 89 packages: [miner/bench/phrase-rules.md](../../bench/phrase-rules.md). A line-start release is never "handled" by its headings alone, so its unmarked prose stays open for the model. A line-start release with no item whose notes only link to a guide is reported as "not assessed", and the answer's confidence is capped at 0.5.
   2. **Model pass**: classify and extract items from version-specific text, returning JSON validated with zod. The model may also return `inferred` items and steps, each with the ids of the items or sections it relies on.
 
   **Where the model comes from**: it is bought on Telegraph itself, paid in test USDC, so the hackathon costs no real money and the miner is itself a buyer on the network.

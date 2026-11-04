@@ -1,0 +1,802 @@
+[
+ {
+  "tag_name": "v3.25.31",
+  "name": "v3.25.31",
+  "body": "## Commits:\n\n- f4ae14b871a400b5529052b334ec1bd9c22d3a36 Improve util.isObject\n- e656947f99e39746a50b2d4152cd07accd75d49c v3.25.31\n- 7ca67d312708964069bb7178e4938e6d9bda27fb Support stringbool custom messages",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.31",
+  "draft": false,
+  "published_at": "2025-05-27T22:09:48Z"
+ },
+ {
+  "tag_name": "v3.25.30",
+  "name": "v3.25.30",
+  "body": "## Commits:\n\n- 269e018881de390830a9863d462c371f2ba831f3 Add v4/mini path, update url docs\n- 7080d97997f91fcb7cde7ee91bd61563cd09c805 Improve web url docs\n- 94003c4eb05b56cbb1f691cc5e65a9cb231fb39b Improve web url docs\n- 4a2e2140b3e0b72c54abceea1623ac35fa7e3909 Fix z.instanceof typing\n- 3503f1b5286bc3226eef28cd23539256d9ac82f4 3.25.30",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.30",
+  "draft": false,
+  "published_at": "2025-05-27T00:05:20Z"
+ },
+ {
+  "tag_name": "v3.25.29",
+  "name": "v3.25.29",
+  "body": "## Commits:\n\n- 592de8de6e9c1f1d41aaa68e2c8ba57adced6507 fix: Rollup comment warning. (#4462)\n- f98d1a30b403a3d3e4c2f7929dfc87b528f32d88 Standardize URL behavior, clarify docs\n- 6bcc9237742323a0dfa25edc16b30743e3d31b6e Fix endswith/startswith params\n- 028ca36a0b084a032ae65e97d602e6aa5f87d65d Add unwrap to ZodArray\n- 703aecd3fbdb47874c4fd386ebd15b8fff6fbe03 Remove interface from type enum\n- 70476635f51caa89a13785c4496d6b354f61ba2e 3.25.29\n- 2f77d56d4f41319eab5d1a9c143aeee93106eaf0 Fix tests",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.29",
+  "draft": false,
+  "published_at": "2025-05-26T22:25:07Z"
+ },
+ {
+  "tag_name": "v3.25.28",
+  "name": "v3.25.28",
+  "body": "## Commits:\n\n- e012bd248d45d3204fb9554f99e8222426e29da6 Improve override docs\n- 7bd15ed2b08956ba3c25704bd85a1e8e39eadf55 fix: add missing re-exports files and add new entries the published files (#4500)\n- b588d2c004fb414fe0215fc4f5f41bdaace88c05 Improve z.function typing. Add .def\n- 5ac95df45b5ed1c49d32bbe2e7b4de7ec33a0664 3.25.28\n- 7aecb617e02ba6b40e93a1c0badde350f419f372 Clean up ZodFunction\n- ed48cbbe5aa7951b52ff96dfbe3fe3d3d98d0768 bugfix: Small typo in V4 docs (#4435)\n- 5e4ff20b501b3977012a0b7619f0d94b6db67e2e fix: JSON Schema > override section typo (#4428)",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.28",
+  "draft": false,
+  "published_at": "2025-05-23T22:20:04Z"
+ },
+ {
+  "tag_name": "v3.25.27",
+  "name": "v3.25.27",
+  "body": "## Commits:\n\n- 27ccaf1d36eb826dab1cb84f7ce4e1a0782121af 3.25.27. Use  for override. Add .value to ZodLiteral.",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.27",
+  "draft": false,
+  "published_at": "2025-05-23T20:27:57Z"
+ },
+ {
+  "tag_name": "v3.25.26",
+  "name": "v3.25.26",
+  "body": "## Commits:\n\n- d0627208f847087dfb89dd142ee4ebd4b8f1a908 Fix  on .register methods\n- d93271e86fb09243507231a07e300acaebd0c297 Replace z.min/z.max in mini docs",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.26",
+  "draft": false,
+  "published_at": "2025-05-23T19:47:10Z"
+ },
+ {
+  "tag_name": "v3.25.25",
+  "name": "v3.25.25",
+  "body": "## Commits:\n\n- 605286346e151f75f5a27d12f435cfb465f7f1cb Add error serialization test\n- fbf88f2dd75cba4d1dc4bc8f04f2c5763d1aaf0c Document parsing with Zod Core\n- 6413fa90e4aa3f113b280de8b417fa6c6bf01439 Add additionalProperties:false by default for objects in io:output mode\n- 5477ea2068879e1e408fe126bb7cb819471473d9 3.25.25",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.25",
+  "draft": false,
+  "published_at": "2025-05-23T19:29:57Z"
+ },
+ {
+  "tag_name": "v3.25.24",
+  "name": "v3.25.24",
+  "body": "## Commits:\n\n- e0fe7ae92876414946456890fed2f85802cadfd0 Fix lint\n- 1780c67e9cfeb1c94ef4e18fc8e93f22a3e114c0 fix: rewrite $constructor to be compatible with Hermes (#4482)\n- 053debab86b4a4531ad356d749b395b283fd7501 feat: add export entries for bundlers that don't support exports field (#4489)\n- 29aba82eb2131e979723cecc49d4cfa901386fd6 Fix typos (#4495)\n- ce61025516d8976bef6a091a0becbe8ad1c9a0d0 Simplify fix\n- 93f296dff344afcc6bdf61279b946a0ce2695f65 Fix error name issue",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.24",
+  "draft": false,
+  "published_at": "2025-05-23T18:36:36Z"
+ },
+ {
+  "tag_name": "v3.25.23",
+  "name": "v3.25.23",
+  "body": "## Commits:\n\n- 2529f82726955ac204add9278f609c5ccc896233 fix: update correct JSON Schema identifiers (#4485)\n- 596a429e55795ed1529cb154efcd8136c04f5036 3.25.23",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.23",
+  "draft": false,
+  "published_at": "2025-05-22T22:53:38Z"
+ },
+ {
+  "tag_name": "v3.25.22",
+  "name": "v3.25.22",
+  "body": "## Commits:\n\n- 61adf85cba3a035c005e8de173a3dc08076e4ab8 Update basics.mdx: Fix #4479 (#4480)\n- f3a5fe6eeea5c86e43a23bcf1666b48dfddc6b9e Fix incorrect code block in zod safeParse documentation (#4467)\n- 2a6fe867dec59fc7681289099b1c246f579b590f Update README.md (#4465)\n- 8acf0e1f8ab2eaff1affe4e798468883abeae823 docs: fix safeParse sentence (#4450)\n- 98c849de3b07ff335a1c8ce59f0beed9596c2211 3.25.22. Remove src and test from package. Add semver precommit check. Update release-canary",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.22",
+  "draft": false,
+  "published_at": "2025-05-22T22:15:35Z"
+ },
+ {
+  "tag_name": "v3.25.21",
+  "name": "v3.25.21",
+  "body": "## Commits:\n\n- a2c98924956f5601358577285e7b45675e26f26f Clean up play.ts\n- 6d47791be6088907af7f8e0ae3bf154164650509 Fix v.custom input type, add z.core., error map docs",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.21",
+  "draft": false,
+  "published_at": "2025-05-22T20:53:17Z"
+ },
+ {
+  "tag_name": "v3.25.20",
+  "name": "v3.25.20",
+  "body": "## Commits:\n\n- 709dfe3d130ef696d3565f877326230a22b3e887 Add global File fallback",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.20",
+  "draft": false,
+  "published_at": "2025-05-21T22:41:08Z"
+ },
+ {
+  "tag_name": "v3.25.18",
+  "name": "v3.25.18",
+  "body": "## Commits:\n\n- 17ee03e85495c111354cd75e50b8d239b0d92c79 v3.25.18",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.18",
+  "draft": false,
+  "published_at": "2025-05-21T22:33:54Z"
+ },
+ {
+  "tag_name": "v3.25.17",
+  "name": "v3.25.17",
+  "body": "## Commits:\n\n- 4bf6b20cc365feb8d26f20cf91fc3076cc13d3ef Update locale docs with extension\n- 7191b3cec647985f74ec96e65a2f8a9c230354de Impl tshy-style build\n- c623370ff18475088f67148382d5e62c4dc80429 dist/types as commonjs\n- 31e02696ac2b6d1d27eeabb92e8f909dd7ffea50 Fix locale wildcard\n- 4eccc3bcd02478bbe4cde516ca347d1df435d260 3.25.17",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.17",
+  "draft": false,
+  "published_at": "2025-05-21T11:20:25Z"
+ },
+ {
+  "tag_name": "v3.25.16",
+  "name": "v3.25.16",
+  "body": "## Commits:\n\n- 3dec3fc6313863fa6a907f78c1d5fb9526fb7dbe Fix wildcard",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.16",
+  "draft": false,
+  "published_at": "2025-05-21T09:26:59Z"
+ },
+ {
+  "tag_name": "v3.25.15",
+  "name": "v3.25.15",
+  "body": "## Commits:\n\n- 9622b925c382a61a40931700511af1cd79f4bf65 3.25.15\n- 7f4a70751daf3eb66ffed58ec2f6ae6b7214bc1a 3.25.15",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.15",
+  "draft": false,
+  "published_at": "2025-05-21T09:20:05Z"
+ },
+ {
+  "tag_name": "v3.25.14",
+  "name": "v3.25.14",
+  "body": "## Commits:\n\n- b4f3811348ce861f1e247bf9b1e8ab8fcf22465e Fix build\n- 7d613b4b7d3b98468eae71168165d54c82f07009 Add canary releasing\n- 30d841d56380df7efff46f9335857051e6cbfc44 Fix build.mts\n- 63f09aa14b030ceadccc009e75156d8ca7bf21e5 Fix release.yml\n- 91488256192e30cd78395ceea2183f81281ce452 Update release.yml\n- 65c5bdfc7f1ee318a04f243e81dab1d149cc27c4 Release canary\n- c7316651c225b6b323a0eb9f79ddaa48e6ce2dca Fix CI\n- fe0a527654fe1e99a5e1119cba60c66ab1b949dd v3.25.14\n- ed5acb5183df6b1ba154ce6eaf4ff2a27d8ba1d6 Fix esm",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.14",
+  "draft": false,
+  "published_at": "2025-05-21T09:13:51Z"
+ },
+ {
+  "tag_name": "v3.25.13",
+  "name": "v3.25.13",
+  "body": "## Commits:\n\n- c2cec4e3cf293bd8e6a47a90d4d9c7cb2ea1f65a v3.25.13",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.13",
+  "draft": false,
+  "published_at": "2025-05-21T03:32:29Z"
+ },
+ {
+  "tag_name": "v3.25.12",
+  "name": "v3.25.12",
+  "body": "## Commits:\n\n- 14921aadd4b0eee6a659151bb01cdb467a16c98e Revert \"Revert \"Fix module resolution issue\"\"",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.12",
+  "draft": false,
+  "published_at": "2025-05-21T01:13:09Z"
+ },
+ {
+  "tag_name": "v3.25.11",
+  "name": "v3.25.11",
+  "body": "## Commits:\n\n- 3f9f65997fb25aff99d39fd4c27d5f14e6427af3 Revert \"Fix module resolution issue\"\n- cb50ed609455e9817c5b57380fd1454a35adca3b 3.25.11",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.11",
+  "draft": false,
+  "published_at": "2025-05-21T01:05:13Z"
+ },
+ {
+  "tag_name": "v3.25.10",
+  "name": "v3.25.10",
+  "body": "## Commits:\n\n- c172c199ccd0f86b539d1ba7c22db8415f7f06f3 Fix module resolution issue",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.10",
+  "draft": false,
+  "published_at": "2025-05-21T01:00:25Z"
+ },
+ {
+  "tag_name": "v3.25.9",
+  "name": "v3.25.9",
+  "body": "## Commits:\n\n- 85928549a7c2aff851d8625588ed7aa2e394831f Zod 4 (#4074)\n- 6c8bbb4c9f51a39c43e5f96be7412c46fc0e5b71 v3.25.0\n- c474b37e2db06eb09244a41d329af02e3c315141 v3.25.0\n- 9102fa54b0785f585a1ab68d1fbb5b3db410b2bc v3.25.0\n- 46dca65d7645de5b8fdd7c0e7422d91dc7b3ef41 v3.25.1\n- 2381dafe7bb47a0354881567c8d8fbeb493e031f Update Jazz\n- e7f75d69389fa308ea49177dc53a4913fefe75d3 v3.25.3\n- 3c7e6f56d287d9545573dcb3879f46754f968517 Fix link\n- 24a5e4f329378ebd035a19a678e7b24e52036829 v3.25.4. Fix T_1 bug.\n- 538efea33eddc9e4a7b7aa3e0e7c3c839da271a9 Fix copy/paste typo (#4420)\n- 1c420580040edff48eb6bed1f62597d9c85516c9 Revert `Error` inheritance changes (#4424)\n- 6dbbecd1c05ae52c977f332cca9bd49d36f72f22 3.25.5\n- d9f76e1122e08f1675c33f2794cc25e806c3f0f8 Fix shadowed generic\n- a18fc02a5a47af4305c7eb3f263d02c50a1559a9 v3.25.6\n- 1ea1c77391a8eafe89112094276bae1d1ce162d9 fix: iso timezone docs typo (#4423)\n- d40b29520076107af4996434a3dca74f3caea256 Add `zocker` to v4 Ecosystem Page (#4419)\n- 13226e033722dcb41dc9dbbf5fd03ab7ecca5042 Fix types issue\n- 868acc16177b6885271eb537b22b20aeb221b75f 3.25.7\n- 8739138b5fe8f24871007123553fc7b368dde68e Add link to writeup\n- 8cf6bfc060d83cc29ac44935b4ac35ca6764a35c Add link to writeup\n- d0318272b752bd336585a07b3f1273420f3576b1 Clarify versioning\n- 66ee76c5d631e4215476c44300c518eea2829bc1 Typos\n- 4059474389df7c8a0f03659954d78bcc0fdb4d2e Revert type fix\n- e9a0798c9f08bfd6d54397b42645e9434bc395e8 Revert \"Revert type fix\"\n- fe105a94364baa0dbb13ca83523c4514b75e7b58 v3.25.9",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25.9",
+  "draft": false,
+  "published_at": "2025-05-21T00:14:57Z"
+ },
+ {
+  "tag_name": "v3.25",
+  "name": "v3.25.0",
+  "body": "This is a minor version bump. No new features are added to Zod 3. The first stable release of Zod 4 has been made available at the following subpath:\r\n\r\n```ts\r\nimport z from \"zod/v4\"\r\n```\r\n\r\nLearn more about this versioning scheme here: https://github.com/colinhacks/zod/issues/4371\r\nRead the release notes here: https://zod.dev/v4\r\nFind the Zod 4 migration guide here: https://zod.dev/v4/changelog\r\n",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.25",
+  "draft": false,
+  "published_at": "2025-05-21T00:10:14Z"
+ },
+ {
+  "tag_name": "v3.24.4",
+  "name": "v3.24.4",
+  "body": "## Commits:\r\n\r\n- a429256d5999be4686b0da55347cc4ea65d0c5d3 Allow HH:MM format in `z.string().datetime()` and `z.string().time()` (#4315)",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.24.4",
+  "draft": false,
+  "published_at": "2025-05-04T23:38:32Z"
+ },
+ {
+  "tag_name": "v3.24.3",
+  "name": "v3.24.3",
+  "body": "Main feature: massive `tsc` performance improvement in `.extend()` courtesy of @Andarist: #4150\r\n\r\n## Commits:\r\n\r\n- de1f090c98b40884aafc4f324010ab484da2be1e Switch to featured sponsors (#4001)\r\n- eea05ae3dab628e7a834397414e5145e935e418b Fix headers (#4003)\r\n- 446644f1095667f9bd6c1704ddbd35854d5ef132 Tweak feature layout (#4008)\r\n- 1d6e1cb842ece3b2d4d583da126bc22f26367623 docs(README): add GQLoom to tools and integrations section (#3995)\r\n- e2b9a5f9ac67d13ada61cd8e4b1385eb850c7592 Update feature (#4009)\r\n- 0b5d29e5d9524ab9d5f08c12651a3385462298d1 Feature Mintlify (#4014)\r\n- 47dbb2dbf3e611db08e84d6c13f66f19427c8172 Update mintlify feature (#4015)\r\n- 69d8436f36db10d256c01da333754ea1e33d1708 Add Clerk fellowship mention (#4020)\r\n- 850871defc2c98928f1c7e8e05e93d4a84ed3c5f Fix table format\r\n- f204123863a3524a5659ec696ffd38952e20e4ac WIP (#4028)\r\n- 5041dfa3521ec98066e60f97681adf9604b66e52 WIP (#4045)\r\n- cb2b8577665d7ce2214d20b10b49c4be7deef7a0 docs: add TanStack Form to Ecosystem/Form integrations (#4055)\r\n- 099fe85fbb5b6f8434f22ee3dbfc8a6d26b54019 docs: add oRPC to Ecosystem (#4042)\r\n- b999b4bf340480d64bc7fef1ca5ab56b29430eca docs: Remove outdated doc 'avoid coercions that throw uncaught errors' (#4005)\r\n- 19c6d2e2c497b2d2498cc3f9db142965617e7c2c docs: update README_KO (#4025)\r\n- 1061293a18c8a698b082c8a4e2a65ebd3333d543 WIP (#4060)\r\n- 07ff0da057f4df2aab299a454735d8398b4c0b54 Update link\r\n- 4c7d8e503a324e7a9873d4c17af2a19738c63364 Update Fern art/link (#4062)\r\n- 91dcd30ff85f92bc2140c26d7b1294e394ff0ea4 removed unnecessary console logs (#4059)\r\n- 859ad2495e3d24559d3c8e33a00cf56e2dbaa16a Update alt tag for Retool and Stainless URL (#4071)\r\n- 220aeda3b63460ab02b2187e460665a4bcb2572e Fix images\r\n- b865062bf3fe086a26a8b8a52116653f570eb9bc update readme.md with zod-csv library (#4021)\r\n- 0615af80451fe42da3c04c76b5c4b2b4a5260267 Fix formatting\r\n- 12e58668345116601453392e2c8237acde7a5b39 Add zod 4 beta anno (#4081)\r\n- faac697f27ba56023d5384564fc594f98c589915 Fix CI\r\n- 8cca93b7cc3f8c5fa17303bbb82d5c531ec24f33 Fix CI\r\n- d114394027b76c56e389d00292f5f92f137e5553 Added FullProduct.dev to 'Powered by Zod' in Ecosystem section (#4131)\r\n- a801ddd380196778e45a59920f167bfab8f32106 Fix broken logo link (#3974)\r\n- 8fc309a8000493a86d60a8a31cb9d73850f427dc Add packages/docs\r\n- bfd0913f08d77b0e6d1633bc0f21b56712e37720 Remove packages/docs\r\n- 3e602d43124220ae0001ae761f76ff117cc2f741 Optimize `extendShape` (#4150)\r\n- 06db7f855f49f75acc7d53ec0d7c4cd3b4dcaa17 3.24.3\r\n- a18d25b297d1a47dca8f1701afb18079c05e1e4c add back packages/docs",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.24.3",
+  "draft": false,
+  "published_at": "2025-04-16T22:31:54Z"
+ },
+ {
+  "tag_name": "v4.0.0-beta",
+  "name": "v4.0.0-beta",
+  "body": "### Zod 4 is now in beta. \r\n\r\n- [**Release notes**](https://v4.zod.dev/v4)\r\n- [**Migration guide**](https://v4.zod.dev/v4/changelog)\r\n\r\nThe repo now contains three separate packages:\r\n\r\n- `zod`\r\n- `@zod/mini`: a tree-shakable variant of Zod.\r\n- `@zod/core`: a library that implements logic/parsers shared between `zod` and `@zod/mini`.\r\n\r\nDuring the beta period:\r\n- `zod` — published continuously to `zod@next` , e.g. `zod@4.0.0-beta.20250410T214751`\r\n- `@zod/mini` — published continuously to `@zod/mini@next` , e.g. `@zod/mini@4.0.0-beta.20250410T214751`\r\n- `@zod/core` — published to `latest` in the `v.0x` version range (initial development in semver)\r\n\r\nTo install/upgrade:\r\n\r\n```ts\r\nnpm upgrade zod@next\r\nnpm install @zod/mini@next\r\nnpm install @zod/core\r\n```\r\n\r\n### A note on versioning\r\n\r\nFor simplicity, additional beta will be continuously released as additional commits are made to the [`v4`](https://github.com/colinhacks/zod/tree/v4) branch.\r\n\r\nAfter the beta:\r\n\r\n- stable versions of `zod` and `@zod/mini` will be released as `4.0.0`. They will remain version-locked moving forward. They will be pinned to a specific `@zod/core` version.\r\n- `@zod/core` will be released as `1.0.0`. It will not be version-locked to `zod` and `@zod/mini`. This gives those libraries the freedom to evolve their APIs independent of `@zod/core`. Moreover, `@zod/core` will likely serve as the underpinning for additional libraries in the future, so it may implement/modify code that isn't used by either `zod` or `@zod/mini`.\r\n\r\n",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v4.0.0-beta",
+  "draft": false,
+  "published_at": "2025-04-10T22:06:18Z"
+ },
+ {
+  "tag_name": "v3.24.2",
+  "name": "v3.24.2",
+  "body": "## Notes\r\n\r\nSupport asynchronous checks in `z.custom()` .\r\n\r\n```ts\r\nconst customSchema = z.custom<number>(async (x) => {\r\n  return typeof x === \"number\";\r\n});\r\n```\r\n\r\n## Commits:\r\n\r\n- cdcf9d4263cc544c7cb49855b31612d4305da72c Bump rollup from 2.79.1 to 2.79.2 (#3895)\r\n- a2ad37099e8f7117d231cc2c72d0e471893643b2 Bump find-my-way from 8.2.0 to 8.2.2 (#3897)\r\n- 0e02d66d1bcaad9c0f92609431e1726e088a8112 Bump nanoid from 3.3.7 to 3.3.8 (#3896)\r\n- 96be65f0d71b0bf8e8f330dc0541cc895edd6459 Bump cross-spawn from 7.0.3 to 7.0.6 (#3882)\r\n- f7ad26147ba291cb3fb257545972a8e00e767470 Bump micromatch from 4.0.7 to 4.0.8 (#3748)\r\n- d724620c341e1801db9513f681f731afb3df452a Add `zod-struct` to utilities for Zod (#3921)\r\n- 6b96cfd4307649df6a451d74e06c47ac88c01dfe Update README.md (#3949)\r\n- e376cda8e14d3caa09bc2148ffc668748118db6b Add Courier to README (#3961)\r\n- 8a099deaef71b3d8bd65986a745b88f08cb28ba5 Add CodeRabbit to sponsors (#3975)\r\n- 587d160badbe96d1adec1e8ff9d93bbcb3f91c4f WIP (#3976)\r\n- 9d3af2ee5263971bc0dd7e4927cd07ee854fe4db Add CodeRabbit at Platinum (#3981)\r\n- eedeb4b69f9f4bb58401d9cb27c8038a042f2c7f docs(X to Zod): Update url for runtyping (#3971)\r\n- 706f49f9fb852cdde667b65ccb9b765444a86de7 fix: redirect url to correct url (#3939)\r\n- 7365b7d5564793c42ee02815880463b8bee30028 docs: translate README to Korean (#3934)\r\n- b7e173de06e223a7a6510903a4110634e2fb5d92 Format\r\n- 1dd44a0d6f8073f7c417e09ec96580b9ae9bda23 Support async z.custom\r\n- e30870369d5b8f31ff4d0130d4439fd997deb523 v3.24.2",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.24.2",
+  "draft": false,
+  "published_at": "2025-02-11T22:53:57Z"
+ },
+ {
+  "tag_name": "v3.24.1",
+  "name": "v3.24.1",
+  "body": "## Commits:\n\n- 0c6cbbdd1315683dd3d589fbdc5765c26431dcc9 Undeprecate .nonempty()\n- 4e219d6ad9d5e56e20afd7423092f506400a29e4 Bump min TS version to 5.0\n- 65adeeacef0274abbda5438470a3d2bfd376256d v3.24.1",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.24.1",
+  "draft": false,
+  "published_at": "2024-12-11T01:40:17Z"
+ },
+ {
+  "tag_name": "v3.24.0",
+  "name": "v3.24.0",
+  "body": "\r\n## Implement `@standard-schema/spec`\r\n\r\nThis is the first version of Zod to implement the [Standard Schema](https://github.com/standard-schema/standard-schema) spec. This is a new community effort among several validation library authors to implement a common interface, with the goal of simplifying the process of integrating schema validators with the rest of the ecosystem. Read more about the project and goals [here](https://github.com/standard-schema/standard-schema).\r\n\r\n## `z.string().jwt()`\r\n\r\nThanks to @Mokshit06 and @Cognition-Labs for this contribution!\r\n\r\nTo verify that a string is a valid 3-part JWT. \r\n\r\n```\r\nz.string().jwt();\r\n```\r\n\r\n> ⚠️ This does not *verify* your JWT cryptographically! It merely ensures its in the proper format. Use a library like [`jsonwebtoken`](https://github.com/auth0/node-jsonwebtoken) to verify the JWT signature, parse the token, and read the claims.\r\n\r\nTo constrain the JWT to a specific algorithm:\r\n\r\n```ts\r\nz.string().jwt({ alg: \"RS256\" });\r\n```\r\n\r\n## `z.string().base64url()`\r\n\r\nThank you to @marvinruder!\r\n\r\nTo complement the JWT validation, Zod 3.24 implements a standalone `.base64url()` string validation API. (The three elements of JWTs are base64url-encoded JSON strings.)\r\n\r\n```ts\r\nz.string().base64url()\r\n```\r\n\r\nThis functionality is available along the standard `z.string().base64()` validator added in Zod 3.23.\r\n\r\n\r\n## `z.string().cidr()`\r\n\r\nThanks to @wataryooou for their work on this!\r\n\r\nA validator for [CIDR notation](https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing) for specifying IP address ranges, e.g. `192.24.12.0/22`.\r\n\r\n```ts\r\nz.string().cidr()\r\n```\r\n\r\nTo specify an IP version:\r\n\r\n```ts\r\nz.string().cidr({ version: \"v4\" })\r\nz.string().cidr({ version: \"v6\" })\r\n```\r\n\r\n\r\n---\r\n\r\nView the full diff from 3.23.8: https://github.com/colinhacks/zod/compare/v3.23.8...v3.24.0\r\n\r\n- 294f54f418bd1506d807b351213c66dbffd8ac31 Update README_ZH.md about Discriminated unions (#3493)\r\n- 1247caf58d1c189155bd04c068be1c758ab77c1c Add Kubb as X-to-Zod community tool (#3508)\r\n- 62b7842c46dd7f1004f41e2220284abb75378fb7 Update default branch\r\n- c6bc80de5091c634a371cc81877df816a269e965 Fix issue #3582 : ULID should be case insensitive (#3593)\r\n- a5b9dc34d4086e8e084a059f71a481618a336303 docs: add zod-schema-faker to ecosystem (#3605)\r\n- 9818d0eba1a5877a2b1917296d018a8b4e31b211 Add zod-sockets (#3609)\r\n- 7173d0bcc2105777102e22d36a2866196e2830f3 Add drizzle-zod library to X to Zod README.md section (#3648)\r\n- c5a4edcaf7a7c434b0f94a18123750bd1151c2cf Add 'schemql' in Powered by Zod (#3800)\r\n- 85916b32002e4302cccd77fcf64574f34f2e8595 docs: add zod-form-renderer to form integration docs (#3697)\r\n- 51f1dc3950d93e4a1c11467b7e92069cd372d450 docs: add unplugin-environment in powered by zod (#3778)\r\n- 8e74db34cd0c673d21fe3b8b62c9de4c785e3de2 fix: ipv6 regex validation (#3513)\r\n- 1f4f0dacf313a2dba45563d78171e6f016096925 refactor: rename ip version types (#3755)\r\n- f487d74ecd3ae703ef8932462d14d643e31658b3 Remove faulty ip test case\r\n- 48f1c4793b21b19714d68f970ae3d739263e2b1d docs: Remove invalid semicolon in ERROR_HANDLING.md (#3857)\r\n- 1d0a4b95300a2c470b175ed4524fe3cf04ef9b19 fix: bigint coerce crash (#3822)\r\n- 14dceaa2d2b27ef448b48c4f0641413e3ead974d Add API library (#3814)\r\n- f82f817252c1f1342d81a2a5ae9adf426cb32cec feat: z.string.cidr() - support CIDR notation (#3820)\r\n- 71a0c33c01ca7e2be16e27f763ec1c3e9dee6943 docs: add info on unqualified local datetime strings (#3760)\r\n- b85686ab852bc75919fd9d853dfca4b0968301dd Add support for `base64url` strings (#3712)\r\n- 6407bed5a229f330b9353e086f7798f1422e2bb7 Allow creation of discriminated unions with a readonly array of options (#3535)\r\n- 37551462f4a534f86e6190aafea1747b010eca7a Remove createParams cascade from .array() (#3530)\r\n- 963386df253360fde67ca10c6bf47fec1fcc476a Fix lint\r\n- 69a1798ce2df65555bda0a8978a6baadd7d5588e Implement Standard Schema spec (#3850)\r\n- c1dd537baa9e4fad781ea365643399707fea91be Adds `frrm` package to documentation (#3818)\r\n- b68c05fea12d8060000aa06abc1e95b08f061378 feat: Add JWT string validator (#3893)",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.24.0",
+  "draft": false,
+  "published_at": "2024-12-10T06:59:53Z"
+ },
+ {
+  "tag_name": "v3.23.8",
+  "name": "v3.23.8",
+  "body": "## Commits:\n\n- 0f4d403558ae0490c711e4c2bfcf6c200bd14e11 Add Bronze logos (#3470)\n- 19687315b5b24bbd1ff6c346bfc2975700221748 Tweak tiers (#3471)\n- eda7df314399929f7ed737423868a5a0780cd944 Change RefinementCtx to interface\n- ca42965df46b2f7e2747db29c40a26bcb32a51d5 v3.23.8",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.23.8",
+  "draft": false,
+  "published_at": "2024-05-08T19:13:14Z"
+ },
+ {
+  "tag_name": "v3.23.7",
+  "name": "v3.23.7",
+  "body": "## Commits:\n\n- 29d2ea2a15f0b1ac4b89138041f786a3dafc490b Add copper\n- d969423266fccee56ef769da6744cc8bacb04550 Fix #3437: extendShape erases JSDoc property documentation (#3463)\n- 2239ff3ccc9af4d28bee27bd6fb2a5632844480b Add social crow\n- f985b5b922cb357dbf4b25bb43814d19f838e046 3.23.7",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.23.7",
+  "draft": false,
+  "published_at": "2024-05-07T20:00:44Z"
+ },
+ {
+  "tag_name": "v3.23.6",
+  "name": "v3.23.6",
+  "body": "## Commits:\n\n- bc0095aab9e7254deb18701adc63de128ca2c742 Test on latest node\n- 6e5699a30373cc22879f2bcb6902fc138518c980 Lint on latest node\n- 1f466d9d00f446d7bed1962990e7a1ce813ab0d4 describe how one can protect from cyclical objects starting an infini… (#3447)\n- 3fed6f21e0ea7adc91aa0cc44f75bcf4e526d98e Add zod playground link (#3454)\n- 04e1f379f6989d23dd45660fcabc78f76d7834f8 Fixed freezing async ZodReadonly results (#3457)\n- b87e59d0e4bbb4403bf27243afdcda9fcdeec258 Update sponsor tiers (#3453)\n- 143886151bba3930bdcc10d34a1cff4bf9103ba8 Add copper tier (#3460)\n- ce3711e1384952d255769b9495f9bfadfb327291 add VSCode dev container support and documenation\n- 93b480b12ec3466cbd3b4182f7ce292e5c61528c v3.23.6",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.23.6",
+  "draft": false,
+  "published_at": "2024-05-03T00:59:24Z"
+ },
+ {
+  "tag_name": "v3.23.5",
+  "name": "v3.23.5",
+  "body": "## Commits:\n\n- 110b8211f991b3e060ab2da4fec7b63d600439ad Update README_ZH.md (#3433)\n- c1910bdfc98709b8f14231e2cefc5a3be401e3ee Made ZodEnum take readonly string array (#3444)\n- 541a862e978f96eb391849a6bf16be84231aa1b3 3.23.5",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.23.5",
+  "draft": false,
+  "published_at": "2024-04-29T19:41:52Z"
+ },
+ {
+  "tag_name": "v3.23.4",
+  "name": "v3.23.4",
+  "body": "## Commits:\n\n- 157b18d742c86d85b26a8421af46ad6d6d6b6ea7 Add 3.23 announcement\n- aedf93f1435a29463d915c3be45b4dcbeefa8cc1 Revert change to default Input\n- 45107f7a7230fe48ee24dc37e621422c9dc64ec4 v3.23.4",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.23.4",
+  "draft": false,
+  "published_at": "2024-04-23T17:35:01Z"
+ },
+ {
+  "tag_name": "v3.23.3",
+  "name": "v3.23.3",
+  "body": "## Commits:\n\n- 103d2436f85872ca0e0e6247652989cc93d46a39 3.23.3",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.23.3",
+  "draft": false,
+  "published_at": "2024-04-22T22:49:05Z"
+ },
+ {
+  "tag_name": "v3.23.2",
+  "name": "v3.23.2",
+  "body": "## Commits:\n\n- c340558d14f5222a2ca177e0591463c06cc5edc3 Update protocol\n- ef588d036f3e98b832796e9a681dbaf097631ea0 Fix t3env\n- 9df70dd71195df951c43f180fbe5e64ea1f835df 3.23.2",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.23.2",
+  "draft": false,
+  "published_at": "2024-04-22T22:37:26Z"
+ },
+ {
+  "tag_name": "v3.23.1",
+  "name": "v3.23.1",
+  "body": "This changes the default generics back to `any` to prevent breakages with common packager like `@hookform/resolvers`:\r\n\r\n```diff\r\n- class ZodType<Output = unknown, Def extends ZodTypeDef = ZodTypeDef, Input = unknown> {}\r\n+ class ZodType<Output = any, Def extends ZodTypeDef = ZodTypeDef, Input = any> {}\r\n```\r\n\r\n## Commits:\r\n\r\n- 59f48723d36c423d9e10b3bd52325a7998314230 Change unknown -> any for ZodType defaults\r\n- 2ff5ceb428634de0ea4501495039c05a8e95b60a 3.23.1",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.23.1",
+  "draft": false,
+  "published_at": "2024-04-22T22:17:56Z"
+ },
+ {
+  "tag_name": "v3.23.0",
+  "name": "v3.23.0",
+  "body": "Zod 3.23 is now available. This is the final `3.x` release before Zod 4.0. To try it out:\r\n\r\n```sh\r\nnpm install zod\r\n```\r\n\r\n## Features\r\n\r\n### `z.string().date()`\r\n\r\nZod can now validate ISO 8601 date strings. Thanks @igalklebanov! https://github.com/colinhacks/zod/pull/1766\r\n\r\n```ts\r\nconst schema = z.string().date();\r\nschema.parse(\"2022-01-01\"); // OK\r\n```\r\n\r\n### `z.string().time()`\r\n\r\nZod can now validate ISO 8601 time strings. Thanks @igalklebanov! https://github.com/colinhacks/zod/pull/1766\r\n\r\n```ts\r\nconst schema = z.string().time();\r\nschema.parse(\"12:00:00\"); // OK\r\n```\r\n\r\nYou can specify sub-second precision using the `precision` option:\r\n\r\n```ts\r\nconst schema = z.string().time({ precision: 3 });\r\nschema.parse(\"12:00:00.123\"); // OK\r\nschema.parse(\"12:00:00.123456\"); // Error\r\nschema.parse(\"12:00:00\"); // Error\r\n```\r\n\r\n### `z.string().duration()`\r\n\r\nZod can now validate ISO 8601 duration strings. Thanks @mastermatt! https://github.com/colinhacks/zod/pull/3265\r\n\r\n```ts\r\nconst schema = z.string().duration();\r\nschema.parse(\"P3Y6M4DT12H30M5S\"); // OK\r\n```\r\n\r\n### Improvements to `z.string().datetime()`\r\n\r\nThanks @bchrobot https://github.com/colinhacks/zod/pull/2522\r\n\r\nYou can now allow _unqualified_ (timezone-less) datetimes using the `local: true` flag.\r\n\r\n```ts\r\nconst schema = z.string().datetime({ local: true });\r\nschema.parse(\"2022-01-01T12:00:00\"); // OK\r\n```\r\n\r\nPlus, Zod now validates the day-of-month correctly to ensure no invalid dates (e.g. February 30th) pass validation. Thanks @szamanr! https://github.com/colinhacks/zod/pull/3391\r\n\r\n### `z.string().base64()`\r\n\r\nZod can now validate base64 strings. Thanks @StefanTerdell! https://github.com/colinhacks/zod/pull/3047\r\n\r\n```ts\r\nconst schema = z.string().base64();\r\nschema.parse(\"SGVsbG8gV29ybGQ=\"); // OK\r\n```\r\n\r\n### Improved discriminated unions\r\n\r\nThe following can now be used as discriminator keys in `z.discriminatedUnion()`:\r\n\r\n- `ZodOptional`\r\n- `ZodNullable`\r\n- `ZodReadonly`\r\n- `ZodBranded`\r\n- `ZodCatch`\r\n\r\n```ts\r\nconst schema = z.discriminatedUnion(\"type\", [\r\n  z.object({ type: z.literal(\"A\").optional(), value: z.number() }),\r\n  z.object({ type: z.literal(\"B\").nullable(), value: z.string() }),\r\n  z.object({ type: z.literal(\"C\").readonly(), value: z.boolean() }),\r\n  z.object({ type: z.literal(\"D\").brand<\"D\">(), value: z.boolean() }),\r\n  z.object({ type: z.literal(\"E\").catch(\"E\"), value: z.unknown() }),\r\n]);\r\n```\r\n\r\n### Misc\r\n\r\n- feature: allow falsy error message by @fernandollisboa in https://github.com/colinhacks/zod/pull/3178\r\n- feature: add attribute message to enum validatiion by @fernandollisboa in https://github.com/colinhacks/zod/pull/3169\r\n\r\n## Breaking changes\r\n\r\nThere are no breaking changes to the public API of Zod. However some changes can impact ecosystem tools that rely on Zod internals. \r\n\r\n#### `ZodFirstPartySchemaTypes`\r\nThree new types have been added to the `ZodFirstPartySchemaTypes` union. This may impact some codegen libraries. https://github.com/colinhacks/zod/pull/3247\r\n\r\n```diff\r\n+  | ZodPipeline<any, any>\r\n+  | ZodReadonly<any>\r\n+  | ZodSymbol;\r\n```\r\n\r\n#### Unrecognized keys in `.pick()` and `.omit()`\r\n\r\nThis version fixes a bug where unknown keys were accidentally accepted in `.pick()` and `omit()`. This has been fixed, which could cause compiler errors in some user code. https://github.com/colinhacks/zod/pull/3255\r\n\r\n```ts\r\nz.object({ \r\n  name: z.string() \r\n}).pick({\r\n  notAKey: true // no longer allowed\r\n})\r\n```\r\n\r\n## Bugfixes and performance\r\n\r\n- Bugfix: Enum.extract/exclude should not remove error mapping by @shaharke in https://github.com/colinhacks/zod/pull/3240\r\n- Added latest stable Node and TypeScript versions to test matrix for up-to-date testing. by @m10rten in https://github.com/colinhacks/zod/pull/3278\r\n- Add types to `ZodFirstPartySchemaTypes` by @MatthijsMud in https://github.com/colinhacks/zod/pull/3247\r\n- fix: make `input` of `.required()` readonly by @KATT in https://github.com/colinhacks/zod/pull/3301\r\n- add never props to safe parse return types by @schicks in https://github.com/colinhacks/zod/pull/3295\r\n- Reporting errors of the preprocess that is the second property of object by @yukukotani in https://github.com/colinhacks/zod/pull/2912\r\n- Improve `addQuestionMarks`, fix #2184 by @colinhacks in https://github.com/colinhacks/zod/pull/3352\r\n- fix for njs by @dvv in https://github.com/colinhacks/zod/pull/3063\r\n- only look in `src` for `bun test` by @rotu in https://github.com/colinhacks/zod/pull/3038\r\n- Restrict .pick()/.omit() mask type to only known properties by @petrovmiroslav in https://github.com/colinhacks/zod/pull/3255\r\n- Make EnumValues generic by @IlyaSemenov in https://github.com/colinhacks/zod/pull/2338\r\n- perf: avoid unnecessary error maps by @xuxucode in https://github.com/colinhacks/zod/pull/2532\r\n- Bugfix: z.record().parse should not filter out undefined values by @raik-casimiro in https://github.com/colinhacks/zod/pull/3251\r\n- Use Set.has instead of Array.indexOf for enum comparison (perf improvement) by @jmike in https://github.com/colinhacks/zod/pull/2659\r\n- [2888] fix emails with single quotes failing validation by @Mansehej in https://github.com/colinhacks/zod/pull/2889\r\n- Bugfix: Commas are incorrectly allowed in email regex. by @mokemoko in https://github.com/colinhacks/zod/pull/3286\r\n- Fix regex in cuid2 validation to be what cuid2 library expects by @etareduction in https://github.com/colinhacks/zod/pull/2961\r\n- Make depcruise pass by @rotu in https://github.com/colinhacks/zod/pull/3037\r\n- Faster ipv4 parsing by @colinhacks in https://github.com/colinhacks/zod/pull/3413\r\n\r\n## Docs and ecosystem\r\n\r\n- chore: add pastel package to ecosystem by @jlarmstrongiv in https://github.com/colinhacks/zod/pull/2949\r\n- added required styles. by @Ansh101112 in https://github.com/colinhacks/zod/pull/2955\r\n- Feature/better chinese translate by @NWYLZW in https://github.com/colinhacks/zod/pull/2988\r\n- Fix z.instanceof example by @alexnault in https://github.com/colinhacks/zod/pull/3003\r\n- Add documentation to Zod enum exclude/extract functions by @shaharke in https://github.com/colinhacks/zod/pull/3044\r\n- Add docs for coercing nullish values by @rbuetzer in https://github.com/colinhacks/zod/pull/3067\r\n- Adds `zod-dev` utility to eco-system section by @schalkventer in https://github.com/colinhacks/zod/pull/3113\r\n- Add zhttp library to docs by @evertdespiegeleer in https://github.com/colinhacks/zod/pull/3134\r\n- fixed Readme typo in NaNs example by @RashJrEdmund in https://github.com/colinhacks/zod/pull/3181\r\n- adds zod-config library to the ecosystem by @alexmarqs in https://github.com/colinhacks/zod/pull/3200\r\n- docs: update link and description of conform integration by @g1eny0ung in https://github.com/colinhacks/zod/pull/3238\r\n- Update README.md by @yugmade13 in https://github.com/colinhacks/zod/pull/3317\r\n- feat: overhaul generics section of readme to include more details on z.ZodTypeAny usage by @braden-w in https://github.com/colinhacks/zod/pull/3321\r\n- Fix small typos by @mmorearty in https://github.com/colinhacks/zod/pull/3336\r\n- docs: update Chinese docs and correct some of the typos by @jiechen257 in https://github.com/colinhacks/zod/pull/3338\r\n- docs: improve chinese readme by @luckrnx09 in https://github.com/colinhacks/zod/pull/3371\r\n- Add java-to-zod in X to Zod section by @ivangreene in https://github.com/colinhacks/zod/pull/3385\r\n- docs: add `orval` to \"X to Zod\" ecosystems by @soartec-lab in https://github.com/colinhacks/zod/pull/3397\r\n\r\n## New Contributors\r\n\r\n- @jlarmstrongiv made their first contribution in https://github.com/colinhacks/zod/pull/2949\r\n- @Ansh101112 made their first contribution in https://github.com/colinhacks/zod/pull/2955\r\n- @NWYLZW made their first contribution in https://github.com/colinhacks/zod/pull/2988\r\n- @alexnault made their first contribution in https://github.com/colinhacks/zod/pull/3003\r\n- @shaharke made their first contribution in https://github.com/colinhacks/zod/pull/3044\r\n- @rbuetzer made their first contribution in https://github.com/colinhacks/zod/pull/3067\r\n- @schalkventer made their first contribution in https://github.com/colinhacks/zod/pull/3113\r\n- @evertdespiegeleer made their first contribution in https://github.com/colinhacks/zod/pull/3134\r\n- @RashJrEdmund made their first contribution in https://github.com/colinhacks/zod/pull/3181\r\n- @alexmarqs made their first contribution in https://github.com/colinhacks/zod/pull/3200\r\n- @JonnyBurger made their first contribution in https://github.com/colinhacks/zod/pull/3214\r\n- @fernandollisboa made their first contribution in https://github.com/colinhacks/zod/pull/3178\r\n- @g1eny0ung made their first contribution in https://github.com/colinhacks/zod/pull/3238\r\n- @m10rten made their first contribution in https://github.com/colinhacks/zod/pull/3278\r\n- @MatthijsMud made their first contribution in https://github.com/colinhacks/zod/pull/3247\r\n- @yugmade13 made their first contribution in https://github.com/colinhacks/zod/pull/3317\r\n- @braden-w made their first contribution in https://github.com/colinhacks/zod/pull/3321\r\n- @mmorearty made their first contribution in https://github.com/colinhacks/zod/pull/3336\r\n- @schicks made their first contribution in https://github.com/colinhacks/zod/pull/3295\r\n- @yukukotani made their first contribution in https://github.com/colinhacks/zod/pull/2912\r\n- @jiechen257 made their first contribution in https://github.com/colinhacks/zod/pull/3338\r\n- @luckrnx09 made their first contribution in https://github.com/colinhacks/zod/pull/3371\r\n- @dvv made their first contribution in https://github.com/colinhacks/zod/pull/3063\r\n- @rotu made their first contribution in https://github.com/colinhacks/zod/pull/3038\r\n- @petrovmiroslav made their first contribution in https://github.com/colinhacks/zod/pull/3255\r\n- @ivoilic made their first contribution in https://github.com/colinhacks/zod/pull/2364\r\n- @telemakhos made their first contribution in https://github.com/colinhacks/zod/pull/3388\r\n- @bchrobot made their first contribution in https://github.com/colinhacks/zod/pull/2522\r\n- @szamanr made their first contribution in https://github.com/colinhacks/zod/pull/3391\r\n- @ivangreene made their first contribution in https://github.com/colinhacks/zod/pull/3385\r\n- @xuxucode made their first contribution in https://github.com/colinhacks/zod/pull/2532\r\n- @raik-casimiro made their first contribution in https://github.com/colinhacks/zod/pull/3251\r\n- @jmike made their first contribution in https://github.com/colinhacks/zod/pull/2659\r\n- @Mansehej made their first contribution in https://github.com/colinhacks/zod/pull/2889\r\n- @mokemoko made their first contribution in https://github.com/colinhacks/zod/pull/3286\r\n- @etareduction made their first contribution in https://github.com/colinhacks/zod/pull/2961\r\n- @mastermatt made their first contribution in https://github.com/colinhacks/zod/pull/3265\r\n- @soartec-lab made their first contribution in https://github.com/colinhacks/zod/pull/3397\r\n\r\n**Full Changelog**: https://github.com/colinhacks/zod/compare/v3.22.4...v3.23.0\r\n",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.23.0",
+  "draft": false,
+  "published_at": "2024-04-21T22:44:10Z"
+ },
+ {
+  "tag_name": "v3.23.0-beta.0",
+  "name": "v3.23.0-beta.0",
+  "body": "Zod 3.23 is now in beta! This is the final `3.x` release before Zod 4.0. To try it out:\r\n\r\n```sh\r\nnpm install zod@beta\r\n```\r\n\r\n## Features\r\n\r\n### `z.string().date()`\r\n\r\nZod can now validate ISO 8601 date strings. Thanks @igalklebanov! https://github.com/colinhacks/zod/pull/1766\r\n\r\n```ts\r\nconst schema = z.string().date();\r\nschema.parse(\"2022-01-01\"); // OK\r\n```\r\n\r\n### `z.string().time()`\r\n\r\nZod can now validate ISO 8601 time strings. Thanks @igalklebanov! https://github.com/colinhacks/zod/pull/1766\r\n\r\n```ts\r\nconst schema = z.string().time();\r\nschema.parse(\"12:00:00\"); // OK\r\n```\r\n\r\nYou can specify sub-second precision using the `precision` option:\r\n\r\n```ts\r\nconst schema = z.string().time({ precision: 3 });\r\nschema.parse(\"12:00:00.123\"); // OK\r\nschema.parse(\"12:00:00.123456\"); // Error\r\nschema.parse(\"12:00:00\"); // Error\r\n```\r\n\r\n### `z.string().duration()`\r\n\r\nZod can now validate ISO 8601 duration strings. Thanks @mastermatt! https://github.com/colinhacks/zod/pull/3265\r\n\r\n```ts\r\nconst schema = z.string().duration();\r\nschema.parse(\"P3Y6M4DT12H30M5S\"); // OK\r\n```\r\n\r\n### Improvements to `z.string().datetime()`\r\n\r\nThanks @bchrobot https://github.com/colinhacks/zod/pull/2522\r\n\r\nYou can now allow _unqualified_ (timezone-less) datetimes using the `local: true` flag.\r\n\r\n```ts\r\nconst schema = z.string().datetime({ local: true });\r\nschema.parse(\"2022-01-01T12:00:00\"); // OK\r\n```\r\n\r\nPlus, Zod now validates the day-of-month correctly to ensure no invalid dates (e.g. February 30th) pass validation. Thanks @szamanr! https://github.com/colinhacks/zod/pull/3391\r\n\r\n### `z.string().base64()`\r\n\r\nZod can now validate base64 strings. Thanks @StefanTerdell! https://github.com/colinhacks/zod/pull/3047\r\n\r\n```ts\r\nconst schema = z.string().base64();\r\nschema.parse(\"SGVsbG8gV29ybGQ=\"); // OK\r\n```\r\n\r\n### Improved discriminated unions\r\n\r\nThe following can now be used as discriminator keys in `z.discriminatedUnion()`:\r\n\r\n- `ZodOptional`\r\n- `ZodNullable`\r\n- `ZodReadonly`\r\n- `ZodBranded`\r\n- `ZodCatch`\r\n\r\n```ts\r\nconst schema = z.discriminatedUnion(\"type\", [\r\n  z.object({ type: z.literal(\"A\").optional(), value: z.number() }),\r\n  z.object({ type: z.literal(\"B\").nullable(), value: z.string() }),\r\n  z.object({ type: z.literal(\"C\").readonly(), value: z.boolean() }),\r\n  z.object({ type: z.literal(\"D\").readonly(), value: z.boolean() }),\r\n  z.object({ type: z.literal(\"E\").catch(\"E\"), value: z.unknown() }),\r\n]);\r\n```\r\n\r\n### Misc\r\n\r\n- feature: allow falsy error message by @fernandollisboa in https://github.com/colinhacks/zod/pull/3178\r\n- feature: add attribute message to enum validatiion by @fernandollisboa in https://github.com/colinhacks/zod/pull/3169\r\n\r\n## Breaking changes\r\n\r\nThere are no breaking changes to the public API of Zod. However some changes can impact ecosystem tools that rely on Zod internals. \r\n\r\n#### `ZodFirstPartySchemaTypes`\r\nThree new types have been added to the `ZodFirstPartySchemaTypes` union. This may impact some codegen libraries. https://github.com/colinhacks/zod/pull/3247\r\n\r\n```diff\r\n+  | ZodPipeline<any, any>\r\n+  | ZodReadonly<any>\r\n+  | ZodSymbol;\r\n```\r\n\r\n#### Default generics in `ZodType`\r\n\r\nThe third argument of the `ZodType` base class now defaults to `unknown`. This makes it easier to define recursive schemas and write generic functions that accept Zod schemas.\r\n\r\n```diff\r\n- class ZodType<Output = any, Def extends ZodTypeDef = ZodTypeDef, Input = Output> {}\r\n+ class ZodType<Output = unknown, Def extends ZodTypeDef = ZodTypeDef, Input = unknown> {}\r\n```\r\n\r\n#### Unrecognized keys in `.pick()` and `.omit()`\r\n\r\nThis version fixes a bug where unknown keys were accidentally accepted in `.pick()` and `omit()`. This has been fixed, which could cause compiler errors in some user code. https://github.com/colinhacks/zod/pull/3255\r\n\r\n```ts\r\nz.object({ \r\n  name: z.string() \r\n}).pick({\r\n  notAKey: true // no longer allowed\r\n})\r\n```\r\n\r\n## Bugfixes and performance\r\n\r\n- Bugfix: Enum.extract/exclude should not remove error mapping by @shaharke in https://github.com/colinhacks/zod/pull/3240\r\n- Added latest stable Node and TypeScript versions to test matrix for up-to-date testing. by @m10rten in https://github.com/colinhacks/zod/pull/3278\r\n- Add types to `ZodFirstPartySchemaTypes` by @MatthijsMud in https://github.com/colinhacks/zod/pull/3247\r\n- fix: make `input` of `.required()` readonly by @KATT in https://github.com/colinhacks/zod/pull/3301\r\n- add never props to safe parse return types by @schicks in https://github.com/colinhacks/zod/pull/3295\r\n- Reporting errors of the preprocess that is the second property of object by @yukukotani in https://github.com/colinhacks/zod/pull/2912\r\n- Improve `addQuestionMarks`, fix #2184 by @colinhacks in https://github.com/colinhacks/zod/pull/3352\r\n- fix for njs by @dvv in https://github.com/colinhacks/zod/pull/3063\r\n- only look in `src` for `bun test` by @rotu in https://github.com/colinhacks/zod/pull/3038\r\n- Restrict .pick()/.omit() mask type to only known properties by @petrovmiroslav in https://github.com/colinhacks/zod/pull/3255\r\n- Make EnumValues generic by @IlyaSemenov in https://github.com/colinhacks/zod/pull/2338\r\n- perf: avoid unnecessary error maps by @xuxucode in https://github.com/colinhacks/zod/pull/2532\r\n- Bugfix: z.record().parse should not filter out undefined values by @raik-casimiro in https://github.com/colinhacks/zod/pull/3251\r\n- Use Set.has instead of Array.indexOf for enum comparison (perf improvement) by @jmike in https://github.com/colinhacks/zod/pull/2659\r\n- [2888] fix emails with single quotes failing validation by @Mansehej in https://github.com/colinhacks/zod/pull/2889\r\n- Bugfix: Commas are incorrectly allowed in email regex. by @mokemoko in https://github.com/colinhacks/zod/pull/3286\r\n- Fix regex in cuid2 validation to be what cuid2 library expects by @etareduction in https://github.com/colinhacks/zod/pull/2961\r\n- Make depcruise pass by @rotu in https://github.com/colinhacks/zod/pull/3037\r\n- Faster ipv4 parsing by @colinhacks in https://github.com/colinhacks/zod/pull/3413\r\n\r\n## Docs and ecosystem\r\n\r\n- chore: add pastel package to ecosystem by @jlarmstrongiv in https://github.com/colinhacks/zod/pull/2949\r\n- added required styles. by @Ansh101112 in https://github.com/colinhacks/zod/pull/2955\r\n- Feature/better chinese translate by @NWYLZW in https://github.com/colinhacks/zod/pull/2988\r\n- Fix z.instanceof example by @alexnault in https://github.com/colinhacks/zod/pull/3003\r\n- Add documentation to Zod enum exclude/extract functions by @shaharke in https://github.com/colinhacks/zod/pull/3044\r\n- Add docs for coercing nullish values by @rbuetzer in https://github.com/colinhacks/zod/pull/3067\r\n- Adds `zod-dev` utility to eco-system section by @schalkventer in https://github.com/colinhacks/zod/pull/3113\r\n- Add zhttp library to docs by @evertdespiegeleer in https://github.com/colinhacks/zod/pull/3134\r\n- fixed Readme typo in NaNs example by @RashJrEdmund in https://github.com/colinhacks/zod/pull/3181\r\n- adds zod-config library to the ecosystem by @alexmarqs in https://github.com/colinhacks/zod/pull/3200\r\n- docs: update link and description of conform integration by @g1eny0ung in https://github.com/colinhacks/zod/pull/3238\r\n- Update README.md by @yugmade13 in https://github.com/colinhacks/zod/pull/3317\r\n- feat: overhaul generics section of readme to include more details on z.ZodTypeAny usage by @braden-w in https://github.com/colinhacks/zod/pull/3321\r\n- Fix small typos by @mmorearty in https://github.com/colinhacks/zod/pull/3336\r\n- docs: update Chinese docs and correct some of the typos by @jiechen257 in https://github.com/colinhacks/zod/pull/3338\r\n- docs: improve chinese readme by @luckrnx09 in https://github.com/colinhacks/zod/pull/3371\r\n- Add java-to-zod in X to Zod section by @ivangreene in https://github.com/colinhacks/zod/pull/3385\r\n- docs: add `orval` to \"X to Zod\" ecosystems by @soartec-lab in https://github.com/colinhacks/zod/pull/3397\r\n\r\n## New Contributors\r\n\r\n- @jlarmstrongiv made their first contribution in https://github.com/colinhacks/zod/pull/2949\r\n- @Ansh101112 made their first contribution in https://github.com/colinhacks/zod/pull/2955\r\n- @NWYLZW made their first contribution in https://github.com/colinhacks/zod/pull/2988\r\n- @alexnault made their first contribution in https://github.com/colinhacks/zod/pull/3003\r\n- @shaharke made their first contribution in https://github.com/colinhacks/zod/pull/3044\r\n- @rbuetzer made their first contribution in https://github.com/colinhacks/zod/pull/3067\r\n- @schalkventer made their first contribution in https://github.com/colinhacks/zod/pull/3113\r\n- @evertdespiegeleer made their first contribution in https://github.com/colinhacks/zod/pull/3134\r\n- @RashJrEdmund made their first contribution in https://github.com/colinhacks/zod/pull/3181\r\n- @alexmarqs made their first contribution in https://github.com/colinhacks/zod/pull/3200\r\n- @JonnyBurger made their first contribution in https://github.com/colinhacks/zod/pull/3214\r\n- @fernandollisboa made their first contribution in https://github.com/colinhacks/zod/pull/3178\r\n- @g1eny0ung made their first contribution in https://github.com/colinhacks/zod/pull/3238\r\n- @m10rten made their first contribution in https://github.com/colinhacks/zod/pull/3278\r\n- @MatthijsMud made their first contribution in https://github.com/colinhacks/zod/pull/3247\r\n- @yugmade13 made their first contribution in https://github.com/colinhacks/zod/pull/3317\r\n- @braden-w made their first contribution in https://github.com/colinhacks/zod/pull/3321\r\n- @mmorearty made their first contribution in https://github.com/colinhacks/zod/pull/3336\r\n- @schicks made their first contribution in https://github.com/colinhacks/zod/pull/3295\r\n- @yukukotani made their first contribution in https://github.com/colinhacks/zod/pull/2912\r\n- @jiechen257 made their first contribution in https://github.com/colinhacks/zod/pull/3338\r\n- @luckrnx09 made their first contribution in https://github.com/colinhacks/zod/pull/3371\r\n- @dvv made their first contribution in https://github.com/colinhacks/zod/pull/3063\r\n- @rotu made their first contribution in https://github.com/colinhacks/zod/pull/3038\r\n- @petrovmiroslav made their first contribution in https://github.com/colinhacks/zod/pull/3255\r\n- @ivoilic made their first contribution in https://github.com/colinhacks/zod/pull/2364\r\n- @telemakhos made their first contribution in https://github.com/colinhacks/zod/pull/3388\r\n- @bchrobot made their first contribution in https://github.com/colinhacks/zod/pull/2522\r\n- @szamanr made their first contribution in https://github.com/colinhacks/zod/pull/3391\r\n- @ivangreene made their first contribution in https://github.com/colinhacks/zod/pull/3385\r\n- @xuxucode made their first contribution in https://github.com/colinhacks/zod/pull/2532\r\n- @raik-casimiro made their first contribution in https://github.com/colinhacks/zod/pull/3251\r\n- @jmike made their first contribution in https://github.com/colinhacks/zod/pull/2659\r\n- @Mansehej made their first contribution in https://github.com/colinhacks/zod/pull/2889\r\n- @mokemoko made their first contribution in https://github.com/colinhacks/zod/pull/3286\r\n- @etareduction made their first contribution in https://github.com/colinhacks/zod/pull/2961\r\n- @mastermatt made their first contribution in https://github.com/colinhacks/zod/pull/3265\r\n- @soartec-lab made their first contribution in https://github.com/colinhacks/zod/pull/3397\r\n\r\n**Full Changelog**: https://github.com/colinhacks/zod/compare/v3.22.4...v3.23.0-beta\r\n",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.23.0-beta.0",
+  "draft": false,
+  "published_at": "2024-04-18T01:55:14Z"
+ },
+ {
+  "tag_name": "v3.22.4",
+  "name": "v3.22.4",
+  "body": "## Commits:\n\n- d931ea3f0f15a6ae64f5f68e3c03912dffb2269d Lint\n- 8e634bd600093b7161487bed705279c892395118 Fix prettier\n- 4018d88f0e94992b2987428c4fda387b99ae2a53 docs: add @sanity-typed/zod to ecosystem (#2731)\n- 15ba5a4d4cb5be5af23771de0ba1346b4ba20a0e docs: add `zod-sandbox` to README ecosystem links (#2707)\n- 699ccae13b875d4fcadac268fd789c93b6ce8aef Export jsdoc with `@deprecated` when building (#2717)\n- dfe3719eae250ab3eca2d276da6c292867899cc6 Fix sanity-typed links (#2840)\n- cd7991e04a550868bfcb5b5d46e5eb5bc7edf5f3 fix ulid regex (#2225)\n- 7cb4ba2f85dd6b28290dda5de80ed54dfd2a793c Remove stalebot\n- 9340fd51e48576a75adc919bff65dbc4a5d4c99b Lazy emojiRegex\n- e7a9b9b3033991be6b4225f1be21da39c250bbb0 3.22.4",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.22.4",
+  "draft": false,
+  "published_at": "2023-10-04T21:53:42Z"
+ },
+ {
+  "tag_name": "v3.22.3",
+  "name": "v3.22.3",
+  "body": "## Commits:\n\n- 1e23990bcdd33d1e81b31e40e77a031fcfd87ce1 Commit\n- 9bd3879b482f139fd03d5025813ee66a04195cdd docs: remove obsolete text about readonly types (#2676)\n- f59be093ec21430d9f32bbcb628d7e39116adf34 clarify datetime ISO 8601 (#2673)\n- 64dcc8e2b16febe48fa8e3c82c47c92643e6c9e3 Update sponsors\n- 18115a8f128680b4526df58ce96deab7dce93b93 Formatting\n- 28c19273658b164c53c149785fa7a8187c428ad4 Update sponsors\n- ad2ee9ccf723c4388158ff6b8669c2a6cdc85643 2718 Updated Custom Schemas documentation example to use type narrowing (#2778)\n- ae0f7a2c15e7741ee1b23c03a3bfb9acebd86551 docs: update ref to discriminated-unions docs (#2485)\n- 2ba00fe2377f4d53947a84b8cdb314a63bbd6dd4 [2609] fix ReDoS vulnerability in email regex (#2824)\n- 1e61d76cdec05de9271fc0df58798ddf9ce94923 3.22.3",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.22.3",
+  "draft": false,
+  "published_at": "2023-10-03T18:34:49Z"
+ },
+ {
+  "tag_name": "v3.22.2",
+  "name": "v3.22.2",
+  "body": "## Commits:\n\n- 13d9e6bda286cbd4c1b177171273695d8309e5de Fix lint\n- 0d49f10b3c25a8e4cbb6534cc0773b195c56d06d docs: add typeschema to ecosystem (#2626)\n- 8e4af7b56df6f2e3daf0dd825b986f1d963025ce X to Zod: add app.quicktype.io (#2668)\n- 792b3ef0d41c144cd10641c6966b98dae1222d82 Fix superrefine types",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.22.2",
+  "draft": false,
+  "published_at": "2023-08-19T00:15:35Z"
+ },
+ {
+  "tag_name": "v3.22.1",
+  "name": "v3.22.1",
+  "body": "## Commits:\r\n\r\nFix handing of `this` in ZodFunction schemas. The parse logic for function schemas now requires the `Reflect` API.\r\n\r\n```ts\r\nconst methodObject = z.object({\r\n  property: z.number(),\r\n  method: z.function().args(z.string()).returns(z.number()),\r\n});\r\nconst methodInstance = {\r\n  property: 3,\r\n  method: function (s: string) {\r\n    return s.length + this.property;\r\n  },\r\n};\r\nconst parsed = methodObject.parse(methodInstance);\r\nparsed.method(\"length=8\"); // => 11 (8 length + 3 property)\r\n```\r\n\r\n\r\n- 932cc472d2e66430d368a409b8d251909d7d8d21 Initial prototype fix for issue #2651 (#2652)\r\n- 0a055e726ac210ef6efc69aa70cd2491767f6060 3.22.1",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.22.1",
+  "draft": false,
+  "published_at": "2023-08-15T19:43:17Z"
+ },
+ {
+  "tag_name": "v3.22.0",
+  "name": "v3.22.0",
+  "body": "## `ZodReadonly`\r\n\r\nThis release introduces `ZodReadonly` and the `.readonly()` method on `ZodType`. \r\n\r\nCalling `.readonly()` on any schema returns a `ZodReadonly` instance that wraps the original schema. The new schema parses all inputs using the original schema, then calls `Object.freeze()` on the result. The inferred type is also marked as `readonly`.\r\n\r\n```ts\r\nconst schema = z.object({ name: string }).readonly();\r\ntype schema = z.infer<typeof schema>;\r\n// Readonly<{name: string}>\r\n\r\nconst result = schema.parse({ name: \"fido\" });\r\nresult.name = \"simba\"; // error\r\n```\r\n\r\nThe inferred type uses TypeScript's built-in readonly types when relevant.\r\n\r\n```ts\r\nz.array(z.string()).readonly();\r\n// readonly string[]\r\n\r\nz.tuple([z.string(), z.number()]).readonly();\r\n// readonly [string, number]\r\n\r\nz.map(z.string(), z.date()).readonly();\r\n// ReadonlyMap<string, Date>\r\n\r\nz.set(z.string()).readonly();\r\n// ReadonlySet<Promise<string>>\r\n```\r\n\r\n## Commits:\r\n\r\n- 6dad90785398885f7b058f5c0760d5ae5476b833 Comments\r\n- 56ace682e4cc89132c034a3ae2c13b2d5b1a0115 Fix deno test\r\n- 3809d54fc8c5dd0a0ce367bd2575fe3fdadf087d Add superforms\r\n- d1ad5221900af640bc3093a2fb0476ec0c94953e Add transloadit\r\n- a3bb701757127ffe05e773a2e449136b9b7efcb3 Testing on Typescript 5.0 (#2221)\r\n- 51e14beeab2f469fcbf18e3df44653e1643f5487 docs: update deprecated link (#2219)\r\n- a263814fc430db8d47430cd2884d2cea6b11c671 fixed Datetime & IP TOC links\r\n- 502384e56fe2b1f8173735df6c3b0d41bce04edc docs: add mobx-zod-form to form integrations (#2299)\r\n- a8be4500851923aa865e009fe9c2855e80482047 docs: Add `zocker` to Ecosystem section (#2416)\r\n- 15de22a3ba6144c7d8d2276e8e56174bcdfa7225 Allow subdomains and hyphens in `ZodString.email` (#2274)\r\n- 00f5783602ccbe423deb0dbd76ecf13a276bc54d Add `zod-openapi` to ecosystem (#2434)\r\n- 0a17340e9fc4b909d10ca3687b6bc6454903ff21 docs: fix minor typo (#2439)\r\n- 60a21346086d32ca9f39efc2771f5db37c835c03 Add masterborn\r\n- 0a90ed1461dafa62ff50ce0d5d5434fd4a2a4a20 chore: move `exports.types` field to first spot @ package.json. (#2443)\r\n- 67f35b16692ca33fd48adfec9ae83b9514f8a4b7 docs: allow Zod to be used in dev tools at site (#2432)\r\n- 6795c574b1d34f6e95ae891f96d8b219b98ace92 Fix not working Deno doc link. (#2428)\r\n- 37e9c550460e4edd144da90d903e878c119c5cc1 Generalize uuidRegex\r\n- 09699501ff6218b3b0a7e382eca3c02a8226ce13 adds ctx to preprocess (#2426)\r\n- af08390139cf9fd4fc9e398b60a39191bf224076 fix: super refinement function types (#2420)\r\n- 36fef58410f4b2c9e79edabae2fc567a4aee13a7 Make email regex reasonable (#2157)\r\n- f627d14d3bfe3a680ac0d54705b2e63daa912aed Document canary\r\n- e06321c15d22082e47c7c111a92ec7b3e104c644 docs: add tapiduck to API libraries (#2410)\r\n- 11e507c4d3bf4ad3ab2057a0122168ed0048a2c4 docs: add ts as const example in zod enums (#2412)\r\n- 5427565c347a14056bc60e3ffd800b98753952bc docs: add zod-fixture to mocking ecosystem (#2409)\r\n- d3bf7e60a8eb706c4c63a9a91fd66565b82883cf docs: add `zodock` to mocking ecosystem (#2394)\r\n- 2270ae563f7f14bed770f75d9c252880794fa71f remove \"as any\" casts in createZodEnum (#2332)\r\n- 00bdd0a7ffdf495af14e67ae1396c85a282c38dd fix proto pollution vulnerability (#2239)\r\n- a3c525658bc43edf40747a99b8f882d8d3d1e0c7 Fix error_handling unrecognized_keys example\r\n- 4f75cbc682199a5411189f9cd9abba9af4924746 Adds getters to Map for key + value (#2356)\r\n- ca7b03222764496d72085b1178fa22f4a57fe579 FMC (#2346)\r\n- 6fec8bd3407f463f157522a3979b4d202870ba4c docs: fix typo in link fragment (#2329)\r\n- 16f90bd22b465aca9a1fbad09248d80aa93fd824 Update README.md\r\n- 2c802507d92d2d2e15be959695b1de78b896bfcb Update readme\r\n- eaf64e09ba1a87dd6bf348fb97061894a01242d2 Update sponsors\r\n- c5763112e2912390f3317d738e4261fa8747494e Update readme\r\n- 5e23b4fae4715c7391f9ceb4369421a034851b4c Add `*.md` pattern to prettier (#2476)\r\n- 898dced470f1045b5469543abd2f427a713d93eb Revamp tests\r\n- 6309322a28545e316299f8b9a36f43132d347300 Update test runners\r\n- c0aece1672d1442d69ce1991142af8f16ed20ecb Add vitest config\r\n- 73a5610186c413872153e8dcac76c4c4f23dfe4e Update script\r\n- 8d8e1a2d306cecaf3d8cb88f32fe3e130a834f9f Fix deno test bug\r\n- 9eb2508fac78cc36faefd050e9616bb6d34814c1 Clean up configs\r\n- cfbc7b3f6714ced250dd4053822faf472bf1828e Fix root jest config\r\n- 8677f688b0ab1bb5991e90744f46a15082772bd6 docs(comparison-yup): Yup added partial() and deepPartial() in v1 (#2603)\r\n- fb00edd04ca338b8d791a96dead161076538c6c2 docs: add VeeValidate form library for Vue.js (#2578)\r\n- ab8e71793431eeb163613007c134132e6c2ab078 docs: fix typo in z.object (#2570)\r\n- d870407a020f9518fbae662f9f48a9aba005a3e2 docs: fix incomplete Records example (#2579)\r\n- 5adae24e9b2fc98fc679defa8f78e4142d4c3451 docs: add conform form integration (#2577)\r\n- 8b8ab3e79691ebafbb9aac3ce089eaf0dcd6d8fe Update README.md (#2562)\r\n- 6aab9016873c12be08d19bcc097b3e5ba4c9d6fe fix typo test name (#2542)\r\n- 81a89f593f4d6b05f770bbb3ad0fc98075f468dd Update nullish documentation to correct chaining order (#2457)\r\n- 78a409012a4dc34a455f5c4a7e028ca47c921e1b docs: update comparison with `runtypes` (#2536)\r\n- 1ecd6241ef97b33ce229b49f1346ffeee5d0ba74 Fix prettier\r\n- 981d4b5e272e7e35ff44a31fbb5e8e90594b1933 Add ZodReadonly (#2634)\r\n- fba438cddea800b081a15aefc8b1efea2eccf7af 3.22.0",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.22.0",
+  "draft": false,
+  "published_at": "2023-08-14T19:24:42Z"
+ },
+ {
+  "tag_name": "v3.21.4",
+  "name": "v3.21.4",
+  "body": "## Commits:\n\n- 22f3cc6ed52a28c984a0319a1a03e1af244cee02 3.21.4",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.21.4",
+  "draft": false,
+  "published_at": "2023-03-07T04:39:44Z"
+ },
+ {
+  "tag_name": "v3.21.3",
+  "name": "v3.21.3",
+  "body": "## Commits:\n\n- 14c08d87129c3b652f03d2e724979c383c55e0b4 added more `.pipe` examples\n- 006e6521f425b38e1fbb898e29921fe885caf7ba Fix npm canary action paths pattern (#2148)\n- bdcff0f20f4c35dd6a44b1324711dfd34a41ae96 Remove logging in tests\n- a5830c6d3fe28f0d5435cc9ff22846be7f5977c1 Reverted #1564\n- c4583819e77a702e21b587c4bf081d0292f2b754 Fix tests\n- 2db0dcadc961fd57f7f10f9d9f55d67e6d040342 3.21.3",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.21.3",
+  "draft": false,
+  "published_at": "2023-03-06T21:48:03Z"
+ },
+ {
+  "tag_name": "v3.21.2",
+  "name": "v3.21.2",
+  "body": "## Commits:\n\n- b276d71eaefef6cb87c81e8429bd160e4b68c168 Improve typings in generics\n- 4d016b772b79d566bfa2a0c2fc5bfbd92b776982 Improve type inference in generics\n- f9895ab1650ef3df9c598a8c43ede0160596ac2e Improve types inside generic functions\n- ac0135e00df75abd57a93a4816fe0fdaa31e94e8 Pass input into catchValue",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.21.2",
+  "draft": false,
+  "published_at": "2023-03-06T07:20:02Z"
+ },
+ {
+  "tag_name": "v3.21.1",
+  "name": "v3.21.1",
+  "body": "## Features\r\n\r\nSupport for [ULID](https://github.com/ulid/spec) validation\r\n\r\n```ts\r\nz.string().ulid();\r\n```\r\n\r\n## Commits:\r\n\r\n- 4f8946182ee07eb7b5d40efa908b1715414e8929 Prettier\r\n- bd6527a47a4626135dccac113a7b09f81b675edd Update deps\r\n- 126c77b3130d9a68032f72ac76dd9e1ccfd86c2c added `toLowerCase` and `toUpperCase` back in for v3.21.0\r\n- 174965739d17db348d445ab250fb2cf6bd7cdd51 Update README.md\r\n- dabe63d15eb6d22246aa5d5c83b69d1d5f4c2f4b updated `z.custom` example again :D\r\n- 6b8f6557d9b53ea7ad3fda753a51cdf153ba1fb7 docs: improve cn readme (#2143)\r\n- 9012dc7055e1467b6d619a6c0ad016fdfbde2b9c add `.includes(value, options?)` @ `ZodString`. (#1887)\r\n- 67b981e70b4bacb2278a9aacd22d38cbb4b52d17 Make safeParse().error a getter\r\n- 346fde03724bfd1601823e4f72470bc7e344030b 3.21.0-canary.20230304T235951\r\n- b50d871b2f5949587afdcce2375227a447dbb742 Add canary release CI\r\n- b20cca230a6a9beb8acf841250641b62847b6e80 Fix canary\r\n- f7f5c50c65d7c7e5262c028e6832b92b14d84ea5 Move action to .github/workflows\r\n- f01fa0e48ca18630604366f5bc7401a18eb4d018 Try to fix canary CI\r\n- f5e8067b2afcc3e5ae9f8ed389a31b83a7c3ceec No git tag\r\n- 5b304ae41705105ae6edcacdb6dfdac9c527b3f4 No dry run\r\n- 20df80e6ce2ac27f6e2f26b61cd1fd4c942b152d Add tsc compilation test\r\n- ead93d3cfde54efe952dc615c21ff179a00f7574 Document .pipe()\r\n- d8e86534325fb00bc0193a4c6af04f2a67bd2e4e Update headers\r\n- 03c0ab1640ca9111d9fbac3c261e2f76e3cbf247 Cache the evaluation of ParseInputLazyPath.path() for a moderate perf improvement (#2137)\r\n- e7b3b7bf493caeee7e4f043eea024e4d3badc090 Improve string docs\r\n- 83478f5e413c333f07f53b9b4bb8c24b75e1cecf Remove zod dep\r\n- 2f1868d0c17c0e401c4438d9d35e68f9685a741b Specify paths for canary\r\n- e599966709fe0253d6779ce1dec38a2adcebf41f Add sponsors\r\n- 950bd17f01668b45e592a678974437b15012b158 Tweak x.custom example\r\n- 728e56a7e157cca8cdc0ab937f25a2412673c934 Close #2127\r\n- 64883e4fe41b10eb577c4f9eaf6f24fa29bcd60d feat: z.string().ulid() - add support for ulids (#2049)\r\n- e0d709b1348efab06ac5341d360a411bc09eb7ba 3.20.1\r\n- 9c3319443cfc953adc51786e8d6fe0bbe1e37f8e Remove comments, clean up utils\r\n- 942e2db8e51d580f4e3cd8c4c4af8bc6aecf4130 Fix tests",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.21.1",
+  "draft": false,
+  "published_at": "2023-03-06T02:52:45Z"
+ },
+ {
+  "tag_name": "v3.21.0",
+  "name": "v3.21.0",
+  "body": "## Features\r\n\r\n### `z.string().emoji()`\r\n\r\nThanks @joseph-lozano for https://github.com/colinhacks/zod/pull/2045! To validate that all characters in a string are emoji:\r\n\r\n```ts\r\nz.string().emoji()\r\n```\r\n\r\n...if that's something you want to do for some reason.\r\n\r\n### `z.string().cuid2()`\r\n\r\nThanks @joulev for https://github.com/colinhacks/zod/pull/1813! To validate [CUIDv2](https://github.com/paralleldrive/cuid2):\r\n\r\n```ts\r\nz.string().cuid2()\r\n```\r\n\r\n### `z.string().ip()`\r\n\r\nThanks @fvckDesa for https://github.com/colinhacks/zod/pull/2066. To validate that a string is a valid IP address:\r\n\r\n```ts\r\nconst v4IP = \"122.122.122.122\";\r\nconst v6IP = \"6097:adfa:6f0b:220d:db08:5021:6191:7990\";\r\n\r\n// matches both IPv4 and IPv6 by default\r\nconst ipSchema = z.string().ip();\r\nipSchema.parse(v4IP) //  pass\r\nipSchema.parse(v6IP) //  pass\r\n```\r\n\r\nTo specify a particular `version`:\r\n\r\n```ts\r\nconst ipv4Schema = z.string().ip({ version: \"v4\" });\r\nconst ipv6Schema = z.string().ip({ version: \"v6\" });\r\n```\r\n\r\n### `z.bigint().{gt|gte|lt|lte}()` \r\n\r\nThanks @igalklebanov for [`#1711`](https://github.com/colinhacks/zod/pull/1711)! `ZodBigInt` gets the same set of methods found on `ZodNumber`:\r\n\r\n```ts\r\nz.bigint().gt(BigInt(5));\r\nz.bigint().gte(BigInt(5));\r\nz.bigint().lt(BigInt(5));\r\nz.bigint().lte(BigInt(5));\r\nz.bigint().positive();\r\nz.bigint().negative();\r\nz.bigint().nonnegative();\r\nz.bigint().nonpositive();\r\nz.bigint().multipleOf(BigInt(5));\r\n```\r\n\r\n### `z.enum(...).extract()` and `z.enum(...).exclude()`\r\n\r\nThanks @santosmarco-caribou for https://github.com/colinhacks/zod/pull/1652! To add or remove elements from a `ZodEnum`:\r\n\r\n```ts\r\nconst FoodEnum = z.enum([\"Pasta\", \"Pizza\", \"Tacos\", \"Burgers\", \"Salad\"]);\r\nconst ItalianEnum = FoodEnum.extract([\"Pasta\", \"Pizza\"]); // ZodEnum<[\"Pasta\", \"Pizza\"]>\r\nconst UnhealthyEnum = FoodEnum.exclude([\"Salad\"]); // ZodEnum<[\"Pasta\", \"Pizza\", \"Tacos\", \"Burgers\"]>\r\n```\r\n\r\nThis API is inspired by the [`Exclude`](https://www.typescriptlang.org/docs/handbook/utility-types.html#excludeuniontype-excludedmembers) and [`Extract`](https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union) TypeScript built-ins.\r\n\r\n### Pass a function to `.catch()`\r\n\r\nThanks @0xWryth for https://github.com/colinhacks/zod/pull/2087! The `.catch()` method now accepts a function that receives the caught error:\r\n\r\n```ts\r\nconst numberWithErrorCatch = z.number().catch((ctx) => {\r\n  ctx.error; // ZodError\r\n  return 42;\r\n});\r\n```\r\n\r\n## Compiler performance\r\n\r\nZod 3.20.2 introduced an accidental type recursion that caused long compilation times for some users. These kinds of bugs are very hard to diagnose. Big shoutout to @gydroperit for some heroic efforts here: https://github.com/colinhacks/zod/pull/2107 Zod 3.21 resolves these issues:\r\n\r\n- https://github.com/colinhacks/zod/issues/2142\r\n- https://github.com/colinhacks/zod/issues/1741\r\n- https://stackoverflow.com/questions/74881472/slow-typescript-autocompletion-in-vs-code-for-zod\r\n\r\n## Commits:\r\n\r\n- 3c54461d7a649bf727aec59367eefb214ffe24fe fix typo in readme\r\n- c244fb6c57506fd11609106960639de26ddf9b6d feat: z.string().emoji() (#2045)\r\n- 39cbb6971c3dca09cbc0acdca2d3995dfd26aab2 Fix emoji validation, fix lint\r\n- d8f07bbfffd255b0aee6b5fe9bb6aa2bce6586af Fix emoji\r\n- 9b7dd816e92e16ca735e488b77e280a92a84ed64 Improve variable name clarity (#2048)\r\n- 5cec1871ac21627608af6c07585d5e50ff30f281 Add documentation for the param parameter of z.custom\r\n- 654f52969a968c630af816dcad0d8f3721f9001a Merge pull request #2057 from trygveaa/add-documentation-for-z-custom-params\r\n- 981af6503ee1be530fe525ac77ba95e1904ce24a Merge pull request #2019 from vbud/patch-1\r\n- a7c2969b9125df0fbfa65e8541a974eeaf53b6a6 Update error_handling\r\n- 8f3d0283ba75d146d5199fe3dc140eeb5402352c BRAND Record to Non Partial (#2097)\r\n- 5ec98e1c4420957f93a7388bf49fb01d91bcbcd0 Fix email issues in pull request #1982 (#2058)\r\n- 7d40ba58931130ec965be9d65d14e0665ee9c379 feat(#2059): z.string.ip() - add support for IP address (#2066)\r\n- e5596054cfddf8aa1ba8d7d3bad63552a2bf9b6a feat: add `.catch` error (#2087)\r\n- defdab9c163d9a994f927a0644ab4ec172513fcb Fix record tests\r\n- 8de36eb17d9477ada75cea2164d6b47079dd0444 FIX: emoji regex and tests (#2090)\r\n- 16beeb598039b33bc5a209956042d858abacca34 lowercase method for ZodString (#2038)\r\n- 75cb9e814115a35c0b4cc2e970f6aaae90e1a13c add checks @ `ZodBigInt`. (#1711)\r\n- c4d4e494227aadc752d4d5a5a317ec16bb6f5a45 Update ERROR_HANDLING.md (#2022)\r\n- d6f08908b17ea10456befc2231a867d5cea02a0e added link to deno land\r\n- 4cf19606870e66bf4307984bf99a4bef495c7818 Refactoring of ZodFormattedError type to improve tsc check time (#2107)\r\n- 867a921a93160780d9f3aeddabf1ca49758a3c1e Bump http-cache-semantics from 4.1.0 to 4.1.1 (#1985)\r\n- edc3a67e77d33979b3ee9e071557b4ca53298c55 Deprecate deepPartial\r\n- e59f639d3bb5cca65ef239d5dd5c93e74ce4a801 Add custom tests\r\n- a6b44ed8e346af2fabbb62b5164b99a387accd32 Remove logging\r\n- a1fc3fb815051beb4b7030969828aa6abe469c2c commented out `toLowerCase` and `toUpperCase`\r\n- e71cc523b1865568c4db45f82789e5c86bed0f12 Update README_ZH.md (#2139)\r\n- 3af38fbe2cb114219e688103e41e382e28ec7a80 add `ZodNumber.safe()` & `ZodNumber.isSafe`. (#1753)\r\n- 6ef82ee1e45dbcfc92a2ed359b1d2ae87d54c43d Add benchmark flags\r\n- 5463593385549452768e060a98cc0fd8988760d2 Support brands in recursive types\r\n- 80745238937adc06c5b4eab19ef273ca9f7f2de8 Update readme\r\n- b6794a4981b8621fee84642f5313464f5e8f9a22 Add index signature for passthrough\r\n- 3c6cdd245ab73d7ca1461a18b5be2da07abe6b6b Make generic optional in objectOutputType\r\n- bc43ad18e64cf7add23e90bc6b07d5bba8370e5e Fix rollup build\r\n- 6a0545acd5b9cfc40b0b3f04e64bfc5dd789d1b1 3.21.0\r\n- 7c0733968d64c7d7aebc1ae54ca90aadcb2bffc3 Fix brand\r\n- 0aa6021ef3628bb39715bdda416be2c6a4951141 Clean up tests",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.21.0",
+  "draft": false,
+  "published_at": "2023-03-04T10:33:30Z"
+ },
+ {
+  "tag_name": "v3.20.6",
+  "name": "v3.20.6",
+  "body": "## Commits:\n\n- e6939195fbb5191402ba3d6f5b7aade463de6e51 3.20.6",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.20.6",
+  "draft": false,
+  "published_at": "2023-02-09T09:15:47Z"
+ },
+ {
+  "tag_name": "v3.20.5",
+  "name": "v3.20.5",
+  "body": "## Commits:\n\n- e71c7be15e393e0932aa3c939d061f8444f6ae29 Fix extract/exclude type error",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.20.5",
+  "draft": false,
+  "published_at": "2023-02-08T19:50:25Z"
+ },
+ {
+  "tag_name": "v3.20.4",
+  "name": "v3.20.4",
+  "body": "## Commits:\n\n- b8d731f779679e6f47cde18b2c422b0d4f44b01d Set input type of ZodCatch to unknown\n- 06c237c29f53a827d2eb29cb20e9e23caba1ce2c Revert merge changes\n- c8ce27e8c0378856964cf8892c6102bde63fa0cb 3.20.4",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.20.4",
+  "draft": false,
+  "published_at": "2023-02-08T19:34:55Z"
+ },
+ {
+  "tag_name": "v3.20.3",
+  "name": "v3.20.3",
+  "body": "## Features\r\n* Add string cuid2() validation by @joulev in https://github.com/colinhacks/zod/pull/1813\r\n* Add `ZodNumber.isFinite`, make `ZodNumber.isInt` true if `.multipleOf(int)`. by @igalklebanov in https://github.com/colinhacks/zod/pull/1714\r\n* feat: Add `extract`/`exclude` methods to `ZodEnum` by @santosmarco-caribou in https://github.com/colinhacks/zod/pull/1652\r\n\r\n## Fixes and documentation\r\n* add more test cases for `z.coerce`. by @igalklebanov in https://github.com/colinhacks/zod/pull/1680\r\n* Add Modular Forms to form integrations in README by @fabian-hiller in https://github.com/colinhacks/zod/pull/1695\r\n* docs: Instruct users to return z.NEVER in .superRefine() when providing a type predicate by @zetaraku in https://github.com/colinhacks/zod/pull/1742\r\n* Fix small typo in ERROR_HANDLING.md by @t-shiratori in https://github.com/colinhacks/zod/pull/1720\r\n* Improve accuracy of the `isAsync` type guard by @aaronccasanova in https://github.com/colinhacks/zod/pull/1719\r\n* fix: Fix `ZodCatch` by @santosmarco-caribou in https://github.com/colinhacks/zod/pull/1733\r\n* Fix datetime offset without comma by @ooga in https://github.com/colinhacks/zod/pull/1749\r\n* Discriminated union example fails to parse by @matthewfallshaw in https://github.com/colinhacks/zod/pull/1713\r\n* fix: [#1693] Tuple with empty items by @metuan in https://github.com/colinhacks/zod/pull/1712\r\n* fix: #1668 email regex safari compat by @AnatoleLucet in https://github.com/colinhacks/zod/pull/1683\r\n* docs: fix typo by @zetaraku in https://github.com/colinhacks/zod/pull/1699\r\n* fix installation links in table of contents by @DetachHead in https://github.com/colinhacks/zod/pull/1700\r\n* Updated `deno/lib/README.md` to match `zod/README.md` by @JacobWeisenburger in https://github.com/colinhacks/zod/pull/1791\r\n* fix(#1743): Fix passing params in root class by @santosmarco-caribou in https://github.com/colinhacks/zod/pull/1756\r\n* change the chaining order of nullish method by @p10ns11y in https://github.com/colinhacks/zod/pull/1702\r\n* Propagate custom error type to ZodFormattedError subfields by @carlgieringer in https://github.com/colinhacks/zod/pull/1617\r\n* fix deno literal test. by @igalklebanov in https://github.com/colinhacks/zod/pull/1794\r\n* Document `.describe()` by @rattrayalex in https://github.com/colinhacks/zod/pull/1819\r\n* update homepage link in package.json by @Gpx in https://github.com/colinhacks/zod/pull/1830\r\n* fix: compile error in sample code by @jtgi in https://github.com/colinhacks/zod/pull/1822\r\n* Readme: Move  \"Coercion for primitives\" section by @tordans in https://github.com/colinhacks/zod/pull/1842\r\n* Readme: Add internal links \"or\" <-> \"union\" by @tordans in https://github.com/colinhacks/zod/pull/1846\r\n* Readme: Add example for string validation for an optional field to chapter \"Unions\" by @tordans in https://github.com/colinhacks/zod/pull/1849\r\n* Readme: Add intro to chapter Literals by @tordans in https://github.com/colinhacks/zod/pull/1877\r\n* fix: faker.js link in readme by @markacola in https://github.com/colinhacks/zod/pull/1843\r\n* Minor typo fix by @iamchandru6470 in https://github.com/colinhacks/zod/pull/1945\r\n* chore(documentation): Update CHANGELOG to redirect to Github Releases by @mitchwd in https://github.com/colinhacks/zod/pull/1936\r\n* fix: [#1839] remove caught errors from issues by @maxArturo in https://github.com/colinhacks/zod/pull/1926\r\n* fix: [#1784] dark mode in the documentation by @fvckDesa in https://github.com/colinhacks/zod/pull/1932\r\n* Allow also \"[+-]hh\" as datetime offset by @rafw87 in https://github.com/colinhacks/zod/pull/1797\r\n* Feature/add resolves method to zod promise by @bolencki13 in https://github.com/colinhacks/zod/pull/1871\r\n* test: add benchmark tests for date and symbol by @pnts-se in https://github.com/colinhacks/zod/pull/1796\r\n* export the email regex by @andresBobsled in https://github.com/colinhacks/zod/pull/2007\r\n* Add React form validation library to ecosystem by @crutchcorn in https://github.com/colinhacks/zod/pull/1999\r\n* fix: make sure only mask keys with truthy values are respected at runtime @ `.pick`, `.omit`, `.partial` & `.required`. by @igalklebanov in https://github.com/colinhacks/zod/pull/1875\r\n* fix: failing prettier checks on merge by @maxArturo in https://github.com/colinhacks/zod/pull/1969\r\n* deny unexpected keys @ `ZodObject`'s `.omit(mask)`,`.pick(mask)`,`.required(mask)` & `.partial(mask)` at compile time. by @igalklebanov in https://github.com/colinhacks/zod/pull/1564\r\n* docs: punctuation by @jly36963 in https://github.com/colinhacks/zod/pull/1973\r\n* fix[#1979]: Increment Email validation by @fvckDesa in https://github.com/colinhacks/zod/pull/1982\r\n* test: additional unit-tests for object by @pnts-se in https://github.com/colinhacks/zod/pull/1729\r\n\r\n## New Contributors\r\n* @fabian-hiller made their first contribution in https://github.com/colinhacks/zod/pull/1695\r\n* @zetaraku made their first contribution in https://github.com/colinhacks/zod/pull/1742\r\n* @t-shiratori made their first contribution in https://github.com/colinhacks/zod/pull/1720\r\n* @aaronccasanova made their first contribution in https://github.com/colinhacks/zod/pull/1719\r\n* @ooga made their first contribution in https://github.com/colinhacks/zod/pull/1749\r\n* @matthewfallshaw made their first contribution in https://github.com/colinhacks/zod/pull/1713\r\n* @metuan made their first contribution in https://github.com/colinhacks/zod/pull/1712\r\n* @AnatoleLucet made their first contribution in https://github.com/colinhacks/zod/pull/1683\r\n* @DetachHead made their first contribution in https://github.com/colinhacks/zod/pull/1700\r\n* @p10ns11y made their first contribution in https://github.com/colinhacks/zod/pull/1702\r\n* @carlgieringer made their first contribution in https://github.com/colinhacks/zod/pull/1617\r\n* @rattrayalex made their first contribution in https://github.com/colinhacks/zod/pull/1819\r\n* @Gpx made their first contribution in https://github.com/colinhacks/zod/pull/1830\r\n* @jtgi made their first contribution in https://github.com/colinhacks/zod/pull/1822\r\n* @tordans made their first contribution in https://github.com/colinhacks/zod/pull/1842\r\n* @markacola made their first contribution in https://github.com/colinhacks/zod/pull/1843\r\n* @iamchandru6470 made their first contribution in https://github.com/colinhacks/zod/pull/1945\r\n* @mitchwd made their first contribution in https://github.com/colinhacks/zod/pull/1936\r\n* @fvckDesa made their first contribution in https://github.com/colinhacks/zod/pull/1932\r\n* @rafw87 made their first contribution in https://github.com/colinhacks/zod/pull/1797\r\n* @bolencki13 made their first contribution in https://github.com/colinhacks/zod/pull/1871\r\n* @joulev made their first contribution in https://github.com/colinhacks/zod/pull/1813\r\n* @pnts-se made their first contribution in https://github.com/colinhacks/zod/pull/1796\r\n* @andresBobsled made their first contribution in https://github.com/colinhacks/zod/pull/2007\r\n* @crutchcorn made their first contribution in https://github.com/colinhacks/zod/pull/1999\r\n* @jly36963 made their first contribution in https://github.com/colinhacks/zod/pull/1973\r\n\r\n**Full Changelog**: https://github.com/colinhacks/zod/compare/v3.20.2...v3.20.3",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.20.3",
+  "draft": false,
+  "published_at": "2023-02-08T08:04:12Z"
+ },
+ {
+  "tag_name": "v3.20.2",
+  "name": "v3.20.2",
+  "body": "## Commits:\n\n- d7d49e77ccd758ee874f7866862840f88f75cbb6 Clarify boolean coercion\n- f49cbcb38f7e58e37480ded0f8f558c85de1ce3a Fix formatting\n- 0b62f8c0c1722a15bd8afbc003e78fe7a177b2a2 Revert email regex changes\n- 68919aa1790fcb729385a4b290ee03b3d8df0d86 3.20.2\n- c9e4ed4095d77f5b43a5ba11d8f76b56ea48e5c6 Fix string test",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.20.2",
+  "draft": false,
+  "published_at": "2022-12-12T21:13:31Z"
+ },
+ {
+  "tag_name": "v3.20.1",
+  "name": "v3.20.1",
+  "body": "## Commits:\n\n- 1298d26115e09cf097cb272cfc3184484eb64fd1 Update readme\n- b3b0ecfcb8d2314cf3e6cbd78056c5410650c348 Only call .catch() method when parsing fails (#1674)\n- 957b55b82d19707888a4914670c8cf8563911425 Fixing ZodString::isDatetime. (#1678)\n- 29ec1f8d99836d8bb0661cac8641d4b4094aaf40 Add default\n- 1161b8f77e8ef120f9a0fca6e1ca223538d8ffc4 3.20.1",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.20.1",
+  "draft": false,
+  "published_at": "2022-12-12T20:09:04Z"
+ },
+ {
+  "tag_name": "v3.20",
+  "name": "v3.20",
+  "body": "## Breaking changes\r\n\r\nThere are no breaking API changes, however TypeScript versions `4.4` and earlier are no longer officially supported.\r\n\r\n## New features\r\n\r\nThe most feature-packed release since Zod 3.0!\r\n\r\n### `.pipe()`\r\n\r\nA new schema method `.pipe()` is now available on all schemas. which can be used to chain multiple schemas into a \"validation pipeline\". Typically this will be used in conjunction with `.transform()`.\r\n\r\n```ts\r\nz.string()\r\n  .transform(val => val.length)\r\n  .pipe(z.number().min(5))\r\n```\r\n\r\nThe `.pipe()` method returns a `ZodPipeline` instance.\r\n\r\n### `z.coerce`\r\n\r\nZod now provides a more convenient way to coerce primitive values.\r\n\r\n```ts\r\nconst schema = z.coerce.string();\r\nschema.parse(\"tuna\"); // => \"tuna\"\r\nschema.parse(12); // => \"12\"\r\nschema.parse(true); // => \"true\"\r\n```\r\n\r\nDuring the parsing step, the input is passed through the `String()` function, which is a JavaScript built-in for coercing data into strings. Note that the returned schema is a `ZodString` instance so you can use all string methods.\r\n\r\n```ts\r\nz.coerce.string().email().min(5);\r\n```\r\n\r\nAll primitive types support coercion.\r\n\r\n```ts\r\nz.coerce.string();   // String(input)\r\nz.coerce.number();   // Number(input)\r\nz.coerce.boolean();  // Boolean(input)\r\nz.coerce.bigint();   // BigInt(input)\r\nz.coerce.date();     // new Date(input)\r\n```\r\n\r\n### `.catch()`\r\n\r\nA new schema method `.catch()` is now available on all schemas. It can be used to provide a \"catchall\" value that will be returned in the event of a parsing error.\r\n\r\n```ts\r\nconst schema = z.string().catch(\"fallback\");\r\n\r\nschema.parse(\"kate\"); // => \"kate\"\r\nschema.parse(4); // => \"fallback\"\r\n```\r\n\r\nThe `.catch()` method returns a `ZodCatch` instance.\r\n\r\n### `z.symbol()`\r\n\r\nA long-missing hole in Zod's type system is finally filled! Thanks @santosmarco-caribou.\r\n\r\n```ts\r\nconst schema = z.symbol();\r\nschema.parse(Symbol('asdf'));\r\n```\r\n\r\nRelatedly, you can also pass symbols into `z.literal()`.\r\n\r\n```ts\r\nconst TUNA = Symbol(\"tuna\");\r\nconst schema = z.literal(TUNA);\r\n\r\nschema.parse(TUNA); // Symbol(tuna)\r\nschema.parse(Symbol(\"nottuna\")); // Error\r\n```\r\n\r\n### `z.string().datetime()`\r\n\r\nA new method has been added to `ZodString` to validate ISO datetime strings. Thanks @samchungy!\r\n\r\n```ts\r\nz.string().datetime();\r\n```\r\n\r\nThis method defaults to only allowing *UTC datetimes* (the ones that end in `\"Z\"`). No timezone offsets are allowed; arbitrary sub-second precision is supported. \r\n\r\n```ts\r\nconst dt = z.string().datetime();\r\ndt.parse(\"2020-01-01T00:00:00Z\"); // 🟢\r\ndt.parse(\"2020-01-01T00:00:00.123Z\"); // 🟢\r\ndt.parse(\"2020-01-01T00:00:00.123456Z\"); // 🟢 (arbitrary precision)\r\ndt.parse(\"2020-01-01T00:00:00+02:00\"); // 🔴 (no offsets allowed)\r\n```\r\n\r\nOffsets can be supported with the `offset` parameter.\r\n\r\n```ts\r\nconst a = z.string().datetime({ offset: true });\r\na.parse(\"2020-01-01T00:00:00+02:00\"); // 🟢 offset allowed\r\n```\r\n\r\nYou can additionally constrain the allowable `precision`. This specifies the number of digits that should follow the decimal point. \r\n\r\n```ts\r\nconst b = z.string().datetime({ precision: 3 })\r\nb.parse(\"2020-01-01T00:00:00.123Z\"); // 🟢 precision of 3 decimal points\r\nb.parse(\"2020-01-01T00:00:00Z\"); // 🔴 invalid precision\r\n```\r\n### `z.number().finite()`\r\n\r\nRestrict a number schema to finite values. Thanks @igalklebanov.\r\n\r\n```ts\r\nconst schema = z.number().finite();\r\nschema.parse(5); 🟢\r\nschema.parse(Infinity); 🔴\r\nschema.parse(-Infinity); 🔴\r\n```\r\n\r\n\r\n## What's Changed\r\n* Add formik-validator-zod to README ecosystem links by @Glazy in https://github.com/colinhacks/zod/pull/1662\r\n* chore: add eslintcache by @Simon-He95 in https://github.com/colinhacks/zod/pull/1629\r\n* feat: #1602 narrow superRefine() type by @maxArturo in https://github.com/colinhacks/zod/pull/1615\r\n* Fix issue #1611 by @john-schmitz in https://github.com/colinhacks/zod/pull/1620\r\n* Fix typo in CHANGELOG.md by @eltociear in https://github.com/colinhacks/zod/pull/1612\r\n* docs: fix typo in Writing generic functions by @Rolanddoda in https://github.com/colinhacks/zod/pull/1609\r\n* docs: likely a minor typo by @JakeBruner in https://github.com/colinhacks/zod/pull/1599\r\n* Add znv to the Ecosystem by @vitorvanacor in https://github.com/colinhacks/zod/pull/1591\r\n* fix: #1638 and Redundant character escape '\\' in RegExp by @powerfulyang in https://github.com/colinhacks/zod/pull/1648\r\n* docs: update CONTRIBUTING.md links by @maxArturo in https://github.com/colinhacks/zod/pull/1584\r\n* Cleaned up some code snippets in docs by @V1RE in https://github.com/colinhacks/zod/pull/1579\r\n* docs: add `zod-i18n-map` to README ecosystem links by @aiji42 in https://github.com/colinhacks/zod/pull/1666\r\n\r\n## New Contributors\r\n* @Glazy made their first contribution in https://github.com/colinhacks/zod/pull/1662\r\n* @Simon-He95 made their first contribution in https://github.com/colinhacks/zod/pull/1629\r\n* @maxArturo made their first contribution in https://github.com/colinhacks/zod/pull/1615\r\n* @john-schmitz made their first contribution in https://github.com/colinhacks/zod/pull/1620\r\n* @eltociear made their first contribution in https://github.com/colinhacks/zod/pull/1612\r\n* @Rolanddoda made their first contribution in https://github.com/colinhacks/zod/pull/1609\r\n* @JakeBruner made their first contribution in https://github.com/colinhacks/zod/pull/1599\r\n* @powerfulyang made their first contribution in https://github.com/colinhacks/zod/pull/1648\r\n* @V1RE made their first contribution in https://github.com/colinhacks/zod/pull/1579\r\n* @aiji42 made their first contribution in https://github.com/colinhacks/zod/pull/1666\r\n\r\n**Full Changelog**: https://github.com/colinhacks/zod/compare/v3.20.0...v3.20",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.20",
+  "draft": false,
+  "published_at": "2022-12-12T09:45:23Z"
+ },
+ {
+  "tag_name": "v3.20.0",
+  "name": "v3.20.0-beta",
+  "body": "## Breaking changes\r\n\r\nThere are no breaking API changes, however TypeScript versions `4.4` and earlier are no longer officially supported.\r\n\r\n## New features\r\n\r\nThe most feature-packed release since Zod 3.0!\r\n\r\n### `.pipe()`\r\n\r\nA new schema method `.pipe()` is now available on all schemas. which can be used to chain multiple schemas into a \"validation pipeline\". Typically this will be used in conjunction with `.transform()`.\r\n\r\n```ts\r\nz.string()\r\n  .transform(val => val.length)\r\n  .pipe(z.number().min(5))\r\n```\r\n\r\nThe `.pipe()` method returns a `ZodPipeline` instance.\r\n\r\n### `z.coerce`\r\n\r\nZod now provides a more convenient way to coerce primitive values.\r\n\r\n```ts\r\nconst schema = z.coerce.string();\r\nschema.parse(\"tuna\"); // => \"tuna\"\r\nschema.parse(12); // => \"12\"\r\nschema.parse(true); // => \"true\"\r\n```\r\n\r\nDuring the parsing step, the input is passed through the `String()` function, which is a JavaScript built-in for coercing data into strings. Note that the returned schema is a `ZodString` instance so you can use all string methods.\r\n\r\n```ts\r\nz.coerce.string().email().min(5);\r\n```\r\n\r\nAll primitive types support coercion.\r\n\r\n```ts\r\nz.coerce.string();   // String(input)\r\nz.coerce.number();   // Number(input)\r\nz.coerce.boolean();  // Boolean(input)\r\nz.coerce.bigint();   // BigInt(input)\r\nz.coerce.date();     // new Date(input)\r\n```\r\n\r\n### `.catch()`\r\n\r\nA new schema method `.catch()` is now available on all schemas. It can be used to provide a \"catchall\" value that will be returned in the event of a parsing error.\r\n\r\n```ts\r\nconst schema = z.string().catch(\"fallback\");\r\n\r\nschema.parse(\"kate\"); // => \"kate\"\r\nschema.parse(4); // => \"fallback\"\r\n```\r\n\r\nThe `.catch()` method returns a `ZodCatch` instance.\r\n\r\n### `z.symbol()`\r\n\r\nA long-missing hole in Zod's type system is finally filled! Thanks @santosmarco-caribou.\r\n\r\n```ts\r\nconst schema = z.symbol();\r\nschema.parse(Symbol('asdf'));\r\n```\r\n\r\nRelatedly, you can also pass symbols into `z.literal()`.\r\n\r\n```ts\r\nconst TUNA = Symbol(\"tuna\");\r\nconst schema = z.literal(TUNA);\r\n\r\nschema.parse(TUNA); // Symbol(tuna)\r\nschema.parse(Symbol(\"nottuna\")); // Error\r\n```\r\n\r\n### `z.string().datetime()`\r\n\r\nA new method has been added to `ZodString` to validate ISO datetime strings. Thanks @samchungy!\r\n\r\n```ts\r\nz.string().datetime();\r\n```\r\n\r\nThis method defaults to only allowing *UTC datetimes* (the ones that end in `\"Z\"`). No timezone offsets are allowed; arbitrary sub-second precision is supported. \r\n\r\n```ts\r\nconst dt = z.string().datetime();\r\ndt.parse(\"2020-01-01T00:00:00Z\"); // 🟢\r\ndt.parse(\"2020-01-01T00:00:00.123Z\"); // 🟢\r\ndt.parse(\"2020-01-01T00:00:00.123456Z\"); // 🟢 (arbitrary precision)\r\ndt.parse(\"2020-01-01T00:00:00+02:00\"); // 🔴 (no offsets allowed)\r\n```\r\n\r\nOffsets can be supported with the `offset` parameter.\r\n\r\n```ts\r\nconst a = z.string().datetime({ offset: true });\r\na.parse(\"2020-01-01T00:00:00+02:00\"); // 🟢 offset allowed\r\n```\r\n\r\nYou can additionally constrain the allowable `precision`. This specifies the number of digits that should follow the decimal point. \r\n\r\n```ts\r\nconst b = z.string().datetime({ precision: 3 })\r\nb.parse(\"2020-01-01T00:00:00.123Z\"); // 🟢 precision of 3 decimal points\r\nb.parse(\"2020-01-01T00:00:00Z\"); // 🔴 invalid precision\r\n```\r\n### `z.number().finite()`\r\n\r\nRestrict a number schema to finite values. Thanks @igalklebanov.\r\n\r\n```ts\r\nconst schema = z.number().finite();\r\nschema.parse(5); 🟢\r\nschema.parse(Infinity); 🔴\r\nschema.parse(-Infinity); 🔴\r\n```\r\n\r\n## What's Changed\r\n* Add `mask` parameter to `.required` method by @SrBrahma in https://github.com/colinhacks/zod/pull/1315\r\n* Added Intersections to TOC by @tmkn in https://github.com/colinhacks/zod/pull/1450\r\n* [#1468] Fix zod.dev main page cross origin links. by @agrahamg in https://github.com/colinhacks/zod/pull/1469\r\n* Updates remix-domains library name and description in README by @diogob in https://github.com/colinhacks/zod/pull/1501\r\n* Removed BRAND from ZodBrand Input definition by @Xetera in https://github.com/colinhacks/zod/pull/1492\r\n* Add Zodix to readme ecosystem section by @rileytomasek in https://github.com/colinhacks/zod/pull/1506\r\n* Fix small typos in README by @Yhozen in https://github.com/colinhacks/zod/pull/1521\r\n* fix typo by @oasido in https://github.com/colinhacks/zod/pull/1528\r\n* add `fatal` to `ZodIssue`. by @igalklebanov in https://github.com/colinhacks/zod/pull/1555\r\n* Fix typo in ERROR_HANDLING.md by @Tsuyoshi84 in https://github.com/colinhacks/zod/pull/1543\r\n* add `.finite()` @ `ZodNumber`. by @igalklebanov in https://github.com/colinhacks/zod/pull/1546\r\n* Fix typing bug hiding errors of nullable composite fields by @tadeokondrak in https://github.com/colinhacks/zod/pull/1545\r\n* #1227 Feature default on mismatch by @seancrowe in https://github.com/colinhacks/zod/pull/1537\r\n* fix #1046 `.required()` doesn't remove optional flag from the result of `.nullish()`. by @igalklebanov in https://github.com/colinhacks/zod/pull/1542\r\n* add `datetime()` string formats by @samchungy in https://github.com/colinhacks/zod/pull/1494\r\n* Bump minimatch from 3.0.4 to 3.1.2 by @dependabot in https://github.com/colinhacks/zod/pull/1558\r\n* Bump minimist from 1.2.5 to 1.2.7 by @dependabot in https://github.com/colinhacks/zod/pull/1507\r\n* #1171 support for refine, superRefine, transform and lazy in discriminatedUnion by @roblabat in https://github.com/colinhacks/zod/pull/1290\r\n* branded type as normal argument by @KATT in https://github.com/colinhacks/zod/pull/1502\r\n* Take `path` parameter into account within `.parseAsync()` by @RobinTail in https://github.com/colinhacks/zod/pull/1513\r\n* Update README.md by @rosnerdev in https://github.com/colinhacks/zod/pull/1463\r\n* Add `ZodSymbol` by @santosmarco-caribou in https://github.com/colinhacks/zod/pull/1448\r\n* Fix Minor Typos by @WebDevSimplified in https://github.com/colinhacks/zod/pull/1624\r\n\r\n## New Contributors\r\n* @SrBrahma made their first contribution in https://github.com/colinhacks/zod/pull/1315\r\n* @tmkn made their first contribution in https://github.com/colinhacks/zod/pull/1450\r\n* @agrahamg made their first contribution in https://github.com/colinhacks/zod/pull/1469\r\n* @diogob made their first contribution in https://github.com/colinhacks/zod/pull/1501\r\n* @Xetera made their first contribution in https://github.com/colinhacks/zod/pull/1492\r\n* @rileytomasek made their first contribution in https://github.com/colinhacks/zod/pull/1506\r\n* @Yhozen made their first contribution in https://github.com/colinhacks/zod/pull/1521\r\n* @oasido made their first contribution in https://github.com/colinhacks/zod/pull/1528\r\n* @igalklebanov made their first contribution in https://github.com/colinhacks/zod/pull/1555\r\n* @Tsuyoshi84 made their first contribution in https://github.com/colinhacks/zod/pull/1543\r\n* @tadeokondrak made their first contribution in https://github.com/colinhacks/zod/pull/1545\r\n* @seancrowe made their first contribution in https://github.com/colinhacks/zod/pull/1537\r\n* @samchungy made their first contribution in https://github.com/colinhacks/zod/pull/1494\r\n* @roblabat made their first contribution in https://github.com/colinhacks/zod/pull/1290\r\n* @KATT made their first contribution in https://github.com/colinhacks/zod/pull/1502\r\n* @RobinTail made their first contribution in https://github.com/colinhacks/zod/pull/1513\r\n* @rosnerdev made their first contribution in https://github.com/colinhacks/zod/pull/1463\r\n* @santosmarco-caribou made their first contribution in https://github.com/colinhacks/zod/pull/1448\r\n* @WebDevSimplified made their first contribution in https://github.com/colinhacks/zod/pull/1624\r\n\r\n**Full Changelog**: https://github.com/colinhacks/zod/compare/v3.19.1...v3.20.0",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.20.0",
+  "draft": false,
+  "published_at": "2022-12-04T07:42:14Z"
+ },
+ {
+  "tag_name": "v3.19.1",
+  "name": "v3.19.1",
+  "body": "## Commits:\n\n- d04b303f9b616080c56dae25199bdd5cf2803f20 Update stale\n- e933143738814fef53bb8e0813f9c54cb9079614 Fix typo in readme (#1385)\n- 6011b675d07ce8de45557c5088fa27e1eeedf12b Update readme\n- 033088da56a52b254fe3982d0d7fbcfec2a3bdcc Optimize object strip case (#1393)\n- d40a5ebf28aa7735ac6d71d819b5fdc15d976f1d Fix refine with type guard signature (#1404)\n- 2893e1659875944198aff28a3ba404858f834ed8 Make unknown input type for preprocess\n- 3b75ae584e31d8bd06f7298247cd3d27520cf881 3.19.1",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.19.1",
+  "draft": false,
+  "published_at": "2022-09-11T21:00:58Z"
+ },
+ {
+  "tag_name": "v3.19.0",
+  "name": "v3.19.0",
+  "body": "## Features\r\n\r\n\r\n## Commits:\r\n\r\n- 9066b9e6736b7f7669d867b405fdd3b4db16ff91 docs: fix links to anatine plugins in README (#1363)\r\n- 0a2c9ab192a705528c64a6fe6f819eccf18ab37c docs: Update readme keyof typo (#1330)\r\n- af086b6b571e4b5ae27b7ac105da8446d9e80a97 Update readme\r\n- e75f348da1b26c7ae4a1075692f845cf74b620fd Add brand to toc\r\n- f1dfabb6e16d769740c7e2458b8730b938d7b5b0 3.19.0 (#1383)\r\n",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.19.0",
+  "draft": false,
+  "published_at": "2022-09-06T08:28:37Z"
+ },
+ {
+  "tag_name": "v3.18.0",
+  "name": "v3.18.0",
+  "body": "## Commits:\n\n- b3e623eafa5f4011675afce33e21d244dd25e775 docs: add zodios to zod ecosystem (#1283)\n- 6fe152f98a434a087c0f1ecbce5c52427bd816d3 Added Avana Wallet as sponsor (#1281)\n- d041b76b262f9f5f32cd0b78eea8f6a5d09fb691 docs: add link to runtyping (#1305)\n- f923706e11199e054f213dc6d114cb987a1dd15e Refactor type checks (#1280)\n- 814c1ebd8f1400820741101efde8329e2c9f375d docs: fix link to z.preprocess in Supporting date strings (#1319)\n- 88e94efa219d7b911f929775b868c76cbb56d9d7 docs: fix link to Node/npm (#1312)\n- 7c113ab22686047e4fa60c9a2c4cd882d0158a20 Add branded types (#1279)\n- 59768246aa57133184b2cf3f7c2a1ba5c3ab08c3 3.18 (#1323)",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.18.0",
+  "draft": false,
+  "published_at": "2022-08-09T22:24:37Z"
+ },
+ {
+  "tag_name": "v3.17.10",
+  "name": "v3.17.10",
+  "body": "## Commits:\n\n- d9c3637e1338583768922fb8535c163fa046c9c2 fix typo after ac2fb4a (#1267)\n- 4ade47a391066b018c9f1c0712caab7783d7ceec Fix transform example (#1276)\n- b29cee1cb72f46d38c619a724804c153a97d5937 Fix endsWith default message (#1273)\n- a19acb8f90226cfa6036672385479af5874ba975 3.17.10",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.17.10",
+  "draft": false,
+  "published_at": "2022-07-22T04:56:11Z"
+ },
+ {
+  "tag_name": "v3.17.9",
+  "name": "v3.17.9",
+  "body": "## Commits:\n\n- 1d16205a84c90ee2f0903e171e40b53c5da906cf feat(enum): return enum from object keys (#1216)\n- 8b9daba5901d0f2d59b990696acec54b15701590 Don't use invalid_type_error for `undefined` fields. (#1175)\n- 0348e9b061e5b0dbbe06779c843b37d98da57e9c Fixed typing mistake in README.md (#1160)\n- 15aa4ab279e0acb9fa103b3c0354b582991a36b3 Convert \"an nullable\" to \"a nullable\" (#1162)\n- 55d2744205aa5cf71f6dcc91fc8d7c99d8c6bda7 3.17.9",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.17.9",
+  "draft": false,
+  "published_at": "2022-07-18T07:00:42Z"
+ },
+ {
+  "tag_name": "v3.17.8",
+  "name": "v3.17.8",
+  "body": "## Commits:\n\n- dcc1483c063ccc0ab9061fe7bfcf296be81d8410 Add deno release workflow\n- ac2fb4aa85f43d618ea881590ad6982626148935 Added native support for min and max date validations (#1222)\n- e0ea1f6208e74101e19d0f900106dfc3ecf19450 Fix deno release workflow\n- 121a2e21465f39ff5bb5f3d72bf76b6d907e1da8 3.17.8",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.17.8",
+  "draft": false,
+  "published_at": "2022-07-18T06:04:10Z"
+ },
+ {
+  "tag_name": "v3.17.7",
+  "name": "v3.17.7",
+  "body": "## Commits:\n\n- a59c38452ed970e129ee9057c4e6d003d4d017bb Fix inferred function types",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.17.7",
+  "draft": false,
+  "published_at": "2022-07-18T05:37:42Z"
+ },
+ {
+  "tag_name": "v3.17.6",
+  "name": "v3.17.6",
+  "body": "## Commits:\r\n\r\n- f73eabca9008a9ab87c8a30c5d506d8e092768d2 Add `zod-xlsx` to the ecosystem section in README (#1203)\r\n- cbfe7044d84c42a23822549515ee51b112c35577 Add bigint support for literals (#1242)",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.17.6",
+  "draft": false,
+  "published_at": "2022-07-18T04:08:22Z"
+ },
+ {
+  "tag_name": "v3.17.5",
+  "name": "v3.17.5",
+  "body": "## Commits:\n\n- 63f48194a6524aea59d711c02d6606a5d982d1fc Allow empty commits\n- ff43b2ed0f783158bd12fb86d9fc04d26c625d1b Allow empty commit\n- 799fbb17e20f7a3566348b9cafacd6999519e88e Add string.startsWith and string.endsWith (#1235)\n- d9b8550c0815ed4e0137650bdc7358613358b88f 3.17.5",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.17.5",
+  "draft": false,
+  "published_at": "2022-07-18T02:05:40Z"
+ },
+ {
+  "tag_name": "v3.17.4",
+  "name": "v3.17.4",
+  "body": "## What's Changed\r\n* Add seasoned to sponsors by @colinhacks in https://github.com/colinhacks/zod/pull/1167\r\n* Update README for z.record key type schema by @gtarsia in https://github.com/colinhacks/zod/pull/1168\r\n* Fix minor spelling and grammar issues in README by @remnantkevin in https://github.com/colinhacks/zod/pull/1202\r\n* Fix link to node in readme by @BryanAbate in https://github.com/colinhacks/zod/pull/1255\r\n* Update README to use headings for validation library names by @georgeblahblah in https://github.com/colinhacks/zod/pull/1250\r\n* ZodString.minLength defaults to null to be consistent with maxLength by @Balastrong in https://github.com/colinhacks/zod/pull/1248\r\n* Adds remix-domains to the README under Ecosystem by @gustavoguichard in https://github.com/colinhacks/zod/pull/1236\r\n\r\n## New Contributors\r\n* @gtarsia made their first contribution in https://github.com/colinhacks/zod/pull/1168\r\n* @remnantkevin made their first contribution in https://github.com/colinhacks/zod/pull/1202\r\n* @BryanAbate made their first contribution in https://github.com/colinhacks/zod/pull/1255\r\n* @georgeblahblah made their first contribution in https://github.com/colinhacks/zod/pull/1250\r\n* @Balastrong made their first contribution in https://github.com/colinhacks/zod/pull/1248\r\n* @gustavoguichard made their first contribution in https://github.com/colinhacks/zod/pull/1236\r\n\r\n**Full Changelog**: https://github.com/colinhacks/zod/compare/v3.17.3...v3.17.4",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.17.4",
+  "draft": false,
+  "published_at": "2022-07-18T01:33:32Z"
+ },
+ {
+  "tag_name": "v3.17.3",
+  "name": "v3.17.3",
+  "body": "## Commits:\n\n- 847cedf10d633cd420fbc29243894b1f846cc54f Remove type only imports\n- b899edfbaffb2c5086d4da2e51c63416127723b4 Fix types",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.17.3",
+  "draft": false,
+  "published_at": "2022-05-23T18:34:46Z"
+ },
+ {
+  "tag_name": "v3.17.2",
+  "name": "v3.17.2",
+  "body": "## Commits:\n\n- 44916fe7dee9413216ee0b24001cfbf835cda584 Remove circular dependency\n- 0b4bc1df81f2be0c95c32da64cb370913f9cb15d Fix picking nonexistent keys",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.17.2",
+  "draft": false,
+  "published_at": "2022-05-22T22:46:06Z"
+ },
+ {
+  "tag_name": "v3.17.0",
+  "name": "v3.17.0",
+  "body": "## Commits:\r\n\r\n- 4459e75b8e04bcddb06c2a4a3953a4599dcfc4bc feat: trim method for ZodString (#681)\r\n- ff5de24f191a5df5275fdb0bb2ff24016fef38f3 Added README for deno (#1157)\r\n- 4284011227b586045707814f0084b9447f28bfab Add error parameters to createZodEnum\r\n- cb5db0fdbe5ec4e40dbc7cbe20506fafa87300fd 3.17.0\r\n\r\n## What's Changed\r\n* Added README for deno by @omar-dulaimi in https://github.com/colinhacks/zod/pull/1157\r\n* feat: trim method for ZodString by @Djaler in https://github.com/colinhacks/zod/pull/681\r\n\r\n## New Contributors\r\n* @Djaler made their first contribution in https://github.com/colinhacks/zod/pull/681\r\n\r\n**Full Changelog**: https://github.com/colinhacks/zod/compare/v3.16.1...v3.17.0",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.17.0",
+  "draft": false,
+  "published_at": "2022-05-22T07:29:21Z"
+ },
+ {
+  "tag_name": "v3.16.1",
+  "name": "v3.16.1",
+  "body": "## Commits:\n\n- 3aedba54d7b0f4ba1f5cfca49a1744807dd33c81 Update docs\n- a944dd7bd4043d6d9841217237e5208ee9098837 COnfigure docsify\n- 0e5acd4d838cb7ed2e8445b9eb90510ab89fa523 Flatten schema docs\n- 26d234d3f5976ab67ffd0bfbd89f55488534dd5c Clean up docs\n- 7a37dac901d92f76e36c4f17e98bb582d2a55141 Tweak styling\n- 1b7b529f66b5f899f88fa433bbafa103fee9f448 Fix table of contents styling\n- 6bf9ea7ab0752f2f76d5831ac04f2588636abac6 Fix toc\n- 4628c352565df06f0733a9f273c557dd78af34b3 Improve styling\n- 4fcdbe7a56b7cd43134b1eda7f22dd9e95566cee Remove hash router\n- 811da4ca25b12a981c3a93e3adb56fc669458ce3 Add metadata\n- 625721dd7aaf1379946229db922aa1ccc21c8722 Add favicons\n- 0367cdc7b0fbe9391343f0f64c0a0493206f9d2b Add oneliner\n- 7ba4f67d4a85e8bf1bb97f39e9b07316e9f7d6a3 Add oneliner\n- d362b93020c895386e7a1420dd6d57dfb4cce494 Add oneliner\n- 4c9cbc67f31e18721874bb22fbafdcee38da58cf Add oneliner\n- bef915308362ef499cb5b487f6ecf69454640167 Remove local assets\n- 3ca7cff6e2f15af0ff4d2f8c2c09bc8bc3e1a622 Improve lighthouse scores\n- b3ccd4c776e07820955d63d5f2bb771cf59d9c30 Fix docs\n- ee40cb86f953f17704f1317dd1cddc92f0270d7c doc: fix link (#1130)\n- d8d3806738fac67876b4ff9478b8f7a09ea6bc4a Add docs link (#1133)\n- 401c4c4cfa954c31bd7182686bbeabe91694a877 Update index.html\n- 7d1de148669daf21cbd896eef84a1b10ed052c08 Fix preload\n- d506b083d4a7b2e5600317bd44ca1dba97709fe8 Fix syntax highlighting\n- 347332c30b801c608ea29c89f61f0247a953bb83 Improve JSDoc deprecation warning for nonempty (#1152)\n- 78369001b90ec3c23a9e12cbf0f24c9b9162d691 Instanceof issue fatal (#1131)\n- b57a25c74d42d7a7f8e7b27ba727f331b8621d86 mod an example that is not correct (#1134)\n- 51e93e7dd30b161d55e2f17d0907ecdd2f526c60 Added test for enums with defaults (#1149)\n- 12214aad9b53f1f7965d3faa9e1e4b2f762cf006 Add Test for Union Recursive Type (#1148)\n- 65d8f4ffb3099319e88e9406c062da8568bf6a3a 3.16.1",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.16.1",
+  "draft": false,
+  "published_at": "2022-05-20T19:27:08Z"
+ },
+ {
+  "tag_name": "v3.16.0",
+  "name": "v3.16.0",
+  "body": "## Commits:\n\n- cb2b86c3d7c3f1c6fd3c503543f3e3668df7bad5 Update README.md (#1125)\n- b7263281ce34f8d2859b348023b52e888283c5eb Add `nestjs-graphql-zod` to ecosystem links (#1126)\n- ab8a37191fa2bde0e9bf32cf8184c19a19664c39 Fix ctx.addIssue in transform to work correctly with parseAsync (#1129)\n- da0a42fafa159b47fc31cacfdadba9d50f2ebd16 Update ZodError.ts (#1127)\n- c4740a6adfc874c35ac29cbff0d7a6bab2867e88 Restore existing type inference behaviour of z.ZodObject (#1122)\n- c5366941f50d082cab33f7de5a945b5103e50927 Added expected and received properties to enum and native enum (#1123)\n- 8f9ad5b602b0b336df7dcb5994689a38ab6261fe Update type signature for ZodInvalidEnumValueIssue\n- 27121fdaa4697aafaae180439bd3708dd2c96c11 3.16",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.16.0",
+  "draft": false,
+  "published_at": "2022-05-12T01:15:11Z"
+ },
+ {
+  "tag_name": "v3.15.1",
+  "name": "v3.15.1",
+  "body": "## Commits:\n\n- f814ef21ec3e701ea1cdaefdc69dfb59e8ad62d1 Improve docs\n- c190a84bfe552c3804c0e0e04447b53257194de5 Clean up type signature of ZodFormattedError",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.15.1",
+  "draft": false,
+  "published_at": "2022-05-06T02:58:33Z"
+ },
+ {
+  "tag_name": "v3.15.0",
+  "name": "v3.15.0",
+  "body": "## Commits:\n\n- d54ba359eda7e74f7373e612153e8e408904b14a feat: allow ctx.addIssue from transform (#1056)\n- 36f4e88abc92e9513dbdf8d68899a2c3ff127c48 3.15.0",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.15.0",
+  "draft": false,
+  "published_at": "2022-05-06T02:26:30Z"
+ },
+ {
+  "tag_name": "v3.14.5",
+  "name": "v3.14.5",
+  "body": "## Commits:\n\n- 21aab2a4b04428d7afe6255e78271db0617d6e61 fix(readme): Use Correct Test Link\n- 753f627504a6801d3637a33efab6ad87b216d4a6 Merge pull request #1054 from FlorianWendelborn/patch-1\n- a6e13ccf9f5656e386bef63e13db3561b692aec9 Remove hanging string expressions (#1073)\n- c7792de989d47ac21872708f7188dc4e6143b172 Add UMD build (#1067)\n- f11ba8fda8aac60abf22d292d9b4f936b9465c7b Standardize ZodError type helpers. Document ZodError.format(). Add mapper support to .format()\n- 5ea9f8731f3ef8f244fd37e06a6fde9e7033ff34 Add Astro (#1076)\n- 5ba2cc34ea39865837a9b06f46859849f89b3ce6 Update sponsors (#1081)\n- cdca0db75a10525eca08696e8a44186cbe20c32a docs: infer `Literal` from the schema in JSON type example (#1083)\n- f6981f867dc823ca01a09e8399074beff877b38b Small typo in readme (contraining => constraining) (#1096)\n- 7296aae7d5062f60ca73d39adf71a2e62cc3d1d2 Add zod-to-openapi to Ecosystem in the Readme (#1109)\n- 4cf7e7c5cba2ebe36db9d8f75f7866cb4a80bfc4 docs: fix typo on the error handling guide (#1111)\n- fa4eebba089badc7590c6ad7dc3a60c252702282 Improve IDE integration for inferred object properties to support Go To Definition, Rename Symbol, etc. (#1117)",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.14.5",
+  "draft": false,
+  "published_at": "2022-05-06T02:19:26Z"
+ },
+ {
+  "tag_name": "v3.14.4",
+  "name": "v3.14.4",
+  "body": "## Commits:\n\n- 823dda93193ab23f07b7e4625e54b1e8528cc530 Add invalid_literal issue\n- d109f67187d66079dc2f3e7ff3fcb416e3d298c4 Merge pull request #1052 from colinhacks/literal-error\n- 222df661cabe6ce7777ed4f2ba0640f9460edf08 Fully remove typeCache\n- 22d418c2b0d7534561180eb0de6cf3107dcf85c5 Fully remove typeCache\n- 0acd6f64d0dc346b23d9fcc67c8646be88dc8b54 Merge pull request #1058 from tmcw/fully-remove-typecache\n- 024257cf171f7432e106da0672c7c8b6cb612f29 Faster extra keys detection\n- 157f8c560a551b65148aed0b419513993badfb82 Merge pull request #1057 from tmcw/faster-extra-keys\n- 819fb499ee4ed663a266c19ee541024b30c34ed2 3.14.4",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.14.4",
+  "draft": false,
+  "published_at": "2022-04-04T19:25:05Z"
+ },
+ {
+  "tag_name": "v3.14.3",
+  "name": "v3.14.3",
+  "body": "## Commits:\n\n- 66f044b5c3fb2a21df6c8a854fb212852ce0aad9 Improve precommit hooks\n- 60acdc0f1aca48dcd67590daeab61317c4a92fab Fix prepublish\n- 361c789d84a28fb0c243008f21c23f240049c2a6 Test husky\n- 2348c00719ac5f139a8da1a84c2793017d11b863 Test husky\n- 0dbd4ec8154d3390e23bdd2b1238fd20276893bf Test husky\n- ac187fa1218ae8bdf2664f7d8457e04cff4b0816 Reformat\n- 4fb3a2967d1830633dc227e4da394cde5a87b234 Add files\n- b6006f37d6a2ac879c80d703a45386d573ed1f5c Merge pull request #1034 from colinhacks/husky\n- 35a74f5147e5ea400a17cbeb3926ec81eac414b7 Remove coverage badge generation, fix release CI\n- 1974cfbc8ef98f162a9dabf5eb333eb475ca7eac Add codecov\n- 4bd66a42c143070063a5e3fccfde2d7615c1433b Remove coverage\n- 6173d5cbcc6b6b9f0152ae0a783097affdf2edf6 Merge pull request #1035 from colinhacks/coverage\n- 0780ee3630a2b7d0e29573edbfd0ae7bf0b8e345 Fix CI badge\n- f59df396529055404eca5300d12e1765bb157c65 Faster paths\n- 3662eb28daed63ccaf73ee00758dd13de2810bcd Update src/types.ts\n- 2ffcd8d6ebd69036c483c18135008f85db4b78e7 Update ZodMap for new ParseInputLazyPath structure\n- 0ad9e128eb35bac7d715b6aec24bb8b55e3b3700 Merge pull request #1036 from tmcw/fast-path2\n- d8628e19dafdeb336bec924692dc6c7a67775aba Add fastify-type-provider-zod\n- 1713b0aaceb952d298d931d8d507a49e6e12fab5 Add Supervillain to Ecosystem section\n- f3db86704a02d3ae075ef976018f21cb8b27641e Merge pull request #1047 from Southclaws/patch-1\n- 2ccce0704f1b572ed85b15d225c39a65057e1580 Add generic functions guide to README\n- baf9b533bd367910819f660d195dd5831c03ca69 Add default for first argument of ZodType",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.14.3",
+  "draft": false,
+  "published_at": "2022-03-26T23:12:15Z"
+ },
+ {
+  "tag_name": "v3.14.2",
+  "name": "v3.14.2",
+  "body": "## Commits:\n\n- 76d2fe0b321e8211d470b7d340780218e6fab941 Faster optional & nullable values\n- 38cc89d649c919e6696b2d246061b9114fb00307 Merge pull request #1028 from tmcw/faster-optionals\n- 900490457640cb68ffeda0d61fe7550bf245f569 Implement release CI\n- 5d356ddbb7c859334ff17eb78b220bbf5470b407 Remove logs in build.mjs\n- 25b41e6124518d728bde98a9bc7fba71815c474a Dry-run: false\n- 6a703d8616cae1f43008e91d7385c8398454aa40 Rename workflows\n- 0a5f644437323765216b8f5056967c667637b1cb Update release, remove fix.yml\n- 01ca1164df331bc8aeb200cf8f664f66c103c05d Generate Deno before testing\n- 25bab35735dc27d72b1c7137c1b29d9e48626234 Update script names\n- cc458a0c4382e81de3f451df0393fccc9add10dd Prevent duplicate jobs\n- a3e3d4551c4a99a571e06b8c073fa28153b66da3 Prevent duplicate jobs\n- b5a93f2348a8e7243263dcb7dc09646f2267eeaa Fix prettier command\n- 3a27c0cf4384742d149efe4e9cc1a7ee8dd9a948 Upgrade eslint version\n- cadfa20a0ddcc7277735babc62be41a1f82f9554 Fix job id\n- 863346b158ce89a937221a677758423dcd207488 chore: Format, lint, build Deno\n- e02a9cae1b55d4b0fa0a6d87ea768381f5084081 Remove dryrun\n- db4c8bf5f66e186b4496b0c00b2b067c4cf1abc2 Add deno\n- 88d12399e098c81d91820c34b36dc049f0202a32 Update release\n- 1a4a1c2eeca86743ce9f3071e69e712b56304ee5 Merge pull request #1030 from colinhacks/ci\n- 43b258b6bb3c4dfcad59fe58afaac2f730217dbb chore: Format, lint, build Deno",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.14.2",
+  "draft": false,
+  "published_at": "2022-03-19T01:09:19Z"
+ },
+ {
+  "tag_name": "v3.14.1",
+  "name": "v3.14.1",
+  "body": "## What's Changed\r\n* Reduce memory churn, avoid generating ctx when not necessary, much faster valid primitives by @tmcw in https://github.com/colinhacks/zod/pull/1025\r\n\r\n\r\n**Full Changelog**: https://github.com/colinhacks/zod/compare/v3.14.0...v3.14.1",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.14.1",
+  "draft": false,
+  "published_at": "2022-03-18T08:33:07Z"
+ },
+ {
+  "tag_name": "v3.14.0",
+  "name": "v3.14.0",
+  "body": "## What's Changed\r\n* Add realworld benchmark by @tmcw in https://github.com/colinhacks/zod/pull/1024\r\n* Remove unnecessary docs files by @Shreyas-SAS in https://github.com/colinhacks/zod/pull/1013\r\n* Add ZodDiscriminatedUnion to ZodFirstPartySchemaTypes by @jacobmischka in https://github.com/colinhacks/zod/pull/1002\r\n* Remove typeCache by @tmcw in https://github.com/colinhacks/zod/pull/1023\r\n* Performance - target es2018 by @tmcw in https://github.com/colinhacks/zod/pull/1022\r\n* Fix ERROR_HANDLING.md typo by @susiyaki in https://github.com/colinhacks/zod/pull/1027\r\n* Fast unions by @tmcw in https://github.com/colinhacks/zod/pull/1026\r\n\r\n## New Contributors\r\n* @tmcw made their first contribution in https://github.com/colinhacks/zod/pull/1024\r\n* @Shreyas-SAS made their first contribution in https://github.com/colinhacks/zod/pull/1013\r\n* @esamattis made their first contribution in https://github.com/colinhacks/zod/pull/1003\r\n* @jacobmischka made their first contribution in https://github.com/colinhacks/zod/pull/1002\r\n* @susiyaki made their first contribution in https://github.com/colinhacks/zod/pull/1027\r\n\r\n**Full Changelog**: https://github.com/colinhacks/zod/compare/v3.13.4...v3.14.0",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.14.0",
+  "draft": false,
+  "published_at": "2022-03-18T08:23:09Z"
+ },
+ {
+  "tag_name": "v3.13.4",
+  "name": "v3.13.4",
+  "body": "- [Implement .enum on ZodNativeEnum](https://github.com/colinhacks/zod/commit/ab75f4dad2a6738c019fe4edea6c8603c25ecb18)[](https://github.com/colinhacks/zod/tree/ab75f4dad2a6738c019fe4edea6c8603c25ecb18)\r\n- [Fix ZodRecord inferred type](https://github.com/colinhacks/zod/commit/ceca9e7722397387cf43c90d9c2ccbd0bfa81bf0)\r\n\r\n**Full Changelog**: https://github.com/colinhacks/zod/compare/v3.13.2...v3.13.4",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.13.4",
+  "draft": false,
+  "published_at": "2022-03-02T22:23:23Z"
+ },
+ {
+  "tag_name": "v3.13.2",
+  "name": "v3.13.2",
+  "body": "## What's Changed\r\n* Removing source maps and uglification of ES modules\r\n* exporting ZodDiscriminatedUnionOption by @JacobWeisenburger in https://github.com/colinhacks/zod/pull/987\r\n* Add `types` field to `exports` in `package.json` by @shroudedcode in https://github.com/colinhacks/zod/pull/906\r\n* NaN type by @noyan-alimov in https://github.com/colinhacks/zod/pull/898\r\n* Add Contributor's Convenant as Code of Conduct by @scotttrinh in https://github.com/colinhacks/zod/pull/912\r\n* Records should be partial so we're not required to use all keys by @jeremybull in https://github.com/colinhacks/zod/pull/752\r\n\r\n## New Contributors\r\n* @shroudedcode made their first contribution in https://github.com/colinhacks/zod/pull/906\r\n* @noyan-alimov made their first contribution in https://github.com/colinhacks/zod/pull/898\r\n* @jeremybull made their first contribution in https://github.com/colinhacks/zod/pull/752\r\n\r\n**Full Changelog**: https://github.com/colinhacks/zod/compare/v3.12.0...v3.13.2",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.13.2",
+  "draft": false,
+  "published_at": "2022-03-02T01:22:27Z"
+ },
+ {
+  "tag_name": "v3.12.0",
+  "name": "v3.12.0",
+  "body": "* Fix documentation for ZodArray .element (issue #744) by @maxmvsk in https://github.com/colinhacks/zod/pull/745\r\n* Added json-schema-to-zod to ecosystem by @StefanTerdell in https://github.com/colinhacks/zod/pull/756\r\n* chore: add soly package to ecosystem by @mdbetancourt in https://github.com/colinhacks/zod/pull/811\r\n* Update README.md by @JacobWeisenburger in https://github.com/colinhacks/zod/pull/795\r\n* Fix typing typo in documentation by @pspeter3 in https://github.com/colinhacks/zod/pull/818\r\n* Fix typo in Sets section of README by @jwr12135 in https://github.com/colinhacks/zod/pull/793\r\n* add zod-to-ts to ecosystem by @sachinraja in https://github.com/colinhacks/zod/pull/824\r\n* Fix grammar mistake in README for \"Cyclical objects\" by @Nilstrieb in https://github.com/colinhacks/zod/pull/825\r\n* Fix broken twitter link by @ajcwebdev in https://github.com/colinhacks/zod/pull/827\r\n* Fix instanceof map and set by @NumminorihSF in https://github.com/colinhacks/zod/pull/840\r\n* Further translate untranslated English parts by @geenva in https://github.com/colinhacks/zod/pull/837\r\n* Fix mistake in example (README_ZH.md) by @astef in https://github.com/colinhacks/zod/pull/836\r\n* Fix mistake in example (README.md) by @astef in https://github.com/colinhacks/zod/pull/835\r\n* Add Readonly to ZodUnionOptions by @cefn in https://github.com/colinhacks/zod/pull/832\r\n* Add min(), max(), size() and nonempty() to ZodSet schema by @whitebyte in https://github.com/colinhacks/zod/pull/823\r\n* README grammarz by @cedric-h in https://github.com/colinhacks/zod/pull/819\r\n* Don't include received value in enum/literal error messages (fixes #461) by @pasieronen in https://github.com/colinhacks/zod/pull/777\r\n* fix: Add `description` to `ProcessedCreateParams` by @equt in https://github.com/colinhacks/zod/pull/767\r\n* fix: intersection with date fields by @dirgapeter in https://github.com/colinhacks/zod/pull/773\r\n* Remove duplicated block on custom error messages by @5minpause in https://github.com/colinhacks/zod/pull/758\r\n* Add types to extract error results from schema by @fnky in https://github.com/colinhacks/zod/pull/856\r\n* change UUID regex to support different UUID variants by @narrowei in https://github.com/colinhacks/zod/pull/860\r\n* added graphql-codegen-typescript-validation-schema (README.md)  by @Code-Hex in https://github.com/colinhacks/zod/pull/902\r\n* Discriminated union by @alexxander in https://github.com/colinhacks/zod/pull/899\r\n* README consistency fixes  by @JacobWeisenburger in https://github.com/colinhacks/zod/pull/876\r\n* added z.date documentation to README.md. fixes #880 by @JacobWeisenburger in https://github.com/colinhacks/zod/pull/881\r\n* Add zod-prisma to the ecosystem section by @ahhshm in https://github.com/colinhacks/zod/pull/939\r\n* Add badges and call to action to README by @konhi in https://github.com/colinhacks/zod/pull/947\r\n* Remove duplicated `processCreateParams` in `ZodNumber` by @equt in https://github.com/colinhacks/zod/pull/766",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.12.0",
+  "draft": false,
+  "published_at": "2022-02-24T17:14:56Z"
+ },
+ {
+  "tag_name": "v3.11.6",
+  "name": "v3.11.6",
+  "body": "Support type guards as refinements #727 \r\nFix #732 ",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.11.6",
+  "draft": false,
+  "published_at": "2021-10-26T19:39:14Z"
+ },
+ {
+  "tag_name": "v3.11.4",
+  "name": "v3.11.4",
+  "body": "",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.11.4",
+  "draft": false,
+  "published_at": "2021-10-24T18:20:26Z"
+ },
+ {
+  "tag_name": "v3.11.3",
+  "name": "v3.11.3",
+  "body": "Support TypeScript 4.5.",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.11.3",
+  "draft": false,
+  "published_at": "2021-10-23T20:56:30Z"
+ },
+ {
+  "tag_name": "v3.10.3",
+  "name": "v3.10.3",
+  "body": "New parsing engine. Zod now surfaces more errors. ",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.10.3",
+  "draft": false,
+  "published_at": "2021-10-19T16:08:31Z"
+ },
+ {
+  "tag_name": "v3.9.8",
+  "name": "v3.9.8",
+  "body": "v3.9.8",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.9.8",
+  "draft": false,
+  "published_at": "2021-10-05T19:51:13Z"
+ },
+ {
+  "tag_name": "v3.9.0",
+  "name": "v3.9.0",
+  "body": "## ✨ Zod 3.9 ✨ \r\n\r\n### Custom error messages in schemas\r\n\r\n```ts\r\nconst name = z.string({\r\n  invalid_type_error: \"Name must be string\",\r\n  required_error: \"Name is required\",\r\n});\r\n```\r\n\r\nUnder the hood, this creates a custom error map that's bound to the schema. You can also pass a custom error map explicitly.\r\n\r\n```ts\r\nconst name = z.string({ errorMap: myErrorMap });\r\n```\r\n\r\n### Rest parameters for tuples\r\n\r\n```ts\r\nconst myTuple = z.tuple([z.string(), z.number()]).rest(z.boolean());\r\ntype t1 = z.output<typeof myTuple>; // [string, number, ...boolean[]]\r\n```\r\n\r\n### Selective `.partial`\r\n\r\nYou can specify certain fields to make optional with the `ZodObject.partial` method.\r\n\r\n```ts\r\nconst user = z.object({\r\n  name: z.string(),\r\n  age: z.number(),\r\n});\r\n\r\nconst optionalNameUser = user.partial({ name: true });\r\n// { name?: string; age: number; }\r\n```\r\n\r\n### Support key schema in ZodRecord\r\n\r\nPreviously, `z.record` only accepted a single schema:\r\n\r\n```ts\r\nz.record(z.boolean()); // Record<string, boolean>;\r\n```\r\n\r\nNow `z.record` has been overloaded to support two schemas. The first validates the _keys_ of the record, and the second validates the _values_.\r\n\r\n```ts\r\nconst schema = z.record(z.number(), z.boolean());\r\ntype schema = z.infer<typeof schema>; // Record<number, boolean>\r\n\r\nconst schema = z.record(z.enum([\"Tuna\", \"Trout\"]), z.boolean());\r\ntype schema = z.infer<typeof schema>; // Record<\"Tuna\" | \"Trout\", boolean>\r\n```\r\n\r\n### Don't short-circuit on some validation errors\r\n\r\nCertain issue types \"short circuit\" the rest of the validation logic. If you pass a `number` into a `ZodString` schema, Zod throws an error immediately, without passing the input through any downstream refinements or transforms. This is intentional; those refinements/transforms are likely to throw unexpected errors since they assume a `number` input. \r\n\r\nHowever other kinds of errors shouldn't \"short circuit\" like this. For instance `z.string().min(10).email()`. If we try to parse `\"asdf\"` with this schema, we should get two errors: \"Invalid email\" and \"Input should contain at least 10 characters\". If we short circuit after the `\"min\"` error, then Zod fails to surface the full set of validation issues.\r\n\r\nZod now considers certain classes of validation errors \"continuable\", in that they don't short circuit validation logic. This makes Zod more usable in form validation settings like this:\r\n\r\n```ts\r\nconst user = z\r\n  .object({\r\n    password: z.string().min(6),\r\n    confirm: z.string(),\r\n  })\r\n  .refine((data) => data.password === data.confirm, \"Passwords don't match\");\r\nconst result = user.safeParse({ password: \"asdf\", confirm: \"qwer\" });\r\n\r\n```\r\nThis will return an error with two issues. Previously the parsing would have short-circuited after the inner `password` was invalid.\r\n\r\n```ts\r\n\r\n/*\r\nZodError: [\r\n    {\r\n      \"code\": \"too_small\",\r\n      \"minimum\": 6,\r\n      \"type\": \"string\",\r\n      \"inclusive\": true,\r\n      \"message\": \"Should be at least 6 characters\",\r\n      \"path\": [ \"password\" ]\r\n    },\r\n    {\r\n      \"code\": \"custom\",\r\n      \"message\": \"Passwords don't match\",\r\n      \"path\": [ \"confirm\" ]\r\n    }\r\n  ]\r\n*/\r\n```",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.9.0",
+  "draft": false,
+  "published_at": "2021-09-25T22:25:04Z"
+ },
+ {
+  "tag_name": "v3.8.0",
+  "name": "v3.8.0",
+  "body": "Release: `zod@3.8.0`\r\nWhat's new:\r\n\r\n### `z.preprocess`\r\n\r\n   This lets you transform input data before it is parsed by your schema. This is useful for several use cases, notably *type coercion*. Usage:\r\n   \r\n   ```ts\r\n   const coercedString = z.preprocess(\r\n     val => String(val),\r\n     z.string()\r\n   )\r\n   mySchema.parse(12); // => \"12\"\r\n   mySchema.parse(true); // => \"true\"\r\n   ```\r\n\r\n### CUID validation\r\n\r\nCourtesy of @alii \r\n\r\n   ```ts\r\n   const cuid = z.string().cuid()\r\n   cuid.parse(\"ckopqwooh000001la8mbi2im9\");\r\n   ```\r\n\r\n### Improved `.deepPartial()`\r\n\r\n   The `.deepPartial()` method on object schemas now recursively traverses through ZodArray, ZodTuple, ZodOptional, and ZodNullable elements. Previously, this method only worked in hierarchies of simple object schemas.\r\n\r\n   ```ts\r\n   const mySchema = z.object({\r\n     name: z.string(),\r\n     array: z.array(z.object({ asdf: z.string() })),\r\n     tuple: z.tuple([\r\n       z.object({ value: z.string() })\r\n     ]),\r\n   }) \r\n\r\n   const partialed = mySchema.deepPartial();\r\n   type partialed = z.infer<typeof partialed>;\r\n   /*\r\n     {\r\n       name?: string | undefined;\r\n       array?: {\r\n           asdf?: string | undefined;\r\n       }[] | undefined;\r\n       tuple?: [{value?: string}] | undefined;\r\n     }\r\n   */\r\n   ```",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.8.0",
+  "draft": false,
+  "published_at": "2021-08-23T03:36:23Z"
+ },
+ {
+  "tag_name": "v3.7.3",
+  "name": "v3.7.3",
+  "body": "Improve Zod stack traces",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.7.3",
+  "draft": false,
+  "published_at": "2021-08-19T17:25:23Z"
+ },
+ {
+  "tag_name": "v3.7.0",
+  "name": "v3.7.0",
+  "body": "- Eliminate `ZodNonEmptyArray`, add `Cardinality` to `ZodArray`\r\n- Add optional error message to `ZodArray.nonempty`\r\n- Add `.gt/.gte/.lt/.lte` to `ZodNumber`, alias `min -> gte` and `max -> lte`",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.7.0",
+  "draft": false,
+  "published_at": "2021-08-01T23:23:12Z"
+ },
+ {
+  "tag_name": "v3.6.1",
+  "name": "v3.6.1",
+  "body": "- Add IE11 support\r\n- `ZodError.flatten` now optionally accepts a map function for customizing the output\r\n- `.void()` now only accepts undefined, not null.\r\n- `z.enum` now supports `Readonly` string tuples\r\n\r\n  ```\r\n  const HTTP_SUCCESS = [\"200\", \"201\"] as const;\r\n  const arg = z.enum(HTTP_SUCCESS);\r\n  ```",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.6.1",
+  "draft": false,
+  "published_at": "2021-08-01T03:22:30Z"
+ },
+ {
+  "tag_name": "v3.5.1",
+  "name": "v3.5.1",
+  "body": "",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.5.1",
+  "draft": false,
+  "published_at": "2021-07-14T17:32:57Z"
+ },
+ {
+  "tag_name": "v3.5.0",
+  "name": "v3.5.0",
+  "body": "### 3.5\r\n\r\n- Add discriminator to all first-party schema defs",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.5.0",
+  "draft": false,
+  "published_at": "2021-07-06T21:56:32Z"
+ },
+ {
+  "tag_name": "v3.4.2",
+  "name": "v3.4.2",
+  "body": "Bug fixes.",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.4.2",
+  "draft": false,
+  "published_at": "2021-07-06T16:25:20Z"
+ },
+ {
+  "tag_name": "v3.4.0",
+  "name": "v3.4.0",
+  "body": "\r\n### 3.4\r\n\r\n- `unknown` and `any` schemas are always interpreted as optional. Reverts change from 3.3.\r\n\r\n### 3.3.0\r\n\r\n- HUGE speed improvements\r\n- Added benchmarking: `yarn benchmark`\r\n- Type signature of `ZodType#_parse` has changed. This will affects users who have implemented custom subclasses of `ZodType`.\r\n- [reverted] Object fields of type `unknown` are no longer inferred as optional.",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.4.0",
+  "draft": false,
+  "published_at": "2021-07-06T16:01:46Z"
+ },
+ {
+  "tag_name": "v3.2",
+  "name": "v3.2",
+  "body": "Fix TypeScript 4.3 recursive type issues",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.2",
+  "draft": false,
+  "published_at": "2021-06-13T05:53:34Z"
+ },
+ {
+  "tag_name": "v3.1.0",
+  "name": "v3.1.0",
+  "body": "Refactor ZodString and ZodNumber validations internally: #469 ",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.1.0",
+  "draft": false,
+  "published_at": "2021-05-26T01:30:02Z"
+ },
+ {
+  "tag_name": "v3.0.0",
+  "name": "v3.0.0",
+  "body": "Stable v3 release! 🚀🚀🚀",
+  "html_url": "https://github.com/colinhacks/zod/releases/tag/v3.0.0",
+  "draft": false,
+  "published_at": "2021-05-17T15:57:29Z"
+ }
+]

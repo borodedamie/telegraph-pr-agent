@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import { z } from "zod";
 import type { Answer, NormalizedRequest } from "./types.js";
+import { PROCESSING_VERSION } from "./version.js";
 
 export interface Store {
   get(key: string): Promise<string | null>;
@@ -128,9 +129,12 @@ export const ManifestEntry = z.object({
 });
 export type ManifestEntry = z.infer<typeof ManifestEntry>;
 
-/** `sourceId` is the request URL, or for OSV the canonical query body. */
+/**
+ * `sourceId` is the request URL, or for OSV the canonical query body. The processing version is part of the key:
+ * a snapshot holds reduced text, so a reducer change must not be served an old-shape snapshot on a 304.
+ */
 function manifestKey(sourceId: string): string {
-  return `manifest:${sha256Hex(sourceId)}`;
+  return `manifest:${PROCESSING_VERSION}:${sha256Hex(sourceId)}`;
 }
 
 export async function getManifest(store: Store, sourceId: string): Promise<ManifestEntry | null> {
@@ -173,7 +177,10 @@ export function answerKey(request: NormalizedRequest, contentHashes: string[], p
  */
 export function isCacheable(answer: Answer): boolean {
   if (answer.outcome === "temporarily_unavailable") return false;
-  if (answer.outcome === "found" || answer.outcome === "not_found") return answer.security.status === "complete";
+  // not_checked: the OSV check is not wired into the pipeline yet (T053); its key changes when it is.
+  if (answer.outcome === "found" || answer.outcome === "not_found") {
+    return answer.security.status === "complete" || answer.security.status === "not_checked";
+  }
   return true;
 }
 

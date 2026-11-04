@@ -109,6 +109,11 @@ export class Budget {
     this.modelReleases += releaseCount;
   }
 
+  /** Whether this limit stopped some work. */
+  hit(kind: BudgetKind): boolean {
+    return this.exhaustedKinds.includes(kind);
+  }
+
   /** The first limit that stopped work, or null. */
   exhausted(): BudgetKind | null {
     return this.exhaustedKinds[0] ?? null;

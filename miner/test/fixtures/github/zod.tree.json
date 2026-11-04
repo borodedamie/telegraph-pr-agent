@@ -1,0 +1,205 @@
+{
+ "truncated": false,
+ "tree": [
+  {
+   "path": ".claude/skills/security-advisory/SKILL.md",
+   "type": "blob"
+  },
+  {
+   "path": ".claude/skills/triage/SKILL.md",
+   "type": "blob"
+  },
+  {
+   "path": "AGENTS.md",
+   "type": "blob"
+  },
+  {
+   "path": "CLAUDE.md",
+   "type": "blob"
+  },
+  {
+   "path": "CODE_OF_CONDUCT.md",
+   "type": "blob"
+  },
+  {
+   "path": "CONTRIBUTING.md",
+   "type": "blob"
+  },
+  {
+   "path": "README.md",
+   "type": "blob"
+  },
+  {
+   "path": "SECURITY.md",
+   "type": "blob"
+  },
+  {
+   "path": "packages/bench/typia-case/README.md",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs-v3/CHANGELOG.md",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs-v3/CODE_OF_CONDUCT.md",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs-v3/CONTRIBUTING.md",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs-v3/ERROR_HANDLING.md",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs-v3/MIGRATION.md",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs-v3/README_KO.md",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs-v3/README_ZH.md",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs-v3/blog/clerk-fellowship.md",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs-v3/home.md",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/README.md",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/api.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/basics.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/blog/clerk-fellowship.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/blog/how-a-zod-schema-class-is-built.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/blog/introducing-z-compile.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/blog/reducing-memory-footprint.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/blog/zod-4-5.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/blog/zod-4-6.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/codecs.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/compile.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/ecosystem.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/error-customization.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/error-formatting.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/index.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/json-schema.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/library-authors.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/metadata.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/packages/core.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/packages/mini.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/packages/zod.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/v4/changelog.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/v4/index.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/content/v4/versioning.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/docs/snippets/how-z-compile-works.mdx",
+   "type": "blob"
+  },
+  {
+   "path": "packages/mini/README.md",
+   "type": "blob"
+  },
+  {
+   "path": "packages/resolution/README.md",
+   "type": "blob"
+  },
+  {
+   "path": "packages/tsc/README.md",
+   "type": "blob"
+  },
+  {
+   "path": "packages/zod/README.md",
+   "type": "blob"
+  },
+  {
+   "path": "rfcs/index.md",
+   "type": "blob"
+  },
+  {
+   "path": "wiki/compile.md",
+   "type": "blob"
+  },
+  {
+   "path": "wiki/optionality.md",
+   "type": "blob"
+  }
+ ]
+}

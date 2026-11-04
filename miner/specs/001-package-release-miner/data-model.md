@@ -21,7 +21,7 @@ All types are validated with zod at the boundaries (incoming query, every upstre
 | Field | Type | Rule |
 | --- | --- | --- |
 | `id` | string | `s1`, `s2`, … within one answer |
-| `type` | `registry` \| `release` \| `changelog` \| `tag_compare` \| `advisory` | |
+| `type` | `registry` \| `release` \| `changelog` \| `tag_compare` \| `advisory` | A migration guide found in the repository (research R5, step 3) is stored as `changelog` |
 | `url` | string | The URL actually fetched (FR-009) |
 | `retrievedAt` | ISO timestamp | |
 | `versionFrom` | string \| null | Range the material applies to |
@@ -82,7 +82,7 @@ Correlation then follows the spec's User Story 4 table; with no evidence, no cla
 
 | Field | Type | Rule |
 | --- | --- | --- |
-| `status` | `complete` \| `partial` \| `unavailable` \| `not_checked` | `partial` when the OSV response was truncated or a referenced record could not be read. `not_checked` when no package was resolved (`out_of_scope`, `needs_clarification`) |
+| `status` | `complete` \| `partial` \| `unavailable` \| `not_checked` | `partial` when the OSV response was truncated or a referenced record could not be read. `not_checked` when no package was resolved (`out_of_scope`, `needs_clarification`). Until OSV is wired in (T053) every answer is `not_checked`, carries no confidence penalty and is cacheable; adding OSV changes the processing version |
 | `checkedAt` | ISO timestamp \| null | When OSV was queried (both queries, A and B) |
 | `advisories` | Advisory[] | Empty means "none known" only when `status = complete` |
 | `documentedFixes` | number | Count of `security_fix` ChangeItems |
@@ -119,6 +119,7 @@ Correlation then follows the spec's User Story 4 table; with no evidence, no cla
 | `found`, complete coverage, every item `documented` | 0.9 |
 | `found`, complete coverage, some `repository_evidence` or `inferred` items | 0.7 |
 | `found`, partial coverage | 0.5 |
+| `found`, some release text not read (the model pass did not run, or a major release only links to a guide: "not assessed") | at most 0.5 |
 | `found`, complete coverage, no items (no breaking changes or deprecations documented) | 0.9 |
 | `not_found`, every listed source responded | 0.8 |
 | `not_found`, an optional source (e.g. the changelog) failed | 0.6 |
@@ -147,7 +148,7 @@ query → auth check ──(missing or wrong key)──> 401, no work
      found / not_found → answer stored (only if security.status = complete) → render
 ```
 
-The answer-cache key is `sha256(answer identity + sorted contentHashes of every source consulted, OSV responses included + PROCESSING_VERSION)`. "Consulted" is fixed by the retrieval step, before extraction, so the same key is computed at lookup and at store. A new advisory changes the OSV response hash and so the key. An answer whose security check was partial or unavailable is not cached, so it is retried.
+The answer-cache key is `sha256(answer identity + sorted contentHashes of every source consulted, OSV responses included + PROCESSING_VERSION)`. "Consulted" is fixed by the retrieval step, before extraction, so the same key is computed at lookup and at store. A new advisory changes the OSV response hash and so the key. An answer whose security check was partial or unavailable is not cached, so it is retried. The same holds when an optional source (the changelog or migration guide) was down. A source over its size cap also gives the lower `not_found` band, but that answer is cached: the cap gives the same result next time. Releases the model could not fit are reported as not covered (`budget`), and that answer is cached.
 
 ## Metrics record (one per request, FR-027)
 
