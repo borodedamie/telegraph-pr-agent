@@ -55,6 +55,8 @@ export interface Material {
   tagTemplate?: string;
   /** An optional source (changelog, migration guide) was down; the answer goes on without it. */
   optionalSourceFailed?: boolean;
+  /** A source was over its size cap and left out. */
+  sourceTooLarge?: boolean;
 }
 
 export function githubHeaders(env: NodeJS.ProcessEnv): Record<string, string> {
@@ -163,6 +165,7 @@ export async function retrieveReleaseNotes(
         // Out of budget or time: keep the release notes already read; the next step meets the same cut.
         if (failure === "cut") return material;
         if (failure === "down") material.optionalSourceFailed = true;
+        if (failure === "too_large") material.sourceTooLarge = true;
         continue;
       }
       if (document === null) continue;
@@ -196,6 +199,7 @@ export async function retrieveReleaseNotes(
       if (failure === null) throw err;
       console.warn(JSON.stringify({ kind: "migration_guide_skipped", failure, error: String(err) }));
       if (failure === "down") material.optionalSourceFailed = true;
+      if (failure === "too_large") material.sourceTooLarge = true;
       guide = null;
     }
     if (guide !== null) {
@@ -263,9 +267,8 @@ async function findMigrationGuide(
   headers: Record<string, string>
 ): Promise<SourceDocument | null> {
   const treeUrl = `https://api.github.com/repos/${repo.owner}/${repo.repo}/git/trees/HEAD?recursive=1`;
-  let tree: SourceDocument | null;
-  try {
-    tree = await fetchDocument(retrieval, treeUrl, {
+  // Over the size cap (a very large repository) or down: the caller decides, as for any optional source.
+  const tree = await fetchDocument(retrieval, treeUrl, {
     headers,
     // Only the file paths are kept.
     toText: (body) =>
@@ -274,22 +277,10 @@ async function findMigrationGuide(
           .tree.filter((entry) => entry.type === "blob")
           .map((entry) => entry.path)
       ),
-    });
-  } catch (err) {
-    // A very large repository's tree exceeds the size cap; the guide step is optional, so it is skipped.
-    if (!(err instanceof TooLarge)) throw err;
-    console.warn(JSON.stringify({ kind: "migration_guide_skipped", url: treeUrl, error: String(err) }));
-    return null;
-  }
+  });
   if (tree === null) return null;
   const path = pickMigrationGuide(z.array(z.string()).parse(JSON.parse(tree.text)), version, packageName);
   if (path === null) return null;
   const url = `https://raw.githubusercontent.com/${repo.owner}/${repo.repo}/HEAD/${path}`;
-  try {
-    return await fetchDocument(retrieval, url, { toText: normalizeText });
-  } catch (err) {
-    if (!(err instanceof TooLarge)) throw err;
-    console.warn(JSON.stringify({ kind: "migration_guide_skipped", url, error: String(err) }));
-    return null;
-  }
+  return fetchDocument(retrieval, url, { toText: normalizeText });
 }

@@ -185,6 +185,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
           material.sections.push(...found.sections.map((s) => ({ ...s, consulted: s.consulted + offset })));
           material.tagTemplate ??= found.tagTemplate;
           material.optionalSourceFailed ||= found.optionalSourceFailed;
+          tooLarge ||= found.sourceTooLarge === true;
         } catch (err) {
           // The step's material is lost with it, so the releases it marked covered are not.
           tracker.restore(saved);
@@ -241,6 +242,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
     try {
       if (deps.enterCompute) leave = await deps.enterCompute();
       const { answer, complete } = await compute(request, resolved.targetReleasedAt, registrySource, material, tracker, budget, deps, metrics, processingBase, {
+        // Both lower the confidence band; only an outage (retried next time) also keeps the answer out of the cache.
         optionalSourceFailed: tooLarge || material.optionalSourceFailed === true,
         lookups: { checked: retrieval.checked, unreadable: retrieval.unreadable },
       });

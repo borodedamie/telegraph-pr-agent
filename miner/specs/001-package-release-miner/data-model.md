@@ -147,7 +147,7 @@ query → auth check ──(missing or wrong key)──> 401, no work
      found / not_found → answer stored (only if security.status = complete) → render
 ```
 
-The answer-cache key is `sha256(answer identity + sorted contentHashes of every source consulted, OSV responses included + PROCESSING_VERSION)`. "Consulted" is fixed by the retrieval step, before extraction, so the same key is computed at lookup and at store. A new advisory changes the OSV response hash and so the key. An answer whose security check was partial or unavailable is not cached, so it is retried. The same holds when an optional source (the changelog or migration guide) was down. Releases the model could not fit are reported as not covered (`budget`), and that answer is cached.
+The answer-cache key is `sha256(answer identity + sorted contentHashes of every source consulted, OSV responses included + PROCESSING_VERSION)`. "Consulted" is fixed by the retrieval step, before extraction, so the same key is computed at lookup and at store. A new advisory changes the OSV response hash and so the key. An answer whose security check was partial or unavailable is not cached, so it is retried. The same holds when an optional source (the changelog or migration guide) was down. A source over its size cap also gives the lower `not_found` band, but that answer is cached: the cap gives the same result next time. Releases the model could not fit are reported as not covered (`budget`), and that answer is cached.
 
 ## Metrics record (one per request, FR-027)
 
