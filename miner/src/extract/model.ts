@@ -31,7 +31,15 @@ export function llmMinersFromEnv(env: NodeJS.ProcessEnv): LlmMiner[] {
 }
 
 export class ModelFailure extends Error {
-  constructor(readonly reason: "timeout" | "invalid_reply" | "payment", message: string) {
+  /**
+   * `payment` means nothing was paid (no quote, or a quote over the cap). For the others, `costMicroUsdc` is the
+   * amount that may have been paid; null when unknown.
+   */
+  constructor(
+    readonly reason: "timeout" | "invalid_reply" | "payment",
+    message: string,
+    readonly costMicroUsdc: number | null = null
+  ) {
     super(message);
     this.name = "ModelFailure";
   }
@@ -85,27 +93,35 @@ export function telegraphCaller(env: NodeJS.ProcessEnv, maxCostMicroUsdc: number
       body: JSON.stringify({ method: miner.method, endpoint: miner.path, payload }),
       signal,
     };
+    let quote: Response;
     try {
-      const quote = await fetch(url, init);
+      quote = await fetch(url, init);
+    } catch (err) {
+      // Nothing is paid before the quote, so the next miner may still be tried.
+      throw new ModelFailure("payment", `miner ${miner.id}: quote request failed: ${signal.aborted ? "timed out" : String(err)}`);
+    }
+    let amount: number | null = null;
+    try {
       const offered = decodeHeader<{ accepts?: { network?: string; asset?: string; amount?: string }[] }>(
         quote.headers.get("payment-required")
       );
       const option = offered?.accepts?.find((a) => a.network === SEPOLIA && a.asset?.toLowerCase() === TEST_USDC.toLowerCase());
-      const amount = Number(option?.amount);
-      if (quote.status !== 402 || !Number.isInteger(amount)) {
+      const quoted = Number(option?.amount);
+      if (quote.status !== 402 || !Number.isInteger(quoted)) {
         throw new ModelFailure("payment", `miner ${miner.id}: no test USDC quote (HTTP ${quote.status})`);
       }
-      if (amount > maxCostMicroUsdc) {
-        throw new ModelFailure("payment", `miner ${miner.id}: quote ${amount} exceeds ${maxCostMicroUsdc} micro-USDC`);
+      if (quoted > maxCostMicroUsdc) {
+        throw new ModelFailure("payment", `miner ${miner.id}: quote ${quoted} exceeds ${maxCostMicroUsdc} micro-USDC`);
       }
+      amount = quoted;
       const response = await paidFetch(url, init);
-      if (!response.ok) throw new ModelFailure("invalid_reply", `miner ${miner.id}: HTTP ${response.status}`);
+      if (!response.ok) throw new ModelFailure("invalid_reply", `miner ${miner.id}: HTTP ${response.status}`, amount);
       const body = (await response.json()) as { result?: unknown };
       return { text: replyText(body.result), costMicroUsdc: amount };
     } catch (err) {
       if (err instanceof ModelFailure) throw err;
-      if (signal.aborted) throw new ModelFailure("timeout", `miner ${miner.id}: timed out`);
-      throw new ModelFailure("invalid_reply", `miner ${miner.id}: ${String(err)}`);
+      if (signal.aborted) throw new ModelFailure("timeout", `miner ${miner.id}: timed out`, amount);
+      throw new ModelFailure("invalid_reply", `miner ${miner.id}: ${String(err)}`, amount);
     }
   };
 }
@@ -283,10 +299,13 @@ export async function extractModel(
       result.msModel += now() - startedAt;
       if (!(err instanceof ModelFailure)) throw err;
       result.failure = err.reason;
+      result.costMicroUsdc += err.costMicroUsdc ?? 0;
       console.warn(JSON.stringify({ kind: "llm_failed", minerId: miner.id, reason: err.reason, error: err.message }));
       // Anything past the quote may have been paid (a non-2xx, an unreadable body, a timeout after signing):
-      // count it at the cap, so the budget check above stops a second paid call (MAX_MODEL_CALLS).
-      if (err.reason !== "payment") budget.recordModelCall(prompt.length, budget.limits.maxModelCostMicroUsdc, chosen.length);
+      // count it at the quoted amount (the cap when unknown), so the budget check above limits further calls.
+      if (err.reason !== "payment") {
+        budget.recordModelCall(prompt.length, err.costMicroUsdc ?? budget.limits.maxModelCostMicroUsdc, chosen.length);
+      }
       // The miner is not at fault when the answer's own deadline aborted the call.
       if (!budget.signal.aborted) await store.set(`llm:breaker:${miner.id}`, err.reason, BREAKER_SEC);
     }

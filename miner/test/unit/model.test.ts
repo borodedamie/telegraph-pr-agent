@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { Budget, limitsFromEnv } from "../../src/budget.js";
 import { MemoryStore } from "../../src/cache.js";
-import { ModelFailure, extractModel, llmMinersFromEnv, parseReply, replyText, type ModelCaller } from "../../src/extract/model.js";
+import { generatePrivateKey } from "viem/accounts";
+import { ModelFailure, extractModel, llmMinersFromEnv, parseReply, replyText, telegraphCaller, type ModelCaller } from "../../src/extract/model.js";
 import type { Section } from "../../src/sources/github.js";
 
 const sections: Section[] = [
@@ -87,6 +88,16 @@ describe("extractModel", () => {
     expect(result).toMatchObject({ failure: "invalid_reply", candidates: [] });
   });
 
+  it("records a failure after payment at the quoted amount, not the cap", async () => {
+    const caller: ModelCaller = async () => {
+      throw new ModelFailure("timeout", "miner 302: timed out", 4_000);
+    };
+    const budget = new Budget(limitsFromEnv({}));
+    const result = await extractModel(sections, new Set(), "4.0.0", budget, new MemoryStore(), miners, caller);
+    expect(budget.modelCostMicroUsdc).toBe(4_000);
+    expect(result).toMatchObject({ failure: "timeout", costMicroUsdc: 4_000 });
+  });
+
   it("moves to the next miner when one refuses before payment", async () => {
     let calls = 0;
     const caller: ModelCaller = async (miner) => {
@@ -135,5 +146,23 @@ describe("parseReply", () => {
     const candidates = parseReply(text, new Map([["x1", 0]]), false, "m-");
     expect(candidates).toHaveLength(1);
     expect(candidates[0].change).toBe("real");
+  });
+});
+
+describe("telegraphCaller", () => {
+  it("reports a quote request that fails as unpaid", async () => {
+    // A throwaway key: global fetch is stubbed, so nothing reaches the network or signs a payment.
+    const caller = telegraphCaller({ MINER_SPEND_KEY: generatePrivateKey(), TELEGRAPH_NODE_URL: "https://node.invalid" }, 10_000)!;
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async () => {
+      throw new Error("ECONNRESET");
+    };
+    try {
+      const failure = await caller(miners[0], "prompt", new AbortController().signal).catch((err: unknown) => err);
+      expect(failure).toBeInstanceOf(ModelFailure);
+      expect(failure).toMatchObject({ reason: "payment", costMicroUsdc: null });
+    } finally {
+      globalThis.fetch = realFetch;
+    }
   });
 });
