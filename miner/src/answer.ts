@@ -21,7 +21,7 @@ import { confidence, selectOutcome, type OutcomeState } from "./outcome.js";
 import { parse } from "./parse.js";
 import { render } from "./render.js";
 import { resolve } from "./resolve.js";
-import { Timeout, Upstream, safeFetch } from "./safeFetch.js";
+import { Timeout, TooLarge, Upstream, safeFetch } from "./safeFetch.js";
 import { retrieveComparisons } from "./sources/compare.js";
 import { BudgetExhausted, newRetrieval, type Retrieval, type SourceDocument } from "./sources/fetch.js";
 import { githubHeaders, repoIdentity, retrieveReleaseNotes, type Consulted, type Material } from "./sources/github.js";
@@ -124,7 +124,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
     try {
       resolved = await resolve(retrieval, parsed);
     } catch (err) {
-      if (!isUpstreamFailure(err) && !(err instanceof BudgetExhausted)) throw err;
+      if (!isUpstreamFailure(err) && !(err instanceof BudgetExhausted) && !(err instanceof TooLarge)) throw err;
       console.warn(JSON.stringify({ kind: "registry_unavailable", error: String(err) }));
       return finish(simple("temporarily_unavailable", null, []));
     } finally {
@@ -157,6 +157,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
     const material: Material = { consulted: [], sections: [] };
     let upstreamFailed = false;
     let retrievalCut = false;
+    let tooLarge = false;
     const repo = repoIdentity(resolved.packument.repository);
     if ("reason" in repo) {
       console.info(JSON.stringify({ kind: "no_repository", package: request.package, reason: repo.reason }));
@@ -177,6 +178,12 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
         } catch (err) {
           // The step's material is lost with it, so the releases it marked covered are not.
           tracker.restore(saved);
+          if (err instanceof TooLarge) {
+            // A document over the size cap: the next step may still cover these releases.
+            console.warn(JSON.stringify({ kind: "source_too_large", error: String(err) }));
+            tooLarge = true;
+            continue;
+          }
           // budget.signal fires on the hard deadline; the safeFetch it aborts throws Timeout.
           if (err instanceof BudgetExhausted || budget.signal.aborted) {
             retrievalCut = true;
@@ -191,6 +198,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
         }
       }
     }
+    if (tooLarge) for (const version of tracker.missing()) tracker.notCovered(version, "truncated");
     metrics.msFetch = now() - fetchStart;
     metrics.upstreamRequests = retrieval.upstreamRequests;
     metrics.conditionalHits = retrieval.conditionalHits;
@@ -217,7 +225,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
     let leave: (() => Promise<void>) | null = null;
     try {
       if (deps.enterCompute) leave = await deps.enterCompute();
-      const { answer, complete } = await compute(request, resolved.targetReleasedAt, registrySource, material, tracker, budget, deps, metrics, processingBase);
+      const { answer, complete } = await compute(request, resolved.targetReleasedAt, registrySource, material, tracker, budget, deps, metrics, processingBase, tooLarge);
       const result = finish(answer);
       if (complete && isCacheable(result.answer)) await putAnswer(deps.store, key, result.answer, result.json);
       return result;
@@ -259,7 +267,8 @@ async function compute(
   budget: Budget,
   deps: PipelineDeps,
   metrics: PipelineResult["metrics"],
-  processingBase: string
+  processingBase: string,
+  optionalSourceFailed: boolean
 ): Promise<{ answer: Answer; complete: boolean }> {
   const sources: ReleaseSource[] = [registrySource];
   const verifySources: VerifySource[] = material.consulted.map((c: Consulted, i) => {
@@ -293,13 +302,13 @@ async function compute(
 
   // 7. Coverage, outcome, rendering.
   const coverage = tracker.result();
-  const state: OutcomeState = { stage: "retrieved", coverage, optionalSourceFailed: false };
+  const state: OutcomeState = { stage: "retrieved", coverage, optionalSourceFailed };
   const outcome = selectOutcome(state);
   const security: Security = { ...NOT_CHECKED, documentedFixes: changes.filter((c) => c.kind === "security_fix").length };
   const processingVersion = `${processingBase}-${model.minerId && modelRan ? `llm${model.minerId}` : "nollm"}-${mode}-s1`;
   const base = { outcome, request, targetReleasedAt, changes, security, coverage, sources, clarification: null, processingVersion };
   const rendered = render(base, mode === "rules_only");
-  const answer: Answer = { ...base, ...rendered, confidence: confidence(base) };
+  const answer: Answer = { ...base, ...rendered, confidence: confidence(base, optionalSourceFailed) };
   // Complete only when the model read every section that needed it; a partly read answer is not cached.
   return { answer, complete: model.complete };
 }

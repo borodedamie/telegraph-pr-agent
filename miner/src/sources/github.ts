@@ -143,7 +143,15 @@ export async function retrieveReleaseNotes(
     for (const path of paths) {
       if (wanted.size === 0) break;
       const url = `https://raw.githubusercontent.com/${repo.owner}/${repo.repo}/HEAD/${path}`;
-      const document = await fetchDocument(retrieval, url, { toText: normalizeText });
+      let document: SourceDocument | null;
+      try {
+        document = await fetchDocument(retrieval, url, { toText: normalizeText });
+      } catch (err) {
+        // A changelog over the size cap is left out; later steps may still cover its releases.
+        if (!(err instanceof TooLarge)) throw err;
+        console.warn(JSON.stringify({ kind: "changelog_skipped", url, error: String(err) }));
+        continue;
+      }
       if (document === null) continue;
       const sections = splitChangelog(document.text).filter((s) => wanted.has(s.version));
       if (sections.length === 0) continue;
@@ -244,5 +252,11 @@ async function findMigrationGuide(
   const path = pickMigrationGuide(z.array(z.string()).parse(JSON.parse(tree.text)), version, packageName);
   if (path === null) return null;
   const url = `https://raw.githubusercontent.com/${repo.owner}/${repo.repo}/HEAD/${path}`;
-  return fetchDocument(retrieval, url, { toText: normalizeText });
+  try {
+    return await fetchDocument(retrieval, url, { toText: normalizeText });
+  } catch (err) {
+    if (!(err instanceof TooLarge)) throw err;
+    console.warn(JSON.stringify({ kind: "migration_guide_skipped", url, error: String(err) }));
+    return null;
+  }
 }

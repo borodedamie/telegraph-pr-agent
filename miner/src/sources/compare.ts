@@ -3,7 +3,8 @@ import { z } from "zod";
 import { canonicalJson } from "../cache.js";
 import type { CoverageTracker } from "../coverage.js";
 import { normalizeText } from "../text.js";
-import { fetchDocument, type Retrieval } from "./fetch.js";
+import { TooLarge } from "../safeFetch.js";
+import { fetchDocument, type Retrieval, type SourceDocument } from "./fetch.js";
 import type { Consulted, Material, RepoIdentity, Section } from "./github.js";
 
 // GitHub's own limits on one comparison.
@@ -97,7 +98,16 @@ export async function retrieveComparisons(
     const base = index > 0 ? tracker.releases[index - 1] : from;
     const head = run[run.length - 1];
     const url = `https://api.github.com/repos/${repo.owner}/${repo.repo}/compare/${encodeURIComponent(tagFor(base))}...${encodeURIComponent(tagFor(head))}`;
-    const document = await fetchDocument(retrieval, url, { headers, toText: (body) => reduceCompare(body, repo.directory) });
+    let document: SourceDocument | null;
+    try {
+      document = await fetchDocument(retrieval, url, { headers, toText: (body) => reduceCompare(body, repo.directory) });
+    } catch (err) {
+      // A comparison over the size cap cannot be read in full: its releases are truncated, not failed.
+      if (!(err instanceof TooLarge)) throw err;
+      console.warn(JSON.stringify({ kind: "compare_skipped", url, error: String(err) }));
+      for (const version of run) tracker.notCovered(version, "truncated");
+      continue;
+    }
     if (document === null) continue; // A tag is missing: these releases stay without material.
 
     const compare = ReducedCompare.parse(JSON.parse(document.text));

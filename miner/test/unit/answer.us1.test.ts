@@ -5,6 +5,7 @@ import { MemoryStore, getSnapshot } from "../../src/cache.js";
 import type { ModelCaller } from "../../src/extract/model.js";
 import { findSpan } from "../../src/extract/verify.js";
 import { registryUrl } from "../../src/resolve.js";
+import { TooLarge } from "../../src/safeFetch.js";
 import { ZOD_GITHUB, fixtureFetcher } from "../fixtures.js";
 
 const FILES: Record<string, string> = { [registryUrl("zod")]: "npm/zod.json", ...ZOD_GITHUB };
@@ -131,5 +132,19 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     const tight = { ...deps(store, stubModel().caller), limits: limitsFromEnv({ MAX_SOURCE_REQUESTS: "1" }) };
     const { answer } = await answerQuestion(QUESTION, tight);
     expect(answer.outcome).toBe("temporarily_unavailable");
+  });
+
+  it("answers instead of failing when a source is over its size cap", async () => {
+    const { fetcher } = fixtureFetcher(FILES);
+    const guide = "https://raw.githubusercontent.com/colinhacks/zod/HEAD/packages/docs/content/v4/changelog.mdx";
+    const page1 = "https://api.github.com/repos/colinhacks/zod/releases?per_page=100&page=1";
+    const capped: typeof fetcher = async (url) => {
+      if (url === guide || url === page1) throw new TooLarge(url, 2 * 1024 * 1024);
+      return fetcher(url);
+    };
+    const { answer } = await answerQuestion(QUESTION, { ...deps(new MemoryStore(), stubModel().caller), fetcher: capped });
+    expect(answer.outcome).not.toBe("temporarily_unavailable");
+    expect(answer.coverage!.notCovered.some((n) => n.reason === "truncated")).toBe(true);
+    expect(answer).toMatchObject({ outcome: "not_found", confidence: 0.6 });
   });
 });
