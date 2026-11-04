@@ -58,6 +58,7 @@ Keeps enough of the OSV record to decide, for any version, whether it is affecte
 | Field | Type | Rule |
 | --- | --- | --- |
 | `id` | string | OSV id |
+| `summary` | string \| null | OSV's one-line summary |
 | `aliases` | string[] | CVE/GHSA ids, from OSV |
 | `severity` | `{type, score}[]` | OSV severity entries, kept as-is |
 | `displaySeverity` | `critical` \| `high` \| `moderate` \| `low` \| `unknown` | Derived for display only, from `database_specific.severity` or a CVSS score |
@@ -82,7 +83,7 @@ Correlation then follows the spec's User Story 4 table; with no evidence, no cla
 
 | Field | Type | Rule |
 | --- | --- | --- |
-| `status` | `complete` \| `partial` \| `unavailable` \| `not_checked` | `partial` when the OSV response was truncated or a referenced record could not be read. `not_checked` when no package was resolved (`out_of_scope`, `needs_clarification`). Until OSV is wired in (T053) every answer is `not_checked`, carries no confidence penalty and is cacheable; adding OSV changes the processing version |
+| `status` | `complete` \| `partial` \| `unavailable` \| `not_checked` | `partial` when one of the two queries failed, a query paged beyond 3 pages, or a record could not be read; `unavailable` when both queries failed. `not_checked` when both versions were not resolved (`out_of_scope`, `needs_clarification`, or a resolve-stage `not_found`): OSV is never queried, there is no confidence penalty, and the answer is cacheable |
 | `checkedAt` | ISO timestamp \| null | When OSV was queried (both queries, A and B) |
 | `advisories` | Advisory[] | Empty means "none known" only when `status = complete` |
 | `documentedFixes` | number | Count of `security_fix` ChangeItems |

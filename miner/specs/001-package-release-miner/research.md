@@ -80,6 +80,12 @@ There are two contracts, and they are kept apart:
   - `unavailable` when OSV could not be reached.
 
   An OSV failure never fails the migration answer.
+- **Implementation (4 Nov 2026)**: `src/sources/osv.ts`, `src/affected.ts`, `src/correlate.ts`.
+  - Both queries run after resolve and before the GitHub retrieval, and count against `MAX_SOURCE_REQUESTS` (two requests, more if a query pages).
+  - A query reads at most 3 pages; a longer list makes the check `partial`. One of the two queries failing makes it `partial`; both failing makes it `unavailable`, with `checkedAt: null`.
+  - Of each record, only the `affected` entries for the npm package with exactly the asked name are kept (one record often lists `lodash-es`, `lodash.template` or a RubyGems package too), with its `summary`, `aliases`, `severity`, `database_specific.severity` and `modified`. A new or edited advisory changes the response hash and so the answer key.
+  - Each page read is an `advisory` source. The conclusion follows the record's ranges, whichever query returned it.
+  - A `security_fix` item is linked to an advisory only when its excerpt names the advisory id or an alias.
 - **Rationale**: OSV is free, needs no key and is authoritative for affected ranges. A single "first fixed" version is wrong for advisories with several ranges.
 - **Alternatives**: the GitHub Advisory Database API was rejected, because OSV already aggregates it and it needs a token.
 

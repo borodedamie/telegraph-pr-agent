@@ -276,25 +276,25 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 
 **Independent Test**: a transition where A has an OSV advisory fixed at or before B, and the release notes mention it. The answer names the advisory, its severity and range, quotes the note, gives `conclusion: fixed_by_upgrade`, and shows `security.status: complete`.
 
-- [ ] T049 [P] [US4] Record OSV fixtures into `miner/test/fixtures/osv/`, for both A and B queries:
+- [x] T049 [P] [US4] Record OSV fixtures into `miner/test/fixtures/osv/`, for both A and B queries:
   - one per row of the US4 correlation table, from real packages (for example `lodash` 4.17.20 and `minimist` 1.2.5);
   - a multi-range record where B is newer than A but still affected;
   - an advisory affecting B but not A;
   - records using `introduced: "0"`, `last_affected` and `limit`;
   - a versions-only record;
   - an OSV `503` and a paged response.
-- [ ] T050 [US4] Implement `advisoriesFor(pkg, A, B)` in `miner/src/sources/osv.ts`:
+- [x] T050 [US4] Implement `advisoriesFor(pkg, A, B)` in `miner/src/sources/osv.ts`:
   - two `POST https://api.osv.dev/v1/query` calls via `safeFetch` and the manifest, each a consulted source;
   - the union of advisories, keeping aliases, the severity entries as they are, `displaySeverity`, and every npm range with all its events plus the `versions` list;
   - it returns `Security.status` and `checkedAt`.
-- [ ] T051 [US4] Implement `isAffected(advisory, version)` in `miner/src/affected.ts`, per the data-model.md affected check:
+- [x] T051 [US4] Implement `isAffected(advisory, version)` in `miner/src/affected.ts`, per the data-model.md affected check:
   - events sorted per range, with `introduced: "0"` handled as the lowest version and never passed to `semver`;
   - `fixed` exclusive and `last_affected` inclusive;
   - `limit` as a cap on the whole range;
   - the explicit `versions` list.
 
   It returns `yes`, `no` or `unknown`.
-- [ ] T052 [P] [US4] Unit tests in `miner/test/unit/affected.test.ts`:
+- [x] T052 [P] [US4] Unit tests in `miner/test/unit/affected.test.ts`:
   - vulnerable 1.0.0–1.0.5, fixed 1.0.6, affected again 3.0.0–3.0.2, fixed 3.0.3: `3.0.1` is affected and `2.0.0` is not;
   - unsorted events;
   - `introduced: "0"`;
@@ -302,21 +302,27 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
   - `limit`;
   - a versions-only record;
   - an unknown range type → `unknown`.
-- [ ] T053 [US4] Implement `correlate(advisories, changes, A, B)` in `miner/src/correlate.ts`.
+- [x] T053 [US4] Implement `correlate(advisories, changes, A, B)` in `miner/src/correlate.ts`.
   - It sets `fromAffected`, `targetAffected` and `conclusion` per advisory, including `introduced_by_upgrade`.
   - It links documented `security_fix` items by CVE/GHSA id or alias.
   - With no evidence it makes no claim.
 
   Add the OSV sources to the consulted set in `miner/src/answer.ts`.
-- [ ] T054 [US4] Add the security section to `miner/src/render.ts`:
+- [x] T054 [US4] Add the security section to `miner/src/render.ts`:
   - "OSV checked, no known advisories" only when `status = complete`, and "advisory check unavailable" or "partial" otherwise;
   - one line per advisory with its conclusion.
 
   An OSV failure never changes the migration outcome. It lowers confidence and prevents caching, per data-model.md.
-- [ ] T055 [US4] Unit tests in `miner/test/unit/correlate.test.ts`, one per correlation-table row, plus:
+- [x] T055 [US4] Unit tests in `miner/test/unit/correlate.test.ts`, one per correlation-table row, plus:
   - "a newer version alone is never a security fix";
   - an OSV outage still yields `found`, with `security.status: unavailable` and no cache entry;
   - a changed OSV response changes the answer key.
+
+**Status (2026-11-04)**: Phase 5 is done; 178 unit tests pass. `PROCESSING_VERSION` is now `p3`. Notes:
+- T049: real OSV responses are recorded for `lodash` 4.17.20 and 4.17.21, `minimist` 0.2.4, 1.2.5 and 1.2.6 (two ranges, `introduced: "0"`, B newer but still affected, an advisory only B is affected by), and `zod` 3.23.8 and 4.0.0. No real npm record with `limit` or with `versions` only was found, so those, unsorted events, a paged response and a `503` are synthetic records in `affected.test.ts` and `osv.test.ts`.
+- `Advisory` gained `summary` (OSV's one-line title) for the rendered line.
+- A `not_found` answer also shows the security line and its advisories.
+- Checked locally against the live npm, GitHub and OSV on 4 Nov: lodash 4.17.20 → 4.17.21 lists 2 advisories fixed by the upgrade and 2 still affecting 4.17.21; minimist 1.2.5 → 1.2.6 is `fixed_by_upgrade`; minimist 0.2.4 → 1.2.5 is `introduced_by_upgrade`.
 
 **Checkpoint**: all P1 stories are done.
 
