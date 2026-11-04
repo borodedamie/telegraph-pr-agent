@@ -104,7 +104,7 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     expect(full.answer.processingVersion).toContain("rules_and_model");
   });
 
-  it("marks releases the model could not fit as not covered and does not cache the answer", async () => {
+  it("marks releases the model could not fit as not covered and caches that honest answer", async () => {
     const store = new MemoryStore();
     const model = stubModel();
     const small = { ...deps(store, model.caller), limits: limitsFromEnv({ MAX_MODEL_RELEASES: "1" }) };
@@ -112,9 +112,10 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     expect(first.answer.processingVersion).toContain("rules_and_model");
     const budgetCut = first.answer.coverage!.notCovered.filter((n) => n.reason === "budget").map((n) => n.version);
     expect(first.answer.coverage!.covered.some((v) => budgetCut.includes(v))).toBe(false);
+    expect(budgetCut.length).toBeGreaterThan(0);
     const second = await answerQuestion(QUESTION, small);
-    expect(second.cacheHit).toBe(false);
-    expect(model.calls()).toBe(2);
+    expect(second.cacheHit).toBe(true);
+    expect(model.calls()).toBe(1);
   });
 
   it("does not count releases as covered when a later fetch of the same step fails", async () => {

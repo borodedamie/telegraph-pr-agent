@@ -328,6 +328,7 @@ async function compute(
   const base = { outcome, request, targetReleasedAt, changes, security, coverage, sources, clarification: null, processingVersion };
   const rendered = render(base, mode === "rules_only", checked);
   const answer: Answer = { ...base, ...rendered, confidence: confidence(base, optionalSourceFailed) };
-  // Complete only when the model read every section that needed it; a partly read answer is not cached.
-  return { answer, complete: model.complete };
+  // A model pass that ran is cached even when sections did not fit: their releases are already reported
+  // as not covered ("budget"), and the same document set would be cut the same way again.
+  return { answer, complete: mode === "rules_and_model" };
 }
