@@ -25,7 +25,8 @@ export function selectOutcome(state: OutcomeState): Outcome {
 
 export function confidence(
   answer: Pick<Answer, "outcome" | "coverage"> & { changes: ChangeItem[]; security: Pick<Security, "status"> },
-  optionalSourceFailed = false
+  optionalSourceFailed = false,
+  rulesOnly = false
 ): number {
   let value: number;
   switch (answer.outcome) {
@@ -33,6 +34,8 @@ export function confidence(
       if (!answer.coverage?.complete) value = 0.5;
       else if (answer.changes.every((c) => c.evidenceType === "documented")) value = 0.9;
       else value = 0.7;
+      // Without the model pass, changes written as prose are not read: an empty or short list proves little.
+      if (rulesOnly) value = Math.min(value, 0.5);
       break;
     }
     case "not_found":

@@ -26,6 +26,7 @@ describe("confidence", () => {
     expect(confidence({ outcome: "found", coverage: complete, changes: [], security })).toBe(0.9);
     expect(confidence({ outcome: "found", coverage: complete, changes: [item("inferred")], security })).toBe(0.7);
     expect(confidence({ outcome: "found", coverage: partial, changes: [], security })).toBe(0.5);
+    expect(confidence({ outcome: "found", coverage: complete, changes: [], security }, false, true)).toBe(0.5);
     expect(confidence({ outcome: "not_found", coverage: null, changes: [], security })).toBe(0.8);
     expect(confidence({ outcome: "not_found", coverage: null, changes: [], security }, true)).toBe(0.6);
     expect(confidence({ outcome: "temporarily_unavailable", coverage: null, changes: [], security })).toBe(0);

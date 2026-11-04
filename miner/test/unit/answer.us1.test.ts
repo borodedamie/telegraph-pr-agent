@@ -97,6 +97,7 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     expect(rulesOnly.metrics.extractorMode).toBe("rules_only");
     expect(rulesOnly.answer.processingVersion).toContain("rules_only");
     expect(rulesOnly.answer.answer).toContain("Notice: the model pass did not run");
+    expect(rulesOnly.answer.confidence).toBeLessThanOrEqual(0.5);
     const model = stubModel();
     const full = await answerQuestion(QUESTION, deps(store, model.caller));
     expect(full.cacheHit).toBe(false);
