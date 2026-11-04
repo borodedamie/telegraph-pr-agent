@@ -177,8 +177,9 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
       if (!bullet) {
         // Prose paragraphs: "Storybook 10 contains one breaking change: it's ESM-only."
         if (!phrases || current !== "other" || !/^\s*[A-Za-z`*_]/.test(line)) continue;
+        // Only phrases count here: a sentence that merely mentions "breaking changes" introduces a list.
         for (const sentence of line.trim().split(SENTENCE_END)) {
-          const kind = bulletKind(sentence) ?? phraseKind(sentence);
+          const kind = phraseKind(sentence);
           if (kind !== null) add(index, kind, sentence, MIGRATION_HINT.test(sentence) ? sentence : null);
         }
         continue;

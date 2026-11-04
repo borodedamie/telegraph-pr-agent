@@ -77,6 +77,7 @@ describe("extractRules", () => {
     const text = [
       "## React 19",
       "",
+      "Below is a list of all new features, APIs, deprecations, and breaking changes.",
       "Storybook 10 contains one breaking change: it’s ESM-only. This simplifies our distribution.",
       "",
       "### Other",
