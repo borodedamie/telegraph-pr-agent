@@ -6,3 +6,4 @@ upstream response that reproduces its case. Packages `no-notes` and `@mono/a` an
 - `npm/@mono__a.json`, `github/mono.releases.json`: a monorepo package whose only release (`v2.0.0`) does not
   name it.
 - `github/empty.releases.json`, `github/empty.tree.json`: an empty release list and an empty file tree.
+- `github/link-only.releases.json`: a major release whose notes only link to a migration guide.

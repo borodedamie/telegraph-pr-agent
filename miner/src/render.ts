@@ -61,6 +61,8 @@ export interface Lookups {
   checked: string[];
   /** URLs looked up but not read: an outage, a timeout or over the size cap. */
   unreadable: string[];
+  /** Line-start releases whose notes list no change and only point to a guide: their changes are not in the answer. */
+  unassessed?: { version: string; url: string }[];
 }
 
 export function render(
@@ -100,8 +102,11 @@ export function render(
   }
   lines.push(coverageLine(answer.coverage!));
   lines.push(securityLine(answer.security));
+  for (const gap of lookups.unassessed ?? []) {
+    lines.push(`Not assessed: the ${gap.version} release notes list no changes and point to ${gap.url}; changes described there are not in this answer.`);
+  }
   if (rulesOnly) {
-    lines.push("Notice: the model pass did not run, so changes written as prose may be missing. Only marked sections were read.");
+    lines.push("Notice: the model pass did not run. Marked sections and common breaking-change phrases in major releases were read; other prose may hold changes this list misses.");
   }
 
   let number = 0;

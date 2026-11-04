@@ -60,6 +60,17 @@ describe("US2: honest not found", () => {
     expect(answer.coverage!.notCovered).toEqual([{ version: "2.0.0", reason: "no_material" }]);
   });
 
+  it("says a major release that only links to a guide was not assessed, instead of claiming no changes", async () => {
+    const files = {
+      ...NO_NOTES,
+      "https://api.github.com/repos/example/no-notes/releases?per_page=100&page=1": "negative/github/link-only.releases.json",
+    };
+    const { answer } = await answerQuestion("no-notes 1.1.0 to 2.0.0", deps(new MemoryStore(), fixtureFetcher(files).fetcher));
+    expect(answer).toMatchObject({ outcome: "found", changes: [] });
+    expect(answer.confidence).toBeLessThanOrEqual(0.5);
+    expect(answer.answer).toContain("Not assessed: the 2.0.0 release notes list no changes and point to https://example.org/docs/migrating-to-v2");
+  });
+
   it("marks a question about something else out of scope", async () => {
     const { answer } = await answerQuestion("What is the weather in Paris?", deps(new MemoryStore(), fixtureFetcher({}).fetcher));
     expect(answer).toMatchObject({ outcome: "out_of_scope", confidence: 0.9 });

@@ -1,5 +1,7 @@
-// Deterministic extraction: headed sections, marked bullets and advisory ids (research R7, step 1).
-import type { Section } from "../sources/github.js";
+// Deterministic extraction: headed sections, marked bullets, breaking-change phrases and advisory ids
+// (research R7, step 1).
+import semver from "semver";
+import type { Consulted, Section } from "../sources/github.js";
 import type { Candidate } from "./candidate.js";
 
 type Kind = Candidate["kind"];
@@ -12,13 +14,60 @@ const BULLET = /^\s*(?:[-*+]|\d+[.)])\s+(\S.*)$/;
 const ADVISORY_ID = /\b(CVE-\d{4}-\d{4,}|GHSA(?:-[23456789cfghjmpqrvwx]{4}){3})\b/i;
 const MIGRATION_HINT = /\b(instead|replace[sd]?|use|migrate to|switch to|rename[sd]? to)\b/i;
 
-function headingKind(title: string): Kind | "migration" | "other" {
+function headingKind(title: string): Kind | "migration" | "fix" | "other" {
   if (/security|vulnerab/i.test(title)) return "security_fix";
   if (/breaking|removed|removal|dropped/i.test(title)) return "breaking";
   if (/deprecat/i.test(title)) return "deprecation";
   if (/migrat|upgrad/i.test(title)) return "migration";
+  // Under a fixes heading "X no longer crashes" is a fix, so phrases are not read there.
+  if (/\bfix|\bbug/i.test(title)) return "fix";
   return "other";
 }
+
+/**
+ * Phrases that mark a breaking change in unmarked text. Chosen from 284 major-release notes of 89 popular
+ * packages (miner/bench/phrase-rules.md): each is far more common under Breaking headings than under Features
+ * or Fixes. Every pattern is bounded, so it stays linear on untrusted text.
+ */
+const BREAKING_PHRASES: RegExp[] = [
+  /\bno longer\b|\bnot supported anymore\b/i,
+  /\b(has been|have been|was|were|is|are|been) removed\b|^\W*remov(e|ed|es)\b/i,
+  /\bdrop(s|ped)?\b.{0,20}\bsupport\b|^\W*drop(s|ped)? (node|ie\d*|the|support)\b/i,
+  /\brequires? node\b|\bminimum (supported )?(node|version)\b|\bnode(\.js)? (>=|v?\d+\+|\d+ or (higher|later))/i,
+  /\brenamed\b|^\W*rename[sd]? .{0,40}\bto\b/i,
+  /\bin favou?r of\b/i,
+  /\b(has been|have been|was|were|is|are|been) replaced\b|\breplaced (by|with)\b/i,
+  /\buse\b.{1,60}\binstead\b|\binstead,? use\b/i,
+  /\bdefaults? (is now|are now|changed|has changed|now)\b|\bchange[sd]? the default\b|\b(to be|now) `?(true|false|enabled|disabled)`? by default\b/i,
+  /\bis now (required|mandatory|async|asynchronous|esm|a promise)\b|\bnow requires?\b|\bmust now\b/i,
+  /\besm[- ]only\b|\bpure esm\b|\bdrop(s|ped)? (commonjs|cjs)\b/i,
+  /\bnow throws?\b|\bwill (now )?throw\b/i,
+  /\bremove[sd]? (the |all )?deprecated\b|\bdeprecated .{0,40}\bremoved\b/i,
+  /\bpreviously\b/i,
+  /\bchange[sd]? (the )?(signature|behaviou?r|return type|type of|format)\b/i,
+];
+// Maintenance lines that use the same words: "remove duplicate test", "drop unused dependency".
+const CHORE = /\b(tests?|typos?|lint(ing)?|ci|docs?|readme|comments?|dev ?dependenc\w*|unused|internal(ly)?|dead code|duplicate|chore|refactor\w*|examples?)\b/i;
+
+/** The kind a phrase gives unmarked text, or null. */
+function phraseKind(text: string): Kind | null {
+  // Code spans are names, not words: `react-test-renderer` is not a chore about tests.
+  if (CHORE.test(text.replace(/`[^`]{0,200}`/g, "")) || !BREAKING_PHRASES.some((phrase) => phrase.test(text))) return null;
+  // "will be removed in a future version" announces a later removal; it breaks nothing now.
+  if (/\b(will|to) be (removed|dropped)\b|\bin a future\b/i.test(text)) return /deprecat/i.test(text) ? "deprecation" : null;
+  return "breaking";
+}
+
+/** The first release of a breaking-change line: x.0.0, or 0.y.0. Phrases are read only there. */
+function isLineStart(version: string): boolean {
+  const parsed = semver.parse(version);
+  if (parsed === null || parsed.prerelease.length > 0 || parsed.patch !== 0) return false;
+  return parsed.major === 0 ? parsed.minor > 0 : parsed.minor === 0;
+}
+
+// A link to a guide or announcement: what a line-start release's notes point to when they list no changes.
+const GUIDE_LINK = /\[([^\]]{0,80}\b(?:migrat\w*|upgrad\w*|guide|blog|announc\w*|release notes|what'?s new)\b[^\]]{0,80})\]\((https:\/\/[^)\s]{1,300})\)/i;
+const SENTENCE_END = /(?<=[.!?])\s+(?=[A-Z`*_])/;
 
 // Outside a headed section only explicit markers count: "BREAKING", a conventional-commit "!:", or a
 // leading "Deprecated". A bare "remove ..." is too often a chore ("remove duplicate test").
@@ -66,11 +115,14 @@ export interface RulesResult {
   candidates: Candidate[];
   /** Sections the deterministic pass fully handled, so they are not sent to the model. */
   handled: Set<number>;
+  /** Line-start sections where nothing was found and the notes point elsewhere: their changes are not assessed. */
+  unassessed: { section: number; url: string }[];
 }
 
-export function extractRules(sections: Section[], isGuide: (section: Section) => boolean): RulesResult {
+export function extractRules(sections: Section[], sourceType: (section: Section) => Consulted["type"]): RulesResult {
   const candidates: Candidate[] = [];
   const handled = new Set<number>();
+  const unassessed: RulesResult["unassessed"] = [];
   const add = (section: number, kind: Kind, excerpt: string, migrationExcerpt: string | null) => {
     candidates.push({
       ref: `r${candidates.length + 1}`,
@@ -88,7 +140,7 @@ export function extractRules(sections: Section[], isGuide: (section: Section) =>
 
   sections.forEach((section, index) => {
     const lines = section.text.split("\n");
-    if (isGuide(section)) {
+    if (sourceType(section) === "migration_guide") {
       handled.add(index);
       lines.forEach((line, i) => {
         const heading = /^#{2,4}\s+(\S.*)$/.exec(line);
@@ -103,7 +155,11 @@ export function extractRules(sections: Section[], isGuide: (section: Section) =>
       return;
     }
 
+    // Release notes and changelogs of a line-start release are also read for phrases; code diffs never are.
+    const phrases = sourceType(section) !== "tag_compare" && isLineStart(section.version);
+    const found = candidates.length;
     let current: ReturnType<typeof headingKind> = "other";
+    let marked = false;
     let inCode = false;
     for (const line of lines) {
       if (line.trim().startsWith("```")) {
@@ -114,23 +170,40 @@ export function extractRules(sections: Section[], isGuide: (section: Section) =>
       const heading = HEADING.exec(line);
       if (heading) {
         current = headingKind(heading[1] ?? heading[2]);
-        if (current !== "other" && current !== "migration") handled.add(index);
+        marked ||= current === "breaking" || current === "deprecation" || current === "security_fix";
         continue;
       }
       const bullet = BULLET.exec(line);
-      if (!bullet) continue;
+      if (!bullet) {
+        // Prose paragraphs: "Storybook 10 contains one breaking change: it's ESM-only."
+        if (!phrases || current !== "other" || !/^\s*[A-Za-z`*_]/.test(line)) continue;
+        for (const sentence of line.trim().split(SENTENCE_END)) {
+          const kind = bulletKind(sentence) ?? phraseKind(sentence);
+          if (kind !== null) add(index, kind, sentence, MIGRATION_HINT.test(sentence) ? sentence : null);
+        }
+        continue;
+      }
       const text = bullet[1].trimEnd();
       const label = labelKind(text);
       if (label !== null) {
         current = label;
-        if (current !== "other" && current !== "migration") handled.add(index);
+        marked ||= current === "breaking" || current === "deprecation" || current === "security_fix";
         continue;
       }
       if (current === "migration") continue;
-      const kind = current === "other" ? bulletKind(text) : ADVISORY_ID.test(text) ? "security_fix" : current;
+      const kind =
+        current === "other" || current === "fix"
+          ? bulletKind(text) ?? (phrases && current === "other" ? phraseKind(text) : null)
+          : ADVISORY_ID.test(text) ? "security_fix" : current;
       if (kind === null) continue;
       add(index, kind, text, MIGRATION_HINT.test(text) ? text : null);
     }
+    // A line-start release is never "handled" by headings alone: its unmarked prose may still hold changes.
+    if (marked && !phrases) handled.add(index);
+    if (phrases && candidates.length === found) {
+      const link = GUIDE_LINK.exec(section.text);
+      if (link) unassessed.push({ section: index, url: link[2] });
+    }
   });
-  return { candidates, handled };
+  return { candidates, handled, unassessed };
 }

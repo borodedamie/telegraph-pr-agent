@@ -301,7 +301,7 @@ async function compute(
   });
 
   // 6. Extraction: rules first; the model reads only what the rules did not handle.
-  const rules = extractRules(material.sections, (s) => material.consulted[s.consulted].type === "migration_guide");
+  const rules = extractRules(material.sections, (s) => material.consulted[s.consulted].type);
   const miners = llmMinersFromEnv(deps.env);
   const caller = deps.caller !== undefined ? deps.caller : telegraphCaller(deps.env, budget.limits.maxModelCostMicroUsdc);
   const model: ModelResult = await extractModel(material.sections, rules.handled, request.toResolved!, budget, deps.store, miners, caller);
@@ -328,8 +328,9 @@ async function compute(
   const security: Security = { ...NOT_CHECKED, documentedFixes: changes.filter((c) => c.kind === "security_fix").length };
   const processingVersion = `${processingBase}-${model.minerId && modelRan ? `llm${model.minerId}` : "nollm"}-${mode}-s1`;
   const base = { outcome, request, targetReleasedAt, changes, security, coverage, sources, clarification: null, processingVersion };
-  const rendered = render(base, mode === "rules_only", lookups);
-  const answer: Answer = { ...base, ...rendered, confidence: confidence(base, optionalSourceFailed, mode === "rules_only") };
+  const unassessed = rules.unassessed.map((gap) => ({ version: material.sections[gap.section].version, url: gap.url }));
+  const rendered = render(base, mode === "rules_only", { ...lookups, unassessed });
+  const answer: Answer = { ...base, ...rendered, confidence: confidence(base, optionalSourceFailed, mode === "rules_only" || unassessed.length > 0) };
   // A model pass that ran is cached even when sections did not fit: their releases are already reported
   // as not covered ("budget"), and the same document set would be cut the same way again.
   return { answer, complete: mode === "rules_and_model" };
