@@ -48,13 +48,13 @@ description: "Task list for the package-release miner"
 
 **Purpose**: schemas, safe fetching, budgets, cache, auth, health probes, metrics, and the pre-registration Telegraph contract (plan phases 1–2).
 
-- [ ] T007 Define zod schemas and inferred types in `miner/src/types.ts`, exactly as in data-model.md, with a check that every `sourceId`, `migrationSourceId`, `inferredFrom` and `migrationInferredFrom` reference exists. Types:
+- [x] T007 Define zod schemas and inferred types in `miner/src/types.ts`, exactly as in data-model.md, with a check that every `sourceId`, `migrationSourceId`, `inferredFrom` and `migrationInferredFrom` reference exists. Types:
   - `NormalizedRequest` and `ReleaseSource`;
   - `ChangeItem`, with `id`, `migrationEvidence`, `migrationExcerpt` and `migrationInferredFrom`;
   - `Advisory`, with full ranges, versions and `conclusion`;
   - `Security`, with `status` and `checkedAt`;
   - `Coverage`, `Answer` and the metrics record.
-- [ ] T008 [P] Implement `safeFetch(url, opts)` in `miner/src/safeFetch.ts`:
+- [x] T008 [P] Implement `safeFetch(url, opts)` in `miner/src/safeFetch.ts`:
   - host and path allowlist from research R8, including `api.osv.dev` `POST /v1/query` only; `https` only, default port only;
   - DNS lookup with refusal of loopback, private, link-local, CGNAT and metadata IPv4/IPv6 ranges;
   - the connection pinned to the validated address via `node:https` with a custom `lookup`;
@@ -63,7 +63,7 @@ description: "Task list for the package-release miner"
   - an `AbortSignal` from the budget;
   - streaming size cap per host (registry 64 MB, others 2 MB) and timeout;
   - typed errors `BlockedHost`, `TooLarge`, `Timeout` and `Upstream(status)`.
-- [ ] T009 [P] Unit tests for `safeFetch` in `miner/test/unit/safeFetch.test.ts`:
+- [x] T009 [P] Unit tests for `safeFetch` in `miner/test/unit/safeFetch.test.ts`:
   - an allowed host, a blocked host, `http://` and an odd port;
   - an OSV path other than `/v1/query`;
   - redirects to `127.0.0.1` and `169.254.169.254`, and IPv6 `::1`;
@@ -71,17 +71,17 @@ description: "Task list for the package-release miner"
   - a resolver returning a public address and then a private one, where the connection uses the first;
   - the per-host size caps;
   - an abort.
-- [ ] T010 [P] Implement the per-request budget tracker in `miner/src/budget.ts` with the R9 defaults.
+- [x] T010 [P] Implement the per-request budget tracker in `miner/src/budget.ts` with the R9 defaults.
   - It counts source requests, bytes, elapsed time, releases processed, and model calls, input characters and cost in test USDC.
   - It owns an `AbortController` that fires at the time budget (the hard deadline).
   - `canCallModel(inputChars)` refuses a call that would cross any model limit, or that would not finish within `LLM_TIMEOUT_MS` before the deadline.
   - `exhausted(kind)` reports which limit stopped the work.
-- [ ] T011 [P] Implement the cache in `miner/src/cache.ts`, per research R3. Use Upstash Redis when `KV_REST_API_URL` is set, and an in-memory Map otherwise.
+- [x] T011 [P] Implement the cache in `miner/src/cache.ts`, per research R3. Use Upstash Redis when `KV_REST_API_URL` is set, and an in-memory Map otherwise (local runs only: on Vercel a missing Redis config is an error).
   - **Source manifest**: keyed by URL, or by the query body for OSV, storing `{etag, lastModified, fetchedAt, contentHash, snapshotKey}`. Entries are fresh for 1 h; stale ones are revalidated by conditional GET, and OSV entries are re-queried.
   - **Snapshots**: content-addressed `snap:<hash>`, with no TTL, holding whole normalized documents. For the registry, only the fields used.
   - **Answers**: `getAnswer` / `putAnswer`, keyed by `sha256(canonical NormalizedRequest + sorted contentHashes of all consulted sources + PROCESSING_VERSION)`, stored and returned as exact JSON strings. `putAnswer` refuses answers with `security.status ≠ complete` or `outcome = temporarily_unavailable`.
   - **Lock**: an in-flight lock with `SET NX` and TTL = time budget + 5 s, plus `waitForAnswer(key, LOCK_WAIT_MS)`.
-- [ ] T012 [P] Unit tests for the cache in `miner/test/unit/cache.test.ts`:
+- [x] T012 [P] Unit tests for the cache in `miner/test/unit/cache.test.ts`:
   - the key does not depend on source order;
   - a changed source hash, OSV response hash, `PROCESSING_VERSION` or `fromAssumed` changes the key; the same resolved pair asked explicitly or with an assumed "from" gives different keys;
   - lookup and store compute the same key from the same consulted set;
@@ -90,24 +90,26 @@ description: "Task list for the package-release miner"
   - a `304` reuses the snapshot;
   - answers with incomplete security are not stored;
   - a waiter gives up after `LOCK_WAIT_MS`.
-- [ ] T013 [P] Implement the metrics record writer in `miner/src/metrics.ts`. It logs one structured JSON line per request with the data-model.md fields (`declaredFailure` and `extractorMode` included) and never logs the API key
-- [ ] T014 [P] Implement `miner/src/auth.ts`:
+- [x] T013 [P] Implement the metrics record writer in `miner/src/metrics.ts`. It logs one structured JSON line per request with the data-model.md fields (`declaredFailure` and `extractorMode` included) and never logs the API key
+- [x] T014 [P] Implement `miner/src/auth.ts`:
   - `checkKey(req)`: constant-time comparison of `X-Telegraph-Key` with `MINER_API_KEY`; fails closed in production when the variable is unset;
   - `admit(req)`: a per-minute origin rate counter and a cap on concurrent first-time computations, both in Redis, with a `429` reason above either.
-- [ ] T015 [P] Unit tests for auth in `miner/test/unit/auth.test.ts`: a missing key, a wrong key and a right key; an unset `MINER_API_KEY` in production; the rate limit; and the concurrency cap
-- [ ] T016 [P] Implement `miner/src/probe.ts` per contracts/answer-endpoint.md. It runs cheap upstream probes (registry `/-/ping`, GitHub `/rate_limit`, one fixed OSV query, Redis `PING`), caches them in Redis for 5 minutes, and refreshes them at most once per 5 minutes
-- [ ] T017 Implement the endpoints per contracts/answer-endpoint.md:
+- [x] T015 [P] Unit tests for auth in `miner/test/unit/auth.test.ts`: a missing key, a wrong key and a right key; an unset `MINER_API_KEY` in production; the rate limit; and the concurrency cap
+- [x] T016 [P] Implement `miner/src/probe.ts` per contracts/answer-endpoint.md. It runs cheap upstream probes (registry `/-/ping`, GitHub `/rate_limit`, one fixed OSV query, Redis `PING`), caches them in Redis for 5 minutes, and refreshes them at most once per 5 minutes
+- [x] T017 Implement the endpoints per contracts/answer-endpoint.md:
   - `GET /api/answer` in `miner/api/answer.ts`: runs `checkKey` and `admit` first (`401` / `429`), validates `query` (required, at most 2,000 chars, otherwise `400`), and returns a fixed `Answer` with `outcome: "out_of_scope"` until T043;
   - `GET /api/health` in `miner/api/health.ts`: public, served from `probe.ts`.
-- [ ] T018 Deploy the stub to a Vercel preview from `miner/`, with a preview `MINER_API_KEY`. Record the URL in `miner/bench/network.md`, and check that calls without the key get `401`
+- [x] T018 Deploy the stub to a Vercel preview from `miner/`, with a preview `MINER_API_KEY`. Record the URL in `miner/bench/network.md`, and check that calls without the key get `401`
 - [ ] T019 Capture the Telegraph contract before registration (plan phase 1):
   1. Read the live intent definition for `QUESTION_ANSWERING_GENERAL`, including any latency or timeout requirement, and save it as a dated snapshot under `docs/telegraph/`.
   2. Paste `contracts/telegraph-miner.yaml` into the anjoman.ai/dashboard/earn validator, with the preview `base_url`, `external_path: /api/answer`, the header auth and the errors block.
   3. Sandbox-test the endpoint. Record the validation result and the exact request the sandbox sends (path, query param, headers) in `miner/bench/network.md`.
 
   No registration and no payment. If the dashboard asks for a signature or a payment, stop and ask.
-- [ ] T020 With what T019 found, update research R1 and R9 in `miner/specs/001-package-release-miner/research.md` (the time budget and `LOCK_WAIT_MS` must fit the Engine timeout), and update `contracts/telegraph-miner.yaml`
-- [ ] T021 Check Vercel Hobby eligibility for a payment-taking provider (research R2) and record the decision in `miner/bench/network.md`: stay on Hobby, or move to Pro (that is done in T059, with approval)
+
+  Status 3 Nov: steps 1 and 2 done and validation passed (`miner/bench/network.md`). Step 3 is open: the validator sent no `query` param, so the param name and headers the Engine sends on a real ask are still unknown. Capture them from the first sandbox or test ask before T062.
+- [x] T020 With what T019 found, update research R1 and R9 in `miner/specs/001-package-release-miner/research.md` (the time budget and `LOCK_WAIT_MS` must fit the Engine timeout), and update `contracts/telegraph-miner.yaml`
+- [x] T021 Check Vercel Hobby eligibility for a payment-taking provider (research R2) and record the decision in `miner/bench/network.md`: stay on Hobby, or move to Pro (that is done in T059, with approval)
 
 **Checkpoint**: schemas, safe fetch, budget, cache, auth, probes and an authenticated stub are deployed; the pre-registration contract is validated.
 

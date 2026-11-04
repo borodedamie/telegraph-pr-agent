@@ -15,6 +15,8 @@ There are two contracts, and they are kept apart:
   - On 3 Nov a direct paid call to LiveCert reached it as `{method, endpoint, payload: {query}}`, and the Engine returned the miner's own JSON unchanged with `result_shape: "raw"`. This is preliminary evidence that the Engine passes our JSON through and the buyer reads `answer`.
   - `signal_mapping` allows only `confidence_field`, `label_field` and `reason_field`.
 - **Known before registration**: the intent's live definition, the YAML validation result and the request the dashboard sandbox sends to our upstream.
+  - On 3 Nov the definition was unchanged: no request or response schema, and no declared timeout. So the 20 s budget stays until the first paid routed call (T063) measures the Engine's real limit.
+  - The public validation API answered `405`, so validation runs in the dashboard.
 - **Known only after registration**: the request the Engine sends when it routes a real purchase to us, and whether it wraps or normalizes the result. These are captured in the first paid test (plan phase 10), and the rendering is adjusted if needed (FR-017).
 - **Alternatives**: one endpoint per question kind was rejected, because buyers send one free-form query. Returning plain text only was rejected, because the PR bot needs the structured items.
 
@@ -32,7 +34,7 @@ There are two contracts, and they are kept apart:
      - An entry younger than the freshness window (default 1 h) is reused without a request.
      - An older one is revalidated with a conditional GET (`If-None-Match` / `If-Modified-Since`), and a `304` keeps the hash and the snapshot. GitHub does not count `304` responses against the rate limit. OSV has no conditional requests, so a stale OSV entry is simply re-queried.
   2. **Snapshots**, content-addressed (`snap:<contentHash>`): the whole normalized document as fetched (a releases page, a `CHANGELOG.md`, a compare response, an OSV response). For the registry, only the fields used (`versions` keys, `time`, `dist-tags`, `repository`), because the full document can be tens of MB. Version sections are derived from the snapshot on every use, so a manifest hit or a `304` always has the text for any version. No TTL during the hackathon evaluation period (FR-019).
-  3. **Answer cache**, keyed by `sha256(answer identity + sorted contentHashes of every source consulted + PROCESSING_VERSION)`, returned byte for byte on a hit (FR-018). Answer identity is the whole `NormalizedRequest` ([data-model](data-model.md)). The OSV responses are consulted sources, so a new advisory changes the key. Answers whose `security.status` is not `complete` are not stored.
+  3. **Answer cache**, keyed by `sha256(answer identity + sorted contentHashes of every source consulted + PROCESSING_VERSION)`, returned byte for byte on a hit (FR-018). Answer identity is the whole `NormalizedRequest` ([data-model](data-model.md)). The OSV responses are consulted sources, so a new advisory changes the key. A `found` or `not_found` answer whose `security.status` is not `complete` is not stored. `out_of_scope` and `needs_clarification` answers never reach OSV (`security.status: not_checked`) and are stored when they have a `NormalizedRequest` to key on; without one (`request: null`) they skip the cache.
 - **Order**: resolve → retrieval through the manifest (which documents to consult is decided by version matching, before extraction) → hashes → answer-cache lookup → derive sections and extract only on a miss. The key is computed from the same consulted set at lookup and at store.
 - **Concurrency**: on a miss, a `SET NX` lock on the answer key makes one instance compute.
   - The lock TTL is the time budget plus 5 s, and the computation has a hard deadline: in-flight fetches and model calls are aborted (`AbortController`) at the budget, so the lock never expires while work is still running.
@@ -164,7 +166,7 @@ When a budget stops work, the answer's coverage is partial and the cut releases 
   - In production, a missing `MINER_API_KEY` returns `503` (fail closed).
 - **Abuse limits**:
   - The YAML declares a `limitations` rate entry, which the node checks before charging buyers, and `rate_limit_per_sec`, a cap the node applies to its own calls to us.
-  - The origin also keeps its own per-minute counter and a cap on concurrent first-time computations in Redis, returning `429` above either.
+  - The origin also keeps its own per-minute counter and a cap on concurrent first-time computations in Redis, returning `429` above either. Each compute slot is its own Redis key with the lock TTL, so a slot left by a killed function frees itself. Defaults: `ORIGIN_RATE_PER_MIN=120`, `MAX_CONCURRENT_COMPUTE=4`.
 - **Rationale**: Telegraph's payment gate protects calls through the Engine, not our Vercel URL. Without origin auth, anyone could use the miner for free while the team pays for GitHub, OSV, model and Redis usage.
 - **Gap**: between registration and key installation, the node calls us without the key, so those calls get `401`. Install the key immediately after registration, before announcing the miner.
 

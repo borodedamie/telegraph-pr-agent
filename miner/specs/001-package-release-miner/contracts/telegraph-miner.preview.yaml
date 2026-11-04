@@ -1,0 +1,65 @@
+# Preview copy of telegraph-miner.yaml for dashboard validation only (T019). Do not register from this file.
+version: "1"
+kind: miner
+id: 424242
+slug: package-release-intel
+name: Package Release Intelligence
+description: >
+  What changed in an npm package between two versions: breaking changes, deprecations
+  and security fixes, each with a verbatim quote and a link to the official release notes,
+  plus known advisories (OSV) and whether the upgrade fixes them. Says "not found" instead of guessing.
+base_url: https://telegraph-pr-miner-pjq4sqnhf-n30sk.vercel.app
+protocol: generic
+auth:
+  type: header
+  header_name: X-Telegraph-Key
+rate_limit_per_sec: 2                   # tune after measuring cold-path cost
+cache_ttl_sec: 0                        # the miner caches itself (research R3)
+limitations:
+  - code: PROVIDER_RATE
+    message: At most 1000 answers per day
+    property: rate
+    value_num: 1000
+    window_seconds: 86400
+errors:
+  message_path: summary
+  status_path: outcome
+  success_values: [found, not_found, needs_clarification, out_of_scope]
+endpoints:
+  - path: /answer
+    external_path: /api/answer
+    method: GET
+    description: >
+      Evidence-backed migration intelligence for npm package upgrades, including security fixes.
+      Example questions: "What changed in zod from 3.23.8 to 4.0.0?",
+      "Breaking changes upgrading @tanstack/react-query to 5.0.0".
+      Returns answer, summary, outcome, confidence, changes, security, coverage, sources.
+    intents: [QUESTION_ANSWERING_GENERAL]
+    params:
+      query:
+        required:
+          - name: query
+            type: string
+            intents: ["*"]
+            description: >
+              A package migration question naming the npm package and the target version,
+              ideally also the installed version.
+semantics:
+  supported_intents: [QUESTION_ANSWERING_GENERAL]
+  signal_mapping:
+    label_field: outcome
+    reason_field: summary
+    confidence_field: confidence
+on_chain:
+  transform: direct
+  min_price_usdc: 0.01                  # decimal USDC; keep only if measured cost allows (FR-027)
+  fields:                               # legacy, unread by jobs, but the validator requires it
+    strings:
+      - index: 0
+        name: outcome
+        description: found, not_found, needs_clarification, out_of_scope or temporarily_unavailable
+        source_path: outcome
+      - index: 1
+        name: summary
+        description: One-line summary of the answer
+        source_path: summary
