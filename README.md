@@ -199,3 +199,123 @@ To be filled in as each item exists; nothing below is claimed yet.
 | Technical tutorial and independent reproduction evidence | none yet |
 
 If you try the slice, open an issue with what you ran, the signal hash and whether the answer was useful. That is the kind of independent test the project needs.
+
+## Static-miner dependency update Action
+
+The workflow in `.github/workflows/dependency-updates.yml` runs manually on the
+selected branch. One action invocation scans dependencies, purchases an assessment,
+prepares updates, and opens draft PRs; no stage inputs, intermediate artifact files,
+or separate caller jobs are needed.
+
+```yaml
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: false
+      - name: Update dependencies
+        uses: ./bot/actions
+        env:
+          TELEGRAPH_EVM_PRIVATE_KEY: ${{ secrets.TELEGRAPH_EVM_PRIVATE_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+```
+
+Checkout makes the repository available; the dependency automation is a single step.
+The packaged `bot/actions/dist/index.js` is included so callers need no install or
+build steps. For another repository, use `OWNER/REPO/bot/actions@IMMUTABLE_SHA` after
+publishing a commit containing the bundle, rather than the local `./bot/actions` path.
+
+The miner receives current versions with no preferred upgrade target. Findings must
+identify a scanned ecosystem, package, source and current version, a newer target,
+`cve` or `outdated`, a reason and HTTPS evidence sources. CVE findings require CVE IDs.
+Invalid/prose answers fail; no findings means no updates or PRs.
+
+Recommended targets are checked against npm/PyPI. Existing dependency files are
+updated on `fix/telegraph-dependency-*` branches, with a draft PR per finding back
+to the checked-out branch. Standalone public npm projects get a regenerated
+package-lock v2/v3 alongside package.json. Plain Python pins retain extras, markers
+and comments. Matching PRs are reused, and existing branches are never force-updated.
+No assessment or prepared-update files are added to the repository.
+
+All orchestration now runs in one job with wallet and GitHub credentials. It never
+executes repository scripts or tests. npm lock generation runs in a temporary
+directory with `--package-lock-only --ignore-scripts`, a minimal environment without
+inherited wallet/GitHub credentials, and no repository npm configuration. Human
+review and merge remain required; this does not provide separate-runner isolation.
+
+`bot/actions/src/scan.ts` detects the repository from the current working directory
+using Git; no workspace environment variable is required. It reads npm dependencies
+and devDependencies from package-lock, node_modules or pnpm importer entries, and
+Python exact pins from requirements.txt, requirements-*.txt and requirements/*.txt.
+The scanner performs no registry requests or version comparisons. Python markers
+are preserved, not evaluated. Pins describe the repository environment rather than
+proving what is installed in a running interpreter. Unresolved versions are reported.
+
+### Enable the workflow
+
+- Fill the intentionally empty `MINER_ID` in `bot/actions/src/index.ts`. Until then,
+  assessment fails before scanning or spending.
+- Public settings default in `bot/actions/action.yml`: `node-url` is
+  `https://devnode.telegraphprotocol.com`, `max-price-per-call-usdc` is `0.10`,
+  and `budget-cap-usdc` is `2`. No repository variables are needed; optional
+  `with:` inputs can override these defaults. These are spending limits, not live prices.
+- Supply secret `TELEGRAPH_EVM_PRIVATE_KEY` for a dedicated wallet. Private keys
+  are not bundled as action defaults.
+- Allow GitHub Actions to create pull requests in repository settings and grant the
+  job `contents: write` and `pull-requests: write`.
+- Run **Telegraph dependency updates** on the branch you want to update. A named
+  branch must be checked out; detached HEAD is rejected instead of guessing a target.
+- After editing action source or the static miner ID, run `npm run build:prod` in
+  `bot/actions` and include its updated distribution bundle in the same change.
+  Building requires the existing action and shared bot dependencies; callers do not.
+
+The action has no stage or artifact inputs. Public node/spending settings have
+action-defined defaults; the wallet remains a secret. Outputs are `has-findings`,
+`pull-requests` (JSON URLs), `message` (purchase details, retained even if later
+validation fails), and `status`. No new package dependency was added.
+
+### Workflow checks
+
+`.github/workflows/test.yml` runs on pushes, pull requests and manual dispatch.
+It installs action dependencies from their npm lockfile and shared bot dependencies
+from the workspace pnpm lockfile without lifecycle scripts, typechecks the bot/tests,
+builds the action, checks that the checked-in bundle matches its source, and runs
+the offline test suite. It receives no wallet or write credentials.
+
+`.github/workflows/dependency-updates.yml` remains manually triggered on a named
+branch, checks it out without persisted Git credentials, and invokes the packaged
+action once. Only the update job has write permissions. It supplies the wallet
+secret and GitHub token, relies on the action's public configuration defaults, and
+exposes `status` and `pull-requests` job outputs. It does not install, build, or
+execute repository test scripts. The static miner ID must be configured before use.
+
+### Verified scope and limits
+
+Automated tests mock Telegraph, registry and GitHub responses. They cover findings,
+manifest updates, lock-generation orchestration, offline mixed-language scanning,
+branch/PR creation and duplicate suppression. Typechecks and the action bundle build
+run locally. No live payment, GitHub PR or hosted workflow execution is claimed.
+
+PR preparation currently rejects pnpm/workspace updates, non-public npm registry
+sources and hashed/continued Python pins rather than publish stale lock data.
+Python ranges, includes and pyproject/Pipfile/setup manifests need exported exact pins.
+Simple numeric stable upgrades are supported; prerelease or complex Python version
+recommendations are rejected. Unsupported findings fail preparation before publication.
+Registry checks confirm target availability, not the truth of CVE claims or migration
+compatibility. Repository tests and code migrations are not run automatically; draft
+PRs must be independently checked. GitHub's behavior for workflows triggered by a
+`GITHUB_TOKEN` PR can require human approval before checks run; check the PR's Actions
+status rather than assuming CI ran ([GitHub token behavior](https://docs.github.com/en/actions/concepts/security/github_token)).
+
+No durable purchase-attempt ledger, cutoff filter, answer cache, automatic merge or
+merge accounting is implemented in this prototype. Repeated runs can purchase again
+even when an existing update PR is reused. Live intent/provider compatibility and
+answer quality must be verified before enabling payments. The static intent is
+`QUESTION_ANSWERING_GENERAL`.

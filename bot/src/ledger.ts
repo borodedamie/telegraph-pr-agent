@@ -15,8 +15,8 @@ export interface LedgerRow {
   intent: string;
   minerId: string;
   minerName: string;
-  minerRank: number;
-  minerScore: number;
+  minerRank: number | null;
+  minerScore: number | null;
   amountUsdc: number;
   txHash: string;
   receiptHash: string;

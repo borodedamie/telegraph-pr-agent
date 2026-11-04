@@ -1,0 +1,33 @@
+name: Telegraph dependency updates
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: telegraph-dependency-updates-${{ github.repository }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  update-dependencies:
+    if: github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      status: ${{ steps.update.outputs.status }}
+      pull-requests: ${{ steps.update.outputs.pull-requests }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: false
+      - name: Assess dependencies and open update PRs
+        id: update
+        uses: ./bot/actions
+        env:
+          TELEGRAPH_EVM_PRIVATE_KEY: ${{ secrets.TELEGRAPH_EVM_PRIVATE_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}

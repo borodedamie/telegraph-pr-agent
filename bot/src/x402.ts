@@ -6,8 +6,8 @@ export interface Purchase {
   intent: string;
   minerId: string;
   minerName: string;
-  minerRank: number;
-  minerScore: number;
+  minerRank: number | null;
+  minerScore: number | null;
   amountUsdc: number;
   txHash: string;
   receiptHash: string;
@@ -150,7 +150,32 @@ export class IntelligenceClient {
     throw new AskFailedError(`${intent}: no ranked miner answered — ${failures.join(" | ") || "none ranked"}`);
   }
 
-  private async buyFrom(intent: string, query: string, miner: RankedMiner): Promise<Purchase> {
+  async buyFromMiner(intent: string, query: string, minerId: string): Promise<Purchase> {
+    if (!minerId.trim()) throw new AskFailedError("Set the static miner ID before purchasing");
+    const res = await this.fetchImpl(
+      `${this.nodeUrl}/api/miners?intent=${encodeURIComponent(intent)}&status=active&limit=100`
+    );
+    if (!res.ok) throw new AskFailedError(`${intent}: miner list HTTP ${res.status}`);
+    const body = (await res.json()) as ApiMiner[] | { miners?: ApiMiner[] };
+    const miner = (Array.isArray(body) ? body : body.miners ?? [])
+      .find((entry) => String(entry.id) === minerId);
+    if (!miner) throw new AskFailedError(`${intent}: configured miner ${minerId} is unavailable`);
+    const endpoints = miner.endpoints ?? [];
+    const endpoint = endpoints.find((entry) => (entry.description ?? "").includes(intent))
+      ?? (endpoints.length === 1 ? endpoints[0] : undefined);
+    if (!endpoint?.path) throw new AskFailedError(`${intent}: configured miner has no unambiguous endpoint`);
+    const score = miner.scores?.find((entry) => entry.intent_id === intent);
+    return this.buyFrom(intent, query, {
+      id: minerId,
+      name: miner.name ?? minerId,
+      method: endpoint.method ?? "GET",
+      path: endpoint.path,
+      rank: score?.rank ?? null,
+      score: score?.score ?? null,
+    });
+  }
+
+  private async buyFrom(intent: string, query: string, miner: Omit<RankedMiner, "rank" | "score"> & { rank: number | null; score: number | null }): Promise<Purchase> {
     const url = `${this.nodeUrl}/engine/v1/ask/${encodeURIComponent(miner.id)}`;
     const init: RequestInit = {
       method: "POST",
