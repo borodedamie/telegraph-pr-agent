@@ -49,6 +49,13 @@ describe("renderMemo", () => {
     expect(memo).toContain("View payment");
   });
 
+  it("links rows paid after the 1 Nov 2026 chain switch to Etherscan, and labels Ethereum Sepolia", () => {
+    const memo = renderMemo([{ ...row, timestamp: "2026-11-03T14:30:00.000Z" }], opts);
+    expect(memo).toContain("https://sepolia.etherscan.io/tx/0xdeadbeef");
+    expect(memo).not.toContain("basescan");
+    expect(memo).toContain("Ethereum Sepolia `(eip155:11155111)`");
+  });
+
   it("keeps the audit fields in the receipt footer", () => {
     const memo = renderMemo([row], opts);
     expect(memo).toContain("settled");
