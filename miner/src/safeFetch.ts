@@ -88,18 +88,19 @@ interface HostRule {
   maxBytes: number;
 }
 
-const HOST_RULES: Record<string, HostRule> = {
-  "registry.npmjs.org": { methods: ["GET"], path: /^\/.+/, maxBytes: 64 * MB },
-  "api.github.com": {
+// A Map, not an object: inherited names like "constructor" must not match a rule.
+const HOST_RULES = new Map<string, HostRule>([
+  ["registry.npmjs.org", { methods: ["GET"], path: /^\/.+/, maxBytes: 64 * MB }],
+  ["api.github.com", {
     methods: ["GET"],
     // A renamed or transferred repo redirects to /repositories/<id>/...
     path: new RegExp(`^/(rate_limit$|repos/${OWNER_REPO}(/.*)?$|repositories/\\d+(/.*)?$)`),
     maxBytes: 2 * MB,
-  },
-  "github.com": { methods: ["GET"], path: new RegExp(`^/${OWNER_REPO}(/.*)?$`), maxBytes: 2 * MB },
-  "raw.githubusercontent.com": { methods: ["GET"], path: new RegExp(`^/${OWNER_REPO}/.+`), maxBytes: 2 * MB },
-  "api.osv.dev": { methods: ["POST"], path: /^\/v1\/query$/, maxBytes: 2 * MB },
-};
+  }],
+  ["github.com", { methods: ["GET"], path: new RegExp(`^/${OWNER_REPO}(/.*)?$`), maxBytes: 2 * MB }],
+  ["raw.githubusercontent.com", { methods: ["GET"], path: new RegExp(`^/${OWNER_REPO}/.+`), maxBytes: 2 * MB }],
+  ["api.osv.dev", { methods: ["POST"], path: /^\/v1\/query$/, maxBytes: 2 * MB }],
+]);
 
 // Two lists: BlockList also checks IPv4 addresses against IPv6 rules through ::ffff:0:0/96,
 // so one shared list would block every IPv4 address.
@@ -130,6 +131,7 @@ for (const [network, prefix] of [
   ["64:ff9b::", 96],
   ["100::", 64],
   ["2001:db8::", 32],
+  ["2002::", 16],
   ["fc00::", 7],
   ["fe80::", 10],
   ["ff00::", 8],
@@ -144,14 +146,14 @@ export function isBlockedAddress(address: string): boolean {
 }
 
 export function maxBytesFor(url: URL): number {
-  return HOST_RULES[url.hostname]?.maxBytes ?? 0;
+  return HOST_RULES.get(url.hostname)?.maxBytes ?? 0;
 }
 
 function checkUrl(url: URL, method: "GET" | "POST"): HostRule {
   if (url.protocol !== "https:") throw new BlockedHost(`protocol ${url.protocol}`);
   if (url.port !== "") throw new BlockedHost(`port ${url.port}`);
   if (url.username || url.password) throw new BlockedHost("credentials in URL");
-  const rule = HOST_RULES[url.hostname];
+  const rule = HOST_RULES.get(url.hostname);
   if (!rule) throw new BlockedHost(`host ${url.hostname}`);
   if (!rule.methods.includes(method)) throw new BlockedHost(`${method} to ${url.hostname}`);
   if (!rule.path.test(url.pathname)) throw new BlockedHost(`path ${url.pathname} on ${url.hostname}`);

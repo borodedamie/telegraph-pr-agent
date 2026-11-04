@@ -51,10 +51,9 @@ Each stage is marked current or planned.
 
 Known gaps in this slice, kept here so nobody mistakes them for features:
 
-- The client sends the family prefix `QUESTION_ANSWERING`. The live canonical id on 2 Nov is `QUESTION_ANSWERING_GENERAL`, a judgment-class intent with no request or response schema; the node rejects `params` for it and expects a free-form `query`. The client must be updated before the next paid run.
-- Provider listing reads `/api/miners?intent=QUESTION_ANSWERING`, which returns nothing because that is the family prefix, not because the endpoint is broken. With the canonical id it returns the 10 registered providers with activation, price and scores. `GET /engine/v1/intents/{id}/miners` lists the same providers without rank or score fields. On 2 Nov no provider had a QA score, so the client's ranking step drops all 10 and the run fails with "none ranked", even after the intent id and request shape are fixed. Selection also has to change before the next paid run.
+- The intent id `QUESTION_ANSWERING_GENERAL` is hardcoded; it was checked against `GET /engine/v1/intents` on 3 Nov 2026 and must be rechecked if the catalogue changes.
 - If the payment succeeds but the ledger push fails, a rerun can pay again. The ledger key (PR, commit) only suppresses an exact repeat of a completed run.
-- Explorer links are hardcoded to Basescan; they must follow the chain named in the 402 challenge.
+- Ledger rows don't record their chain. Explorer links use the date instead: rows before 1 Nov 2026 link to Basescan (Base Sepolia), later rows to Etherscan (Ethereum Sepolia).
 
 ## Repository layout
 
@@ -114,10 +113,10 @@ Expected output, post-cutoff case with the fixtures above (the purchase line is 
 
 ```
 triggers: [{ package: "zod", version: "4.6.7", releaseDate: "2026-10-12T16:29:37.778Z", status: "past-cutoff" }]
-purchase: { intent: "QUESTION_ANSWERING", minerId: "…", minerName: "…", minerRank: 3,
+purchase: { intent: "QUESTION_ANSWERING_GENERAL", minerId: "…", minerName: "…", minerRank: 3,
             amountUsdc: 0.01, txHash: "0x…", receiptHash: "0x…", signalHash: "0x…",
             answer: "…", status: "settled" }
-ledger row committed: PR #1 QUESTION_ANSWERING 0x…
+ledger row committed: PR #1 QUESTION_ANSWERING_GENERAL 0x…
 ```
 
 No-spend case: run the same command with `../examples/head-pre-cutoff-package.json` as the head file. The run prints that there is no post-cutoff candidate and exits with zero spend, without any Telegraph request.
@@ -140,8 +139,6 @@ Variables read by the current slice:
 | `TELEGRAPH_EVM_PRIVATE_KEY` | The paying wallet. Dedicated, low balance, never committed, never printed, never exposed to repository code |
 | `GH_PAT`, `DEMO_REPO` | Token and `owner/repo` for pushing the ledger branch |
 | `LLM_API_KEY`, `LLM_BASE_URL` | Required by config validation today but unused by the slice. Known defect: they are to be removed from validation until patch generation exists. Until then the template's placeholder values pass; never put a real key here for the slice |
-
-Known stale values in `bot/.env.example`: `CHAIN_ID=84532` and `USDC_ADDRESS=0x036C…` are Base Sepolia. On 2 Nov 2026 the devnode quoted Ethereum Sepolia (`eip155:11155111`, USDC `0xcc194e1a843B658526D0D5C431f670028582Ae17`). Set those two values from the live 402 challenge. Correcting the template is a pending code fix; a reviewer should not have to repair it.
 
 ## Network and spending limits
 
