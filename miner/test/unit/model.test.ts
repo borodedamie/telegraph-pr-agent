@@ -98,6 +98,16 @@ describe("extractModel", () => {
     expect(result).toMatchObject({ failure: "timeout", costMicroUsdc: 4_000 });
   });
 
+  it("stops waiting for a call that outlives the model timeout, counting it as paid", async () => {
+    const hanging: ModelCaller = () => new Promise(() => {});
+    const budget = new Budget(limitsFromEnv({ LLM_TIMEOUT_MS: "50" }));
+    const started = Date.now();
+    const result = await extractModel(sections, new Set(), "4.0.0", budget, new MemoryStore(), miners, hanging);
+    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(result).toMatchObject({ failure: "timeout", candidates: [] });
+    expect(budget.modelCalls).toBe(1);
+  });
+
   it("moves to the next miner when one refuses before payment", async () => {
     let calls = 0;
     const caller: ModelCaller = async (miner) => {

@@ -241,6 +241,29 @@ function modelOrder(sections: Section[], indexes: number[], target: string): num
   });
 }
 
+/**
+ * Stops waiting for a model call once its signal aborts. The signal is also passed to the caller's fetches,
+ * but a live paid call ran 17 s against a 12 s timeout (4 Nov), so the deadline is enforced here as well.
+ * The abandoned call may still have been paid; it is recorded at the cap.
+ */
+function withinSignal<T>(call: Promise<T>, signal: AbortSignal, minerId: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(new ModelFailure("timeout", `miner ${minerId}: no reply before the deadline`));
+    if (signal.aborted) return onAbort();
+    signal.addEventListener("abort", onAbort, { once: true });
+    call.then(
+      (value) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(value);
+      },
+      (err: unknown) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(err);
+      }
+    );
+  });
+}
+
 export async function extractModel(
   sections: Section[],
   handled: Set<number>,
@@ -286,12 +309,14 @@ export async function extractModel(
     const signal = AbortSignal.any([budget.signal, AbortSignal.timeout(budget.limits.llmTimeoutMs)]);
     result.minerId = miner.id;
     try {
-      const reply = await caller(miner, prompt, signal);
+      const reply = await withinSignal(caller(miner, prompt, signal), signal, miner.id);
       budget.recordModelCall(prompt.length, reply.costMicroUsdc, chosen.length);
       result.inputChars += prompt.length;
       result.costMicroUsdc += reply.costMicroUsdc;
       result.msModel += now() - startedAt;
       result.candidates = parseReply(reply.text, ids, lineFormat, `m${miner.id}-`);
+      // Reply text is untrusted and may be long: only its size and the item count are logged.
+      console.info(JSON.stringify({ kind: "llm_reply", minerId: miner.id, chars: reply.text.length, items: result.candidates.length, ms: now() - startedAt }));
       result.complete = result.skipped.length === 0;
       result.failure = null;
       return result;
