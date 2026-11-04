@@ -244,12 +244,8 @@ async function main() {
       el(
         "div",
         { class: "empty" },
-        el("p", {}, "No receipts on the wire yet."),
-        el(
-          "p",
-          { class: "detail" },
-          `Receipts appear here once the bot settles its first PR answer. (${err.message})`
-        )
+        el("p", {}, "Couldn't load the ledger."),
+        el("p", { class: "detail" }, `${err.message}. The receipts are in ledger.jsonl on the ledger branch.`)
       )
     );
   }
