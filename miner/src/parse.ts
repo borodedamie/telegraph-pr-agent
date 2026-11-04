@@ -77,14 +77,17 @@ export function parse(query: string): ParseResult {
 const COUNT_BEFORE = new Set(["the", "my", "our", "all", "top", "first", "last", "these", "those", "list"]);
 const COUNT_AFTER = new Set(["breaking", "changes", "things", "items", "ways", "major", "biggest", "main"]);
 
-// "react 19 breaking changes" is a version: a word after the number marks a count only when no package
-// name comes right before it.
+// Words that join a version to another: the number after them is a version ("react 18 to 19 breaking changes").
+const VERSION_JOINERS = new Set(["to", "from", "into", "vs", "versus", "and", "between", "after", "since"]);
+
+// "react 19 breaking changes" is a version: a word after the number marks a count only when neither a
+// package name nor a version-joining word comes right before it.
 function isCount(tokens: string[], index: number): boolean {
   if (!/^\d+$/.test(tokens[index])) return false;
   const previous = tokens[index - 1]?.toLowerCase();
   if (previous !== undefined && COUNT_BEFORE.has(previous)) return true;
   const afterIsCountWord = COUNT_AFTER.has(tokens[index + 1]?.toLowerCase() ?? "");
-  return afterIsCountWord && (previous === undefined || FILLER.has(previous));
+  return afterIsCountWord && (previous === undefined || (FILLER.has(previous) && !VERSION_JOINERS.has(previous)));
 }
 
 function stripV(version: string): string {

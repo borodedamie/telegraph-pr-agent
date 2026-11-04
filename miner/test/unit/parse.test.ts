@@ -47,6 +47,9 @@ describe("parse", () => {
     expect(parse("What are the React 19 breaking changes?")).toMatchObject({ kind: "ok", package: "react", toRequested: "19" });
     expect(parse("zod 4 changes")).toMatchObject({ kind: "ok", package: "zod", toRequested: "4" });
     expect(parse("next 15 major changes")).toMatchObject({ kind: "ok", package: "next", toRequested: "15" });
+    expect(parse("react 18 to 19 breaking changes")).toMatchObject({ package: "react", fromRequested: "18", toRequested: "19" });
+    expect(parse("upgrade react from 18 to 19 breaking changes")).toMatchObject({ fromRequested: "18", toRequested: "19" });
+    expect(parse("zod 3 to 4 changes")).toMatchObject({ fromRequested: "3", toRequested: "4" });
   });
 
   it("reads the target first when the from version comes after it", () => {
