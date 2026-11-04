@@ -6,7 +6,7 @@ import type { CoverageTracker } from "../coverage.js";
 import type { Packument } from "../resolve.js";
 import { normalizeText } from "../text.js";
 import { Timeout, TooLarge, Upstream } from "../safeFetch.js";
-import { fetchDocument, type Retrieval, type SourceDocument } from "./fetch.js";
+import { fetchDocument, isCut, type Retrieval, type SourceDocument } from "./fetch.js";
 import { matchRelease, splitChangelog } from "./match.js";
 
 export interface RepoIdentity {
@@ -116,7 +116,14 @@ export async function retrieveReleaseNotes(
   const fromTime = Date.parse(packument.time[from] ?? "");
   for (let page = 1; page <= MAX_RELEASE_PAGES && wanted.size > 0; page++) {
     const url = `https://api.github.com/repos/${repo.owner}/${repo.repo}/releases?per_page=${PER_PAGE}&page=${page}`;
-    const document = await fetchDocument(retrieval, url, { headers, toText: reduceReleases });
+    let document: SourceDocument | null;
+    try {
+      document = await fetchDocument(retrieval, url, { headers, toText: reduceReleases });
+    } catch (err) {
+      // Out of budget or time on a later page: keep the pages already read; the next step meets the same cut.
+      if (page > 1 && isCut(err, retrieval)) return material;
+      throw err;
+    }
     if (document === null) break;
     const releases = z.array(ReducedRelease).parse(JSON.parse(document.text));
     for (const release of releases) {
@@ -150,9 +157,12 @@ export async function retrieveReleaseNotes(
         document = await fetchDocument(retrieval, url, { toText: normalizeText });
       } catch (err) {
         // A changelog over the size cap or down is left out; later steps may still cover its releases.
-        if (!(err instanceof TooLarge) && !isOptionalOutage(err, retrieval)) throw err;
-        console.warn(JSON.stringify({ kind: "changelog_skipped", url, error: String(err) }));
-        if (isOptionalOutage(err, retrieval)) material.optionalSourceFailed = true;
+        const failure = optionalFailure(err, retrieval);
+        if (failure === null) throw err;
+        console.warn(JSON.stringify({ kind: "changelog_skipped", url, failure, error: String(err) }));
+        // Out of budget or time: keep the release notes already read; the next step meets the same cut.
+        if (failure === "cut") return material;
+        if (failure === "down") material.optionalSourceFailed = true;
         continue;
       }
       if (document === null) continue;
@@ -182,9 +192,10 @@ export async function retrieveReleaseNotes(
     try {
       guide = await findMigrationGuide(retrieval, repo, packument.name, lineStart, headers);
     } catch (err) {
-      if (!isOptionalOutage(err, retrieval)) throw err;
-      console.warn(JSON.stringify({ kind: "migration_guide_skipped", error: String(err) }));
-      material.optionalSourceFailed = true;
+      const failure = optionalFailure(err, retrieval);
+      if (failure === null) throw err;
+      console.warn(JSON.stringify({ kind: "migration_guide_skipped", failure, error: String(err) }));
+      if (failure === "down") material.optionalSourceFailed = true;
       guide = null;
     }
     if (guide !== null) {
@@ -205,9 +216,15 @@ export async function retrieveReleaseNotes(
   return material;
 }
 
-/** An outage of an optional source. A Timeout from the answer's own deadline is not one: it ends retrieval. */
-function isOptionalOutage(err: unknown, retrieval: Retrieval): boolean {
-  return (err instanceof Upstream || err instanceof Timeout) && !retrieval.budget.signal.aborted;
+/**
+ * Why an optional source (changelog, migration guide) could not be read, or null for an error that is a bug:
+ * over the size cap, down (an upstream outage), or cut by the answer's own budget or deadline.
+ */
+function optionalFailure(err: unknown, retrieval: Retrieval): "too_large" | "down" | "cut" | null {
+  if (err instanceof TooLarge) return "too_large";
+  if (isCut(err, retrieval)) return "cut";
+  if (err instanceof Upstream || err instanceof Timeout) return "down";
+  return null;
 }
 
 /** The first release in range whose breaking-change line (major, or minor for 0.x) differs from "from". */

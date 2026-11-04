@@ -208,6 +208,11 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
         }
       }
     }
+    // A step that met the source budget or deadline returns what it read; what it did not reach was cut.
+    if (budget.hit("time") || budget.hit("source_requests")) {
+      retrievalCut = true;
+      for (const version of tracker.missing()) tracker.notCovered(version, "budget");
+    }
     if (tooLarge) for (const version of tracker.missing()) tracker.notCovered(version, "truncated");
     metrics.msFetch = now() - fetchStart;
     metrics.upstreamRequests = retrieval.upstreamRequests;

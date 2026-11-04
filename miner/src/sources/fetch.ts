@@ -1,13 +1,18 @@
 // Every source document goes through here: budget, source manifest, conditional GET and snapshot (research R3).
 import { getManifest, getSnapshot, isFresh, putManifest, putSnapshot, type Store } from "../cache.js";
 import type { Budget } from "../budget.js";
-import { Upstream, safeFetch } from "../safeFetch.js";
+import { Timeout, Upstream, safeFetch } from "../safeFetch.js";
 
 export class BudgetExhausted extends Error {
   constructor(readonly url: string) {
     super(`source budget exhausted before ${url}`);
     this.name = "BudgetExhausted";
   }
+}
+
+/** The answer's own source budget or deadline ended retrieval (the deadline aborts fetches with Timeout). */
+export function isCut(err: unknown, retrieval: Retrieval): boolean {
+  return err instanceof BudgetExhausted || (err instanceof Timeout && retrieval.budget.signal.aborted);
 }
 
 export interface Retrieval {

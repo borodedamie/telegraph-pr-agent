@@ -147,4 +147,13 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     expect(answer.coverage!.notCovered.some((n) => n.reason === "truncated")).toBe(true);
     expect(answer).toMatchObject({ outcome: "not_found", confidence: 0.6 });
   });
+
+  it("keeps the release notes already read when the source budget runs out on a later fetch", async () => {
+    // Registry and releases page 1 fit; page 2 does not.
+    const tight = { ...deps(new MemoryStore(), stubModel().caller), limits: limitsFromEnv({ MAX_SOURCE_REQUESTS: "2" }) };
+    const { answer } = await answerQuestion(QUESTION, tight);
+    expect(answer.outcome).toBe("found");
+    expect(answer.coverage!.covered.length).toBeGreaterThan(0);
+    expect(answer.coverage!.notCovered.every((n) => n.reason === "budget")).toBe(true);
+  });
 });

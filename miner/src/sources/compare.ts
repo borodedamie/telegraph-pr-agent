@@ -4,7 +4,7 @@ import { canonicalJson } from "../cache.js";
 import type { CoverageTracker } from "../coverage.js";
 import { normalizeText } from "../text.js";
 import { TooLarge } from "../safeFetch.js";
-import { fetchDocument, type Retrieval, type SourceDocument } from "./fetch.js";
+import { fetchDocument, isCut, type Retrieval, type SourceDocument } from "./fetch.js";
 import type { Consulted, Material, RepoIdentity, Section } from "./github.js";
 
 // GitHub's own limits on one comparison.
@@ -107,6 +107,8 @@ export async function retrieveComparisons(
         toText: (body) => reduceCompare(body, repo.directory),
       });
     } catch (err) {
+      // Out of budget or time: keep the comparisons already read; the remaining releases stay missing.
+      if (isCut(err, retrieval) && material.consulted.length > 0) return material;
       // A comparison over the size cap cannot be read in full: its releases are truncated, not failed.
       if (!(err instanceof TooLarge)) throw err;
       console.warn(JSON.stringify({ kind: "compare_skipped", url, error: String(err) }));
