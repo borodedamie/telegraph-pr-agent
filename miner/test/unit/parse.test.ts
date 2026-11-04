@@ -40,6 +40,18 @@ describe("parse", () => {
       toRequested: "4.0.0",
     });
     expect(parse("List the 3 breaking changes in zod 4.0.0")).toMatchObject({ package: "zod", toRequested: "4.0.0" });
+    expect(parse("5 breaking changes in zod 4.0.0")).toMatchObject({ package: "zod", toRequested: "4.0.0" });
+  });
+
+  it("reads a bare major version followed by words like breaking or changes", () => {
+    expect(parse("What are the React 19 breaking changes?")).toMatchObject({ kind: "ok", package: "react", toRequested: "19" });
+    expect(parse("zod 4 changes")).toMatchObject({ kind: "ok", package: "zod", toRequested: "4" });
+    expect(parse("next 15 major changes")).toMatchObject({ kind: "ok", package: "next", toRequested: "15" });
+  });
+
+  it("reads the target first when the from version comes after it", () => {
+    expect(parse("upgrade zod 4.0.0 from 3.23.8")).toMatchObject({ fromRequested: "3.23.8", toRequested: "4.0.0" });
+    expect(parse("zod to 4.0.0 from 3.23.8")).toMatchObject({ fromRequested: "3.23.8", toRequested: "4.0.0" });
   });
 
   it("asks for clarification instead of guessing", () => {

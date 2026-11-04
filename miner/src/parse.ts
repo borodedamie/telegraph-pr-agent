@@ -68,8 +68,8 @@ export function parse(query: string): ParseResult {
   }
 
   let [from, to] = all;
-  // "to 4.0.0 from 3.23.8"
-  if (before(from.index) === "to" && before(to.index) === "from") [from, to] = [to, from];
+  // "to 4.0.0 from 3.23.8", "4.0.0 from 3.23.8"
+  if (before(to.index) === "from" && before(from.index) !== "from") [from, to] = [to, from];
   return { kind: "ok", package: packageName, fromRequested: stripV(from.value), toRequested: stripV(to.value) };
 }
 
@@ -77,9 +77,14 @@ export function parse(query: string): ParseResult {
 const COUNT_BEFORE = new Set(["the", "my", "our", "all", "top", "first", "last", "these", "those", "list"]);
 const COUNT_AFTER = new Set(["breaking", "changes", "things", "items", "ways", "major", "biggest", "main"]);
 
+// "react 19 breaking changes" is a version: a word after the number marks a count only when no package
+// name comes right before it.
 function isCount(tokens: string[], index: number): boolean {
   if (!/^\d+$/.test(tokens[index])) return false;
-  return COUNT_BEFORE.has(tokens[index - 1]?.toLowerCase() ?? "") || COUNT_AFTER.has(tokens[index + 1]?.toLowerCase() ?? "");
+  const previous = tokens[index - 1]?.toLowerCase();
+  if (previous !== undefined && COUNT_BEFORE.has(previous)) return true;
+  const afterIsCountWord = COUNT_AFTER.has(tokens[index + 1]?.toLowerCase() ?? "");
+  return afterIsCountWord && (previous === undefined || FILLER.has(previous));
 }
 
 function stripV(version: string): string {
