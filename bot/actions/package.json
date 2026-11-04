@@ -1,0 +1,27 @@
+{
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@actions/core": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@vercel/ncc": "^0.45.0",
+    "typescript": "^7.0.2"
+  },
+  "name": "lynx-review-action",
+  "version": "1.0.0",
+  "description": "Reusable GitHub Action built with TypeScript",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && ncc build src/index.ts -o dist --source-map",
+    "build:prod": "npm run typecheck && ncc build src/index.ts -o dist --minify",
+    "test": "npm run typecheck"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

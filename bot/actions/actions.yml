@@ -1,0 +1,31 @@
+
+name: "Lynx Custom Automation Reviewer"
+
+description: "Execute reusable automation written in TypeScript"
+
+author: "Lynx"
+
+branding:
+  icon: "play-circle"
+  color: "blue"
+
+inputs:
+  name:
+    description: "lynx-app-reviewer"
+    required: true
+
+  environment:
+    description: "Deployment environment"
+    required: false
+    default: "development"
+
+outputs:
+  message:
+    description: "Result of the action execution"
+
+  status:
+    description: "Execution status"
+
+runs:
+  using: "node24"
+  main: "dist/index.js"
