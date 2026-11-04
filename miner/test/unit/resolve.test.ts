@@ -92,6 +92,24 @@ describe("resolve", () => {
     expect(urls).toEqual(["https://registry.npmjs.org/zodd"]);
   });
 
+  it("answers out of scope for a fully unpublished package instead of failing", async () => {
+    const unpublished = JSON.stringify({
+      _id: "gone", name: "gone",
+      time: { created: "2020-01-01T00:00:00.000Z", unpublished: { time: "2021-01-01T00:00:00.000Z", versions: ["1.0.0"] } },
+    });
+    const { fetcher } = registryFetcher({ [registryUrl("gone")]: unpublished });
+    const retrieval = newRetrieval(new MemoryStore(), new Budget(limitsFromEnv({})), fetcher);
+    expect(await resolve(retrieval, { package: "gone", fromRequested: null, toRequested: "1.0.0" })).toMatchObject({
+      kind: "unknown_package",
+      reason: "gone has no published versions on npm (it may have been unpublished)",
+    });
+  });
+
+  it("reads an array repository as its first entry", () => {
+    const body = JSON.stringify({ name: "a", versions: { "1.0.0": {} }, repository: [{ type: "git", url: "git+https://github.com/o/a.git" }] });
+    expect(JSON.parse(reducePackument(body)).repository).toEqual({ type: "git", url: "git+https://github.com/o/a.git" });
+  });
+
   it("encodes scoped names and reuses the fresh snapshot on the next call", async () => {
     const name = "@tanstack/react-query";
     const { fetcher, urls } = registryFetcher({ [registryUrl(name)]: fixture(name) });

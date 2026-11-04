@@ -146,6 +146,20 @@ describe("parseReply", () => {
     expect(inferred).toMatchObject({ ref: "m-i2", inferredFrom: ["m-i1"], migrationInferredFrom: ["section:0"] });
   });
 
+  it("reads an empty migration or excerpt as absent", () => {
+    const text = JSON.stringify({
+      items: [{ id: "i1", sectionId: "x1", kind: "breaking", change: "a", excerpt: "e", migration: "", migrationExcerpt: " " }],
+    });
+    expect(parseReply(text, new Map([["x1", 0]]), false, "m-")[0]).toMatchObject({ migration: null, migrationExcerpt: null });
+  });
+
+  it("reads an echoed header or a none row in line format as nothing found", () => {
+    const sections = new Map([["x1", 0]]);
+    expect(parseReply("sectionId|kind|excerpt|migrationExcerpt", sections, true, "m-")).toEqual([]);
+    expect(parseReply("none|-|-|-", sections, true, "m-")).toEqual([]);
+    expect(() => parseReply("x9|feature|a|-", sections, true, "m-")).toThrow(ModelFailure);
+  });
+
   it("keeps only the first item of an id the reply repeats", () => {
     const text = JSON.stringify({
       items: [

@@ -137,16 +137,19 @@ export function replyText(result: unknown): string {
   return JSON.stringify(result);
 }
 
+// An empty string from the model means "none": the answer schema rejects empty text (review of PR #11).
+const optionalText = z.string().nullable().default(null).transform((text) => (text?.trim() ? text : null));
+
 const ReplyItem = z.object({
   id: z.string(),
   sectionId: z.string(),
   kind: z.enum(["breaking", "deprecation", "security_fix"]),
   inferred: z.boolean().default(false),
   change: z.string().min(1),
-  excerpt: z.string().nullable().default(null),
+  excerpt: optionalText,
   inferredFrom: z.array(z.string()).default([]),
-  migration: z.string().nullable().default(null),
-  migrationExcerpt: z.string().nullable().default(null),
+  migration: optionalText,
+  migrationExcerpt: optionalText,
   migrationInferredFrom: z.array(z.string()).default([]),
 });
 const Reply = z.object({ items: z.array(ReplyItem) });
@@ -174,7 +177,11 @@ ${lineFormat ? LINE_INSTRUCTIONS : JSON_INSTRUCTIONS}`;
 /** Parses a reply into candidates; throws ModelFailure("invalid_reply") when it does not fit the schema. */
 export function parseReply(text: string, sectionIndex: Map<string, number>, lineFormat: boolean, refPrefix: string): Candidate[] {
   if (lineFormat) {
-    const lines = text.split("\n").map((l) => l.trim()).filter((l) => l.includes("|"));
+    // An echoed format header or a "none" row is the model saying it found nothing.
+    const lines = text
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.includes("|") && !/^sectionId\s*\|\s*kind\s*\|/i.test(l) && !/^none\s*\|/i.test(l));
     const candidates = lines.flatMap((line, i): Candidate[] => {
       const [sectionId, kind, excerpt, migrationExcerpt] = line.split("|").map((p) => p.trim());
       const section = sectionIndex.get(sectionId);

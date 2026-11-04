@@ -113,7 +113,7 @@ export async function retrieveComparisons(
       if (!(err instanceof TooLarge)) throw err;
       console.warn(JSON.stringify({ kind: "compare_skipped", url, error: String(err) }));
       for (const version of run) tracker.notCovered(version, "truncated");
-      material.sourceTooLarge = true;
+      (material.tooLargeFor ??= []).push(...run);
       continue;
     }
     if (document === null) continue; // A tag is missing: these releases stay without material.

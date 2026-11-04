@@ -150,6 +150,23 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     expect(answer).toMatchObject({ outcome: "not_found", confidence: 0.6 });
   });
 
+  it("marks only the releases an oversized source would have covered as truncated", async () => {
+    const { fetcher } = fixtureFetcher(FILES);
+    const guide = "https://raw.githubusercontent.com/colinhacks/zod/HEAD/packages/docs/content/v4/changelog.mdx";
+    const requested: string[] = [];
+    const capped: typeof fetcher = async (url) => {
+      requested.push(url);
+      if (url === guide) throw new TooLarge(url, 2 * 1024 * 1024);
+      return fetcher(url);
+    };
+    const { answer } = await answerQuestion(QUESTION, { ...deps(new MemoryStore(), stubModel().caller), fetcher: capped });
+    expect(requested).toContain(guide);
+    const reasons = Object.fromEntries(answer.coverage!.notCovered.map((n) => [n.version, n.reason]));
+    expect(reasons["4.0.0"]).toBe("truncated");
+    // 3.25.0 has no release of its own in the fixtures; the oversized guide was never going to cover it.
+    expect(reasons["3.25.0"]).toBe("no_material");
+  });
+
   it("keeps the release notes already read when the source budget runs out on a later fetch", async () => {
     // Registry and releases page 1 fit; page 2 does not.
     const tight = { ...deps(new MemoryStore(), stubModel().caller), limits: limitsFromEnv({ MAX_SOURCE_REQUESTS: "2" }) };

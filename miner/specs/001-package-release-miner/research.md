@@ -30,7 +30,7 @@ There are two contracts, and they are kept apart:
 ## R3. Cache, snapshots and reproducibility
 
 - **Decision**: Upstash Redis via the Vercel Marketplace (Vercel's KV product is now provided this way). Three stores:
-  1. **Source manifest**, keyed by request URL (for OSV, by the query body): `{etag, lastModified, fetchedAt, contentHash, snapshotKey}`.
+  1. **Source manifest**, keyed by processing version and request URL (for OSV, by the query body; a snapshot holds reduced text, so a reducer change must not reuse an old-shape snapshot on a `304`): `{etag, lastModified, fetchedAt, contentHash, snapshotKey}`.
      - An entry younger than the freshness window (default 1 h) is reused without a request.
      - An older one is revalidated with a conditional GET (`If-None-Match` / `If-Modified-Since`), and a `304` keeps the hash and the snapshot. GitHub does not count `304` responses against the rate limit. OSV has no conditional requests, so a stale OSV entry is simply re-queried.
   2. **Snapshots**, content-addressed (`snap:<contentHash>`): the whole normalized document as fetched (a releases page, a `CHANGELOG.md`, a compare response, an OSV response). For the registry, only the fields used (`versions` keys, `time`, `dist-tags`, `repository`), because the full document can be tens of MB. Version sections are derived from the snapshot on every use, so a manifest hit or a `304` always has the text for any version. No TTL during the hackathon evaluation period (FR-019).

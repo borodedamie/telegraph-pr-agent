@@ -55,8 +55,8 @@ export interface Material {
   tagTemplate?: string;
   /** An optional source (changelog, migration guide) was down; the answer goes on without it. */
   optionalSourceFailed?: boolean;
-  /** A source was over its size cap and left out. */
-  sourceTooLarge?: boolean;
+  /** Releases whose source was over its size cap and left out; they are truncated unless a later step covers them. */
+  tooLargeFor?: string[];
 }
 
 export function githubHeaders(env: NodeJS.ProcessEnv): Record<string, string> {
@@ -165,7 +165,7 @@ export async function retrieveReleaseNotes(
         // Out of budget or time: keep the release notes already read; the next step meets the same cut.
         if (failure === "cut") return material;
         if (failure === "down") material.optionalSourceFailed = true;
-        if (failure === "too_large") material.sourceTooLarge = true;
+        if (failure === "too_large") (material.tooLargeFor ??= []).push(...wanted);
         continue;
       }
       if (document === null) continue;
@@ -199,7 +199,7 @@ export async function retrieveReleaseNotes(
       if (failure === null) throw err;
       console.warn(JSON.stringify({ kind: "migration_guide_skipped", failure, error: String(err) }));
       if (failure === "down") material.optionalSourceFailed = true;
-      if (failure === "too_large") material.sourceTooLarge = true;
+      if (failure === "too_large") (material.tooLargeFor ??= []).push(lineStart);
       guide = null;
     }
     if (guide !== null) {

@@ -17,22 +17,34 @@ export const Packument = z.object({
 });
 export type Packument = z.infer<typeof Packument>;
 
+// Lenient on purpose: a fully unpublished package has no `versions` and an object in `time.unpublished`, and some
+// packages publish `repository` as an array. Fields that do not fit are dropped rather than failing the answer.
 const RawPackument = z.object({
   name: z.string(),
-  versions: z.record(z.unknown()),
-  time: z.record(z.string()).default({}),
-  "dist-tags": z.record(z.string()).default({}),
-  repository: Packument.shape.repository.optional(),
+  versions: z.record(z.unknown()).default({}),
+  time: z.record(z.unknown()).default({}),
+  "dist-tags": z.record(z.unknown()).default({}),
+  repository: z.unknown(),
 });
+
+function stringValues(record: Record<string, unknown>): Record<string, string> {
+  return Object.fromEntries(Object.entries(record).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+}
+
+function reduceRepository(repository: unknown): Packument["repository"] {
+  const first = Array.isArray(repository) ? repository[0] : repository;
+  const parsed = Packument.shape.repository.safeParse(first ?? null);
+  return parsed.success ? parsed.data : null;
+}
 
 export function reducePackument(body: string): string {
   const raw = RawPackument.parse(JSON.parse(body));
   const reduced: Packument = {
     name: raw.name,
     versions: Object.keys(raw.versions),
-    time: raw.time,
-    "dist-tags": raw["dist-tags"],
-    repository: raw.repository ?? null,
+    time: stringValues(raw.time),
+    "dist-tags": stringValues(raw["dist-tags"]),
+    repository: reduceRepository(raw.repository),
   };
   return canonicalJson(reduced);
 }
@@ -69,6 +81,9 @@ export async function resolve(retrieval: Retrieval, requested: Requested): Promi
   });
   if (registry === null) return { kind: "unknown_package", reason: `no npm package named ${requested.package}` };
   const packument = Packument.parse(JSON.parse(registry.text));
+  if (packument.versions.length === 0) {
+    return { kind: "unknown_package", reason: `${requested.package} has no published versions on npm (it may have been unpublished)` };
+  }
   return resolveVersions(packument, registry, requested);
 }
 

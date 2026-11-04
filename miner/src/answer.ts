@@ -166,7 +166,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
     const material: Material = { consulted: [], sections: [] };
     let upstreamFailed = false;
     let retrievalCut = false;
-    let tooLarge = false;
+    const tooLargeFor = new Set<string>();
     const repo = repoIdentity(resolved.packument.repository);
     if ("reason" in repo) {
       console.info(JSON.stringify({ kind: "no_repository", package: request.package, reason: repo.reason }));
@@ -185,14 +185,14 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
           material.sections.push(...found.sections.map((s) => ({ ...s, consulted: s.consulted + offset })));
           material.tagTemplate ??= found.tagTemplate;
           material.optionalSourceFailed ||= found.optionalSourceFailed;
-          tooLarge ||= found.sourceTooLarge === true;
+          for (const version of found.tooLargeFor ?? []) tooLargeFor.add(version);
         } catch (err) {
           // The step's material is lost with it, so the releases it marked covered are not.
           tracker.restore(saved);
           if (err instanceof TooLarge) {
             // A document over the size cap: the next step may still cover these releases.
             console.warn(JSON.stringify({ kind: "source_too_large", error: String(err) }));
-            tooLarge = true;
+            for (const version of tracker.missing()) tooLargeFor.add(version);
             continue;
           }
           // budget.signal fires on the hard deadline; the safeFetch it aborts throws Timeout.
@@ -214,7 +214,8 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
       retrievalCut = true;
       for (const version of tracker.missing()) tracker.notCovered(version, "budget");
     }
-    if (tooLarge) for (const version of tracker.missing()) tracker.notCovered(version, "truncated");
+    // Only the releases an oversized source would have covered are truncated; the rest keep their own reason.
+    for (const version of tracker.missing()) if (tooLargeFor.has(version)) tracker.notCovered(version, "truncated");
     metrics.msFetch = now() - fetchStart;
     metrics.upstreamRequests = retrieval.upstreamRequests;
     metrics.conditionalHits = retrieval.conditionalHits;
@@ -243,7 +244,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
       if (deps.enterCompute) leave = await deps.enterCompute();
       const { answer, complete } = await compute(request, resolved.targetReleasedAt, registrySource, material, tracker, budget, deps, metrics, processingBase, {
         // Both lower the confidence band; only an outage (retried next time) also keeps the answer out of the cache.
-        optionalSourceFailed: tooLarge || material.optionalSourceFailed === true,
+        optionalSourceFailed: tooLargeFor.size > 0 || material.optionalSourceFailed === true,
         lookups: { checked: retrieval.checked, unreadable: retrieval.unreadable },
       });
       const result = finish(answer);
