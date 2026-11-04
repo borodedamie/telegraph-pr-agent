@@ -33,11 +33,17 @@ function strip(text: string): { stripped: string; map: number[] } {
   return { stripped, map };
 }
 
+type Stripped = ReturnType<typeof strip>;
+
 /** The original span of `source` that `excerpt` matches, ignoring inline markup; null when it is not there. */
 export function findSpan(source: string, excerpt: string): string | null {
+  return spanIn(source, strip(source), excerpt);
+}
+
+/** findSpan with `source` already stripped, so one section is stripped once for all its candidates. */
+function spanIn(source: string, { stripped, map }: Stripped, excerpt: string): string | null {
   const needle = strip(excerpt).stripped.trim();
   if (needle === "") return null;
-  const { stripped, map } = strip(source);
   const at = stripped.indexOf(needle);
   if (at === -1) return null;
   let end = map[at + needle.length - 1] + 1;
@@ -74,6 +80,12 @@ export function verify(candidates: Candidate[], sections: Section[], sources: Ve
   const downgraded: Drop[] = [];
   const spans = new Map<string, string>();
   const seen = new Set<string>();
+  const prepared = new Map<Section, Stripped>();
+  const strippedOf = (section: Section): Stripped => {
+    let entry = prepared.get(section);
+    if (entry === undefined) prepared.set(section, (entry = strip(section.text)));
+    return entry;
+  };
 
   // Pass 1: evidence-backed candidates.
   for (const candidate of candidates.filter((c) => !c.inferred)) {
@@ -82,7 +94,7 @@ export function verify(candidates: Candidate[], sections: Section[], sources: Ve
       dropped.push({ ref: candidate.ref, reason: "unknown section" });
       continue;
     }
-    const span = candidate.excerpt === null ? null : findSpan(section.text, candidate.excerpt);
+    const span = candidate.excerpt === null ? null : spanIn(section.text, strippedOf(section), candidate.excerpt);
     if (span === null) {
       dropped.push({ ref: candidate.ref, reason: candidate.excerpt === null ? "no excerpt" : "excerpt not in source" });
       continue;
@@ -130,7 +142,7 @@ export function verify(candidates: Candidate[], sections: Section[], sources: Ve
       sourceId: source.id,
     };
 
-    const migration = verifyMigration(candidate, section, sections, sources);
+    const migration = verifyMigration(candidate, section, sections, sources, strippedOf);
     if (migration.kind === "documented") {
       // The step shown is the source's own words, so it cannot claim more than the source says.
       item.migration = migration.span;
@@ -169,12 +181,13 @@ function verifyMigration(
   candidate: Candidate,
   own: Section,
   sections: Section[],
-  sources: VerifySource[]
+  sources: VerifySource[],
+  strippedOf: (section: Section) => Stripped
 ): { kind: "documented"; span: string; sourceId: string } | { kind: "none" } {
   if (candidate.migrationExcerpt === null) return { kind: "none" };
   // The step's own excerpt: its section first, then any section of the same release.
   for (const section of [own, ...sections.filter((s) => s !== own && s.version === own.version)]) {
-    const span = findSpan(section.text, candidate.migrationExcerpt);
+    const span = spanIn(section.text, strippedOf(section), candidate.migrationExcerpt);
     if (span !== null && span.length >= MIN_MIGRATION_EXCERPT) {
       return { kind: "documented", span, sourceId: sources[section.consulted].id };
     }
