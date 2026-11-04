@@ -259,6 +259,8 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
   - the `outcome` values match the YAML `errors.success_values` (every billable outcome listed, `temporarily_unavailable` not);
   - the outage flag works only from the environment.
 
+**Status (2026-11-04), model step and phrase rules**: four paid model calls (0.04 test USDC, `miner/bench/network.md`) showed miner 302 takes 8–28 s and was given the wrong text: a release with any marked heading was never sent to it. The model stays off the live answer path. Instead the deterministic pass now reads breaking-change phrases in line-start releases (research R7, `miner/bench/phrase-rules.md`); on 284 major releases it finds items in 236 instead of 177. `PROCESSING_VERSION` is now `p2`.
+
 **Status (2026-11-04)**: Phase 4 is done, with these notes:
 - the negative fixtures in `miner/test/fixtures/negative/` are hand-written, not recorded: the packages `no-notes` and `@mono/a` are invented, and the registry `500`, GitHub timeout and changelog `500` are simulated by the test fetcher;
 - a changelog or migration guide that is down is an optional source failure: the answer goes on with the 0.6 `not_found` band and is not cached, so it is retried;
