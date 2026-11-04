@@ -24,9 +24,16 @@ function headingKind(title: string): Kind | "migration" | "other" {
 // leading "Deprecated". A bare "remove ..." is too often a chore ("remove duplicate test").
 function bulletKind(text: string): Kind | null {
   if (ADVISORY_ID.test(text)) return "security_fix";
-  if (/\bbreaking\b|^\[?break\]?|^\w+(\([^)]*\))?!:/i.test(text)) return "breaking";
-  if (/^(\*\*|`)?deprecat/i.test(text)) return /\b(remov\w*|dropped)\b/i.test(text) ? "breaking" : "deprecation";
+  // "non-breaking" and "Breakpoints ..." are not markers.
+  if (/(?<!-)\bbreaking\b|^\[break\]|^break:|^\w+(\([^)]*\))?!:/i.test(text)) return "breaking";
+  if (/^(\*\*|`)?deprecat/i.test(text)) return removedNow(text) ? "breaking" : "deprecation";
   return null;
+}
+
+/** "Deprecated X removed" is a removal in this release; "deprecated, will be removed in v6" is still a deprecation. */
+function removedNow(text: string): boolean {
+  if (/\b(will|to) be (removed|dropped)\b|\b(in a future|in the next|future (major|release|version))\b/i.test(text)) return false;
+  return /\b(removed|dropped)\b/i.test(text);
 }
 
 /** A bullet that is only a label ("**Breaking Changes**:") opens a section like a heading. */

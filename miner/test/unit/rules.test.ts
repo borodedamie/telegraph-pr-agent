@@ -35,9 +35,12 @@ describe("extractRules", () => {
       "- **Deprecated API methods removed**: old signatures are gone",
       "- remove duplicate location test",
       "- Bump min TS version to 5.0",
+      "- Fix non-breaking space handling",
+      "- Breakpoints now work in Safari",
+      "- Deprecated `foo()`; it will be removed in v6",
     ].join("\n");
     const { candidates, handled } = extractRules([{ version: "1.0.0", consulted: 0, text }], () => false);
-    expect(candidates.map((c) => c.kind)).toEqual(["breaking", "breaking", "breaking"]);
+    expect(candidates.map((c) => c.kind)).toEqual(["breaking", "breaking", "breaking", "deprecation"]);
     expect(handled.size).toBe(0);
   });
 
