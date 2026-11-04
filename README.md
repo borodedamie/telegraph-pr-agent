@@ -52,7 +52,7 @@ Each stage is marked current or planned.
 Known gaps in this slice, kept here so nobody mistakes them for features:
 
 - The intent id `QUESTION_ANSWERING_GENERAL` is hardcoded; it was checked against `GET /engine/v1/intents` on 3 Nov 2026 and must be rechecked if the catalogue changes.
-- If the payment succeeds but the ledger push fails, a rerun can pay again. The ledger key (PR, commit) only suppresses an exact repeat of a completed run.
+- Each payment try is recorded on the ledger branch at every stage (`reserved`, `request_sent`, then `delivered`, `failed_and_credited` or `unknown_needs_reconciliation`) before the bot moves on. If a run dies or its push fails after `request_sent`, the next run for that PR and commit stops instead of paying again, and a person checks the wallet, escrow balance and signal. Nothing yet marks such an attempt as reconciled; that is done by hand on the ledger branch.
 - Ledger rows don't record their chain. Explorer links use the date instead: rows before 1 Nov 2026 link to Basescan (Base Sepolia), later rows to Etherscan (Ethereum Sepolia).
 
 ## Repository layout

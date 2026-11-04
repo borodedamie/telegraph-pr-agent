@@ -1,6 +1,7 @@
 import { wrapFetchWithPaymentFromConfig } from "@x402/fetch";
 import { ExactEvmScheme, toClientEvmSigner } from "@x402/evm";
 import { privateKeyToAccount } from "viem/accounts";
+import type { AttemptState } from "./ledger.js";
 
 export interface Purchase {
   intent: string;
@@ -28,6 +29,17 @@ export interface RankedMiner {
 export class PriceGuardError extends Error {}
 export class BudgetCapError extends Error {}
 export class AskFailedError extends Error {}
+/** The paid request went out but its outcome is unclear; never retry automatically. */
+export class PaymentUnknownError extends Error {}
+
+/** One stage of one payment try. `delivered` is recorded by the caller with the purchase. */
+export interface AttemptEvent {
+  state: Exclude<AttemptState, "delivered">;
+  minerId: string;
+  quotedAmountUsdc?: number;
+  reason?: string;
+}
+export type OnAttempt = (event: AttemptEvent) => Promise<void>;
 
 export interface IntelligenceClientDeps {
   nodeUrl: string;
@@ -169,13 +181,15 @@ export class IntelligenceClient {
   // The routed /engine/v1/ask re-classifies a free-form query and can ignore
   // the intent we name (seen live: QA routed to SECURITY_REVIEW). So we read
   // Telegraph's leaderboard ourselves and pay the top-ranked miner directly,
-  // stepping down a rank only when a call fails (failed calls are not charged).
-  async buy(intent: string, query: string): Promise<Purchase> {
+  // stepping down a rank only when a call fails (failed calls are credited to escrow).
+  // onAttempt is awaited at each stage, so a stage that can't be recorded stops
+  // the purchase before the next one starts.
+  async buy(intent: string, query: string, onAttempt: OnAttempt = async () => {}): Promise<Purchase> {
     const miners = (await this.rankedMiners(intent)).slice(0, MAX_MINERS_TRIED);
     const failures: string[] = [];
     for (const miner of miners) {
       try {
-        return await this.buyFrom(intent, query, miner);
+        return await this.buyFrom(intent, query, miner, onAttempt);
       } catch (err) {
         if (!(err instanceof AskFailedError)) throw err;
         failures.push(`#${miner.rank} ${miner.id}: ${err.message}`);
@@ -184,7 +198,8 @@ export class IntelligenceClient {
     throw new AskFailedError(`${intent}: no ranked miner answered — ${failures.join(" | ") || "none ranked"}`);
   }
 
-  private async buyFrom(intent: string, query: string, miner: RankedMiner): Promise<Purchase> {
+  private async buyFrom(intent: string, query: string, miner: RankedMiner, onAttempt: OnAttempt): Promise<Purchase> {
+    await onAttempt({ state: "reserved", minerId: miner.id });
     const url = `${this.nodeUrl}/engine/v1/ask/${encodeURIComponent(miner.id)}`;
     const init: RequestInit = {
       method: "POST",
@@ -217,15 +232,28 @@ export class IntelligenceClient {
       );
     }
 
-    // The node settles only on a delivered answer, so a non-2xx here cost nothing.
-    const res = await this.paymentFetch(url, init);
+    await onAttempt({ state: "request_sent", minerId: miner.id, quotedAmountUsdc: amountUsdc });
+    let res: Response;
+    try {
+      res = await this.paymentFetch(url, init);
+    } catch (err) {
+      // No response: the payment may or may not have settled.
+      const reason = `no response: ${String(err)}`.slice(0, 300);
+      await onAttempt({ state: "unknown_needs_reconciliation", minerId: miner.id, reason });
+      throw new PaymentUnknownError(`${miner.id}: ${reason}`);
+    }
+    // Per the Telegraph docs, a paid call that then fails is credited to escrow.
     if (!res.ok) {
-      const detail = (await res.text().catch(() => "")).slice(0, 300);
-      throw new AskFailedError(`HTTP ${res.status} ${detail}`.trim());
+      const reason = `HTTP ${res.status} ${(await res.text().catch(() => "")).slice(0, 300)}`.trim();
+      await onAttempt({ state: "failed_and_credited", minerId: miner.id, reason });
+      throw new AskFailedError(reason);
     }
     const settle = settleHeader(res);
     if (!settle?.success || typeof settle.transaction !== "string") {
-      throw new AskFailedError("answered without a settlement proof");
+      // An answer without a settlement proof: we can't tell whether we paid.
+      const reason = "answered without a settlement proof";
+      await onAttempt({ state: "unknown_needs_reconciliation", minerId: miner.id, reason });
+      throw new PaymentUnknownError(`${miner.id}: ${reason}`);
     }
     // Dynamic pricing can make the settled amount differ from the quote; the
     // receipt carries what was actually charged, so the record must use it.

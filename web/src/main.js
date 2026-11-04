@@ -25,7 +25,9 @@ async function loadRows() {
   return (await res.text())
     .split("\n")
     .filter((line) => line.trim())
-    .map((line) => JSON.parse(line));
+    .map((line) => JSON.parse(line))
+    // Attempt rows track payment stages; only purchases are shown for now.
+    .filter((row) => row.kind !== "attempt");
 }
 
 const usdc = (n) =>
