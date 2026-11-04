@@ -5,7 +5,7 @@ import { canonicalJson } from "../cache.js";
 import type { CoverageTracker } from "../coverage.js";
 import type { Packument } from "../resolve.js";
 import { normalizeText } from "../text.js";
-import { TooLarge } from "../safeFetch.js";
+import { Timeout, TooLarge, Upstream } from "../safeFetch.js";
 import { fetchDocument, type Retrieval, type SourceDocument } from "./fetch.js";
 import { matchRelease, splitChangelog } from "./match.js";
 
@@ -53,6 +53,8 @@ export interface Material {
   sections: Section[];
   /** How this repository names release tags, learned from a matched release, e.g. `v{v}` or `zod@{v}`. */
   tagTemplate?: string;
+  /** An optional source (changelog, migration guide) was down; the answer goes on without it. */
+  optionalSourceFailed?: boolean;
 }
 
 export function githubHeaders(env: NodeJS.ProcessEnv): Record<string, string> {
@@ -147,9 +149,10 @@ export async function retrieveReleaseNotes(
       try {
         document = await fetchDocument(retrieval, url, { toText: normalizeText });
       } catch (err) {
-        // A changelog over the size cap is left out; later steps may still cover its releases.
-        if (!(err instanceof TooLarge)) throw err;
+        // A changelog over the size cap or down is left out; later steps may still cover its releases.
+        if (!(err instanceof TooLarge) && !isOptionalOutage(err, retrieval)) throw err;
         console.warn(JSON.stringify({ kind: "changelog_skipped", url, error: String(err) }));
+        if (isOptionalOutage(err, retrieval)) material.optionalSourceFailed = true;
         continue;
       }
       if (document === null) continue;
@@ -175,7 +178,15 @@ export async function retrieveReleaseNotes(
   // 3. A migration guide in the repository, for the first release of a new major (or 0.y) line.
   const lineStart = firstOfNewLine(tracker.releases, from);
   if (lineStart !== null && wanted.has(lineStart)) {
-    const guide = await findMigrationGuide(retrieval, repo, packument.name, lineStart, headers);
+    let guide: SourceDocument | null;
+    try {
+      guide = await findMigrationGuide(retrieval, repo, packument.name, lineStart, headers);
+    } catch (err) {
+      if (!isOptionalOutage(err, retrieval)) throw err;
+      console.warn(JSON.stringify({ kind: "migration_guide_skipped", error: String(err) }));
+      material.optionalSourceFailed = true;
+      guide = null;
+    }
     if (guide !== null) {
       wanted.delete(lineStart);
       tracker.covered(lineStart);
@@ -192,6 +203,11 @@ export async function retrieveReleaseNotes(
   }
 
   return material;
+}
+
+/** An outage of an optional source. A Timeout from the answer's own deadline is not one: it ends retrieval. */
+function isOptionalOutage(err: unknown, retrieval: Retrieval): boolean {
+  return (err instanceof Upstream || err instanceof Timeout) && !retrieval.budget.signal.aborted;
 }
 
 /** The first release in range whose breaking-change line (major, or minor for 0.x) differs from "from". */

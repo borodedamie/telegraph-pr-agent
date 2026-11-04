@@ -54,11 +54,23 @@ function migrationText(item: ChangeItem): string {
   return `Migrate (${item.migrationEvidence}): ${item.migration}`;
 }
 
-export function render(answer: Renderable, rulesOnly: boolean): { answer: string; summary: string } {
+const NOT_SAFE = "This is not a sign that the upgrade is safe: no change list could be built, so review it before upgrading.";
+
+/** `checked` is every URL looked up for the answer, including those that did not exist. */
+export function render(answer: Renderable, rulesOnly: boolean, checked: string[] = []): { answer: string; summary: string } {
   const request = answer.request;
   if (answer.outcome !== "found" || request === null || request.fromResolved === null || request.toResolved === null) {
     const summary = answer.clarification ?? summaryFor(answer);
     const lines = [summary];
+    if (answer.outcome === "not_found") {
+      if (answer.coverage !== null) lines.push(coverageLine(answer.coverage));
+      const looked = checked.length > 0 ? checked : answer.sources.map((s) => s.url);
+      if (looked.length > 0) lines.push(`Checked: ${looked.join(", ")}.`);
+      lines.push(NOT_SAFE);
+    }
+    if (answer.outcome === "temporarily_unavailable") {
+      lines.push("This is not an answer about the upgrade: its release material could not be read yet.");
+    }
     if (answer.sources.length > 0) lines.push("", sourcesLine(answer));
     return { answer: lines.join("\n"), summary };
   }

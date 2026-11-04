@@ -86,7 +86,7 @@ export function resolveVersions(packument: Packument, registry: SourceDocument, 
 
   const to = resolveOne(versions, requested.toRequested);
   if (to === null) {
-    return { kind: "version_missing", reason: `${requested.package} has no published version ${requested.toRequested}`, request, registry };
+    return { kind: "version_missing", reason: missingReason(requested.package, requested.toRequested, versions), request, registry };
   }
   request.toResolved = to;
 
@@ -94,7 +94,7 @@ export function resolveVersions(packument: Packument, registry: SourceDocument, 
   if (requested.fromRequested !== null) {
     from = resolveOne(versions, requested.fromRequested);
     if (from === null) {
-      return { kind: "version_missing", reason: `${requested.package} has no published version ${requested.fromRequested}`, request, registry };
+      return { kind: "version_missing", reason: missingReason(requested.package, requested.fromRequested, versions), request, registry };
     }
   } else {
     const assumed = defaultFrom(versions, to);
@@ -108,6 +108,21 @@ export function resolveVersions(packument: Packument, registry: SourceDocument, 
     return { kind: "needs_clarification", reason: `the "from" version ${from} is not lower than the target ${to}`, request, registry };
   }
   return { kind: "ok", request, targetReleasedAt: packument.time[to] ?? null, versions, packument, registry };
+}
+
+/** Names the published stable versions just below and above the one asked for (spec US2, scenario 2). */
+function missingReason(name: string, spec: string, versions: string[]): string {
+  const stable = versions.filter((v) => semver.prerelease(v) === null);
+  const target = semver.coerce(spec)?.version;
+  const closest = target
+    ? [stable.filter((v) => semver.lte(v, target)).at(-1), stable.find((v) => semver.gt(v, target))]
+    : [stable.at(-1)];
+  const named = closest.filter((v): v is string => v !== undefined);
+  const hint =
+    named.length === 0
+      ? "; it has no stable release"
+      : `; the closest published ${named.length === 1 ? "version is" : "versions are"} ${named.join(" and ")}`;
+  return `${name} has no published version ${spec}${hint}`;
 }
 
 /** An exact version must be published as written; a range resolves to its highest published match. */

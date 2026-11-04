@@ -19,10 +19,12 @@ export interface Retrieval {
   conditionalHits: number;
   /** Every document read for this answer, used or not: their hashes are part of the answer-cache key. */
   documents: SourceDocument[];
+  /** Every URL looked up, including those that did not exist (404), so a not_found answer can name them. */
+  checked: string[];
 }
 
 export function newRetrieval(store: Store, budget: Budget, fetcher: typeof safeFetch = safeFetch): Retrieval {
-  return { store, budget, fetcher, now: Date.now, upstreamRequests: 0, conditionalHits: 0, documents: [] };
+  return { store, budget, fetcher, now: Date.now, upstreamRequests: 0, conditionalHits: 0, documents: [], checked: [] };
 }
 
 export interface SourceDocument {
@@ -49,6 +51,7 @@ export async function fetchDocument(
   url: string,
   options: FetchDocumentOptions
 ): Promise<SourceDocument | null> {
+  if (!retrieval.checked.includes(url)) retrieval.checked.push(url);
   const manifestId = options.manifestId ?? url;
   const entry = await getManifest(retrieval.store, manifestId);
   const snapshot = entry ? await getSnapshot(retrieval.store, entry.snapshotKey) : null;

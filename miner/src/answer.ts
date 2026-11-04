@@ -106,13 +106,22 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
     };
     const rendered = render(base, false);
     const summary = note.summary ?? rendered.summary;
-    return { ...base, answer: note.summary ? `${note.summary}\n${rendered.answer}` : rendered.answer, summary, confidence: confidence(base) };
+    // A not_found from resolve states its own reason in place of the generic "no release material" line.
+    const lines = rendered.answer.split("\n");
+    const text = !note.summary ? rendered.answer : [note.summary, ...(outcome === "not_found" ? lines.slice(1) : lines)].join("\n");
+    return { ...base, answer: text, summary, confidence: confidence(base) };
   };
 
   // 1. Parse
   const parsed = parse(query);
   if (parsed.kind !== "ok") {
     return finish(simple(parsed.kind, null, [], parsed.kind === "needs_clarification" ? { clarification: parsed.reason } : { summary: `Out of scope: ${parsed.reason}.` }));
+  }
+
+  // For the T063 outage check: environment only, never a request parameter.
+  if (deps.env.SIMULATE_UPSTREAM_OUTAGE === "1") {
+    console.warn(JSON.stringify({ kind: "simulated_upstream_outage" }));
+    return finish(simple("temporarily_unavailable", null, []));
   }
 
   const budget = new Budget(limits, now);
@@ -175,6 +184,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
           const offset = material.consulted.length - found.consulted.length;
           material.sections.push(...found.sections.map((s) => ({ ...s, consulted: s.consulted + offset })));
           material.tagTemplate ??= found.tagTemplate;
+          material.optionalSourceFailed ||= found.optionalSourceFailed;
         } catch (err) {
           // The step's material is lost with it, so the releases it marked covered are not.
           tracker.restore(saved);
@@ -225,9 +235,13 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
     let leave: (() => Promise<void>) | null = null;
     try {
       if (deps.enterCompute) leave = await deps.enterCompute();
-      const { answer, complete } = await compute(request, resolved.targetReleasedAt, registrySource, material, tracker, budget, deps, metrics, processingBase, tooLarge);
+      const { answer, complete } = await compute(request, resolved.targetReleasedAt, registrySource, material, tracker, budget, deps, metrics, processingBase, {
+        optionalSourceFailed: tooLarge || material.optionalSourceFailed === true,
+        checked: retrieval.checked,
+      });
       const result = finish(answer);
-      if (complete && isCacheable(result.answer)) await putAnswer(deps.store, key, result.answer, result.json);
+      // An optional source that was down is retried next time rather than cached around.
+      if (complete && !material.optionalSourceFailed && isCacheable(result.answer)) await putAnswer(deps.store, key, result.answer, result.json);
       return result;
     } finally {
       if (leave) await leave();
@@ -268,7 +282,7 @@ async function compute(
   deps: PipelineDeps,
   metrics: PipelineResult["metrics"],
   processingBase: string,
-  optionalSourceFailed: boolean
+  { optionalSourceFailed, checked }: { optionalSourceFailed: boolean; checked: string[] }
 ): Promise<{ answer: Answer; complete: boolean }> {
   const sources: ReleaseSource[] = [registrySource];
   const verifySources: VerifySource[] = material.consulted.map((c: Consulted, i) => {
@@ -307,7 +321,7 @@ async function compute(
   const security: Security = { ...NOT_CHECKED, documentedFixes: changes.filter((c) => c.kind === "security_fix").length };
   const processingVersion = `${processingBase}-${model.minerId && modelRan ? `llm${model.minerId}` : "nollm"}-${mode}-s1`;
   const base = { outcome, request, targetReleasedAt, changes, security, coverage, sources, clarification: null, processingVersion };
-  const rendered = render(base, mode === "rules_only");
+  const rendered = render(base, mode === "rules_only", checked);
   const answer: Answer = { ...base, ...rendered, confidence: confidence(base, optionalSourceFailed) };
   // Complete only when the model read every section that needed it; a partly read answer is not cached.
   return { answer, complete: model.complete };
