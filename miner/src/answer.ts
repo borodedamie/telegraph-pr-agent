@@ -19,7 +19,7 @@ import { extractRules } from "./extract/rules.js";
 import { verify, type VerifySource } from "./extract/verify.js";
 import { confidence, selectOutcome, type OutcomeState } from "./outcome.js";
 import { parse } from "./parse.js";
-import { render } from "./render.js";
+import { render, type Lookups } from "./render.js";
 import { resolve } from "./resolve.js";
 import { Timeout, TooLarge, Upstream, safeFetch } from "./safeFetch.js";
 import { retrieveComparisons } from "./sources/compare.js";
@@ -242,7 +242,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
       if (deps.enterCompute) leave = await deps.enterCompute();
       const { answer, complete } = await compute(request, resolved.targetReleasedAt, registrySource, material, tracker, budget, deps, metrics, processingBase, {
         optionalSourceFailed: tooLarge || material.optionalSourceFailed === true,
-        checked: retrieval.checked,
+        lookups: { checked: retrieval.checked, unreadable: retrieval.unreadable },
       });
       const result = finish(answer);
       // An optional source that was down is retried next time rather than cached around.
@@ -287,7 +287,7 @@ async function compute(
   deps: PipelineDeps,
   metrics: PipelineResult["metrics"],
   processingBase: string,
-  { optionalSourceFailed, checked }: { optionalSourceFailed: boolean; checked: string[] }
+  { optionalSourceFailed, lookups }: { optionalSourceFailed: boolean; lookups: Lookups }
 ): Promise<{ answer: Answer; complete: boolean }> {
   const sources: ReleaseSource[] = [registrySource];
   const verifySources: VerifySource[] = material.consulted.map((c: Consulted, i) => {
@@ -326,7 +326,7 @@ async function compute(
   const security: Security = { ...NOT_CHECKED, documentedFixes: changes.filter((c) => c.kind === "security_fix").length };
   const processingVersion = `${processingBase}-${model.minerId && modelRan ? `llm${model.minerId}` : "nollm"}-${mode}-s1`;
   const base = { outcome, request, targetReleasedAt, changes, security, coverage, sources, clarification: null, processingVersion };
-  const rendered = render(base, mode === "rules_only", checked);
+  const rendered = render(base, mode === "rules_only", lookups);
   const answer: Answer = { ...base, ...rendered, confidence: confidence(base, optionalSourceFailed) };
   // A model pass that ran is cached even when sections did not fit: their releases are already reported
   // as not covered ("budget"), and the same document set would be cut the same way again.

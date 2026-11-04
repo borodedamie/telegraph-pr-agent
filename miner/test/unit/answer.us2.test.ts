@@ -92,6 +92,9 @@ describe("US2: honest not found", () => {
     const fetcher = failingFetcher(NO_NOTES, (url) => url.endsWith("/CHANGELOG.md"), 500);
     const first = await answerQuestion("no-notes 1.0.0 to 2.0.0", deps(store, fetcher));
     expect(first.answer).toMatchObject({ outcome: "not_found", confidence: 0.6 });
+    const changelog = "https://raw.githubusercontent.com/example/no-notes/HEAD/CHANGELOG.md";
+    expect(first.answer.answer).toContain(`Could not read, so material may exist that this answer did not see: ${changelog}.`);
+    expect(first.answer.answer).not.toMatch(new RegExp(`Checked: [^\\n]*${changelog.replace(/[.?]/g, "\\$&")}`));
     const second = await answerQuestion("no-notes 1.0.0 to 2.0.0", deps(store, fetcher));
     expect(second.cacheHit).toBe(false);
   });

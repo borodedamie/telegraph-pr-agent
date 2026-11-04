@@ -26,10 +26,12 @@ export interface Retrieval {
   documents: SourceDocument[];
   /** Every URL looked up, including those that did not exist (404), so a not_found answer can name them. */
   checked: string[];
+  /** URLs whose fetch failed (outage, timeout, over the size cap): looked up but not read. */
+  unreadable: string[];
 }
 
 export function newRetrieval(store: Store, budget: Budget, fetcher: typeof safeFetch = safeFetch): Retrieval {
-  return { store, budget, fetcher, now: Date.now, upstreamRequests: 0, conditionalHits: 0, documents: [], checked: [] };
+  return { store, budget, fetcher, now: Date.now, upstreamRequests: 0, conditionalHits: 0, documents: [], checked: [], unreadable: [] };
 }
 
 export interface SourceDocument {
@@ -56,7 +58,18 @@ export async function fetchDocument(
   url: string,
   options: FetchDocumentOptions
 ): Promise<SourceDocument | null> {
-  if (!retrieval.checked.includes(url)) retrieval.checked.push(url);
+  try {
+    const document = await readDocument(retrieval, url, options);
+    if (!retrieval.checked.includes(url)) retrieval.checked.push(url);
+    return document;
+  } catch (err) {
+    // A URL the budget never reached was not looked up at all.
+    if (!(err instanceof BudgetExhausted) && !retrieval.unreadable.includes(url)) retrieval.unreadable.push(url);
+    throw err;
+  }
+}
+
+async function readDocument(retrieval: Retrieval, url: string, options: FetchDocumentOptions): Promise<SourceDocument | null> {
   const manifestId = options.manifestId ?? url;
   const entry = await getManifest(retrieval.store, manifestId);
   const snapshot = entry ? await getSnapshot(retrieval.store, entry.snapshotKey) : null;
