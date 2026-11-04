@@ -71,6 +71,9 @@ describe("safeFetch", () => {
     await expect(
       safeFetch("https://example.com/", { resolver: publicResolver(), transport: transportReplying([]) })
     ).rejects.toBeInstanceOf(BlockedHost);
+    await expect(
+      safeFetch("https://constructor/", { resolver: publicResolver(), transport: transportReplying([]) })
+    ).rejects.toBeInstanceOf(BlockedHost);
   });
 
   it("refuses http and non-default ports", async () => {
@@ -205,7 +208,7 @@ describe("safeFetch", () => {
 
 describe("isBlockedAddress", () => {
   it("blocks private, loopback, link-local, CGNAT and metadata ranges", () => {
-    for (const address of ["127.0.0.1", "10.1.2.3", "172.16.0.1", "192.168.1.1", "100.64.0.1", "169.254.169.254", "::1", "fe80::1", "fc00::1"]) {
+    for (const address of ["127.0.0.1", "10.1.2.3", "172.16.0.1", "192.168.1.1", "100.64.0.1", "169.254.169.254", "::1", "fe80::1", "fc00::1", "2002:a00:1::1"]) {
       expect(isBlockedAddress(address), address).toBe(true);
     }
   });
