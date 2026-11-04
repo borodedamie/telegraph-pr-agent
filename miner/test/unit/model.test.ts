@@ -74,6 +74,19 @@ describe("extractModel", () => {
     expect(await store.get("llm:breaker:302")).toBe("invalid_reply");
   });
 
+  it("counts a call that failed after payment, so the next miner is not bought too", async () => {
+    let calls = 0;
+    const caller: ModelCaller = async () => {
+      calls++;
+      throw new ModelFailure("invalid_reply", "miner 302: HTTP 500");
+    };
+    const budget = new Budget(limitsFromEnv({}));
+    const result = await extractModel(sections, new Set(), "4.0.0", budget, new MemoryStore(), miners, caller);
+    expect(calls).toBe(1);
+    expect(budget.modelCalls).toBe(1);
+    expect(result).toMatchObject({ failure: "invalid_reply", candidates: [] });
+  });
+
   it("moves to the next miner when one refuses before payment", async () => {
     let calls = 0;
     const caller: ModelCaller = async (miner) => {

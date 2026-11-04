@@ -280,9 +280,11 @@ export async function extractModel(
       if (!(err instanceof ModelFailure)) throw err;
       result.failure = err.reason;
       console.warn(JSON.stringify({ kind: "llm_failed", minerId: miner.id, reason: err.reason, error: err.message }));
-      // A 200 with an unusable reply still cost money: skip this miner for a while.
-      await store.set(`llm:breaker:${miner.id}`, err.reason, BREAKER_SEC);
-      // One paid call per answer (MAX_MODEL_CALLS); the budget check above stops a second one.
+      // Anything past the quote may have been paid (a non-2xx, an unreadable body, a timeout after signing):
+      // count it at the cap, so the budget check above stops a second paid call (MAX_MODEL_CALLS).
+      if (err.reason !== "payment") budget.recordModelCall(prompt.length, budget.limits.maxModelCostMicroUsdc, chosen.length);
+      // The miner is not at fault when the answer's own deadline aborted the call.
+      if (!budget.signal.aborted) await store.set(`llm:breaker:${miner.id}`, err.reason, BREAKER_SEC);
     }
   }
   result.skipped = needed;
