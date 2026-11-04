@@ -78,7 +78,7 @@ for configuration and exact limitations.
 ### 2.2 Installation and trigger
 
 - [PRODUCT] One workflow file installs it. Initial scope: public GitHub repositories only.
-- [PRODUCT] Runs on a schedule the developer sets in their workflow file (`on: schedule` cron; the example workflow uses weekly) and on manual `workflow_dispatch`; one run per repository at a time via concurrency controls. The Action does not trigger on human PRs: a developer who has already bumped a dependency gets nothing useful from it (decided 2 Nov; [ADR 0001 amendment](adr/0001-deterministic-cutoff-detection.md)).
+- [PRODUCT] Runs on branch pushes and manual `workflow_dispatch`; generated `fix/telegraph-dependency-*` branches and branch-deletion events are excluded. One run per repository at a time via concurrency controls. A developer-configured schedule remains optional future configuration. The Action does not trigger on human PRs: a developer who has already bumped a dependency gets nothing useful from it (decided 2 Nov; [ADR 0001 amendment](adr/0001-deterministic-cutoff-detection.md)).
 - [PRODUCT] The Action is pinned to a release or immutable commit SHA; installers never execute an unpinned latest.
 - [PRODUCT] Document repository Actions permissions, the setting allowing Actions to create pull requests, required `contents` and `pull-requests` permissions, fork limitations and unsupported layouts.
 
@@ -362,7 +362,7 @@ Recorded separately, never inferred from one another: **payment delivered** (val
 
 | Decision | Choice | Reason |
 | --- | --- | --- |
-| Trigger | Developer-configured schedule (default weekly) + manual run; lockfile A vs registry B; no PR-diff trigger in the Action | A developer who already bumped a dependency gets nothing from the bot; CLI v0 stays a prototype |
+| Trigger | Branch pushes + manual run; exclude generated fix branches/deletions; no PR-diff trigger in the Action | A developer who already bumped a dependency gets nothing from the bot; CLI v0 stays a prototype |
 | Purchase route | Open: Engine auto-routing (recommended) or direct call to a chosen miner (current client) | Re-test routing with the canonical id first (§2.4) |
 | Vulnerabilities | OSV only inside upgrade PRs; no standalone vulnerability PRs | Scanners are a crowded space; our niche is the code migration |
 | Miner track | Separate entry; go/no-go 9 Nov (proposed) | Never blocks the App |
