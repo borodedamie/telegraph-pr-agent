@@ -455,3 +455,48 @@ describe("IntelligenceClient.buy attempt stages", () => {
     expect(rec.states().slice(0, 3)).toEqual(["reserved", "request_sent", "failed_not_charged"]);
   });
 });
+
+
+describe("IntelligenceClient.buyFromMiner", () => {
+  it("rejects an empty miner ID before any request", async () => {
+    const { client, fetchImpl, paymentFetch } = makeClient();
+    await expect(client.buyFromMiner("QUESTION_ANSWERING_GENERAL", "upgrade zod", ""))
+      .rejects.toThrow("static miner ID");
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(paymentFetch).not.toHaveBeenCalled();
+  });
+
+  it("buys only the configured miner even without a rank", async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) =>
+      String(input).includes("/api/miners")
+        ? new Response(JSON.stringify([{ id: "302", endpoints: [{ method: "GET", path: "/answer" }] }]))
+        : quote402("10000")
+    );
+    const { client, paymentFetch } = makeClient({ fetchImpl });
+    const purchase = await client.buyFromMiner("QUESTION_ANSWERING_GENERAL", "upgrade zod", "302");
+    expect(paymentFetch.mock.calls[0][0]).toBe("https://devnode.test/engine/v1/ask/302");
+    expect(JSON.parse(String(paymentFetch.mock.calls[0][1]?.body))).toEqual({
+      method: "GET", endpoint: "/answer", payload: { query: "upgrade zod" },
+    });
+    expect(purchase.minerRank).toBeNull();
+    expect(purchase.minerScore).toBeNull();
+  });
+
+  it("does not fall back when the configured miner fails or is absent", async () => {
+    const paymentFetch = vi.fn(async () => new Response("unavailable", { status: 503 }));
+    const { client } = makeClient({ paymentFetch });
+    await expect(client.buyFromMiner("QUESTION_ANSWERING", "upgrade zod", "148001"))
+      .rejects.toThrow("HTTP 503");
+    expect(paymentFetch).toHaveBeenCalledTimes(1);
+    await expect(client.buyFromMiner("QUESTION_ANSWERING", "upgrade zod", "missing"))
+      .rejects.toThrow("unavailable");
+    expect(paymentFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("applies the existing price cap to the configured miner", async () => {
+    const { client, paymentFetch } = makeClient({ maxPricePerCallUsdc: 0.001 });
+    await expect(client.buyFromMiner("QUESTION_ANSWERING", "upgrade zod", "148001"))
+      .rejects.toBeInstanceOf(PriceGuardError);
+    expect(paymentFetch).not.toHaveBeenCalled();
+  });
+});

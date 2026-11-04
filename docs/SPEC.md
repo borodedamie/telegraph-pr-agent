@@ -48,6 +48,29 @@ Two separate gates. The App never waits on the Miner gate.
 
 ## 2. Bot (GitHub Action)
 
+**Implementation status, 4 Nov 2026.** The action prototype now scans current
+npm and pinned Python requirements, purchases a structured assessment from a
+static manually selected miner, and prepares draft dependency PRs for validated
+CVE/outdated findings. The miner selects recommended versions; the scanner does
+not select targets. At the user's request, a single action invocation now performs
+payment, preparation and publication in one job, without stage inputs or artifact
+files. It executes no repository scripts. npm lock generation receives a minimal
+credential-free subprocess environment and uses `--ignore-scripts`; separate-runner
+isolation remains a production requirement below. Public node/spending settings
+now default in action metadata (devnode URL, 0.10 USDC per call, 2 USDC per run);
+the wallet key remains secret-backed and is never bundled. Supported automatic edits are standalone public npm
+package-lock v2/v3 projects and plain Python `==` requirements; pnpm/workspace lock
+updates and hashed Python pins fail explicitly. Findings, source paths, versions,
+prepared changes, the checked-out branch and its base commit are checked before updating
+existing dependency files on `fix/telegraph-dependency-*` branches. PRs target the
+branch that was checked out, rather than the repository default. No intermediate JSON
+files are created or added to the PR. Existing
+matching PRs, including closed ones, are reused. CVE claims and migration compatibility
+still require independent review. This is a draft-update prototype, not completion
+of the cutoff, crash-safe purchase, migration, verification or accounting requirements
+below. Tests and builds are local; no live PR or payment is claimed. See the README
+for configuration and exact limitations.
+
 ### 2.1 Architecture
 
 - [PRODUCT] GitHub Action with draft PR and human label approval. The automatic first Q&A purchase followed by approval for the fix stage satisfies the autonomy requirement provided: the first purchase is initiated by the agent with no human approving that transaction; it is paid through Telegraph; the answer is used to complete a meaningful task, not merely displayed. It must not be a disguised manual or pre-funded demonstration.
