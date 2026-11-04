@@ -181,8 +181,12 @@ export function parseReply(text: string, sectionIndex: Map<string, number>, line
   } catch (err) {
     throw new ModelFailure("invalid_reply", `reply is not the item schema: ${String(err).slice(0, 200)}`);
   }
-  const refs = new Map(parsed.items.map((item) => [item.id, `${refPrefix}${item.id}`]));
-  return parsed.items.flatMap((item): Candidate[] => {
+  // An id the reply repeats keeps only its first item: verify.ts keys kept items by ref, so a second item
+  // with the same id would ride on the first one's evidence.
+  const seen = new Set<string>();
+  const items = parsed.items.filter((item) => !seen.has(item.id) && seen.add(item.id));
+  const refs = new Map(items.map((item) => [item.id, `${refPrefix}${item.id}`]));
+  return items.flatMap((item): Candidate[] => {
     const section = sectionIndex.get(item.sectionId);
     if (section === undefined) return [];
     const ref = (id: string) => refs.get(id) ?? (sectionIndex.has(id) ? `section:${sectionIndex.get(id)}` : id);

@@ -124,4 +124,16 @@ describe("parseReply", () => {
     const [, inferred] = parseReply(text, new Map([["x1", 0]]), false, "m-");
     expect(inferred).toMatchObject({ ref: "m-i2", inferredFrom: ["m-i1"], migrationInferredFrom: ["section:0"] });
   });
+
+  it("keeps only the first item of an id the reply repeats", () => {
+    const text = JSON.stringify({
+      items: [
+        { id: "i1", sectionId: "x1", kind: "breaking", change: "real", excerpt: "e" },
+        { id: "i1", sectionId: "x1", kind: "security_fix", change: "made up", excerpt: "not in the source" },
+      ],
+    });
+    const candidates = parseReply(text, new Map([["x1", 0]]), false, "m-");
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0].change).toBe("real");
+  });
 });
