@@ -36,6 +36,11 @@ export class CoverageTracker {
     if (this.states.get(version) !== "covered") this.states.set(version, reason);
   }
 
+  /** Takes back a release that had material but was not fully read (the model could not fit it). */
+  uncover(version: string, reason: NotCoveredReason): void {
+    this.states.set(version, reason);
+  }
+
   state(version: string): "covered" | NotCoveredReason | undefined {
     return this.states.get(version);
   }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { answerQuestion, type PipelineDeps } from "../../src/answer.js";
+import { limitsFromEnv } from "../../src/budget.js";
 import { MemoryStore, getSnapshot } from "../../src/cache.js";
 import type { ModelCaller } from "../../src/extract/model.js";
 import { findSpan } from "../../src/extract/verify.js";
@@ -80,8 +81,10 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
   it("returns the identical string on a repeat call without calling the model", async () => {
     const store = new MemoryStore();
     const model = stubModel();
-    const first = await answerQuestion(QUESTION, deps(store, model.caller));
-    const second = await answerQuestion(QUESTION, deps(store, model.caller));
+    // A model budget that fits every section, so the answer is complete and cached.
+    const roomy = { ...deps(store, model.caller), limits: limitsFromEnv({ MAX_MODEL_RELEASES: "100", MAX_MODEL_INPUT_CHARS: "500000" }) };
+    const first = await answerQuestion(QUESTION, roomy);
+    const second = await answerQuestion(QUESTION, roomy);
     expect(second.cacheHit).toBe(true);
     expect(second.json).toBe(first.json);
     expect(model.calls()).toBe(1);
@@ -99,5 +102,17 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     expect(model.calls()).toBe(1);
     expect(full.answer.processingVersion).toContain("rules_and_model");
   });
-});
 
+  it("marks releases the model could not fit as not covered and does not cache the answer", async () => {
+    const store = new MemoryStore();
+    const model = stubModel();
+    const small = { ...deps(store, model.caller), limits: limitsFromEnv({ MAX_MODEL_RELEASES: "1" }) };
+    const first = await answerQuestion(QUESTION, small);
+    expect(first.answer.processingVersion).toContain("rules_and_model");
+    const budgetCut = first.answer.coverage!.notCovered.filter((n) => n.reason === "budget").map((n) => n.version);
+    expect(first.answer.coverage!.covered.some((v) => budgetCut.includes(v))).toBe(false);
+    const second = await answerQuestion(QUESTION, small);
+    expect(second.cacheHit).toBe(false);
+    expect(model.calls()).toBe(2);
+  });
+});

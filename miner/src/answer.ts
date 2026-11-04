@@ -278,7 +278,7 @@ async function compute(
   const mode = model.complete || modelRan ? "rules_and_model" : "rules_only";
   metrics.extractorMode = mode;
   // Sections the model should have read but could not fit: those releases are not fully covered.
-  if (modelRan) for (const index of model.skipped) tracker.notCovered(material.sections[index].version, "budget");
+  if (modelRan) for (const index of model.skipped) tracker.uncover(material.sections[index].version, "budget");
 
   const candidates: Candidate[] = [...rules.candidates, ...model.candidates];
   const { items } = verify(candidates, material.sections, verifySources);
@@ -293,5 +293,6 @@ async function compute(
   const base = { outcome, request, targetReleasedAt, changes, security, coverage, sources, clarification: null, processingVersion };
   const rendered = render(base, mode === "rules_only");
   const answer: Answer = { ...base, ...rendered, confidence: confidence(base) };
-  return { answer, complete: mode === "rules_and_model" };
+  // Complete only when the model read every section that needed it; a partly read answer is not cached.
+  return { answer, complete: model.complete };
 }
