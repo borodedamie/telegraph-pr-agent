@@ -125,4 +125,11 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     expect(answer.outcome).toBe("temporarily_unavailable");
     expect(answer.changes).toEqual([]);
   });
+
+  it("does not answer not_found when the budget ran out before any release was read", async () => {
+    const store = new MemoryStore();
+    const tight = { ...deps(store, stubModel().caller), limits: limitsFromEnv({ MAX_SOURCE_REQUESTS: "1" }) };
+    const { answer } = await answerQuestion(QUESTION, tight);
+    expect(answer.outcome).toBe("temporarily_unavailable");
+  });
 });

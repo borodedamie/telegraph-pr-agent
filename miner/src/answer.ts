@@ -156,6 +156,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
     const fetchStart = now();
     const material: Material = { consulted: [], sections: [] };
     let upstreamFailed = false;
+    let retrievalCut = false;
     const repo = repoIdentity(resolved.packument.repository);
     if ("reason" in repo) {
       console.info(JSON.stringify({ kind: "no_repository", package: request.package, reason: repo.reason }));
@@ -176,7 +177,9 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
         } catch (err) {
           // The step's material is lost with it, so the releases it marked covered are not.
           tracker.restore(saved);
-          if (err instanceof BudgetExhausted || budget.exhausted() === "time") {
+          // budget.signal fires on the hard deadline; the safeFetch it aborts throws Timeout.
+          if (err instanceof BudgetExhausted || budget.signal.aborted) {
+            retrievalCut = true;
             for (const version of tracker.missing()) tracker.notCovered(version, "budget");
             break;
           }
@@ -192,7 +195,8 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
     metrics.upstreamRequests = retrieval.upstreamRequests;
     metrics.conditionalHits = retrieval.conditionalHits;
 
-    if (upstreamFailed && tracker.result().covered.length === 0) {
+    // Nothing read because GitHub failed or the budget ran out is not evidence that nothing exists.
+    if ((upstreamFailed || retrievalCut) && tracker.result().covered.length === 0) {
       return finish(simple(selectOutcome({ stage: "upstream_unavailable" }), request, [registrySource]));
     }
 
