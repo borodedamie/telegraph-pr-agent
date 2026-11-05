@@ -219,7 +219,23 @@ function matches(expected: ExpectedEntry, item: ChangeItem): boolean {
   const wanted = words(`${expected.change} ${expected.quote}`);
   const said = words(`${item.change} ${item.excerpt ?? ""}`);
   const shared = [...wanted].filter((w) => said.has(w)).length;
-  return wanted.size > 0 && shared / wanted.size >= 0.5;
+  if (wanted.size > 0 && shared / wanted.size >= 0.5) return true;
+  // An item that quotes a guide's heading ("drops `errorMap`") while the key quotes the sentence under it:
+  // it matches when it says at least three quarters of the key's own description of the change.
+  const described = stems(expected.change);
+  const stated = stems(`${item.change} ${item.excerpt ?? ""}`);
+  const common = [...described].filter((w) => stated.has(w)).length;
+  return common >= 2 && common / described.size >= 0.75;
+}
+
+/** Words cut to five letters, with dotted names split ("express.static.mime"), so "changed" meets "changes". */
+function stems(text: string): Set<string> {
+  return new Set(
+    [...words(text)]
+      .flatMap((w) => w.split("."))
+      .filter((w) => w.length >= 3)
+      .map((w) => w.slice(0, 5))
+  );
 }
 
 function recallOf(expected: ExpectedEntry[], answer: Answer): CaseResult["recall"] {
@@ -417,7 +433,7 @@ function report(results: CaseResult[], cases: Map<string, BenchCase>): string {
     `First calls that were already cached on this processing version: ${firstCached.length} (p50 ${ms(percentile(firstCached, 50))}); they are left out of first-time latency and cost.`,
     "",
     "SC-001 is checked mechanically: the excerpt is in the source text fetched by this harness and the item's version is in range. Whether the excerpt supports the stated change and migration needs a reader.",
-    "SC-002 matches an expected entry to an answer item of the same version when the item's excerpt contains the expected quote, or shares at least half of its significant words; unmatched entries are listed below for a reader to confirm.",
+    "SC-002 matches an expected entry to an answer item of the same version when the item's excerpt contains the expected quote, or shares at least half of its significant words, or states at least three quarters of the key's description of the change (words cut to five letters); unmatched entries are listed below for a reader to confirm.",
     "",
     "## Cases",
     "",
