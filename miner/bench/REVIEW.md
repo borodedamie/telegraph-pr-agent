@@ -1,8 +1,8 @@
 # Reviewing the benchmark set
 
-The benchmark ([transitions.json](transitions.json)) measures the miner against a list of what really changed in 30 npm upgrades. That list is written by people, not by the miner. If the list comes from the miner, the benchmark can only confirm the miner's own output. The spec asks for two reviewers per case (spec.md, Success Criteria).
+The benchmark ([transitions.json](transitions.json)) measures the miner against a list of what really changed in 30 npm upgrades. That list does not come from the miner: if it did, the benchmark could only confirm the miner's own output.
 
-Claude drafts each case from the release material. Each of you then checks the draft against the sources. The draft is a starting point; it is not the answer.
+Claude drafts each case from the release material. At least two other models then check each case against the sources, using the rules below, and the draft is corrected from their findings. Every quote is checked word for word against its cited page. A person settles the points where the reviews disagree; each decision is recorded in that case's `expected.notes`.
 
 ## What to check for each positive case (`p01`–`p30`)
 
@@ -42,11 +42,12 @@ For each breaking change, fill one entry in `expected.breaking`:
 
 Deprecations go in `expected.deprecations`, in the same shape. Security fixes stay out of the list: the OSV check covers them.
 
-## Signing off
+## Recording the review
 
-- Add your GitHub login to `expected.reviewedBy` when you agree with the case as it stands.
-- If you disagree, change the entry and say why in the PR review. The case counts only when both logins are in `reviewedBy`.
+- `expected.reviewedBy` names the reviews a case went through: the model reviews and the quote check, with their dates.
+- A change made because of a review, and a review finding that was not followed, are both noted in `expected.notes` with the reason.
 - When a release is too large to review in full (zod 4.0.0, next 15.0.0), say so in `expected.notes`. Then list at least the changes in the release's own breaking-changes section.
+- To review again, give a model the case, these rules and the full text of its sources, and ask for missing entries, entries that are not breaking, and quotes that are only a heading.
 
 ## Negative cases (`n01`–`n10`)
 

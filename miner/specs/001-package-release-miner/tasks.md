@@ -334,7 +334,7 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 
 - [ ] T056 Build the benchmark set in `miner/bench/transitions.json`:
   - 30 reviewed transitions across different packages and release styles: monorepos, scoped packages, sparse changelogs, at least one 0.x package, and at least 5 multi-release jumps, some of them beyond the US1 model budget;
-  - the expected breaking changes and migration steps for each, prepared by two reviewers;
+  - the expected breaking changes and migration steps for each, drafted by one model, checked against the sources by at least two other models, with every quote verified word for word;
   - 10 or more negative cases, including a simulated upstream outage and an OSV outage.
 - [ ] T057 Implement the benchmark harness in `miner/bench/run.ts`.
   - It runs the set against a local or deployed URL, with the key.

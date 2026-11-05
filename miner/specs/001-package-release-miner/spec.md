@@ -232,7 +232,7 @@ Additional scenarios:
 
 ### Measurable Outcomes
 
-The benchmark is a human-reviewed set of 30 real npm transitions. Two reviewers prepare the expected breaking changes for each transition and resolve disagreements. The set spans different packages and release-note styles, including monorepos, scoped packages, sparse changelogs and at least five multi-release jumps; it must not be many versions of one package. A separate negative set has 10 or more cases: nonexistent versions, missing release notes, unresolved tags and a simulated upstream outage.
+The benchmark is a set of 30 real npm transitions with reviewed expected breaking changes. One model drafts the expected changes from the release material, at least two other models check each case against the sources, every quote is checked word for word against its cited page, and a person settles the points the reviews disagree on. The set spans different packages and release-note styles, including monorepos, scoped packages, sparse changelogs and at least five multi-release jumps; it must not be many versions of one package. A separate negative set has 10 or more cases: nonexistent versions, missing release notes, unresolved tags and a simulated upstream outage.
 
 - **SC-001**: At least 90% of documented change items have a verbatim excerpt that is present in the cited source, belongs to the right version and supports the stated change and migration step.
 - **SC-002**: At least 80% of the reviewed breaking changes appear in the answer (recall).

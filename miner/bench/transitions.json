@@ -1,7 +1,7 @@
 {
   "version": 1,
   "created": "2026-11-05",
-  "status": "draft: Claude's draft of all 30 positive cases, corrected on 5 Nov 2026 after reviews by three other models checked against the sources; no human has signed off yet (see REVIEW.md). n06 and n07 still need a package.",
+  "status": "reviewed: all 30 positive cases drafted by Claude, checked by three other models against the sources and corrected on 5 Nov 2026; every quote is found word for word on its source page (see REVIEW.md). n06 and n07 still need a package.",
   "cases": [
     {
       "id": "p01",
@@ -243,8 +243,11 @@
             "quote": "In Zod 3, passing an enum into z.record() as a key schema would result in a partial type"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [
           {
             "version": "4.0.0",
@@ -566,8 +569,11 @@
             "quote": "Dropped support for Node.js versions before v18."
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "Quotes are the migration guide's headings (src/content/pages/en/guide/migrating-5.mdx in expressjs/expressjs.com); the last one is from the 5.0.0 release. Reviewers: the 'change' wording for headings without detail here (req.params, app.listen, res.sendFile options, express.static options, MIME types, debug logs) should be checked against the guide text. 4.21.x-4.22.x are fixes and security releases, covered by OSV."
       }
@@ -825,8 +831,11 @@
             "quote": "Require Node.js `^18.18.0 || ^20.9.0 || >=21.1.0`"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [
           {
             "version": "9.0.0",
@@ -974,8 +983,11 @@
             "quote": "drop node 21 support in version ranges"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "The 6.0.0 release only links the changelog; the v6 migration guide (docs/guide/migration.md at tag v6.0.0) is the source, plus the changelog's 'drop node 21' item (source: packages/vite/CHANGELOG.md at v6.0.0). The experimental Vite Runtime API removal is called non-breaking by the guide. The 5.4.x releases are fixes; several are security fixes covered by OSV."
       }
@@ -1185,8 +1197,11 @@
             "quote": "Disallow using ssr: false option with next/dynamic in Server Components"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "Source: the v15 upgrade guide (docs/01-app/02-guides/upgrading/version-15.mdx, current canary; may have changed since 15.0.0) plus two items of the 15.0.0 release. The 15.0.0 release text is several thousand lines of PR titles; reviewers should also check the 15.0.0 blog post (nextjs.org/blog/next-15) for the Node.js minimum and the ESLint 9 support. The 14.2.x releases are fixes and security fixes, covered by OSV. Review 5 Nov: added the [Breaking] items of the 15.0.0 blog post's Other Changes list."
       }
@@ -1374,8 +1389,11 @@
             "quote": "Remove `errorInfo.digest` from `onRecoverableError`"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [
           {
             "version": "19.0.0",
@@ -1465,8 +1483,11 @@
             "quote": "By default, BuiltinIteratorReturn is any, but when --strictBuiltinIteratorReturn is enabled (possibly via --strict), it is undefined."
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "From 'Notable Behavioral Changes' of the 5.6 announcement (TypeScript-Website release-notes/TypeScript 5.6.md); the 5.6.2 GitHub release only links it. Review 5 Nov: 'Disallowed Nullish and Truthy Checks' is counted, since a new error can fail an existing build."
       }
@@ -1639,8 +1660,11 @@
             "quote": "Prettier no longer follows symbolic links while expanding command line arguments."
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [
           {
             "version": "3.0.0",
@@ -1745,8 +1769,11 @@
             "quote": "Require `rootDir` as argument to `SnapshotState`"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": []
       }
     },
@@ -1898,8 +1925,11 @@
             "quote": "Mongoose 8 no longer supports findByIdAndRemove(), which was an alias for findByIdAndDelete()."
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "The 8.0.0 GitHub release has one docs line; the migration guide is the source. The 7.6.x-7.8.x releases in the range are fixes and opt-in features."
       }
@@ -1961,8 +1991,11 @@
             "quote": "Request ignores false, 0 and empty string as body values"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "1.0.0 has no Breaking section: it says 'There are multiple deprecations, refactors and fixes provided in this release.' Reviewers: check the package's new exports map / module format change, which the notes do not mention. The 0.28-0.32 releases are later backports on the 0.x line: they sit between 0.27.2 and 1.0.0 by number but are not on the 0.27.2 -> 1.0.0 upgrade path, so their breaking changes are not expected here. The repository's MIGRATION_GUIDE.md was written later and is generic; it is not used as a source. Review 5 Nov: removed 'automatic payload serialization to application/x-www-form-urlencoded', listed under Added. 1.0.0 stayed a dual CommonJS/ESM package, so no module-format entry."
       }
@@ -2030,8 +2063,11 @@
             "quote": "removed default export of a global Command instance from CommonJS (use the named `program` export instead)"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [
           {
             "version": "12.0.0",
@@ -2289,8 +2325,11 @@
             "quote": "you should use the CSS variable name instead of the old dot notation:"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "The 4.0.0 GitHub release only links the upgrade guide. The guide is read from the current tailwindcss.com repository; it may have been edited after 4.0.0. 3.4.18 and 3.4.19 are fixes only. The upgrade guide is a live page with no tagged copy; it was read on 5 Nov 2026."
       }
@@ -2360,8 +2399,11 @@
             "quote": "we are now comfortable exposing the promises for the APIs that previously returned `undefined`"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "Remix-only changes in 7.0.0 are left out: adapter re-exports, vitePlugin rename, the manifest option and the esbuild compiler. 6.30.5 was published incomplete; the same entry repeats in 6.30.6. The 6.29-6.30 notes only add v7 deprecation warnings. Review 5 Nov: removed the 6.30.5 navigate() entry: 6.30.x was released on the 6.x line after 7.0.0, so it is not on the 6.28.0 -> 7.0.0 upgrade path (same rule as the axios backports in p11)."
       }
@@ -2387,8 +2429,11 @@
             "quote": "Dropped support for Node.js 14, 16, & 19"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": []
       }
     },
@@ -2511,8 +2556,11 @@
             "quote": "The locales now use regular functions instead of the UTC version"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "The interval entry has five sub-bullets (areIntervalsOverlapping, getOverlappingDaysInIntervals, isWithinInterval, intervalToDuration, eachXOfInterval). Count them as one change unless a reviewer splits them."
       }
@@ -2538,8 +2586,11 @@
             "quote": "update node support (drop node@12, node@14, add node@20)"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": []
       }
     },
@@ -2593,8 +2644,11 @@
             "quote": "The tagged template literal support moved into a separate package: chalk-template"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "'If you use TypeScript, you need to use TypeScript 4.7 or later' is part of the ESM entry."
       }
@@ -2697,8 +2751,11 @@
             "quote": "Creating Request/Response objects with relative URLs is no longer supported"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "The 3.0.0 GitHub release only says it is ESM only and links the changelog; the upgrade guide is the source. The last entry is listed under Enhancements in the guide but throws for code that worked before."
       }
@@ -2732,8 +2789,11 @@
             "quote": "`@types/react-dom` needs to be installed if you're typechecking files using `@testing-library/react`."
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": []
       }
     },
@@ -2992,8 +3052,11 @@
             "quote": "The HydrationBoundary no longer hydrates mutations, only queries."
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [
           {
             "version": "4.40.0",
@@ -3020,8 +3083,11 @@
       "expected": {
         "outcome": "found",
         "breaking": [],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "3.5.0 is a minor release; its changelog lists features and fixes and no breaking change or deprecation. Reactive props destructure becomes enabled by default in compiler-sfc; listed as a feature. Review 5 Nov: reactive props destructure being on by default is not counted; Vue presents it as a stabilised feature and states 3.5 has no breaking changes."
       }
@@ -3217,8 +3283,11 @@
             "quote": "remove `dangerZone.trackServerFetches`"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": []
       }
     },
@@ -3252,8 +3321,11 @@
             "quote": "feat(core): middleware runs once for matching route"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "The release links docs.nestjs.com/migration-guide, which now describes v11 -> v12, not v9 -> v10. Reviewers: check the v10 article (trilon.io/blog/nestjs-10-is-now-available) for changes the release notes leave out, e.g. TypeScript 4.8+, CacheModule moving to @nestjs/cache-manager, and dependency majors. The middleware entry is listed under Enhancements but changes how often middleware runs. Review 5 Nov: removed the ValidationPipe and getInstance entries, which the release attributes to @nestjs/common and the platform packages, not @nestjs/core. CacheModule moving to @nestjs/cache-manager is also a @nestjs/common change, and TypeScript 4.8+ applies to the CLI plugins; neither is counted for @nestjs/core."
       }
@@ -3280,8 +3352,11 @@
             "quote": "By default esbuild will parse and transform JavaScript decorators"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "The release says it 'doesn't contain any deliberately-breaking changes' and is versioned as breaking because of the decorators feature. The one entry is the behaviour change that follows from it."
       }
@@ -3412,8 +3487,11 @@
             "quote": "Don't call `process.exit` manually"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "All entries are from the release's 'Breaking Changes' list as written; a few read like features (concurrent suites, --merge-reports). Reviewers may drop those. 1.6.1 is a security patch (CVE-2025-24964), covered by OSV. Review 5 Nov: removed concurrent suites, --merge-reports coverage and the json meta field (additions) and the chai v5 bump (no user-visible incompatibility stated)."
       }
@@ -3433,8 +3511,11 @@
       "expected": {
         "outcome": "found",
         "breaking": [],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "4.17.21 has no release notes on GitHub. It is a security release: the advisories (GHSA-35jh-r3h4-6jhm and others) are checked by the OSV part, not this list."
       }
@@ -3454,8 +3535,11 @@
       "expected": {
         "outcome": "found",
         "breaking": [],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "1.2.6 only fixes prototype pollution (CVE-2021-44906). No breaking change; the security fix is checked by the OSV part."
       }
@@ -3481,8 +3565,11 @@
             "quote": "Default `quiet` to false - informational (file and keys count) runtime log message shows by default"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [],
         "notes": "Borderline, not counted: 16.5.0 'Remove `_log` method. Use `_debug`' removes an underscore-prefixed internal method. 16.6.0 turned the log on and 16.6.1 turned it off again, so only the 17.0.0 default matters for 16.4.7 -> 17.0.0."
       }
@@ -3726,8 +3813,11 @@
             "quote": "remove getTypeArguments"
           }
         ],
-        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
-        "reviewedBy": [],
+        "draftedBy": "Claude, from the release material on 2026-11-05",
+        "reviewedBy": [
+          "three other models, each case against its sources, 2026-11-05",
+          "quote check: every quote found word for word on its source page, 2026-11-05"
+        ],
         "deprecations": [
           {
             "version": "8.0.0",
