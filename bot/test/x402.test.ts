@@ -159,12 +159,19 @@ describe("IntelligenceClient.buy", () => {
     expect(client.spentUsdc).toBe(0);
   });
 
-  it("stops at the first miner when an answer has no settlement proof (we can't tell if we paid)", async () => {
+  it("treats settlement success: false as not charged and tries the next miner", async () => {
     const paymentFetch = vi.fn(async () => engine200({}, { "payment-response": settle(false) }));
+    const { client } = makeClient({ paymentFetch });
+    await expect(client.buy("QUESTION_ANSWERING", "x")).rejects.toBeInstanceOf(AskFailedError);
+    expect(paymentFetch).toHaveBeenCalledTimes(2);
+    expect(client.spentUsdc).toBe(0);
+  });
+
+  it("stops at the first miner when an answer has no settlement header (we can't tell if we paid)", async () => {
+    const paymentFetch = vi.fn(async () => engine200({}, { "payment-response": "" }));
     const { client } = makeClient({ paymentFetch });
     await expect(client.buy("QUESTION_ANSWERING", "x")).rejects.toBeInstanceOf(PaymentUnknownError);
     expect(paymentFetch).toHaveBeenCalledTimes(1);
-    expect(client.spentUsdc).toBe(0);
   });
 
   it("keeps a non-`answer` result whole rather than dropping it", async () => {
@@ -354,10 +361,42 @@ describe("IntelligenceClient.buy attempt stages", () => {
     expect(paymentFetch).toHaveBeenCalledTimes(1); // no second miner
   });
 
-  it("leaves only reserved when the quote is refused (nothing sent, safe to retry)", async () => {
+  it("records quote_refused with the quote and reason when the price limit refuses it", async () => {
     const rec = recorder();
-    const { client } = makeClient({ maxPricePerCallUsdc: 0.001 });
+    const { client, paymentFetch } = makeClient({ maxPricePerCallUsdc: 0.001 });
     await expect(client.buy("QUESTION_ANSWERING", "x", rec.onAttempt)).rejects.toBeInstanceOf(PriceGuardError);
-    expect(rec.states()).toEqual(["reserved"]);
+    expect(rec.states()).toEqual(["reserved", "quote_refused"]);
+    expect(rec.events[1]).toMatchObject({ quotedAmountUsdc: 0.01, reason: expect.stringMatching(/exceeds maxPricePerCallUsdc/) });
+    expect(paymentFetch).not.toHaveBeenCalled();
+  });
+
+  it("records quote_refused when the budget limit refuses it", async () => {
+    const rec = recorder();
+    const { client } = makeClient();
+    client.spentUsdc = 0.49;
+    await expect(client.buy("QUESTION_ANSWERING", "x", rec.onAttempt)).rejects.toBeInstanceOf(BudgetCapError);
+    expect(rec.states()).toEqual(["reserved", "quote_refused"]);
+    expect(rec.events[1].reason).toMatch(/exceeds budgetCapUsdc/);
+  });
+
+  it("records failed_not_charged when the node rejects the signed payment (402 or 400 Invalid payment)", async () => {
+    for (const reply of [new Response("", { status: 402 }), new Response('{"error":"Invalid payment"}', { status: 400 })]) {
+      const rec = recorder();
+      const paymentFetch = vi.fn().mockResolvedValueOnce(reply).mockResolvedValueOnce(engine200());
+      const { client } = makeClient({ paymentFetch });
+      await client.buy("QUESTION_ANSWERING", "x", rec.onAttempt);
+      expect(rec.states().slice(0, 3)).toEqual(["reserved", "request_sent", "failed_not_charged"]);
+    }
+  });
+
+  it("records failed_not_charged on settlement success: false", async () => {
+    const rec = recorder();
+    const paymentFetch = vi
+      .fn()
+      .mockResolvedValueOnce(engine200({}, { "payment-response": settle(false) }))
+      .mockResolvedValueOnce(engine200());
+    const { client } = makeClient({ paymentFetch });
+    await client.buy("QUESTION_ANSWERING", "x", rec.onAttempt);
+    expect(rec.states().slice(0, 3)).toEqual(["reserved", "request_sent", "failed_not_charged"]);
   });
 });

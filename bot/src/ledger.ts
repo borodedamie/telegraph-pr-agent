@@ -28,13 +28,16 @@ export interface LedgerRow {
   attemptId?: string;
 }
 
-// One payment try moves reserved → request_sent → one of the three outcomes.
+// One payment try moves reserved → quote_refused, or reserved → request_sent →
+// delivered / failed_and_credited / failed_not_charged / unknown_needs_reconciliation.
 // Each change of state appends a new row; the latest row for an attemptId wins.
 export type AttemptState =
   | "reserved" // about to try; no money has moved
+  | "quote_refused" // our price or budget limit refused the quote; nothing sent
   | "request_sent" // the paid request is going out; money may move
   | "delivered" // paid and answered; the purchase row holds the receipt
-  | "failed_and_credited" // node answered with an error; paid amount goes to escrow
+  | "failed_and_credited" // paid, then the call failed; amount credited to escrow
+  | "failed_not_charged" // the node rejected the payment or reported it unsettled
   | "unknown_needs_reconciliation"; // sent, but no clear outcome; a person must check
 
 export interface AttemptKey {

@@ -219,17 +219,17 @@ export class IntelligenceClient {
     const amountUsdc = Number(atomic) / USDC_DECIMALS;
 
     if (amountUsdc > this.maxPricePerCallUsdc) {
-      throw new PriceGuardError(
-        `quote ${amountUsdc} USDC exceeds maxPricePerCallUsdc ${this.maxPricePerCallUsdc} (${intent}, miner ${miner.id})`
-      );
+      const reason = `quote ${amountUsdc} USDC exceeds maxPricePerCallUsdc ${this.maxPricePerCallUsdc} (${intent}, miner ${miner.id})`;
+      await onAttempt({ state: "quote_refused", minerId: miner.id, quotedAmountUsdc: amountUsdc, reason });
+      throw new PriceGuardError(reason);
     }
     // The signer may settle anything up to maxPricePerCallUsdc (a repriced call),
     // so reserve that worst case against the budget, not the quote.
     const worstCaseUsdc = Math.max(amountUsdc, this.maxPricePerCallUsdc);
     if (this.spentUsdc + worstCaseUsdc > this.budgetCapUsdc) {
-      throw new BudgetCapError(
-        `spend ${this.spentUsdc} + worst-case ${worstCaseUsdc} USDC (quote ${amountUsdc}) exceeds budgetCapUsdc ${this.budgetCapUsdc}`
-      );
+      const reason = `spend ${this.spentUsdc} + worst-case ${worstCaseUsdc} USDC (quote ${amountUsdc}) exceeds budgetCapUsdc ${this.budgetCapUsdc}`;
+      await onAttempt({ state: "quote_refused", minerId: miner.id, quotedAmountUsdc: amountUsdc, reason });
+      throw new BudgetCapError(reason);
     }
 
     await onAttempt({ state: "request_sent", minerId: miner.id, quotedAmountUsdc: amountUsdc });
@@ -242,16 +242,26 @@ export class IntelligenceClient {
       await onAttempt({ state: "unknown_needs_reconciliation", minerId: miner.id, reason });
       throw new PaymentUnknownError(`${miner.id}: ${reason}`);
     }
-    // Per the Telegraph docs, a paid call that then fails is credited to escrow.
+    // https://anjoman.ai/docs/using/x402-inference (Step 3): a payload that does not
+    // verify gets a bare 402 and an invalid one gets 400 "Invalid payment", so nothing
+    // was paid. A valid payment settles before the miner is called; if the call then
+    // fails, the amount is credited to our escrow balance and never charged.
     if (!res.ok) {
       const reason = `HTTP ${res.status} ${(await res.text().catch(() => "")).slice(0, 300)}`.trim();
-      await onAttempt({ state: "failed_and_credited", minerId: miner.id, reason });
+      const notPaid = res.status === 402 || (res.status === 400 && /invalid payment/i.test(reason));
+      await onAttempt({ state: notPaid ? "failed_not_charged" : "failed_and_credited", minerId: miner.id, reason });
       throw new AskFailedError(reason);
     }
     const settle = settleHeader(res);
-    if (!settle?.success || typeof settle.transaction !== "string") {
-      // An answer without a settlement proof: we can't tell whether we paid.
-      const reason = "answered without a settlement proof";
+    if (settle?.success === false) {
+      // An explicit "not settled": nothing was charged, so the next miner may be tried.
+      const reason = "settlement reported success: false";
+      await onAttempt({ state: "failed_not_charged", minerId: miner.id, reason });
+      throw new AskFailedError(reason);
+    }
+    if (settle?.success !== true || typeof settle.transaction !== "string") {
+      // No readable settlement proof: we can't tell whether we paid.
+      const reason = "answered without a readable settlement proof";
       await onAttempt({ state: "unknown_needs_reconciliation", minerId: miner.id, reason });
       throw new PaymentUnknownError(`${miner.id}: ${reason}`);
     }

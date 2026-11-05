@@ -87,9 +87,17 @@ describe("preflight", () => {
     expect(preflight(ledger(at(1, "request_sent"), at(1, "delivered")), key).action).toBe("skip");
   });
 
-  it("retries as a new, numbered attempt after reserved-only or failed_and_credited", () => {
-    const rows = ledger(at(1, "reserved"), at(2, "request_sent"), at(2, "failed_and_credited"));
-    expect(preflight(rows, key)).toEqual({ action: "buy", nextAttempt: 3 });
+  it("retries as a new, numbered attempt after any outcome where no money is unaccounted for", () => {
+    const rows = ledger(
+      at(1, "reserved"),
+      at(2, "reserved"),
+      at(2, "quote_refused"),
+      at(3, "request_sent"),
+      at(3, "failed_and_credited"),
+      at(4, "request_sent"),
+      at(4, "failed_not_charged")
+    );
+    expect(preflight(rows, key)).toEqual({ action: "buy", nextAttempt: 5 });
   });
 
   it("ignores attempts for another repo, PR, SHA or step", () => {
