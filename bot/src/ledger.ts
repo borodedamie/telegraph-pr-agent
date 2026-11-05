@@ -26,6 +26,12 @@ export interface LedgerRow {
   status: "settled" | "failed";
   /** Links the purchase to the attempt that paid for it. Absent on pre-attempt rows. */
   attemptId?: string;
+  /**
+   * Whether the answer was any use (SPEC §4.4a), kept apart from payment status.
+   * New rows start "unchecked"; a person sets the rest until something judges quality.
+   * Absent on rows written before 5 Nov 2026.
+   */
+  resultStatus?: "unchecked" | "useful" | "unusable" | "not_found";
   // From the paid 402 option (SPEC §4.5). Absent on rows written before 5 Nov 2026.
   network?: string;
   chainId?: number;
@@ -99,6 +105,16 @@ export function hasLedgerRow(existing: string, prNumber: number, headSha: string
 
 /** Thrown when the fresh ledger shows another run got there first; never retried. */
 export class AttemptConflictError extends Error {}
+/** Thrown when a purchase's receipt_hash is already on the ledger; never retried. */
+export class DuplicateReceiptError extends Error {}
+
+function receiptHashes(existing: string): Set<string> {
+  const hashes = new Set<string>();
+  for (const row of parseRows(existing)) {
+    if (row.kind !== "attempt" && typeof row.receiptHash === "string" && row.receiptHash) hashes.add(row.receiptHash);
+  }
+  return hashes;
+}
 
 /** The latest row of each attempt for this key. */
 function latestAttempts(existing: string, key: AttemptKey): AttemptRow[] {
@@ -183,6 +199,13 @@ export async function commitLedgerRow(
     const existing = existsSync(ledgerPath) ? readFileSync(ledgerPath, "utf8") : "";
     const built = typeof rowsOrBuild === "function" ? rowsOrBuild(existing) : rowsOrBuild;
     const rows = Array.isArray(built) ? built : [built];
+    // receipt_hash identifies a delivered purchase (SPEC §4.2): one row per receipt.
+    const recorded = receiptHashes(existing);
+    for (const r of rows) {
+      if (!("kind" in r) && r.receiptHash && recorded.has(r.receiptHash)) {
+        throw new DuplicateReceiptError(`receipt ${r.receiptHash} is already on the ledger`);
+      }
+    }
     writeFileSync(ledgerPath, rows.reduce(appendLedgerRow, existing));
     await runGit(["add", LEDGER_FILE]);
     await runGit(["commit", "-m", `ledger: ${rows.map(describeRow).join("; ")}`]);

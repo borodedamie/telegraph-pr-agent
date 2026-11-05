@@ -11,6 +11,7 @@ import {
   type AttemptRow,
   checkMayPay,
   commitLedgerRow,
+  DuplicateReceiptError,
   LEDGER_FILE,
   type LedgerRow,
   preflight,
@@ -148,6 +149,7 @@ const row: LedgerRow = {
   timestamp: new Date().toISOString(),
   status: purchase.status,
   attemptId: attemptRow("delivered").attemptId,
+  resultStatus: "unchecked",
   network: purchase.network,
   chainId: purchase.chainId,
   usdcContract: purchase.usdcContract,
@@ -160,6 +162,10 @@ try {
     attemptRow("delivered", { minerId: purchase.minerId, receiptHash: purchase.receiptHash }),
   ]);
 } catch (err) {
+  if (err instanceof DuplicateReceiptError) {
+    console.error(`PAID, but not recorded again: ${err.message}. Check the ledger branch.`);
+    throw err;
+  }
   // The attempt stays at request_sent on the ledger, so the next run halts
   // instead of paying again. Print the purchase so a person can record it.
   console.error("PAID but the ledger push failed; record this row by hand:");

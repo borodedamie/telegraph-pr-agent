@@ -103,6 +103,7 @@ function fields(row) {
     ["Miner ID", row.minerId],
     ["Miner", row.minerName],
     ["Amount", `${row.amountUsdc} USDC`],
+    ["Answer quality", row.resultStatus],
     ["Network", row.network],
     ["USDC contract", row.usdcContract],
     [

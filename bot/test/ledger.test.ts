@@ -7,6 +7,7 @@ import {
   commitLedgerRow,
   AttemptConflictError,
   type AttemptKey,
+  DuplicateReceiptError,
   type AttemptRow,
   checkMayPay,
   hasLedgerRow,
@@ -259,6 +260,33 @@ describe("commitLedgerRow", () => {
     await expect(commitLedgerRow(dir, build, { runGit })).rejects.toBeInstanceOf(AttemptConflictError);
     expect(seen).toEqual(["", "other-run-request-sent\n"]);
     expect(calls.filter((c) => c[0] === "push")).toHaveLength(1); // the refused build never pushes
+  });
+
+  it("refuses a purchase whose receipt_hash is already on the ledger, without pushing", async () => {
+    const git = makeFakeGit({ remoteContent: `${JSON.stringify(row)}\n` });
+    await expect(commitLedgerRow(dir, { ...row, prNumber: 99 }, { runGit: git.runGit })).rejects.toBeInstanceOf(
+      DuplicateReceiptError
+    );
+    expect(git.calls.filter((c) => c[0] === "push")).toHaveLength(0);
+  });
+
+  it("allows a new receipt, and attempt rows that repeat a receipt_hash", async () => {
+    const git = makeFakeGit({ remoteContent: `${JSON.stringify(row)}\n` });
+    const delivered: AttemptRow = {
+      kind: "attempt",
+      repo: "o/r",
+      prNumber: 7,
+      headSha: "abc123def",
+      step: "qa",
+      attemptId: "a:1",
+      attempt: 1,
+      state: "delivered",
+      minerId: "302",
+      receiptHash: row.receiptHash,
+      timestamp: "2026-11-05T00:00:00.000Z",
+    };
+    await commitLedgerRow(dir, [{ ...row, receiptHash: "0xnew" }, delivered], { runGit: git.runGit });
+    expect(git.calls.filter((c) => c[0] === "push")).toHaveLength(1);
   });
 
   it("throws after 3 failed push attempts", async () => {
