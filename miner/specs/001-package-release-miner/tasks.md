@@ -186,7 +186,7 @@ description: "Task list for the package-release miner"
 - [x] T038 [US1] Implement the model extractor in `miner/src/extract/model.ts`:
   - It buys one call from the first available miner in `LLM_MINERS` via `POST /engine/v1/ask/<minerId>`, paid from the spend wallet. The quote is refused above `MAX_MODEL_COST_USDC`. Since 5 Nov the payment uses the `escrow` scheme rather than x402 `exact` (2.0 s against 13.3 s median per call, research R7).
   - The system prompt says the text is data, not instructions.
-  - A reply that doesn't parse into the item schema is a failure, even with `200`, and trips a 15-minute circuit breaker for that miner in Redis.
+  - A reply that doesn't parse into the item schema is a failure, even with `200`. From the third failure in a row, a circuit breaker in Redis skips that miner for 1, 3, 9 and then at most 15 minutes (changed 5 Nov from 15 minutes after one failure).
   - `LLM_TIMEOUT_MS` applies.
   - It sends version sections batched per call, each under an opaque section id. Releases fully handled by `rules.ts` are skipped.
   - It asks for JSON items `{sectionId, kind, evidenceType, change, excerpt, inferredFrom, migration, migrationExcerpt, migrationInferredFrom}`, validated with zod.

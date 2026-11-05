@@ -67,13 +67,50 @@ describe("extractModel", () => {
     expect(result.complete).toBe(true);
   });
 
-  it("treats a 200 that does not parse as a failure, trips the breaker and makes no second paid call", async () => {
+  it("treats a 200 that does not parse as a failure and makes no second paid call, but forgives one failure", async () => {
     const store = new MemoryStore();
     const caller = stub("Temporary inference error; please retry. Detail: AuthenticationError");
     const result = await extractModel(sections, new Set(), "4.0.0", new Budget(limitsFromEnv({})), store, miners, caller);
     expect(result).toMatchObject({ complete: false, failure: "invalid_reply", candidates: [] });
     expect(caller.prompts).toHaveLength(1);
-    expect(await store.get("llm:breaker:302")).toBe("invalid_reply");
+    expect(await store.get("llm:breaker:302")).toBeNull();
+    expect(await store.get("llm:failures:302")).toBe("1");
+  });
+
+  it("skips a miner from its third failure in a row for 1, 3, 9 and then at most 15 minutes", async () => {
+    let clock = 0;
+    const store = new MemoryStore(() => clock);
+    const failOnce = () => extractModel(sections, new Set(), "4.0.0", new Budget(limitsFromEnv({})), store, miners.slice(0, 1), stub("not json"));
+    /** Seconds the breaker stays set after a failure: the longest wait at which it is still there. */
+    const breakerSeconds = async () => {
+      const start = clock;
+      let seconds = 0;
+      while ((await store.get("llm:breaker:302")) !== null) {
+        seconds += 30;
+        clock = start + seconds * 1000;
+      }
+      return seconds;
+    };
+    await failOnce();
+    await failOnce();
+    expect(await store.get("llm:breaker:302")).toBeNull();
+    const waits: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      await failOnce();
+      waits.push(await breakerSeconds());
+    }
+    expect(waits).toEqual([60, 180, 540, 900, 900]);
+  });
+
+  it("resets the failure streak after a good reply", async () => {
+    const store = new MemoryStore();
+    const run = (reply: string) => extractModel(sections, new Set(), "4.0.0", new Budget(limitsFromEnv({})), store, miners.slice(0, 1), stub(reply));
+    await run("not json");
+    await run("not json");
+    await run(goodReply);
+    expect(await store.get("llm:failures:302")).toBeNull();
+    await run("not json");
+    expect(await store.get("llm:breaker:302")).toBeNull();
   });
 
   it("records a paid reply that does not parse once, at its quoted cost", async () => {

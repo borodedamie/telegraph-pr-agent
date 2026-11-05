@@ -292,7 +292,14 @@ export interface ModelResult {
   skipped: number[];
 }
 
-const BREAKER_SEC = 15 * 60;
+/**
+ * Circuit breaker. One bad reply is forgiven: 302 sometimes answers without JSON while it works (5 Nov). From the
+ * third failure in a row the miner is skipped for 1, 3, 9, then at most 15 minutes. A good reply resets the streak.
+ */
+const FAILURES_BEFORE_BREAK = 3;
+const BREAK_SEC = [60, 180, 540, 900];
+/** A streak older than this starts again from one. */
+const FAILURE_STREAK_SEC = 60 * 60;
 // Prompt instructions and section tags on top of the section text.
 const PROMPT_OVERHEAD_CHARS = 1_500;
 
@@ -396,6 +403,7 @@ export async function extractModel(
       // again would pay for the same cut. Breaking changes come first in the prompt, so the cut drops the least.
       result.complete = result.skipped.length === 0 && !read.truncated;
       result.failure = null;
+      await store.del(`llm:failures:${miner.id}`);
       return result;
     } catch (err) {
       result.msModel += now() - startedAt;
@@ -409,7 +417,14 @@ export async function extractModel(
         budget.recordModelCall(prompt.length, err.costMicroUsdc ?? budget.limits.maxModelCostMicroUsdc, chosen.length);
       }
       // The miner is not at fault when the answer's own deadline aborted the call or our escrow refused it.
-      if (!budget.signal.aborted && err.minerAtFault) await store.set(`llm:breaker:${miner.id}`, err.reason, BREAKER_SEC);
+      if (!budget.signal.aborted && err.minerAtFault) {
+        const streak = await store.incr(`llm:failures:${miner.id}`, FAILURE_STREAK_SEC);
+        if (streak >= FAILURES_BEFORE_BREAK) {
+          const breakSec = BREAK_SEC[Math.min(streak - FAILURES_BEFORE_BREAK, BREAK_SEC.length - 1)];
+          await store.set(`llm:breaker:${miner.id}`, err.reason, breakSec);
+          console.warn(JSON.stringify({ kind: "llm_breaker", minerId: miner.id, streak, breakSec }));
+        }
+      }
     }
   }
   result.skipped = needed;
