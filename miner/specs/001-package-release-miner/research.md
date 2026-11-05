@@ -71,7 +71,12 @@ There are two contracts, and they are kept apart:
      - A tree above the 2 MB cap (next.js: 17 MB) falls back to the top-level tree, then the recursive trees of `docs/`, `doc/`, `documentation/`, `website/` and `guides/`, at the top level or under `packages/` (typescript-eslint's `packages/website/blog`).
      - A release post may also end with the line, as in `announcing-typescript-eslint-v8.md`; `…-v8-beta.mdx` does not match.
      - A heading that groups changes ("Rule Breaking Changes", "Deprecations", "Removals") is not an item itself. Each top-level bullet under it is one, with the bullets nested under it as its migration. Bullets in code blocks, and a table of contents of in-page links, are skipped. Leading `<a name>` anchors are dropped from titles.
-     - Guides on other hosts (devblogs.microsoft.com, tailwindcss.com) are not fetched: the host allowlist is unchanged.
+     - When the repository has no guide for the line, a guide on the package's website is read (since 5 Nov; R8, FR-020):
+       - The link comes from that release's notes read so far, and its host must be the host of the npm `homepage`, with or without `www.`. A migration or upgrade guide is preferred over a guide, and a guide over a blog post.
+       - One page is fetched. When it has an "Edit this page" link (`github.com/<o>/<r>/edit/<ref>/<path>.md(x)`), that source is read from `raw.githubusercontent.com` instead (expressjs.com's `migrating-5.mdx`). Otherwise the page's `<main>` or `<article>` is turned into headings, list items and fenced code; navigation and scripts are dropped, in one linear pass.
+       - A website shows the guide for its latest release, so the guide counts only when its title, or the first line under a title without a version, names this release's line, or the line before it after "from" ("Migration from v7" for v8). vite.dev's "Migration from v7" is not taken for vite 6.
+       - In a guide with sections that name a kind of change ("Removed methods and properties", "Changed", "Breaking Changes", "Changes from v3"), only those sections are read. Each innermost heading in them is one change, and "How to update" text under it is its migration.
+       - Hosts that are not the homepage's (devblogs.microsoft.com for typescript, whose homepage is typescriptlang.org) are not fetched.
   4. **Tag comparison** via `GET /repos/{o}/{r}/compare/{base}...{head}` as a last resort, with the exact tags found by step 1's patterns.
      - Evidence comes from the changed code: `files[].patch` for files under the package `directory`, prioritizing type declarations (`*.d.ts`), entry points and `package.json` (`exports`, `main`, `engines`, `peerDependencies`). Commit messages and file names alone are never evidence.
      - GitHub returns at most 300 files and 250 commits per comparison, and omits large patches. Hitting any of these limits makes coverage `partial`, with reason `truncated`.
@@ -151,7 +156,8 @@ There are two contracts, and they are kept apart:
     - `registry.npmjs.org`;
     - `api.github.com` and `github.com`, on repository paths;
     - `raw.githubusercontent.com`, on validated repository paths;
-    - `api.osv.dev`, `POST /v1/query` only.
+    - `api.osv.dev`, `POST /v1/query` only;
+    - since 5 Nov, the package's website (the host of its npm `homepage`): `GET` only, 2 MB, and only for the call that reads a migration guide linked from the release's notes (`siteHost`). A redirect to any other host is refused.
 
     `https` only, default port only.
   - **Addresses**: DNS is resolved, and every address is checked against private, loopback, link-local, CGNAT and metadata ranges. The connection then goes to the validated address. Requests use `node:https` with a `lookup` that returns that address, so a second resolution cannot rebind. Node's `fetch` cannot pin the address without an extra dependency.

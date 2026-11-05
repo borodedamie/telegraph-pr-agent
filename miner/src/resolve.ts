@@ -14,6 +14,7 @@ export const Packument = z.object({
   repository: z
     .union([z.string(), z.object({ type: z.string().optional(), url: z.string().optional(), directory: z.string().optional() })])
     .nullable(),
+  homepage: z.string().nullable().default(null),
 });
 export type Packument = z.infer<typeof Packument>;
 
@@ -25,6 +26,7 @@ const RawPackument = z.object({
   time: z.record(z.unknown()).default({}),
   "dist-tags": z.record(z.unknown()).default({}),
   repository: z.unknown(),
+  homepage: z.unknown(),
 });
 
 function stringValues(record: Record<string, unknown>): Record<string, string> {
@@ -45,6 +47,7 @@ export function reducePackument(body: string): string {
     time: stringValues(raw.time),
     "dist-tags": stringValues(raw["dist-tags"]),
     repository: reduceRepository(raw.repository),
+    homepage: typeof raw.homepage === "string" ? raw.homepage : null,
   };
   return canonicalJson(reduced);
 }

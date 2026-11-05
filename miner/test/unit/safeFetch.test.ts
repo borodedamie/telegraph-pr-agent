@@ -76,6 +76,18 @@ describe("safeFetch", () => {
     ).rejects.toBeInstanceOf(BlockedHost);
   });
 
+  it("lets one call GET the package website it names, and nothing more", async () => {
+    const options = { resolver: publicResolver(), transport: transportReplying([{ status: 200, body: "<h1>guide</h1>" }]), siteHost: "expressjs.com" };
+    expect((await safeFetch("https://expressjs.com/en/guide/migrating-5/", options)).status).toBe(200);
+    await expect(safeFetch("https://expressjs.com/x", { ...options, method: "POST", body: "{}" })).rejects.toBeInstanceOf(BlockedHost);
+    await expect(safeFetch("http://expressjs.com/x", options)).rejects.toBeInstanceOf(BlockedHost);
+    await expect(safeFetch("https://evil.example/x", options)).rejects.toBeInstanceOf(BlockedHost);
+    // Without the option the website is outside the allowlist, and its redirects elsewhere are refused.
+    await expect(safeFetch("https://expressjs.com/x", { resolver: publicResolver(), transport: transportReplying([]) })).rejects.toBeInstanceOf(BlockedHost);
+    const away = transportReplying([{ status: 302, headers: { location: "https://evil.example/" } }]);
+    await expect(safeFetch("https://expressjs.com/x", { ...options, transport: away })).rejects.toBeInstanceOf(BlockedHost);
+  });
+
   it("refuses http and non-default ports", async () => {
     const options = { resolver: publicResolver(), transport: transportReplying([]) };
     await expect(safeFetch("http://registry.npmjs.org/zod", options)).rejects.toBeInstanceOf(BlockedHost);

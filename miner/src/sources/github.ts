@@ -9,6 +9,7 @@ import { normalizeText } from "../text.js";
 import { Timeout, TooLarge, Upstream } from "../safeFetch.js";
 import { fetchDocument, isCut, type Retrieval, type SourceDocument } from "./fetch.js";
 import { matchRelease, splitChangelog } from "./match.js";
+import { editSource, htmlToText, siteGuideLink, siteHostOf } from "./site.js";
 
 export interface RepoIdentity {
   owner: string;
@@ -206,11 +207,14 @@ export async function retrieveReleaseNotes(
     }
   }
 
-  // 3. A migration guide in the repository, for the first release of a new major (or 0.y) line.
+  // 3. A migration guide for the first release of a new major (or 0.y) line: in the repository, else on the
+  // package's website when the notes read so far link to one there.
   if (lineStart !== null && (wanted.has(lineStart) || tracker.state(lineStart) === "covered")) {
     let guide: SourceDocument | null;
     try {
       guide = await findMigrationGuide(retrieval, repo, packument.name, lineStart, headers);
+      const notes = material.sections.filter((section) => section.version === lineStart).map((section) => section.text);
+      guide ??= await findSiteGuide(retrieval, packument.homepage, notes, lineStart);
     } catch (err) {
       const failure = optionalFailure(err, retrieval);
       if (failure === null) throw err;
@@ -337,6 +341,56 @@ async function findMigrationGuide(
   if (path === null) return null;
   const url = `https://raw.githubusercontent.com/${repo.owner}/${repo.repo}/HEAD/${path}`;
   return fetchDocument(retrieval, url, { toText: normalizeText });
+}
+
+const SitePage = z.object({ source: z.string().nullable(), text: z.string() });
+
+/**
+ * The guide that the notes link to on the package's website (the host of its npm homepage), or null. The page's
+ * "Edit this page" source in its repository is read instead when it has one; else the page's own text. A website
+ * shows the guide for its latest release (vite.dev/guide/migration is "Migration from v7" today), so the guide
+ * counts only when its opening names this release's line.
+ */
+async function findSiteGuide(retrieval: Retrieval, homepage: string | null, notes: string[], version: string): Promise<SourceDocument | null> {
+  const site = siteHostOf(homepage);
+  const link = site === null ? null : siteGuideLink(notes, site);
+  if (link === null) return null;
+  const page = await fetchDocument(retrieval, link, {
+    siteHost: new URL(link).hostname,
+    toText: (body) => canonicalJson({ source: editSource(body), text: htmlToText(body) }),
+  });
+  if (page === null) return null;
+  const { source, text } = SitePage.parse(JSON.parse(page.text));
+  if (!namesLine(text, version)) {
+    console.info(JSON.stringify({ kind: "site_guide_other_release", url: link, version }));
+    return null;
+  }
+  if (source !== null) {
+    const raw = await fetchDocument(retrieval, source, { toText: normalizeText });
+    if (raw !== null) return raw;
+  }
+  return { ...page, text };
+}
+
+/**
+ * Whether a guide's title, or the first line of text under it, names this release's line ("Moving to Express 5",
+ * "Upgrading your Tailwind CSS projects from v3 to v4") or the line before it ("Migration from v7" for v8). A
+ * passing mention further down ("for v6 & v7") does not count.
+ */
+export function namesLine(text: string, version: string): boolean {
+  const lines = text.split("\n").map((line) => line.trim()).filter((line) => line !== "" && !/^(---|[a-z]+:\s)/.test(line));
+  const title = lines.findIndex((line) => /^#{1,3}\s/.test(line));
+  const opening = title === -1 ? lines.slice(0, 2) : [lines[title], lines.slice(title + 1).find((line) => !line.startsWith("#")) ?? ""];
+  const major = semver.major(version);
+  const minor = semver.minor(version);
+  const label = major === 0 ? `0\\.${minor}` : `${major}`;
+  const before = major === 0 ? (minor > 0 ? `0\\.${minor - 1}` : null) : `${major - 1}`;
+  const line = (l: string) => `(^|[^0-9.])v?${l}(\\.0){0,2}(?![0-9]|\\.[1-9])`;
+  const names = new RegExp(line(label), "i");
+  const from = before === null ? null : new RegExp(`\\bfrom\\s+(\\S+\\s+){0,3}${line(before)}`, "i");
+  // A title with a version in it decides alone: vite's "Migration from v7" is not the v6 guide, whatever follows.
+  const said = (/(^|\s)v?\d+(\.\d+)?\b/i.test(opening[0].replace(/^#+\s*/, "")) ? opening[0] : opening.join(" ")).slice(0, 600);
+  return names.test(said) || (from !== null && from.test(said));
 }
 
 /** The file paths of a tree, each under `prefix`; null when the tree is not there. */

@@ -37,7 +37,7 @@ HTTP uses Node's built-in `fetch`, wrapped in `safeFetch`, and the server is a V
 **Constraints**:
 - per-request budgets from [R9](research.md), including model calls (one per first-time answer), input size, cost and timeout;
 - origin authentication and rate limits ([R10](research.md));
-- fetches only to allowlisted hosts, connecting to the validated address;
+- fetches only to allowlisted hosts, connecting to the validated address; the one exception is a migration guide on the package's own website, linked from the release's notes (research R8);
 - no package execution;
 - the model never supplies versions, dates or links.
 
@@ -93,11 +93,12 @@ miner/
 │   ├── auth.ts          # X-Telegraph-Key check, origin rate and concurrency limits
 │   ├── parse.ts         # query → NormalizedRequest (unresolved)
 │   ├── resolve.ts       # npm registry + semver → resolved versions
-│   ├── safeFetch.ts     # allowlist, DNS/IP checks, manual redirects, size and time limits
+│   ├── safeFetch.ts     # allowlist (plus one website host per call), DNS/IP checks, manual redirects, size and time limits
 │   ├── sources/
 │   │   ├── github.ts    # repo identity, releases, changelog
 │   │   ├── compare.ts   # tag-comparison fallback: bounded patches, repository evidence
 │   │   ├── match.ts     # tag/heading → version correspondence (monorepo-aware)
+│   │   ├── site.ts      # migration guide on the package's website: link, Edit source, HTML to text
 │   │   └── osv.ts       # advisories for version A, full affected data
 │   ├── extract/
 │   │   ├── rules.ts     # deterministic section and CVE/GHSA extraction

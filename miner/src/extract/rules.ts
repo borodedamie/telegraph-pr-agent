@@ -114,6 +114,9 @@ function labelKind(text: string): ReturnType<typeof headingKind> | null {
 // In a migration guide every heading names one change; its first words say which kind.
 // A guide heading that names a group of changes rather than one.
 const GROUP_HEADING = /\bbreaking changes\b|\bdeprecations\b|\bremovals\b/i;
+// The same for a heading with subheadings: express's "Removed methods and properties" and "Changed",
+// tailwind's "Changes from v3".
+const SECTION_HEADING = /^(breaking changes?|changes|changed|removed|removals|deprecat\w*)\b/i;
 
 function guideHeadingKind(title: string): Kind | null {
   // "Breaking changes for users" groups the changes below it; it is not one.
@@ -184,20 +187,47 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
     const lines = section.text.split("\n");
     if (sourceType(section) === "migration_guide") {
       handled.add(index);
+      // Headings outside code blocks, with their level.
+      let fenced = false;
+      const headings: { line: number; level: number; title: string }[] = [];
       lines.forEach((line, i) => {
-        const heading = /^#{2,4}\s+(\S.*)$/.exec(line);
-        if (!heading) return;
+        if (line.trim().startsWith("```")) fenced = !fenced;
+        const heading = fenced ? null : /^(#{2,4})\s+(\S.*)$/.exec(line);
         // Anchors before the title are markup, not words: eslint's `<a name="drop-old-node"></a> Node.js < v18.18 ...`.
-        const title = heading[1].replace(/^(<a [^>]{0,200}><\/a>\s*)+/i, "").trimEnd();
-        const body: string[] = [];
-        for (let j = i + 1; j < lines.length && !/^#{1,4}\s/.test(lines[j]); j++) body.push(lines[j]);
-        if (GROUP_HEADING.test(title)) {
-          addGroupItems(index, body);
+        const title = heading?.[2].replace(/^(<a [^>]{0,200}><\/a>\s*)+/i, "").trimEnd();
+        // "How to update" and "On this page" are part of the text around them, not headings of their own.
+        if (heading && title && !/^(how to\b|on this page$)/i.test(title)) headings.push({ line: i, level: heading[1].length, title });
+      });
+      // A section heading that names a kind of change and has subheadings ("## Removed methods and properties"
+      // over "### app.del()"): each innermost subheading in it is one change of that kind. prettier's "## Breaking
+      // Changes" › "### JavaScript" › "#### Change the default value for `trailingComma`" names the change last.
+      let section: { level: number; kind: Kind } | null = null;
+      const opensSection = (h: number) => (headings[h + 1]?.level ?? 0) > headings[h].level && SECTION_HEADING.test(headings[h].title);
+      // A guide with such sections says where its changes are: headings outside them (prettier's "Other Changes",
+      // express's "Installation") are not read.
+      const sectioned = headings.some((_, h) => opensSection(h));
+      headings.forEach((heading, h) => {
+        const next = headings.slice(h + 1).find((other) => other.level <= heading.level);
+        const body = lines.slice(heading.line + 1, next?.line ?? lines.length);
+        const textBody = lines.slice(heading.line + 1, headings[h + 1]?.line ?? lines.length);
+        const hasSubheadings = (headings[h + 1]?.level ?? 0) > heading.level;
+        if (section !== null && heading.level <= section.level) section = null;
+        if (section !== null) {
+          if (!hasSubheadings) add(index, section.kind, heading.title, migrationLine(body));
           return;
         }
-        const kind = guideHeadingKind(title);
+        if (opensSection(h)) {
+          section = { level: heading.level, kind: /deprecat/i.test(heading.title) ? "deprecation" : "breaking" };
+          return;
+        }
+        if (sectioned) return;
+        if (GROUP_HEADING.test(heading.title)) {
+          addGroupItems(index, textBody);
+          return;
+        }
+        const kind = guideHeadingKind(heading.title);
         if (kind === null) return;
-        add(index, kind, title, migrationLine(body));
+        add(index, kind, heading.title, migrationLine(body));
       });
       return;
     }

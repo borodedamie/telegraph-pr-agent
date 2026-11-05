@@ -50,6 +50,8 @@ export interface FetchDocumentOptions {
   manifestId?: string;
   /** Turns the response body into the text that is hashed and snapshotted. */
   toText: (body: string) => string;
+  /** The package website this fetch may reach (safeFetch `siteHost`). */
+  siteHost?: string;
 }
 
 /** Returns the document, or null when the upstream says it does not exist (404 or 410). */
@@ -86,6 +88,7 @@ async function readDocument(retrieval: Retrieval, url: string, options: FetchDoc
     method: options.method,
     headers: options.headers,
     body: options.body,
+    siteHost: options.siteHost,
     signal: retrieval.budget.signal,
     ifNoneMatch: conditional ? entry.etag : null,
     ifModifiedSince: conditional ? entry.lastModified : null,

@@ -66,6 +66,8 @@ export interface SafeFetchOptions {
   ifModifiedSince?: string | null;
   resolver?: Resolver;
   transport?: Transport;
+  /** One package website this call may also GET, beside the allowlist: the host of the package's npm homepage. */
+  siteHost?: string;
 }
 
 export interface SafeResponse {
@@ -149,11 +151,13 @@ export function maxBytesFor(url: URL): number {
   return HOST_RULES.get(url.hostname)?.maxBytes ?? 0;
 }
 
-function checkUrl(url: URL, method: "GET" | "POST"): HostRule {
+const SITE_RULE: HostRule = { methods: ["GET"], path: /^\//, maxBytes: 2 * MB };
+
+function checkUrl(url: URL, method: "GET" | "POST", siteHost?: string): HostRule {
   if (url.protocol !== "https:") throw new BlockedHost(`protocol ${url.protocol}`);
   if (url.port !== "") throw new BlockedHost(`port ${url.port}`);
   if (url.username || url.password) throw new BlockedHost("credentials in URL");
-  const rule = HOST_RULES.get(url.hostname);
+  const rule = HOST_RULES.get(url.hostname) ?? (siteHost !== undefined && url.hostname === siteHost ? SITE_RULE : undefined);
   if (!rule) throw new BlockedHost(`host ${url.hostname}`);
   if (!rule.methods.includes(method)) throw new BlockedHost(`${method} to ${url.hostname}`);
   if (!rule.path.test(url.pathname)) throw new BlockedHost(`path ${url.pathname} on ${url.hostname}`);
@@ -258,7 +262,7 @@ export async function safeFetch(input: string, options: SafeFetchOptions = {}): 
   let body = options.body;
 
   for (let hop = 0; ; hop++) {
-    const rule = checkUrl(url, method);
+    const rule = checkUrl(url, method, options.siteHost);
     if (signal.aborted) throw new Timeout(url.toString());
 
     const addresses = await untilAborted(resolver(url.hostname), signal, url);

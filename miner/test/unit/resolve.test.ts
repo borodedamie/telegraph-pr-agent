@@ -54,7 +54,7 @@ describe("resolveVersions", () => {
 
   it("asks when no stable version exists below the bound", () => {
     const { registry } = packument("zod");
-    const doc: Packument = { name: "fresh", versions: ["1.0.0-rc.1", "1.0.0"], time: {}, "dist-tags": {}, repository: null };
+    const doc: Packument = { name: "fresh", versions: ["1.0.0-rc.1", "1.0.0"], time: {}, "dist-tags": {}, repository: null, homepage: null };
     expect(resolveVersions(doc, registry, { package: "fresh", fromRequested: null, toRequested: "1.0.0" })).toMatchObject({
       kind: "needs_clarification",
     });
