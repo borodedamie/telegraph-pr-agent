@@ -211,8 +211,9 @@ ${lineFormat ? LINE_INSTRUCTIONS : JSON_INSTRUCTIONS}`;
  * `{"items":[...}]}` is only possible at an item boundary. Null when nothing parses.
  */
 function readItems(json: string): { parsed: unknown; truncated: boolean } | null {
+  // A whole object, even with prose after it ("{...}\n\nNote: ..."): that reply was not cut.
   try {
-    return { parsed: JSON.parse(json), truncated: false };
+    return { parsed: JSON.parse(json.slice(0, json.lastIndexOf("}") + 1)), truncated: false };
   } catch {
     // Fall through to the cut-off reply.
   }

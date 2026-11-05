@@ -235,6 +235,10 @@ describe("parseReply", () => {
     expect(read.truncated).toBe(true);
     expect(read.candidates.map((c) => c.excerpt)).toEqual(["uses `{ a: 1 }` and } braces", "second"]);
     expect(parseReply(full, new Map([["x1", 0]]), false, "m-").truncated).toBe(false);
+    // Prose after a whole object is not a cut: the answer stays cacheable (review on PR 13).
+    const chatty = parseReply(`Here you go:\n${full}\n\nNote: all items are from the release notes.`, new Map([["x1", 0]]), false, "m-");
+    expect(chatty.truncated).toBe(false);
+    expect(chatty.candidates).toHaveLength(3);
     expect(() => parseReply('{"items":[{"id":"i1","sec', new Map([["x1", 0]]), false, "m-")).toThrow(ModelFailure);
   });
 
