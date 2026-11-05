@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { Budget, limitsFromEnv } from "../../src/budget.js";
 import { MemoryStore } from "../../src/cache.js";
-import { generatePrivateKey } from "viem/accounts";
+import { verifyMessage } from "viem";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { ModelFailure, extractModel, llmMinersFromEnv, parseReply, replyText, telegraphCaller, type ModelCaller } from "../../src/extract/model.js";
 import type { Section } from "../../src/sources/github.js";
 
@@ -174,19 +175,102 @@ describe("parseReply", () => {
 });
 
 describe("telegraphCaller", () => {
+  const DIAMOND = "0x3624eb012b5e998bb57b6be6c9cfc9c4bc5eb99b";
+  // The escrow accept as the live node sent it on 5 Nov (docs/telegraph snapshot, miner/bench/network.md).
+  const escrowOffer = (overrides: Record<string, unknown> = {}) => ({
+    scheme: "escrow",
+    network: "eip155:11155111",
+    amount: "10000",
+    payTo: DIAMOND,
+    extra: {
+      message:
+        "Telegraph Escrow Payment\n\nWallet: {from}\nPay To: 0x3624eb012b5e998bb57b6be6c9cfc9c4bc5eb99b\nNetwork: eip155:11155111\n" +
+        "Amount: 10000 uUSDC\nResource: /v1/ask/302\nNonce: {nonce}\nValid After: {validAfter}\nValid Before: {validBefore}",
+    },
+    ...overrides,
+  });
+  const challenge = (accepts: object[]) =>
+    new Response("{}", { status: 402, headers: { "payment-required": btoa(JSON.stringify({ accepts })) } });
+
+  /** Stubs global fetch with `replies` in order and records each request's headers. */
+  async function withFetch(replies: (() => Response)[], run: (sent: Headers[]) => Promise<void>) {
+    const realFetch = globalThis.fetch;
+    const sent: Headers[] = [];
+    globalThis.fetch = async (_url, init) => {
+      sent.push(new Headers(init?.headers));
+      const reply = replies[sent.length - 1];
+      if (!reply) throw new Error("unexpected request");
+      return reply();
+    };
+    try {
+      await run(sent);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  }
+
+  // Throwaway keys: global fetch is stubbed, so nothing reaches the network.
+  const newCaller = (key = generatePrivateKey()) =>
+    telegraphCaller({ MINER_SPEND_KEY: key, TELEGRAPH_NODE_URL: "https://node.invalid" }, 10_000)!;
+
   it("reports a quote request that fails as unpaid", async () => {
-    // A throwaway key: global fetch is stubbed, so nothing reaches the network or signs a payment.
-    const caller = telegraphCaller({ MINER_SPEND_KEY: generatePrivateKey(), TELEGRAPH_NODE_URL: "https://node.invalid" }, 10_000)!;
     const realFetch = globalThis.fetch;
     globalThis.fetch = async () => {
       throw new Error("ECONNRESET");
     };
     try {
-      const failure = await caller(miners[0], "prompt", new AbortController().signal).catch((err: unknown) => err);
+      const failure = await newCaller()(miners[0], "prompt", new AbortController().signal).catch((err: unknown) => err);
       expect(failure).toBeInstanceOf(ModelFailure);
       expect(failure).toMatchObject({ reason: "payment", costMicroUsdc: null });
     } finally {
       globalThis.fetch = realFetch;
     }
+  });
+
+  it("pays from escrow: signs the node's template with the spend key and sends it as X-PAYMENT", async () => {
+    const key = generatePrivateKey();
+    const address = privateKeyToAccount(key).address;
+    await withFetch(
+      [() => challenge([{ scheme: "exact", network: "eip155:11155111", amount: "10000" }, escrowOffer()]),
+       () => Response.json({ result: { answer: '{"items":[]}' } })],
+      async (sent) => {
+        const reply = await newCaller(key)(miners[0], "prompt", new AbortController().signal);
+        expect(reply).toEqual({ text: '{"items":[]}', costMicroUsdc: 10_000 });
+        const paid = JSON.parse(atob(sent[1].get("x-payment")!));
+        expect(paid).toMatchObject({ x402Version: 2, scheme: "escrow", network: "eip155:11155111" });
+        const { authorization, signature } = paid.payload;
+        expect(authorization).toMatchObject({ from: address.toLowerCase(), to: DIAMOND, value: "10000" });
+        expect(Number(authorization.validBefore) - Number(authorization.validAfter)).toBeLessThanOrEqual(120);
+        const message = escrowOffer().extra.message
+          .replace("{from}", authorization.from).replace("{nonce}", authorization.nonce)
+          .replace("{validAfter}", authorization.validAfter).replace("{validBefore}", authorization.validBefore);
+        expect(await verifyMessage({ address, message, signature })).toBe(true);
+      }
+    );
+  });
+
+  it("treats an escrow refusal as unpaid, with the node's reason", async () => {
+    await withFetch(
+      [() => challenge([escrowOffer()]),
+       () => Response.json({ reason: "insufficient escrow for delivery" }, { status: 402 })],
+      async () => {
+        const failure = await newCaller()(miners[0], "prompt", new AbortController().signal).catch((err: unknown) => err);
+        expect(failure).toMatchObject({ reason: "payment", costMicroUsdc: null });
+        expect(String(failure)).toContain("insufficient escrow for delivery");
+      }
+    );
+  });
+
+  it.each([
+    ["a payee other than the Diamond", { payTo: "0x000000000000000000000000000000000000dead" }],
+    ["a template whose amount differs from the quote", { amount: "5000" }],
+    ["a quote over the cost cap", { amount: "20000", extra: { message: "Pay To: 0x3624eb012b5e998bb57b6be6c9cfc9c4bc5eb99b Network: eip155:11155111 Amount: 20000 uUSDC" } }],
+    ["no escrow accept", { scheme: "exact" }],
+  ])("signs nothing for %s", async (_name, overrides) => {
+    await withFetch([() => challenge([escrowOffer(overrides)])], async (sent) => {
+      const failure = await newCaller()(miners[0], "prompt", new AbortController().signal).catch((err: unknown) => err);
+      expect(failure).toMatchObject({ reason: "payment", costMicroUsdc: null });
+      expect(sent).toHaveLength(1);
+    });
   });
 });
