@@ -7,8 +7,8 @@
 # The X-Telegraph-Key value is never in this file; it is installed against the slug after registration.
 version: "1"
 kind: miner
-id: 0                                   # placeholder: numeric, must be unused
-slug: package-release-intel             # placeholder: must be unused
+id: 7314                                # unused on the dev node on 6 Nov (GET /api/miners, 2009 miners)
+slug: package-release-intel             # unused on 6 Nov
 name: Package Release Intelligence
 description: >
   What changed in an npm package between two versions: breaking changes, deprecations

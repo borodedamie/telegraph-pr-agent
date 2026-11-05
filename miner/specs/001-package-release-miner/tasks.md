@@ -348,6 +348,13 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
   - **Gate**: SC-001 to SC-006, SC-008 and SC-012 pass, excluding only the jumps beyond the US1 model budget, which must still be reported as partial with the cut releases named. First-time cost must be within the planned price.
   - If the gate fails, fix before Phase 7.
 
+  Status 5 Nov, preview `p5-bench6` (`bench/report.md`, `bench/judge-report.md`):
+  - Pass: SC-001 (673/673), SC-003 (0 invented), SC-004 (8/8), SC-005 (38/38), SC-006 identical and free repeats (38/38), SC-008 (security tests) and SC-012 (38/38).
+  - SC-002 recall: 67.1% by word matching. With the judge it is 82.6%; 2 of the judged pairs were read by hand and found wrong, which leaves 82.1% (302/368), above the 80% target.
+  - Not met, and deferred by decision on 5 Nov so that registration can go ahead: repeat latency p95 is 1056 ms against a target under 500 ms. A repeat still revalidates every source to compute its cache key; a short cache keyed by package and versions would fix it.
+  - Not run: n08 and n09, which need a local run with a simulated outage.
+  - First-time cost: at most one model call at 0.01 USDC per answer.
+
 ---
 
 ## Phase 7: User Story 5 — Purchasable on Telegraph (P2)
@@ -357,7 +364,7 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 **Independent Test**: a wallet the team does not control buys one answer through Telegraph, with receipt, signal and settlement evidence.
 
 - [ ] T060 [US5] ⚠ Deploy to Vercel production from `miner/`, on the plan chosen in T021 (Pro spends money). Set the env vars in the dashboard, add the Upstash Redis integration from the Vercel Marketplace, and record the production URL in `miner/bench/network.md`
-- [ ] T061 [US5] ⚠ Create two miner wallets, both separate from the bot's `0x46D0…C77b`, and record only their addresses in `miner/bench/network.md`:
+- [x] T061 [US5] ⚠ Create two miner wallets, both separate from the bot's `0x46D0…C77b`, and record only their addresses in `miner/bench/network.md`:
   - **Payout wallet**: its key goes in a local gitignored file only, never in chat, the repo or the server.
   - **Spend wallet** (research R11): mint a small test-USDC balance to it, and set its key as `MINER_SPEND_KEY` in Vercel production.
 - [ ] T062 [US5] Finalize and validate `miner/specs/001-package-release-miner/contracts/telegraph-miner.yaml`:
