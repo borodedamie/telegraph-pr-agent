@@ -76,6 +76,16 @@ describe("extractModel", () => {
     expect(await store.get("llm:breaker:302")).toBe("invalid_reply");
   });
 
+  it("does not trip the breaker when our escrow refused the payment", async () => {
+    const store = new MemoryStore();
+    const caller: ModelCaller = async () => {
+      throw new ModelFailure("payment", "miner 302: escrow refused: insufficient escrow for delivery", null, false);
+    };
+    const result = await extractModel(sections, new Set(), "4.0.0", new Budget(limitsFromEnv({})), store, miners, caller);
+    expect(result).toMatchObject({ failure: "payment", candidates: [] });
+    expect(await store.get("llm:breaker:302")).toBeNull();
+  });
+
   it("counts a call that failed after payment, so the next miner is not bought too", async () => {
     let calls = 0;
     const caller: ModelCaller = async () => {
@@ -255,7 +265,7 @@ describe("telegraphCaller", () => {
        () => Response.json({ reason: "insufficient escrow for delivery" }, { status: 402 })],
       async () => {
         const failure = await newCaller()(miners[0], "prompt", new AbortController().signal).catch((err: unknown) => err);
-        expect(failure).toMatchObject({ reason: "payment", costMicroUsdc: null });
+        expect(failure).toMatchObject({ reason: "payment", costMicroUsdc: null, minerAtFault: false });
         expect(String(failure)).toContain("insufficient escrow for delivery");
       }
     );

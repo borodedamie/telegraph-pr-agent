@@ -32,12 +32,14 @@ export function llmMinersFromEnv(env: NodeJS.ProcessEnv): LlmMiner[] {
 export class ModelFailure extends Error {
   /**
    * `payment` means nothing was paid (no quote, or a quote over the cap). For the others, `costMicroUsdc` is the
-   * amount that may have been paid; null when unknown.
+   * amount that may have been paid; null when unknown. `minerAtFault` is false when our side caused it (an
+   * escrow refusal for our balance), so the miner is not put behind the circuit breaker.
    */
   constructor(
     readonly reason: "timeout" | "invalid_reply" | "payment",
     message: string,
-    readonly costMicroUsdc: number | null = null
+    readonly costMicroUsdc: number | null = null,
+    readonly minerAtFault = true
   ) {
     super(message);
     this.name = "ModelFailure";
@@ -141,7 +143,7 @@ export function telegraphCaller(env: NodeJS.ProcessEnv, maxCostMicroUsdc: number
       if (response.status === 402) {
         // A refusal (for example "insufficient escrow for delivery") is not billed.
         const refusal = (await response.json().catch(() => ({}))) as { reason?: unknown };
-        throw new ModelFailure("payment", `miner ${miner.id}: escrow refused: ${String(refusal.reason ?? "no reason")}`);
+        throw new ModelFailure("payment", `miner ${miner.id}: escrow refused: ${String(refusal.reason ?? "no reason")}`, null, false);
       }
       if (!response.ok) throw new ModelFailure("invalid_reply", `miner ${miner.id}: HTTP ${response.status}`, amount);
       const body = (await response.json()) as { result?: unknown };
@@ -366,8 +368,8 @@ export async function extractModel(
       if (err.reason !== "payment") {
         budget.recordModelCall(prompt.length, err.costMicroUsdc ?? budget.limits.maxModelCostMicroUsdc, chosen.length);
       }
-      // The miner is not at fault when the answer's own deadline aborted the call.
-      if (!budget.signal.aborted) await store.set(`llm:breaker:${miner.id}`, err.reason, BREAKER_SEC);
+      // The miner is not at fault when the answer's own deadline aborted the call or our escrow refused it.
+      if (!budget.signal.aborted && err.minerAtFault) await store.set(`llm:breaker:${miner.id}`, err.reason, BREAKER_SEC);
     }
   }
   result.skipped = needed;
