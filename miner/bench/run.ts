@@ -11,13 +11,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import semver from "semver";
 import { releasesBetween } from "../src/coverage.js";
-import { Answer, type ChangeItem } from "../src/types.js";
-
-interface ExpectedEntry {
-  version: string;
-  change: string;
-  quote: string;
-}
+import { Answer } from "../src/types.js";
+import { comparable, recallOf, type ExpectedEntry } from "./match.js";
 
 interface BenchCase {
   id: string;
@@ -54,7 +49,7 @@ interface CaseResult {
   outcomeOk?: boolean;
   safeClaim?: boolean;
   identicalRepeat?: boolean;
-  recall?: { expected: number; matched: number; unmatched: ExpectedEntry[] };
+  recall?: ReturnType<typeof recallOf>;
   evidence?: { checked: number; present: number; failures: string[] };
   invented: string[];
   coverageProblems: string[];
@@ -68,7 +63,6 @@ const NEGATED = /\b(not|never|no)\b[^.]{0,40}$|n't[^.]{0,40}$/i;
 function claimsSafeUpgrade(text: string): boolean {
   return [...text.matchAll(SAFE_CLAIM)].some((m) => !NEGATED.test(text.slice(Math.max(0, m.index - 60), m.index)));
 }
-const STOP_WORDS = new Set("the and for are was were has have been with from that this now not its into when".split(" "));
 
 const args = process.argv.slice(2);
 const baseUrl = args.find((a) => /^https?:\/\//.test(a))?.replace(/\/$/, "");
@@ -85,44 +79,6 @@ const benchDir = new URL(".", import.meta.url).pathname;
 const transitions = JSON.parse(readFileSync(join(benchDir, "transitions.json"), "utf8")) as { cases: BenchCase[] };
 
 // ---- text helpers -----------------------------------------------------------------------------------------
-
-function decodeEntities(text: string): string {
-  return text
-    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;|&#39;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&");
-}
-
-/** Comparable text: HTML and Markdown markup removed, quotes unified, whitespace collapsed, lower case. */
-function comparable(text: string, isPage: boolean): string {
-  let out = text;
-  if (isPage) {
-    out = out.replace(/<\/?(code|a|em|strong|span|b|i|kbd)\b[^>]*>/gi, ""); // inline tags join their text
-    out = decodeEntities(out.replace(/<[^>]+>/g, " "));
-  }
-  out = out
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/[`*_#>]/g, "")
-    .replace(/[‘’]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/\s+/g, " ")
-    .replace(/ ([.,:;)])/g, "$1");
-  return out.trim().toLowerCase();
-}
-
-function words(text: string): Set<string> {
-  return new Set(
-    comparable(text, false)
-      .split(/[^a-z0-9.@/-]+/)
-      .map((w) => w.replace(/^[.-]+|[.-]+$/g, ""))
-      .filter((w) => w.length >= 3 && !STOP_WORDS.has(w))
-  );
-}
 
 // ---- upstream reads (independent of the miner) ------------------------------------------------------------
 
@@ -209,45 +165,6 @@ async function ask(query: string): Promise<Call> {
 }
 
 // ---- checks -----------------------------------------------------------------------------------------------
-
-/** An expected entry is found when an answer item of the same version quotes it, or says most of what it says. */
-function matches(expected: ExpectedEntry, item: ChangeItem): boolean {
-  if (item.version !== expected.version) return false;
-  const quote = comparable(expected.quote, false);
-  const excerpt = comparable(item.excerpt ?? "", false);
-  if (excerpt !== "" && (excerpt.includes(quote) || (excerpt.length >= 20 && quote.includes(excerpt)))) return true;
-  const wanted = words(`${expected.change} ${expected.quote}`);
-  const said = words(`${item.change} ${item.excerpt ?? ""}`);
-  const shared = [...wanted].filter((w) => said.has(w)).length;
-  if (wanted.size > 0 && shared / wanted.size >= 0.5) return true;
-  // An item that quotes a guide's heading ("drops `errorMap`") while the key quotes the sentence under it:
-  // it matches when it says at least three quarters of the key's own description of the change.
-  const described = stems(expected.change);
-  const stated = stems(`${item.change} ${item.excerpt ?? ""}`);
-  const common = [...described].filter((w) => stated.has(w)).length;
-  return common >= 2 && common / described.size >= 0.75;
-}
-
-/** Words cut to five letters, with dotted names split ("express.static.mime"), so "changed" meets "changes". */
-function stems(text: string): Set<string> {
-  return new Set(
-    [...words(text)]
-      .flatMap((w) => w.split("."))
-      .filter((w) => w.length >= 3)
-      .map((w) => w.slice(0, 5))
-  );
-}
-
-function recallOf(expected: ExpectedEntry[], answer: Answer): CaseResult["recall"] {
-  const unused = answer.changes.filter((c) => c.kind === "breaking");
-  const unmatched: ExpectedEntry[] = [];
-  for (const entry of expected) {
-    const index = unused.findIndex((item) => matches(entry, item));
-    if (index === -1) unmatched.push(entry);
-    else unused.splice(index, 1);
-  }
-  return { expected: expected.length, matched: expected.length - unmatched.length, unmatched };
-}
 
 async function evidenceOf(answer: Answer): Promise<CaseResult["evidence"]> {
   const from = answer.request?.fromResolved;
