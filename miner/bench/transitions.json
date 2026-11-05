@@ -1,0 +1,638 @@
+{
+  "version": 1,
+  "created": "2026-11-05",
+  "status": "draft: the expected breaking changes are not filled in yet; two reviewers sign off each positive case (see REVIEW.md)",
+  "cases": [
+    {
+      "id": "p01",
+      "query": "What changed in zod from 3.23.8 to 4.0.0?",
+      "package": "zod",
+      "from": "3.23.8",
+      "to": "4.0.0",
+      "releasesInRange": 81,
+      "tags": [
+        "multi_release",
+        "beyond_model_budget",
+        "separate_migration_guide"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p02",
+      "query": "What changed in express from 4.21.0 to 5.0.0?",
+      "package": "express",
+      "from": "4.21.0",
+      "to": "5.0.0",
+      "releasesInRange": 7,
+      "tags": [
+        "multi_release",
+        "security_fixes"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p03",
+      "query": "What changed in eslint from 8.57.0 to 9.0.0?",
+      "package": "eslint",
+      "from": "8.57.0",
+      "to": "9.0.0",
+      "releasesInRange": 2,
+      "tags": [
+        "flat_config",
+        "many_breaking"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p04",
+      "query": "What changed in vite from 5.4.0 to 6.0.0?",
+      "package": "vite",
+      "from": "5.4.0",
+      "to": "6.0.0",
+      "releasesInRange": 22,
+      "tags": [
+        "multi_release",
+        "monorepo",
+        "advisories"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p05",
+      "query": "What changed in next from 14.2.0 to 15.0.0?",
+      "package": "next",
+      "from": "14.2.0",
+      "to": "15.0.0",
+      "releasesInRange": 36,
+      "tags": [
+        "multi_release",
+        "beyond_model_budget",
+        "monorepo"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p06",
+      "query": "What changed in react from 18.3.1 to 19.0.0?",
+      "package": "react",
+      "from": "18.3.1",
+      "to": "19.0.0",
+      "releasesInRange": 1,
+      "tags": [
+        "monorepo",
+        "prose_release_notes"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p07",
+      "query": "What changed in typescript from 5.5.4 to 5.6.2?",
+      "package": "typescript",
+      "from": "5.5.4",
+      "to": "5.6.2",
+      "releasesInRange": 1,
+      "tags": [
+        "few_or_no_breaking"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p08",
+      "query": "What changed in prettier from 2.8.8 to 3.0.0?",
+      "package": "prettier",
+      "from": "2.8.8",
+      "to": "3.0.0",
+      "releasesInRange": 1,
+      "tags": [
+        "changelog_file"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p09",
+      "query": "What changed in jest from 28.1.3 to 29.0.0?",
+      "package": "jest",
+      "from": "28.1.3",
+      "to": "29.0.0",
+      "releasesInRange": 1,
+      "tags": [
+        "monorepo",
+        "changelog_file"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p10",
+      "query": "What changed in mongoose from 7.6.0 to 8.0.0?",
+      "package": "mongoose",
+      "from": "7.6.0",
+      "to": "8.0.0",
+      "releasesInRange": 29,
+      "tags": [
+        "multi_release",
+        "migration_guide"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p11",
+      "query": "What changed in axios from 0.27.2 to 1.0.0?",
+      "package": "axios",
+      "from": "0.27.2",
+      "to": "1.0.0",
+      "releasesInRange": 14,
+      "tags": [
+        "zero_x",
+        "multi_release"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p12",
+      "query": "What changed in commander from 11.1.0 to 12.0.0?",
+      "package": "commander",
+      "from": "11.1.0",
+      "to": "12.0.0",
+      "releasesInRange": 1,
+      "tags": [
+        "changelog_file"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p13",
+      "query": "What changed in tailwindcss from 3.4.17 to 4.0.0?",
+      "package": "tailwindcss",
+      "from": "3.4.17",
+      "to": "4.0.0",
+      "releasesInRange": 3,
+      "tags": [
+        "upgrade_guide_only",
+        "prose_release_notes"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p14",
+      "query": "What changed in react-router from 6.28.0 to 7.0.0?",
+      "package": "react-router",
+      "from": "6.28.0",
+      "to": "7.0.0",
+      "releasesInRange": 11,
+      "tags": [
+        "monorepo",
+        "multi_release",
+        "per_package_changelog"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p15",
+      "query": "What changed in pino from 8.21.0 to 9.0.0?",
+      "package": "pino",
+      "from": "8.21.0",
+      "to": "9.0.0",
+      "releasesInRange": 1,
+      "tags": [
+        "sparse_notes"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p16",
+      "query": "What changed in date-fns from 2.30.0 to 3.0.0?",
+      "package": "date-fns",
+      "from": "2.30.0",
+      "to": "3.0.0",
+      "releasesInRange": 1,
+      "tags": [
+        "changelog_file"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p17",
+      "query": "What changed in uuid from 9.0.1 to 10.0.0?",
+      "package": "uuid",
+      "from": "9.0.1",
+      "to": "10.0.0",
+      "releasesInRange": 1,
+      "tags": [
+        "sparse_notes"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p18",
+      "query": "What changed in chalk from 4.1.2 to 5.0.0?",
+      "package": "chalk",
+      "from": "4.1.2",
+      "to": "5.0.0",
+      "releasesInRange": 1,
+      "tags": [
+        "sparse_notes",
+        "esm_only"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p19",
+      "query": "What changed in node-fetch from 2.7.0 to 3.0.0?",
+      "package": "node-fetch",
+      "from": "2.7.0",
+      "to": "3.0.0",
+      "releasesInRange": 1,
+      "tags": [
+        "upgrade_guide_only"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p20",
+      "query": "What changed in @testing-library/react from 15.0.7 to 16.0.0?",
+      "package": "@testing-library/react",
+      "from": "15.0.7",
+      "to": "16.0.0",
+      "releasesInRange": 1,
+      "tags": [
+        "scoped",
+        "sparse_notes"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p21",
+      "query": "What changed in @tanstack/react-query from 4.36.1 to 5.0.0?",
+      "package": "@tanstack/react-query",
+      "from": "4.36.1",
+      "to": "5.0.0",
+      "releasesInRange": 13,
+      "tags": [
+        "scoped",
+        "monorepo",
+        "multi_release",
+        "migration_guide"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p22",
+      "query": "What changed in vue from 3.4.38 to 3.5.0?",
+      "package": "vue",
+      "from": "3.4.38",
+      "to": "3.5.0",
+      "releasesInRange": 1,
+      "tags": [
+        "minor_release",
+        "changelog_file"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p23",
+      "query": "What changed in @sveltejs/kit from 1.30.4 to 2.0.0?",
+      "package": "@sveltejs/kit",
+      "from": "1.30.4",
+      "to": "2.0.0",
+      "releasesInRange": 1,
+      "tags": [
+        "scoped",
+        "monorepo",
+        "per_package_changelog"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p24",
+      "query": "What changed in @nestjs/core from 9.4.3 to 10.0.0?",
+      "package": "@nestjs/core",
+      "from": "9.4.3",
+      "to": "10.0.0",
+      "releasesInRange": 1,
+      "tags": [
+        "scoped",
+        "monorepo",
+        "migration_guide"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p25",
+      "query": "What changed in esbuild from 0.20.2 to 0.21.0?",
+      "package": "esbuild",
+      "from": "0.20.2",
+      "to": "0.21.0",
+      "releasesInRange": 1,
+      "tags": [
+        "zero_x",
+        "changelog_file"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p26",
+      "query": "What changed in vitest from 1.6.0 to 2.0.0?",
+      "package": "vitest",
+      "from": "1.6.0",
+      "to": "2.0.0",
+      "releasesInRange": 2,
+      "tags": [
+        "monorepo"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p27",
+      "query": "What changed in lodash from 4.17.20 to 4.17.21?",
+      "package": "lodash",
+      "from": "4.17.20",
+      "to": "4.17.21",
+      "releasesInRange": 1,
+      "tags": [
+        "patch",
+        "advisories",
+        "sparse_notes"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p28",
+      "query": "What changed in minimist from 1.2.5 to 1.2.6?",
+      "package": "minimist",
+      "from": "1.2.5",
+      "to": "1.2.6",
+      "releasesInRange": 1,
+      "tags": [
+        "patch",
+        "advisories",
+        "sparse_notes"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p29",
+      "query": "What changed in dotenv from 16.4.7 to 17.0.0?",
+      "package": "dotenv",
+      "from": "16.4.7",
+      "to": "17.0.0",
+      "releasesInRange": 4,
+      "tags": [
+        "changelog_file"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "p30",
+      "query": "What changed in typescript-eslint from 7.18.0 to 8.0.0?",
+      "package": "typescript-eslint",
+      "from": "7.18.0",
+      "to": "8.0.0",
+      "releasesInRange": 1,
+      "tags": [
+        "monorepo",
+        "blog_post_notes"
+      ],
+      "expected": {
+        "outcome": "found",
+        "breaking": [],
+        "draftedBy": null,
+        "reviewedBy": []
+      }
+    },
+    {
+      "id": "n01",
+      "query": "What changed in zod from 3.23.8 to 4.9.99?",
+      "expected": {
+        "outcome": "not_found",
+        "why": "the target version does not exist; the answer names the closest published one",
+        "mustNotSuggestSafeUpgrade": true
+      }
+    },
+    {
+      "id": "n02",
+      "query": "What changed in express from 4.99.0 to 5.0.0?",
+      "expected": {
+        "outcome": "not_found",
+        "why": "the starting version does not exist",
+        "mustNotSuggestSafeUpgrade": true
+      }
+    },
+    {
+      "id": "n03",
+      "query": "What changed in this-package-does-not-exist-tg-bench from 1.0.0 to 2.0.0?",
+      "expected": {
+        "outcome": "out_of_scope",
+        "why": "unknown package",
+        "mustNotSuggestSafeUpgrade": true
+      }
+    },
+    {
+      "id": "n04",
+      "query": "What is the weather in Paris?",
+      "expected": {
+        "outcome": "out_of_scope",
+        "why": "not a package question",
+        "mustNotSuggestSafeUpgrade": true
+      }
+    },
+    {
+      "id": "n05",
+      "query": "What changed in React after 18?",
+      "expected": {
+        "outcome": "needs_clarification",
+        "why": "no target version and the question is ambiguous (FR-002)",
+        "mustNotSuggestSafeUpgrade": true
+      }
+    },
+    {
+      "id": "n06",
+      "query": null,
+      "expected": {
+        "outcome": "not_found",
+        "why": "a real package whose release has no release notes, changelog or tag (to pick in drafting)",
+        "mustNotSuggestSafeUpgrade": true
+      }
+    },
+    {
+      "id": "n07",
+      "query": null,
+      "expected": {
+        "outcome": "found",
+        "why": "a real package whose GitHub tags do not match the npm versions (unresolved tags); coverage must name the releases as not covered",
+        "mustNotSuggestSafeUpgrade": true
+      }
+    },
+    {
+      "id": "n08",
+      "query": "What changed in zod from 3.23.8 to 4.0.0?",
+      "expected": {
+        "outcome": "temporarily_unavailable",
+        "why": "simulated upstream outage: run locally with SIMULATE_UPSTREAM_OUTAGE=1; not charged",
+        "mustNotSuggestSafeUpgrade": true
+      }
+    },
+    {
+      "id": "n09",
+      "query": "What changed in lodash from 4.17.20 to 4.17.21?",
+      "expected": {
+        "outcome": "found",
+        "why": "OSV outage (local run with OSV stubbed to 503): security.status unavailable, no 'no known advisories' claim, not cached",
+        "mustNotSuggestSafeUpgrade": true
+      }
+    },
+    {
+      "id": "n10",
+      "query": "What changed in zod from 4.0.0 to 3.23.8?",
+      "expected": {
+        "outcome": "needs_clarification",
+        "why": "target older than the start: never presented as an upgrade (to confirm against FR-002 during drafting)",
+        "mustNotSuggestSafeUpgrade": true
+      }
+    }
+  ]
+}
