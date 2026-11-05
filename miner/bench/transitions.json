@@ -1,7 +1,7 @@
 {
   "version": 1,
   "created": "2026-11-05",
-  "status": "draft: the expected breaking changes are not filled in yet; two reviewers sign off each positive case (see REVIEW.md)",
+  "status": "draft: all 30 positive cases have Claude's draft of the expected changes; none is reviewed yet (see REVIEW.md). n06 and n07 still need a package.",
   "cases": [
     {
       "id": "p01",
@@ -17,9 +17,307 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "4.0.0",
+            "change": "Error customization: drops invalid_type_error and required_error",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "drops `invalid_type_error` and `required_error`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "Error customization: drops errorMap",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "drops `errorMap`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "ZodError: changes to .message",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "changes to `.message`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "ZodError: updates issue formats",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "updates issue formats"
+          },
+          {
+            "version": "4.0.0",
+            "change": "ZodError: changes error map precedence",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "changes error map precedence"
+          },
+          {
+            "version": "4.0.0",
+            "change": "ZodError: drops .formErrors",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "drops `.formErrors`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "ZodError: drops .errors",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "drops `.errors`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.number(): no infinite values",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "no infinite values"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.number(): .safe() no longer accepts floats",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "`.safe()` no longer accepts floats"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.number(): .int() accepts safe integers only",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "`.int()` accepts safe integers only"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.string() updates: stricter .uuid()",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "stricter `.uuid()`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.string() updates: no padding in .base64url()",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "no padding in `.base64url()`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.string() updates: drops z.string().ip()",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "drops `z.string().ip()`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.string() updates: updates z.string().ipv6()",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "updates `z.string().ipv6()`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.string() updates: drops z.string().cidr()",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "drops `z.string().cidr()`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.object(): defaults applied within optional fields",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "defaults applied within optional fields"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.object(): drops .nonstrict()",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "drops `.nonstrict()`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.object(): drops .deepPartial()",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "drops `.deepPartial()`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.object(): changes z.unknown() optionality",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "changes `z.unknown()` optionality"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.array(): changes .nonempty() type",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "changes `.nonempty()` type"
+          },
+          {
+            "version": "4.0.0",
+            "change": ".refine(): ignores type predicates",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "ignores type predicates"
+          },
+          {
+            "version": "4.0.0",
+            "change": ".refine(): drops ctx.path",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "drops `ctx.path`"
+          },
+          {
+            "version": "4.0.0",
+            "change": ".refine(): drops function as second argument",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "drops function as second argument"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.ostring(), etc dropped",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "`z.ostring()`, etc dropped"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.literal(): drops symbol support",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "drops `symbol` support"
+          },
+          {
+            "version": "4.0.0",
+            "change": "static .create() factories dropped",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "static `.create()` factories dropped"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.record(): drops single argument usage",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "drops single argument usage"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.intersection(): throws Error on merge conflict",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "throws `Error` on merge conflict"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.coerce input type is unknown",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "`z.coerce` updates"
+          },
+          {
+            "version": "4.0.0",
+            "change": ".default() short-circuits on undefined and applies to the output type",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "`.default()` updates"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.function() is no longer a Zod schema",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "## `z.function()`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.record() with an enum key schema is exhaustive",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "improves enum support"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [
+          {
+            "version": "4.0.0",
+            "change": "Error customization: deprecates message parameter",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "deprecates `message` parameter"
+          },
+          {
+            "version": "4.0.0",
+            "change": "ZodError: deprecates .format()",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "deprecates `.format()`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "ZodError: deprecates .flatten()",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "deprecates `.flatten()`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "ZodError: deprecates .addIssue() and .addIssues()",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "deprecates `.addIssue()` and `.addIssues()`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.string() updates: deprecates .email() etc",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "deprecates `.email()` etc"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.object(): deprecates .strict() and .passthrough()",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "deprecates `.strict()` and `.passthrough()`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.object(): deprecates .strip()",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "deprecates `.strip()`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.object(): deprecates .merge()",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "deprecates `.merge()`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.nativeEnum() deprecated",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "`z.nativeEnum()` deprecated"
+          },
+          {
+            "version": "4.0.0",
+            "change": "z.promise() deprecated",
+            "migration": null,
+            "source": "https://zod.dev/v4/changelog",
+            "quote": "`z.promise()` deprecated"
+          }
+        ],
+        "notes": "From the headings of the official v4 changelog (zod.dev/v4/changelog; packages/docs/content/v4/changelog.mdx, also the miner's test fixture). 'Internal changes' (generics, ._def, ZodEffects, ZodBranded) are left out: they affect library authors. 4.0.0 has no GitHub release; 3.24-3.25 add zod/v4 as a subpath and are not breaking. Reviewers: the release is too large to review line by line; this is the changelog's own list."
       }
     },
     {
@@ -35,9 +333,243 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "5.0.0",
+            "change": "app.del() was removed",
+            "migration": "Use app.delete()",
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "app.del()"
+          },
+          {
+            "version": "5.0.0",
+            "change": "app.param(fn) was removed",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "app.param(fn)"
+          },
+          {
+            "version": "5.0.0",
+            "change": "Pluralized method names: req.acceptsCharset, acceptsEncoding, acceptsLanguage were removed",
+            "migration": "Use req.acceptsCharsets(), acceptsEncodings(), acceptsLanguages()",
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "Pluralized method names"
+          },
+          {
+            "version": "5.0.0",
+            "change": "A leading colon in app.param(name, fn) is no longer stripped",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "Leading colon (:) in the name for app.param(name, fn)"
+          },
+          {
+            "version": "5.0.0",
+            "change": "req.param(name) was removed",
+            "migration": "Use req.params, req.body or req.query",
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "req.param(name)"
+          },
+          {
+            "version": "5.0.0",
+            "change": "res.json(obj, status) was removed",
+            "migration": "res.status(status).json(obj)",
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "res.json(obj, status)"
+          },
+          {
+            "version": "5.0.0",
+            "change": "res.jsonp(obj, status) was removed",
+            "migration": "res.status(status).jsonp(obj)",
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "res.jsonp(obj, status)"
+          },
+          {
+            "version": "5.0.0",
+            "change": "res.redirect(url, status) was removed",
+            "migration": "res.redirect(status, url)",
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "res.redirect(url, status)"
+          },
+          {
+            "version": "5.0.0",
+            "change": "The magic 'back' value of res.redirect and res.location was removed",
+            "migration": "Use req.get('Referrer') || '/'",
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "res.redirect('back') and res.location('back')"
+          },
+          {
+            "version": "5.0.0",
+            "change": "res.send(body, status) was removed",
+            "migration": "res.status(status).send(body)",
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "res.send(body, status)"
+          },
+          {
+            "version": "5.0.0",
+            "change": "res.send(status) with a number was removed",
+            "migration": "res.sendStatus(status)",
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "res.send(status)"
+          },
+          {
+            "version": "5.0.0",
+            "change": "res.sendfile() was removed",
+            "migration": "Use res.sendFile()",
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "res.sendfile()"
+          },
+          {
+            "version": "5.0.0",
+            "change": "res.sendFile() options changed",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "res.sendFile() options"
+          },
+          {
+            "version": "5.0.0",
+            "change": "express.static() options changed",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "express.static() options"
+          },
+          {
+            "version": "5.0.0",
+            "change": "router.param(fn) was removed",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "router.param(fn)"
+          },
+          {
+            "version": "5.0.0",
+            "change": "express.static.mime was removed",
+            "migration": "Use the mime-types package",
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "express.static.mime"
+          },
+          {
+            "version": "5.0.0",
+            "change": "MIME types changed",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "MIME type changes"
+          },
+          {
+            "version": "5.0.0",
+            "change": "The express:router debug logs changed",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "express:router debug logs"
+          },
+          {
+            "version": "5.0.0",
+            "change": "Path route matching syntax changed (path-to-regexp 8)",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "Path route matching syntax"
+          },
+          {
+            "version": "5.0.0",
+            "change": "Rejected promises from middleware and handlers are handled as errors",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "Rejected promises handled from middleware and handlers"
+          },
+          {
+            "version": "5.0.0",
+            "change": "express.urlencoded defaults extended to false",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "express.urlencoded"
+          },
+          {
+            "version": "5.0.0",
+            "change": "express.static no longer serves dotfiles by default",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "express.static dotfiles"
+          },
+          {
+            "version": "5.0.0",
+            "change": "router.param() no longer accepts an array of names",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "router.param() with an array of names"
+          },
+          {
+            "version": "5.0.0",
+            "change": "app.listen behaviour changed",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "app.listen"
+          },
+          {
+            "version": "5.0.0",
+            "change": "app.router was removed",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "app.router"
+          },
+          {
+            "version": "5.0.0",
+            "change": "req.body is undefined when the body has not been parsed",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "req.body"
+          },
+          {
+            "version": "5.0.0",
+            "change": "req.host keeps the port",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "req.host"
+          },
+          {
+            "version": "5.0.0",
+            "change": "req.params changed",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "req.params"
+          },
+          {
+            "version": "5.0.0",
+            "change": "req.query is a getter and its parser changed",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "req.query"
+          },
+          {
+            "version": "5.0.0",
+            "change": "res.clearCookie ignores maxAge and expires",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "res.clearCookie"
+          },
+          {
+            "version": "5.0.0",
+            "change": "res.status only accepts integers 100-999",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "res.status"
+          },
+          {
+            "version": "5.0.0",
+            "change": "res.vary throws without a field argument",
+            "migration": null,
+            "source": "https://expressjs.com/en/guide/migrating-5.html",
+            "quote": "res.vary"
+          },
+          {
+            "version": "5.0.0",
+            "change": "Node.js 18 or newer is required",
+            "migration": null,
+            "source": "https://github.com/expressjs/express/releases/tag/v5.0.0",
+            "quote": "Dropped support for Node.js versions before v18."
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "Quotes are the migration guide's headings (src/content/pages/en/guide/migrating-5.mdx in expressjs/expressjs.com); the last one is from the 5.0.0 release. Reviewers: the 'change' wording for headings without detail here (req.params, app.listen, res.sendFile options, express.static options, MIME types, debug logs) should be checked against the guide text. 4.21.x-4.22.x are fixes and security releases, covered by OSV."
       }
     },
     {
@@ -53,9 +585,278 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "9.0.0",
+            "change": "correct camelcase rule schema for allow option",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "correct `camelcase` rule schema for `allow` option"
+          },
+          {
+            "version": "9.0.0",
+            "change": "move AST traversal into SourceCode",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "move AST traversal into SourceCode"
+          },
+          {
+            "version": "9.0.0",
+            "change": "disallow multiple configuration comments for same rule",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "disallow multiple configuration comments for same rule"
+          },
+          {
+            "version": "9.0.0",
+            "change": "Rule Tester checks for missing placeholder data in the message",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "Rule Tester checks for missing placeholder data in the message"
+          },
+          {
+            "version": "9.0.0",
+            "change": "default for enforceForClassMembers in no-useless-computed-key",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "default for `enforceForClassMembers` in `no-useless-computed-key`"
+          },
+          {
+            "version": "9.0.0",
+            "change": "Stricter rule test validations",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "Stricter rule test validations"
+          },
+          {
+            "version": "9.0.0",
+            "change": "no-unused-vars default caughtErrors to 'all'",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "`no-unused-vars` default caughtErrors to 'all'"
+          },
+          {
+            "version": "9.0.0",
+            "change": "no-restricted-imports allow multiple config entries for same path",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "no-restricted-imports allow multiple config entries for same path"
+          },
+          {
+            "version": "9.0.0",
+            "change": "detect duplicate test cases",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "detect duplicate test cases"
+          },
+          {
+            "version": "9.0.0",
+            "change": "no-inner-declaration new default behaviour and option",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "no-inner-declaration new default behaviour and option"
+          },
+          {
+            "version": "9.0.0",
+            "change": "handle --output-file for empty output when saving to disk",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "handle `--output-file` for empty output when saving to disk"
+          },
+          {
+            "version": "9.0.0",
+            "change": "upgrade eslint-scope@8.0.0",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "upgrade eslint-scope@8.0.0"
+          },
+          {
+            "version": "9.0.0",
+            "change": "no-unused-vars varsIgnorePattern behavior with catch arguments",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "no-unused-vars `varsIgnorePattern` behavior with catch arguments"
+          },
+          {
+            "version": "9.0.0",
+            "change": "configuration comments with just severity should retain options",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "configuration comments with just severity should retain options"
+          },
+          {
+            "version": "9.0.0",
+            "change": "Remove CodePath#currentSegments",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "Remove CodePath#currentSegments"
+          },
+          {
+            "version": "9.0.0",
+            "change": "FlatRuleTester -> RuleTester",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "FlatRuleTester -> RuleTester"
+          },
+          {
+            "version": "9.0.0",
+            "change": "remove no-inner-declarations from eslint:recommended",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "remove `no-inner-declarations` from `eslint:recommended`"
+          },
+          {
+            "version": "9.0.0",
+            "change": "Rename FlatESLint to ESLint",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "Rename FlatESLint to ESLint"
+          },
+          {
+            "version": "9.0.0",
+            "change": "skip running warnings in --quiet mode",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "skip running warnings in --quiet mode"
+          },
+          {
+            "version": "9.0.0",
+            "change": "Set default schema: [], drop support for function-style rules",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "Set default `schema: []`, drop support for function-style rules"
+          },
+          {
+            "version": "9.0.0",
+            "change": "add two more cases to no-implicit-coercion",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "add two more cases to `no-implicit-coercion`"
+          },
+          {
+            "version": "9.0.0",
+            "change": "Switch Linter to flat config by default",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "Switch Linter to flat config by default"
+          },
+          {
+            "version": "9.0.0",
+            "change": "Parsing 'exported' comment using parseListConfig",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "Parsing 'exported' comment using parseListConfig"
+          },
+          {
+            "version": "9.0.0",
+            "change": "Remove valid-jsdoc and require-jsdoc",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "Remove valid-jsdoc and require-jsdoc"
+          },
+          {
+            "version": "9.0.0",
+            "change": "Behavior of CLI when no arguments are passed",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "Behavior of CLI when no arguments are passed"
+          },
+          {
+            "version": "9.0.0",
+            "change": "Update shouldUseFlatConfig and CLI so flat config is default",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "Update shouldUseFlatConfig and CLI so flat config is default"
+          },
+          {
+            "version": "9.0.0",
+            "change": "deprecate no-new-symbol, recommend no-new-native-nonconstructor",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "deprecate no-new-symbol, recommend no-new-native-nonconstructor"
+          },
+          {
+            "version": "9.0.0",
+            "change": "check for parsing errors in suggestion fixes",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "check for parsing errors in suggestion fixes"
+          },
+          {
+            "version": "9.0.0",
+            "change": "assert suggestion messages are unique in rule testers",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "assert suggestion messages are unique in rule testers"
+          },
+          {
+            "version": "9.0.0",
+            "change": "no-invalid-regexp make allowConstructorFlags case-sensitive",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "`no-invalid-regexp` make allowConstructorFlags case-sensitive"
+          },
+          {
+            "version": "9.0.0",
+            "change": "no-sequences rule schema correction",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "no-sequences rule schema correction"
+          },
+          {
+            "version": "9.0.0",
+            "change": "Update eslint:recommended configuration",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "Update `eslint:recommended` configuration"
+          },
+          {
+            "version": "9.0.0",
+            "change": "drop support for string configurations in flat config array",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "drop support for string configurations in flat config array"
+          },
+          {
+            "version": "9.0.0",
+            "change": "Remove SourceCode#getComments()",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "Remove `SourceCode#getComments()`"
+          },
+          {
+            "version": "9.0.0",
+            "change": "Remove deprecated context methods",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "Remove deprecated context methods"
+          },
+          {
+            "version": "9.0.0",
+            "change": "Swap FlatESLint-ESLint, FlatRuleTester-RuleTester in API",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "Swap FlatESLint-ESLint, FlatRuleTester-RuleTester in API"
+          },
+          {
+            "version": "9.0.0",
+            "change": "remove formatters except html, json(-with-metadata), and stylish",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "remove formatters except html, json(-with-metadata), and stylish"
+          },
+          {
+            "version": "9.0.0",
+            "change": "Require Node.js ^18.18.0 || ^20.9.0 || >=21.1.0",
+            "migration": null,
+            "source": "https://github.com/eslint/eslint/releases/tag/v9.0.0",
+            "quote": "Require Node.js `^18.18.0 || ^20.9.0 || >=21.1.0`"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "All feat!/fix! items of the 9.0.0 Breaking Changes list; 'change' repeats the item text for reviewers to rephrase. The migration guide (eslint.org/docs/latest/use/migrate-to-9.0.0) groups the same changes. 'deprecate no-new-symbol' is a deprecation listed as breaking."
       }
     },
     {
@@ -72,9 +873,131 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "6.0.0",
+            "change": "resolve.conditions and ssr.resolve.conditions no longer get conditions added internally",
+            "migration": "Spread defaultClientConditions / defaultServerConditions into custom values",
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "From Vite 6, some of the conditions are no longer added internally and need to be included in the config values."
+          },
+          {
+            "version": "6.0.0",
+            "change": "json.namedExports is respected with json.stringify, and json.stringify defaults to 'auto'",
+            "migration": "Set json.namedExports: false or json.stringify: false for the old behaviour",
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "From Vite 6, even when `json.stringify: true` is set, `json.namedExports` is not disabled and the value is respected."
+          },
+          {
+            "version": "6.0.0",
+            "change": "More HTML elements have their asset references processed",
+            "migration": "Add vite-ignore to opt out",
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "Vite 6 extends the support to even more HTML elements."
+          },
+          {
+            "version": "6.0.0",
+            "change": "postcss-load-config v6: TypeScript PostCSS configs need tsx or jiti",
+            "migration": null,
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "`tsx`](https://www.npmjs.com/package/tsx) or [`jiti`](https://www.npmjs.com/package/jiti) is now required to load TypeScript postcss config files"
+          },
+          {
+            "version": "6.0.0",
+            "change": "Sass uses the modern API by default",
+            "migration": "Set css.preprocessorOptions.scss.api: 'legacy' to keep the legacy API",
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "From Vite 6, the modern API is used by default for Sass."
+          },
+          {
+            "version": "6.0.0",
+            "change": "The library-mode CSS file is named after the package instead of style.css",
+            "migration": "Set build.lib.cssFileName: 'style' to keep style.css",
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "From Vite 6, the default file name now uses `\"name\"` in `package.json` similar to the JS output files."
+          },
+          {
+            "version": "6.0.0",
+            "change": "Default import of CSS no longer works in SSR dev",
+            "migration": null,
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "remove default import in ssr dev"
+          },
+          {
+            "version": "6.0.0",
+            "change": "build.cssMinify is on for SSR builds",
+            "migration": null,
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "default `build.cssMinify` to `'esbuild'` for SSR"
+          },
+          {
+            "version": "6.0.0",
+            "change": "server.proxy bypass is called for WebSocket upgrades with res undefined",
+            "migration": null,
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "`server.proxy[path].bypass` is now called for WebSocket upgrade requests"
+          },
+          {
+            "version": "6.0.0",
+            "change": "terser 5.16.0 or newer is required",
+            "migration": null,
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "Minimal supported terser version for"
+          },
+          {
+            "version": "6.0.0",
+            "change": "commonjsOptions.strictRequires defaults to true",
+            "migration": null,
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "is now `true` by default (was `'auto'` before)."
+          },
+          {
+            "version": "6.0.0",
+            "change": "Range and incremental braces are no longer supported in globs",
+            "migration": null,
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "are no longer supported in globs."
+          },
+          {
+            "version": "6.0.0",
+            "change": "resolve.mainFields is not used for non-externalized SSR dependencies",
+            "migration": null,
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "makes `resolve.mainFields` to not be used for no-externalized dependencies in SSR"
+          },
+          {
+            "version": "6.0.0",
+            "change": "The fs.cachedChecks option was removed",
+            "migration": null,
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "remove fs.cachedChecks option"
+          },
+          {
+            "version": "6.0.0",
+            "change": "dotenv-expand 12: variables must be declared before they are interpolated",
+            "migration": null,
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "Variables used in interpolation should be declared before the interpolation now."
+          },
+          {
+            "version": "6.0.0",
+            "change": "Updating an SSR-only module no longer reloads the client page",
+            "migration": null,
+            "source": "https://v6.vite.dev/guide/migration",
+            "quote": "Updates to an SSR-only module no longer triggers a full page reload in the client."
+          },
+          {
+            "version": "6.0.0",
+            "change": "Node.js 21 is dropped from the supported ranges",
+            "migration": null,
+            "source": "https://github.com/vitejs/vite/blob/v6.0.0/packages/vite/CHANGELOG.md",
+            "quote": "drop node 21 support in version ranges"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "The 6.0.0 release only links the changelog; the v6 migration guide (docs/guide/migration.md at tag v6.0.0) is the source, plus the changelog's 'drop node 21' item (source: packages/vite/CHANGELOG.md at v6.0.0). The experimental Vite Runtime API removal is called non-breaking by the guide. The 5.4.x releases are fixes; several are security fixes covered by OSV."
       }
     },
     {
@@ -91,9 +1014,110 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "15.0.0",
+            "change": "React 19 is the minimum for the App Router",
+            "migration": null,
+            "source": "https://nextjs.org/docs/app/guides/upgrading/version-15",
+            "quote": "The minimum versions of `react` and `react-dom` is now 19."
+          },
+          {
+            "version": "15.0.0",
+            "change": "useFormState is replaced by useActionState",
+            "migration": "Use useActionState",
+            "source": "https://nextjs.org/docs/app/guides/upgrading/version-15",
+            "quote": "`useFormState` has been replaced by `useActionState`."
+          },
+          {
+            "version": "15.0.0",
+            "change": "cookies, headers, draftMode, params and searchParams are asynchronous",
+            "migration": "await them; a codemod is available",
+            "source": "https://nextjs.org/docs/app/guides/upgrading/version-15",
+            "quote": "Previously synchronous Request-time APIs that rely on request information are now **asynchronous**"
+          },
+          {
+            "version": "15.0.0",
+            "change": "runtime: 'experimental-edge' errors",
+            "migration": "Use runtime: 'edge'",
+            "source": "https://nextjs.org/docs/app/guides/upgrading/version-15",
+            "quote": "we will now error if `experimental-edge` i"
+          },
+          {
+            "version": "15.0.0",
+            "change": "fetch requests are not cached by default",
+            "migration": "Pass cache: 'force-cache' or set fetchCache = 'default-cache'",
+            "source": "https://nextjs.org/docs/app/guides/upgrading/version-15",
+            "quote": "requests](/docs/app/api-reference/functions/fetch) are no longer cached by default."
+          },
+          {
+            "version": "15.0.0",
+            "change": "GET route handlers are not cached by default",
+            "migration": "export const dynamic = 'force-static'",
+            "source": "https://nextjs.org/docs/app/guides/upgrading/version-15",
+            "quote": "functions in [Route Handlers](/docs/app/api-reference/file-conventions/route) are no longer cached by default."
+          },
+          {
+            "version": "15.0.0",
+            "change": "Page segments are not reused from the client cache on navigation",
+            "migration": "Set staleTimes",
+            "source": "https://nextjs.org/docs/app/guides/upgrading/version-15",
+            "quote": "segments are no longer reused from the [Client Cache]"
+          },
+          {
+            "version": "15.0.0",
+            "change": "@next/font was removed",
+            "migration": "Import from next/font",
+            "source": "https://nextjs.org/docs/app/guides/upgrading/version-15",
+            "quote": "The `@next/font` package has been removed in favor of the built-in"
+          },
+          {
+            "version": "15.0.0",
+            "change": "experimental.bundlePagesExternals was renamed to bundlePagesRouterDependencies",
+            "migration": null,
+            "source": "https://nextjs.org/docs/app/guides/upgrading/version-15",
+            "quote": "`experimental.bundlePagesExternals` is now stable and renamed to `bundlePagesRouterDependencies`."
+          },
+          {
+            "version": "15.0.0",
+            "change": "experimental.serverComponentsExternalPackages was renamed to serverExternalPackages",
+            "migration": null,
+            "source": "https://nextjs.org/docs/app/guides/upgrading/version-15",
+            "quote": "`experimental.serverComponentsExternalPackages` is now stable and renamed to `serverExternalPackages`."
+          },
+          {
+            "version": "15.0.0",
+            "change": "Speed Insights auto instrumentation was removed",
+            "migration": null,
+            "source": "https://nextjs.org/docs/app/guides/upgrading/version-15",
+            "quote": "Auto instrumentation for Speed Insights was removed in Next.js 15."
+          },
+          {
+            "version": "15.0.0",
+            "change": "NextRequest geo and ip were removed",
+            "migration": "Use geolocation / ipAddress from @vercel/functions",
+            "source": "https://nextjs.org/docs/app/guides/upgrading/version-15",
+            "quote": "The `geo` and `ip` properties on `NextRequest` have been removed"
+          },
+          {
+            "version": "15.0.0",
+            "change": "next/image no longer uses squoosh; sharp is an optional dependency",
+            "migration": null,
+            "source": "https://github.com/vercel/next.js/releases/tag/v15.0.0",
+            "quote": "remove `squoosh` in favor of `sharp` as optional dependency"
+          },
+          {
+            "version": "15.0.0",
+            "change": "The deprecated analyticsId config was removed",
+            "migration": null,
+            "source": "https://github.com/vercel/next.js/releases/tag/v15.0.0",
+            "quote": "remove deprecated analyticsId from config"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "Source: the v15 upgrade guide (docs/01-app/02-guides/upgrading/version-15.mdx, current canary; may have changed since 15.0.0) plus two items of the 15.0.0 release. The 15.0.0 release text is several thousand lines of PR titles; reviewers should also check the 15.0.0 blog post (nextjs.org/blog/next-15) for the Node.js minimum and the ESLint 9 support. The 14.2.x releases are fixes and security fixes, covered by OSV."
       }
     },
     {
@@ -109,9 +1133,132 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "19.0.0",
+            "change": "The new JSX transform is required",
+            "migration": null,
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "New JSX Transform is now required"
+          },
+          {
+            "version": "19.0.0",
+            "change": "Errors in render are not re-thrown; uncaught ones go to window.reportError and caught ones to console.error",
+            "migration": "Use onUncaughtError / onCaughtError on createRoot to customise",
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "Errors in render are not re-thrown"
+          },
+          {
+            "version": "19.0.0",
+            "change": "propTypes are ignored",
+            "migration": "Use TypeScript or another type checker",
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "Removed: `propTypes`"
+          },
+          {
+            "version": "19.0.0",
+            "change": "defaultProps for function components was removed",
+            "migration": "Use ES6 default parameters",
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "Removed: `defaultProps` for functions"
+          },
+          {
+            "version": "19.0.0",
+            "change": "Legacy context (contextTypes, getChildContext) was removed",
+            "migration": "Use contextType",
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "Removed: `contextTypes` and `getChildContext`"
+          },
+          {
+            "version": "19.0.0",
+            "change": "String refs were removed",
+            "migration": "Use ref callbacks",
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "Removed: string refs"
+          },
+          {
+            "version": "19.0.0",
+            "change": "Module pattern factories were removed",
+            "migration": "Use regular functions",
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "Removed: Module pattern factories"
+          },
+          {
+            "version": "19.0.0",
+            "change": "React.createFactory was removed",
+            "migration": "Use JSX",
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "Removed: `React.createFactory`"
+          },
+          {
+            "version": "19.0.0",
+            "change": "react-test-renderer/shallow was removed",
+            "migration": "Use react-shallow-renderer directly or Testing Library",
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "Removed: `react-test-renderer/shallow`"
+          },
+          {
+            "version": "19.0.0",
+            "change": "react-dom/test-utils was removed; act moved to react",
+            "migration": "import { act } from 'react'",
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "Removed: `react-dom/test-utils`"
+          },
+          {
+            "version": "19.0.0",
+            "change": "ReactDOM.render and ReactDOM.hydrate were removed",
+            "migration": "Use createRoot and hydrateRoot",
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "Removed: `ReactDOM`.`render`, `ReactDOM`.`hydrate`"
+          },
+          {
+            "version": "19.0.0",
+            "change": "unmountComponentAtNode was removed",
+            "migration": "Use root.unmount()",
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "Removed: `unmountComponentAtNode`"
+          },
+          {
+            "version": "19.0.0",
+            "change": "ReactDOM.findDOMNode was removed",
+            "migration": "Use DOM refs",
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "Removed: `ReactDOM`.`findDOMNode`"
+          },
+          {
+            "version": "19.0.0",
+            "change": "UMD builds were removed",
+            "migration": "Load React from an ESM CDN such as esm.sh",
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "UMD builds removed"
+          },
+          {
+            "version": "19.0.0",
+            "change": "StrictMode reuses useMemo/useCallback results in the second render and double-invokes ref callbacks on mount",
+            "migration": null,
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "StrictMode changes"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [
+          {
+            "version": "19.0.0",
+            "change": "element.ref is deprecated in favour of element.props.ref",
+            "migration": "Use element.props.ref",
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "Deprecated: `element.ref` access"
+          },
+          {
+            "version": "19.0.0",
+            "change": "react-test-renderer is deprecated",
+            "migration": "Use Testing Library",
+            "source": "https://github.com/facebook/react/releases/tag/v19.0.0",
+            "quote": "react-test-renderer logs a deprecation warning"
+          }
+        ],
+        "notes": "The TypeScript changes (removed ReactChild/VFC etc., required useRef argument, global JSX namespace removed, implicit ref returns) ship in @types/react, not in the react package; not counted here. The UMD and StrictMode entries are under 'Notable Changes' in the release but break existing setups."
       }
     },
     {
@@ -126,9 +1273,40 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "5.6.2",
+            "change": "lib.d.ts types changed",
+            "migration": null,
+            "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-5-6/",
+            "quote": "`lib.d.ts`"
+          },
+          {
+            "version": "5.6.2",
+            "change": ".tsbuildinfo is always written",
+            "migration": null,
+            "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-5-6/",
+            "quote": "`.tsbuildinfo` is Always Written"
+          },
+          {
+            "version": "5.6.2",
+            "change": "File extensions and package.json inside node_modules are respected",
+            "migration": null,
+            "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-5-6/",
+            "quote": "Respecting File Extensions and `package.json` from within `node_modules`"
+          },
+          {
+            "version": "5.6.2",
+            "change": "override checks on computed properties are correct (new errors)",
+            "migration": null,
+            "source": "https://devblogs.microsoft.com/typescript/announcing-typescript-5-6/",
+            "quote": "Correct `override` Checks on Computed Properties"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "From 'Notable Behavioral Changes' of the 5.6 announcement (TypeScript-Website release-notes/TypeScript 5.6.md); the 5.6.2 GitHub release only links it. Borderline, not counted: 'Disallowed Nullish and Truthy Checks' is a new check that can fail an existing build."
       }
     },
     {
@@ -143,9 +1321,145 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "3.0.0",
+            "change": "Change the default value for trailingComma to all",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "Change the default value for `trailingComma` to `all`"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Remove Flow syntax support from babel parser",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "Remove Flow syntax support from `babel` parser"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Remove support for Flow comments",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "Remove support for Flow comments"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Print trailing comma in type parameters and tuple types when --trailing-comma=es5",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "Print trailing comma in type parameters and tuple types when `--trailing-comma=es5`"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Add the pure css parser",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "Add the pure `css` parser"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Drop support for \"comma separated interfaces\" syntax",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "Drop support for \"comma separated interfaces\" syntax"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Drop support for Node.js 10 and 12",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "Drop support for Node.js 10 and 12"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Change public APIs to asynchronous",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "Change public APIs to asynchronous"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Npm package file structures changed",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "Npm package file structures changed"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Support plugins in ESM",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "Support plugins in ESM"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Update prettier.doc",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "Update `prettier.doc`"
+          },
+          {
+            "version": "3.0.0",
+            "change": "textToDoc trims trailing hard lines",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "`textToDoc` trims trailing hard lines"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Removed support for custom parser api",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "Removed support for custom parser api"
+          },
+          {
+            "version": "3.0.0",
+            "change": "The second argument parsers passed to parsers.parse has been removed",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "The second argument `parsers` passed to `parsers.parse` has been removed"
+          },
+          {
+            "version": "3.0.0",
+            "change": "undefined and null are not passed to plugin's print function",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "`undefined` and `null` are not passed to plugin's `print` function"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Allow using arbitrary truthy values for label docs",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "Allow using arbitrary truthy values for `label` docs"
+          },
+          {
+            "version": "3.0.0",
+            "change": "getFileInfo() resolves config by default",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "`getFileInfo()` resolves config by default"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Plugin search feature has been removed",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "Plugin search feature has been removed"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Ignore .gitignored files by default",
+            "migration": null,
+            "source": "https://prettier.io/blog/2023/07/05/3.0.0.html",
+            "quote": "Ignore `.gitignore`d files by default"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "Headings of the 'Breaking Changes' section of the 3.0 blog post; the GitHub release only links it. Several API entries only affect plugin authors. 'Add the pure css parser' and 'Support plugins in ESM' sit under Breaking Changes as written."
       }
     },
     {
@@ -161,9 +1475,88 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "29.0.0",
+            "change": "MatcherContext, MatcherUtils and MatcherState types are separated",
+            "migration": null,
+            "source": "https://github.com/jestjs/jest/releases/tag/v29.0.0",
+            "quote": "Differentiate between `MatcherContext` `MatcherUtils` and `MatcherState` types"
+          },
+          {
+            "version": "29.0.0",
+            "change": "snapshotFormat defaults to escapeString: false and printBasicPrototype: false",
+            "migration": "Update snapshots, or set snapshotFormat back to the old values",
+            "source": "https://github.com/jestjs/jest/releases/tag/v29.0.0",
+            "quote": "Make `snapshotFormat` default to `escapeString: false` and `printBasicPrototype: false`"
+          },
+          {
+            "version": "29.0.0",
+            "change": "The undocumented collectCoverageOnlyFrom option was removed",
+            "migration": null,
+            "source": "https://github.com/jestjs/jest/releases/tag/v29.0.0",
+            "quote": "Remove undocumented `collectCoverageOnlyFrom` option"
+          },
+          {
+            "version": "29.0.0",
+            "change": "jest-environment-jsdom uses jsdom 20",
+            "migration": null,
+            "source": "https://github.com/jestjs/jest/releases/tag/v29.0.0",
+            "quote": "Upgrade to `jsdom@20`"
+          },
+          {
+            "version": "29.0.0",
+            "change": "Mocked* utility types were refactored: MaybeMockedDeep became Mocked and MaybeMocked became MockedShallow",
+            "migration": null,
+            "source": "https://github.com/jestjs/jest/releases/tag/v29.0.0",
+            "quote": "Refactor `Mocked*` utility types."
+          },
+          {
+            "version": "29.0.0",
+            "change": "jest.mocked is deep by default",
+            "migration": null,
+            "source": "https://github.com/jestjs/jest/releases/tag/v29.0.0",
+            "quote": "Change the default `jest.mocked` helper’s behavior to deep mocked"
+          },
+          {
+            "version": "29.0.0",
+            "change": "Inline snapshot updates let Babel find its config",
+            "migration": null,
+            "source": "https://github.com/jestjs/jest/releases/tag/v29.0.0",
+            "quote": "Let `babel` find config when updating inline snapshots"
+          },
+          {
+            "version": "29.0.0",
+            "change": "Bytes and Milliseconds types were replaced with number",
+            "migration": null,
+            "source": "https://github.com/jestjs/jest/releases/tag/v29.0.0",
+            "quote": "Replace `Bytes` and `Milliseconds` types with `number`"
+          },
+          {
+            "version": "29.0.0",
+            "change": "The ConvertAnsi plugin of pretty-format was removed",
+            "migration": "Use jest-serializer-ansi-escapes",
+            "source": "https://github.com/jestjs/jest/releases/tag/v29.0.0",
+            "quote": "Remove `ConvertAnsi` plugin in favour of `jest-serializer-ansi-escapes`"
+          },
+          {
+            "version": "29.0.0",
+            "change": "Node.js 12 and 17 are no longer supported",
+            "migration": null,
+            "source": "https://github.com/jestjs/jest/releases/tag/v29.0.0",
+            "quote": "Drop support for Node v12 and v17"
+          },
+          {
+            "version": "29.0.0",
+            "change": "SnapshotState requires rootDir as an argument",
+            "migration": null,
+            "source": "https://github.com/jestjs/jest/releases/tag/v29.0.0",
+            "quote": "Require `rootDir` as argument to `SnapshotState`"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": []
       }
     },
     {
@@ -179,9 +1572,124 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "8.0.0",
+            "change": "The rawResult option of findOneAndUpdate() was removed",
+            "migration": "Use includeResultMetadata",
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "Removed `rawResult` option for `findOneAndUpdate()`"
+          },
+          {
+            "version": "8.0.0",
+            "change": "Document.prototype.deleteOne() returns a query",
+            "migration": null,
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "`Document.prototype.deleteOne` now returns a query"
+          },
+          {
+            "version": "8.0.0",
+            "change": "Uses MongoDB Node driver 6",
+            "migration": null,
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "MongoDB Node Driver 6"
+          },
+          {
+            "version": "8.0.0",
+            "change": "findOneAndRemove() was removed",
+            "migration": "Use findOneAndDelete()",
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "Removed `findOneAndRemove()`"
+          },
+          {
+            "version": "8.0.0",
+            "change": "count() was removed",
+            "migration": "Use countDocuments() or estimatedDocumentCount()",
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "Removed `count()`"
+          },
+          {
+            "version": "8.0.0",
+            "change": "The id setter was removed",
+            "migration": null,
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "Removed id Setter"
+          },
+          {
+            "version": "8.0.0",
+            "change": "null is valid for non-required string enums",
+            "migration": null,
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "`null` is valid for non-required string enums"
+          },
+          {
+            "version": "8.0.0",
+            "change": "save() applies minimize when it updates an existing document",
+            "migration": null,
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "Apply minimize when `save()` updates an existing document"
+          },
+          {
+            "version": "8.0.0",
+            "change": "Base schema paths are applied before discriminator paths",
+            "migration": null,
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "Apply base schema paths before discriminator paths"
+          },
+          {
+            "version": "8.0.0",
+            "change": "The overwrite option of findOneAndUpdate() was removed",
+            "migration": null,
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "Removed `overwrite` option for `findOneAndUpdate()`"
+          },
+          {
+            "version": "8.0.0",
+            "change": "findOneAndUpdate() with orFail() and upsert behaves differently",
+            "migration": null,
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "Changed behavior for `findOneAndUpdate()` with `orFail()` and upsert"
+          },
+          {
+            "version": "8.0.0",
+            "change": "create() waits for all saves before throwing an error",
+            "migration": null,
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "Create waits until all saves are done before throwing any error"
+          },
+          {
+            "version": "8.0.0",
+            "change": "Model.validate() returns a copy of the object",
+            "migration": null,
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "`Model.validate()` returns copy of object"
+          },
+          {
+            "version": "8.0.0",
+            "change": "TypeScript: optional fields allow null",
+            "migration": null,
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "Allow `null` For Optional Fields in TypeScript"
+          },
+          {
+            "version": "8.0.0",
+            "change": "TypeScript: model constructor properties are all optional",
+            "migration": null,
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "Model constructor properties are all optional in TypeScript"
+          },
+          {
+            "version": "8.0.0",
+            "change": "TypeScript: distinct() return types are inferred from the schema",
+            "migration": null,
+            "source": "https://mongoosejs.com/docs/migrating_to_8.html",
+            "quote": "Infer `distinct()` return types from schema"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "The 8.0.0 GitHub release has one docs line; the migration guide is the source. The 7.6.x-7.8.x releases in the range are fixes and opt-in features."
       }
     },
     {
@@ -197,9 +1705,47 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "1.0.0",
+            "change": "The function that transforms arguments to an array was removed",
+            "migration": null,
+            "source": "https://github.com/axios/axios/releases/tag/v1.0.0",
+            "quote": "Removed function that transforms arguments to array"
+          },
+          {
+            "version": "1.0.0",
+            "change": "The incorrect argument of the NetworkError constructor was removed",
+            "migration": null,
+            "source": "https://github.com/axios/axios/releases/tag/v1.0.0",
+            "quote": "Removed incorrect argument for NetworkError constructor"
+          },
+          {
+            "version": "1.0.0",
+            "change": "URLs are parsed with the WHATWG URL API instead of url.parse()",
+            "migration": null,
+            "source": "https://github.com/axios/axios/releases/tag/v1.0.0",
+            "quote": "Use WHATWG URL API instead of url.parse()"
+          },
+          {
+            "version": "1.0.0",
+            "change": "Objects sent as application/x-www-form-urlencoded are serialized automatically",
+            "migration": null,
+            "source": "https://github.com/axios/axios/releases/tag/v1.0.0",
+            "quote": "Added automatic payload serialization to application/x-www-form-urlencoded"
+          },
+          {
+            "version": "1.0.0",
+            "change": "AxiosError.config is optional in the types",
+            "migration": null,
+            "source": "https://github.com/axios/axios/releases/tag/v1.0.0",
+            "quote": "Updated AxiosError.config to be optional in the type definition"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "1.0.0 has no Breaking section: it says 'There are multiple deprecations, refactors and fixes provided in this release.' Reviewers: check the package's new exports map / module format change, which the notes do not mention. The 0.28-0.32 releases are later backports on the 0.x line: they sit between 0.27.2 and 1.0.0 by number but are not on the 0.27.2 -> 1.0.0 upgrade path, so their breaking changes are not expected here. The repository's MIGRATION_GUIDE.md was written later and is generic; it is not used as a source."
       }
     },
     {
@@ -214,9 +1760,68 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "12.0.0",
+            "change": "A spawned executable subcommand killed by a signal now exits with a non-zero code",
+            "migration": null,
+            "source": "https://github.com/tj/commander.js/releases/tag/v12.0.0",
+            "quote": "use non-zero exit code when spawned executable subcommand terminates due to a signal"
+          },
+          {
+            "version": "12.0.0",
+            "change": "addCommand throws when passThroughOptions is used and the parent does not enable positional options",
+            "migration": null,
+            "source": "https://github.com/tj/commander.js/releases/tag/v12.0.0",
+            "quote": "check `passThroughOptions` constraints when using `.addCommand` and throw if parent command does not have `.enablePositionalOptions()` enabled"
+          },
+          {
+            "version": "12.0.0",
+            "change": "Node.js 18 or newer is required",
+            "migration": null,
+            "source": "https://github.com/tj/commander.js/releases/tag/v12.0.0",
+            "quote": "Commander 12 requires Node.js v18 or higher"
+          },
+          {
+            "version": "12.0.0",
+            "change": "Adding an option whose flag is already in use throws",
+            "migration": null,
+            "source": "https://github.com/tj/commander.js/releases/tag/v12.0.0",
+            "quote": "throw an error if add an option with a flag which is already in use"
+          },
+          {
+            "version": "12.0.0",
+            "change": "Adding a command whose name or alias is already in use throws",
+            "migration": null,
+            "source": "https://github.com/tj/commander.js/releases/tag/v12.0.0",
+            "quote": "throw an error if add a command with name or alias which is already in use"
+          },
+          {
+            "version": "12.0.0",
+            "change": "storeOptionsAsProperties() throws after an option value was set",
+            "migration": null,
+            "source": "https://github.com/tj/commander.js/releases/tag/v12.0.0",
+            "quote": "throw error when calling `.storeOptionsAsProperties()` after setting an option value"
+          },
+          {
+            "version": "12.0.0",
+            "change": "The CommonJS default export of a global Command was removed",
+            "migration": "Use the named export: const { program } = require('commander')",
+            "source": "https://github.com/tj/commander.js/releases/tag/v12.0.0",
+            "quote": "removed default export of a global Command instance from CommonJS (use the named `program` export instead)"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [
+          {
+            "version": "12.0.0",
+            "change": "addHelpCommand() with a string or boolean is deprecated",
+            "migration": "Use .helpCommand() or pass a Command",
+            "source": "https://github.com/tj/commander.js/releases/tag/v12.0.0",
+            "quote": "`.addHelpCommand()` passing string or boolean (use `.helpCommand()` or pass a Command)"
+          }
+        ]
       }
     },
     {
@@ -232,9 +1837,222 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "4.0.0",
+            "change": "Targets Safari 16.4, Chrome 111 and Firefox 128; older browsers are not supported",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "Tailwind CSS v4.0 is designed for modern browsers and targets Safari 16.4, Chrome 111, and Firefox 128."
+          },
+          {
+            "version": "4.0.0",
+            "change": "The @tailwind directives were removed",
+            "migration": "@import \"tailwindcss\";",
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "In v4 you import Tailwind using a regular CSS `@import` statement, not using the `@tailwind` directives you used in v3"
+          },
+          {
+            "version": "4.0.0",
+            "change": "Utilities deprecated in v3 were removed",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "We've removed any utilities that were deprecated in v3 and have been undocumented for several years."
+          },
+          {
+            "version": "4.0.0",
+            "change": "Several utilities were renamed",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "We've renamed the following utilities in v4 to make them more consistent and predictable"
+          },
+          {
+            "version": "4.0.0",
+            "change": "The shadow, radius and blur scales were renamed, so -sm utilities look different",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "We've renamed the default shadow, radius and blur scales to make sure every utility has a named value."
+          },
+          {
+            "version": "4.0.0",
+            "change": "outline sets a 1px width and outline-<number> defaults to solid",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "The `outline` utility now sets `outline-width: 1px` by default"
+          },
+          {
+            "version": "4.0.0",
+            "change": "ring is 1px instead of 3px and uses currentColor instead of blue-500",
+            "migration": "Use ring-3 ring-blue-500 for the old look",
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "We've changed the width of the `ring` utility from 3px to 1px and changed the default color from `blue-500` to `currentColor`"
+          },
+          {
+            "version": "4.0.0",
+            "change": "space-x/space-y use a different selector",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "We've changed the selector used by the [`space-x-*` and `space-y-*` utilities]"
+          },
+          {
+            "version": "4.0.0",
+            "change": "divide-x/divide-y use a different selector",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "We've changed the selector used by the [`divide-x-*` and `divide-y-*` utilities]"
+          },
+          {
+            "version": "4.0.0",
+            "change": "A variant on part of a gradient no longer resets the whole gradient",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "In v3, overriding part of a gradient with a variant would \"reset\" the entire gradient"
+          },
+          {
+            "version": "4.0.0",
+            "change": "The container configuration options were removed",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "the `container` utility had several configuration options like `center` and `padding` that no longer exist in v4."
+          },
+          {
+            "version": "4.0.0",
+            "change": "border and divide default to currentColor instead of gray-200",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "We've changed this to `currentColor` in v4 to make Tailwind less opinionated and match browser defaults."
+          },
+          {
+            "version": "4.0.0",
+            "change": "Placeholder text uses the current text colour at 50% opacity",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "We've simplified this in v4 to just use the current text color at 50% opacity."
+          },
+          {
+            "version": "4.0.0",
+            "change": "Buttons use cursor: default",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "Buttons now use `cursor: default` instead of `cursor: pointer` to match the default browser behavior."
+          },
+          {
+            "version": "4.0.0",
+            "change": "Preflight resets dialog margins",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "Preflight now resets margins on `<dialog>` elements"
+          },
+          {
+            "version": "4.0.0",
+            "change": "The hidden attribute takes priority over display classes",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "Display classes like `block` or `flex` no longer take priority over the `hidden` attribute on an element."
+          },
+          {
+            "version": "4.0.0",
+            "change": "A prefix is written like a variant at the start of the class",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "Prefixes now look like variants and are always at the beginning of the class name"
+          },
+          {
+            "version": "4.0.0",
+            "change": "The important modifier ! goes at the end of the class name",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "In v4 you should place the `!` at the very end of the class name instead"
+          },
+          {
+            "version": "4.0.0",
+            "change": "Custom utilities need @utility instead of @layer utilities/components",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "In v3, any custom classes you defined within `@layer utilities` or `@layer components` would get picked up by Tailwind as a true utility class"
+          },
+          {
+            "version": "4.0.0",
+            "change": "Stacked variants apply left to right",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "in v4 we've updated them to apply left to right to look more like CSS syntax."
+          },
+          {
+            "version": "4.0.0",
+            "change": "CSS variables in arbitrary values use parentheses instead of square brackets",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "we've changed the syntax for this in v4 to use parentheses instead of square brackets."
+          },
+          {
+            "version": "4.0.0",
+            "change": "Commas in grid and object-position arbitrary values are no longer turned into spaces",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "This compatibility no longer exists in v4.0"
+          },
+          {
+            "version": "4.0.0",
+            "change": "hover only applies on devices that support hover",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "In v4 we've updated the `hover` variant to only apply when the primary input device supports hover"
+          },
+          {
+            "version": "4.0.0",
+            "change": "transition and transition-colors include outline-color",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "The `transition` and `transition-colors` utilities now include the `outline-color` property."
+          },
+          {
+            "version": "4.0.0",
+            "change": "rotate, scale and translate use the individual CSS properties; transform-none no longer resets them",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "This no longer works and you will need to reset the individual properties instead"
+          },
+          {
+            "version": "4.0.0",
+            "change": "corePlugins is no longer supported",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "In v3 there was a `corePlugins` option you could use to completely disable certain utilities in the framework. This is no longer supported in v4."
+          },
+          {
+            "version": "4.0.0",
+            "change": "A JavaScript config file is no longer detected automatically",
+            "migration": "Load it with @config",
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "they are no longer detected automatically in v4."
+          },
+          {
+            "version": "4.0.0",
+            "change": "resolveConfig is no longer exported",
+            "migration": "Use the generated CSS variables",
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "In v3 we exported a `resolveConfig` function"
+          },
+          {
+            "version": "4.0.0",
+            "change": "Separately bundled stylesheets (CSS modules, Vue/Svelte style blocks) do not see theme variables and custom utilities",
+            "migration": "Use @reference",
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "do not have access to theme variables, custom utilities, and custom variants defined in other files."
+          },
+          {
+            "version": "4.0.0",
+            "change": "Sass, Less and Stylus are not supported",
+            "migration": null,
+            "source": "https://tailwindcss.com/docs/upgrade-guide",
+            "quote": "Tailwind CSS v4.0 is not designed to be used with CSS preprocessors like Sass, Less, or Stylus."
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "The 4.0.0 GitHub release only links the upgrade guide. The guide is read from the current tailwindcss.com repository; it may have been edited after 4.0.0. 3.4.18 and 3.4.19 are fixes only."
       }
     },
     {
@@ -251,9 +2069,68 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "7.0.0",
+            "change": "react-router-dom and the @remix-run router packages were collapsed into react-router",
+            "migration": "Import from react-router; react-router-dom is still published as a re-export",
+            "source": "https://github.com/remix-run/react-router/blob/main/CHANGELOG.md#v700",
+            "quote": "have been collapsed into the `react-router` package"
+          },
+          {
+            "version": "7.0.0",
+            "change": "react-router-dom-v5-compat and react-router-native are no longer published",
+            "migration": null,
+            "source": "https://github.com/remix-run/react-router/blob/main/CHANGELOG.md#v700",
+            "quote": "The `react-router-dom-v5-compat` and `react-router-native` packages are removed starting with v7"
+          },
+          {
+            "version": "7.0.0",
+            "change": "json, defer and the unstable upload handler APIs were removed",
+            "migration": null,
+            "source": "https://github.com/remix-run/react-router/blob/main/CHANGELOG.md#v700",
+            "quote": "The following APIs have been removed in React Router v7:"
+          },
+          {
+            "version": "7.0.0",
+            "change": "Node.js 20 is required and installGlobals was removed",
+            "migration": null,
+            "source": "https://github.com/remix-run/react-router/blob/main/CHANGELOG.md#v700",
+            "quote": "React Router no longer provides an `installGlobals` method to"
+          },
+          {
+            "version": "7.0.0",
+            "change": "React 18 is the minimum React version",
+            "migration": null,
+            "source": "https://github.com/remix-run/react-router/blob/main/CHANGELOG.md#v700",
+            "quote": "`react@18`, `react-dom@18`"
+          },
+          {
+            "version": "7.0.0",
+            "change": "All v6 future flags (v7_relativeSplatPath, v7_startTransition, v7_fetcherPersist, v7_normalizeFormMethod, v7_partialHydration, v7_skipActionStatusRevalidation) are now the default behaviour",
+            "migration": "Enable the future flags on 6.x first and fix what they change",
+            "source": "https://github.com/remix-run/react-router/blob/main/CHANGELOG.md#v700",
+            "quote": "The following previously flagged behaviors are now the default in React Router v7:"
+          },
+          {
+            "version": "7.0.0",
+            "change": "useNavigate(), useSubmit(), fetcher.load/submit and revalidate() now return promises instead of undefined",
+            "migration": null,
+            "source": "https://github.com/remix-run/react-router/blob/main/CHANGELOG.md#v700",
+            "quote": "we are now comfortable exposing the promises for the APIs that previously returned `undefined`"
+          },
+          {
+            "version": "6.30.5",
+            "change": "navigate() normalizes double slashes in colon URLs, which may break navigate() used for external URLs",
+            "migration": null,
+            "source": "https://github.com/remix-run/react-router/blob/v6/CHANGELOG.md#v6305",
+            "quote": "This change may be a breaking bug fix if you are using `navigate` for external navigations"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "Remix-only changes in 7.0.0 are left out: adapter re-exports, vitePlugin rename, the manifest option and the esbuild compiler. 6.30.5 was published incomplete; the same entry repeats in 6.30.6. The 6.29-6.30 notes only add v7 deprecation warnings."
       }
     },
     {
@@ -268,9 +2145,18 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "9.0.0",
+            "change": "Node.js 14, 16 and 19 are no longer supported",
+            "migration": null,
+            "source": "https://github.com/pinojs/pino/releases/tag/v9.0.0",
+            "quote": "Dropped support for Node.js 14, 16, & 19"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": []
       }
     },
     {
@@ -285,9 +2171,117 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "3.0.0",
+            "change": "Dual ESM/CommonJS package with explicit exports; ESM files use .mjs",
+            "migration": null,
+            "source": "https://github.com/date-fns/date-fns/releases/tag/v3.0.0",
+            "quote": "date-fns is now a dual-package with the support of both ESM and CommonJS."
+          },
+          {
+            "version": "3.0.0",
+            "change": "Flat file structure: functions and locales moved to new paths",
+            "migration": null,
+            "source": "https://github.com/date-fns/date-fns/releases/tag/v3.0.0",
+            "quote": "The package now has a flat structure"
+          },
+          {
+            "version": "3.0.0",
+            "change": "All files use named exports instead of export default",
+            "migration": "const { addDays } = require('date-fns/addDays') instead of the default import",
+            "source": "https://github.com/date-fns/date-fns/releases/tag/v3.0.0",
+            "quote": "Now all file content’s exported via named exports instead of `export default`"
+          },
+          {
+            "version": "3.0.0",
+            "change": "TypeScript types were rewritten",
+            "migration": null,
+            "source": "https://github.com/date-fns/date-fns/releases/tag/v3.0.0",
+            "quote": "TypeScript types are now completely rewritten"
+          },
+          {
+            "version": "3.0.0",
+            "change": "constants are no longer exported from the index",
+            "migration": "import { daysInYear } from \"date-fns/constants\"",
+            "source": "https://github.com/date-fns/date-fns/releases/tag/v3.0.0",
+            "quote": "`constants` now is not exported via the index"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Functions no longer check the number of arguments",
+            "migration": null,
+            "source": "https://github.com/date-fns/date-fns/releases/tag/v3.0.0",
+            "quote": "Functions now don’t check the number of passed arguments"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Arguments are no longer converted to the target types",
+            "migration": null,
+            "source": "https://github.com/date-fns/date-fns/releases/tag/v3.0.0",
+            "quote": "The arguments are not explicitly converted to the target types."
+          },
+          {
+            "version": "3.0.0",
+            "change": "Interval functions accept start after end as a negative interval and no longer throw on Invalid Date",
+            "migration": null,
+            "source": "https://github.com/date-fns/date-fns/releases/tag/v3.0.0",
+            "quote": "Functions that accept `Interval` arguments now do not throw an error if the start is before the end and handle it as a negative interval."
+          },
+          {
+            "version": "3.0.0",
+            "change": "intervalToDuration skips zero values",
+            "migration": null,
+            "source": "https://github.com/date-fns/date-fns/releases/tag/v3.0.0",
+            "quote": "`intervalToDuration` now skips 0 values in the resulting duration"
+          },
+          {
+            "version": "3.0.0",
+            "change": "roundToNearestMinutes returns Invalid Date instead of throwing for an out-of-range nearestTo",
+            "migration": null,
+            "source": "https://github.com/date-fns/date-fns/releases/tag/v3.0.0",
+            "quote": "`roundToNearestMinutes` now returns `Invalid Date` instead of throwing an error"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Internet Explorer is no longer supported",
+            "migration": null,
+            "source": "https://github.com/date-fns/date-fns/releases/tag/v3.0.0",
+            "quote": "IE is no longer supported."
+          },
+          {
+            "version": "3.0.0",
+            "change": "Rounding uses Math.trunc everywhere",
+            "migration": null,
+            "source": "https://github.com/date-fns/date-fns/releases/tag/v3.0.0",
+            "quote": "Now all functions use `Math.trunc` rounding method where rounding is required."
+          },
+          {
+            "version": "3.0.0",
+            "change": "The undocumented onlyNumeric option was removed from the nn and sv locales",
+            "migration": null,
+            "source": "https://github.com/date-fns/date-fns/releases/tag/v3.0.0",
+            "quote": "Undocumented `onlyNumeric` option was removed from `nn` and `sv` locales."
+          },
+          {
+            "version": "3.0.0",
+            "change": "Flow types are no longer supported",
+            "migration": null,
+            "source": "https://github.com/date-fns/date-fns/releases/tag/v3.0.0",
+            "quote": "Flow is not supported anymore."
+          },
+          {
+            "version": "3.0.0",
+            "change": "Locales use regular functions instead of the UTC versions",
+            "migration": null,
+            "source": "https://github.com/date-fns/date-fns/releases/tag/v3.0.0",
+            "quote": "The locales now use regular functions instead of the UTC version"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "The interval entry has five sub-bullets (areIntervalsOverlapping, getOverlappingDaysInIntervals, isWithinInterval, intervalToDuration, eachXOfInterval). Count them as one change unless a reviewer splits them."
       }
     },
     {
@@ -302,9 +2296,18 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "10.0.0",
+            "change": "Node.js 12 and 14 are no longer supported",
+            "migration": null,
+            "source": "https://github.com/uuidjs/uuid/blob/main/CHANGELOG.md",
+            "quote": "update node support (drop node@12, node@14, add node@20)"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": []
       }
     },
     {
@@ -320,9 +2323,47 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "5.0.0",
+            "change": "The package is ESM only",
+            "migration": "Use import, or stay on chalk 4",
+            "source": "https://github.com/chalk/chalk/releases/tag/v5.0.0",
+            "quote": "This package is now pure ESM."
+          },
+          {
+            "version": "5.0.0",
+            "change": "Node.js 12.20 or newer is required",
+            "migration": null,
+            "source": "https://github.com/chalk/chalk/releases/tag/v5.0.0",
+            "quote": "Require Node.js 12.20"
+          },
+          {
+            "version": "5.0.0",
+            "change": "chalk.Instance, chalk.supportsColor, chalk.stderr and chalk.stderr.supportsColor moved to named exports",
+            "migration": "chalk.Instance -> Chalk, chalk.supportsColor -> supportsColor, chalk.stderr -> chalkStderr, chalk.stderr.supportsColor -> supportsColorStderr",
+            "source": "https://github.com/chalk/chalk/releases/tag/v5.0.0",
+            "quote": "Move some properties off the default export to individual named exports:"
+          },
+          {
+            "version": "5.0.0",
+            "change": "keyword(), hsl(), hsv(), hwb() and ansi() were removed",
+            "migration": "Use the color-convert package",
+            "source": "https://github.com/chalk/chalk/releases/tag/v5.0.0",
+            "quote": "Remove `.keyword()`, `.hsl()`, `.hsv()`, `.hwb()`, and `.ansi()` coloring methods"
+          },
+          {
+            "version": "5.0.0",
+            "change": "Tagged template literal support moved to the chalk-template package",
+            "migration": "import chalkTemplate from 'chalk-template'",
+            "source": "https://github.com/chalk/chalk/releases/tag/v5.0.0",
+            "quote": "The tagged template literal support moved into a separate package: [`chalk-template`]"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "'If you use TypeScript, you need to use TypeScript 4.7 or later' is part of the ESM entry."
       }
     },
     {
@@ -337,9 +2378,96 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "3.0.0",
+            "change": "Node.js 12.20 or newer is required",
+            "migration": null,
+            "source": "https://github.com/node-fetch/node-fetch/blob/main/docs/v3-UPGRADE-GUIDE.md",
+            "quote": "Minimum supported Node.js version is now 12.20"
+          },
+          {
+            "version": "3.0.0",
+            "change": "The package is ESM only and cannot be required",
+            "migration": "Use import, or import('node-fetch') from CommonJS",
+            "source": "https://github.com/node-fetch/node-fetch/blob/main/docs/v3-UPGRADE-GUIDE.md",
+            "quote": "`node-fetch` is an ESM-only module - you are not able to import it with `require`."
+          },
+          {
+            "version": "3.0.0",
+            "change": "The timeout option was removed",
+            "migration": "Use an AbortSignal, for example timeout-signal",
+            "source": "https://github.com/node-fetch/node-fetch/blob/main/docs/v3-UPGRADE-GUIDE.md",
+            "quote": "The `timeout` option was removed."
+          },
+          {
+            "version": "3.0.0",
+            "change": "Response.statusText is no longer filled from the status code",
+            "migration": null,
+            "source": "https://github.com/node-fetch/node-fetch/blob/main/docs/v3-UPGRADE-GUIDE.md",
+            "quote": "`Response.statusText` no longer sets a default message derived from the HTTP status code"
+          },
+          {
+            "version": "3.0.0",
+            "change": "The browser field was dropped from package.json",
+            "migration": null,
+            "source": "https://github.com/node-fetch/node-fetch/blob/main/docs/v3-UPGRADE-GUIDE.md",
+            "quote": "Dropped the `browser` field in package.json"
+          },
+          {
+            "version": "3.0.0",
+            "change": "res.textConverted() was removed",
+            "migration": "Use fetch-charset-detection",
+            "source": "https://github.com/node-fetch/node-fetch/blob/main/docs/v3-UPGRADE-GUIDE.md",
+            "quote": "Dropped the `res.textConverted()` function"
+          },
+          {
+            "version": "3.0.0",
+            "change": "res.json() throws SyntaxError instead of FetchError on invalid JSON",
+            "migration": null,
+            "source": "https://github.com/node-fetch/node-fetch/blob/main/docs/v3-UPGRADE-GUIDE.md",
+            "quote": "JSON parsing errors from `res.json()` are of type `SyntaxError` instead of `FetchError`"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Body stream errors are forwarded through a pipeline, so an 'on error' listener can fire twice",
+            "migration": "Use res.body.once('error', ...) instead of on",
+            "source": "https://github.com/node-fetch/node-fetch/blob/main/docs/v3-UPGRADE-GUIDE.md",
+            "quote": "A stream pipeline is now used to forward errors"
+          },
+          {
+            "version": "3.0.0",
+            "change": "req.body can no longer be a string",
+            "migration": null,
+            "source": "https://github.com/node-fetch/node-fetch/blob/main/docs/v3-UPGRADE-GUIDE.md",
+            "quote": "`req.body` can no longer be a string"
+          },
+          {
+            "version": "3.0.0",
+            "change": "The default User-Agent changed",
+            "migration": null,
+            "source": "https://github.com/node-fetch/node-fetch/blob/main/docs/v3-UPGRADE-GUIDE.md",
+            "quote": "Changed default user agent"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Arbitrary (relative) URLs are no longer supported",
+            "migration": null,
+            "source": "https://github.com/node-fetch/node-fetch/blob/main/docs/v3-UPGRADE-GUIDE.md",
+            "quote": "Arbitrary URLs are no longer supported"
+          },
+          {
+            "version": "3.0.0",
+            "change": "Request and Response no longer accept relative URLs",
+            "migration": null,
+            "source": "https://github.com/node-fetch/node-fetch/blob/main/docs/v3-UPGRADE-GUIDE.md",
+            "quote": "Creating Request/Response objects with relative URLs is no longer supported"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "The 3.0.0 GitHub release only says it is ESM only and links the changelog; the upgrade guide is the source. The last entry is listed under Enhancements in the guide but throws for code that worked before."
       }
     },
     {
@@ -355,9 +2483,25 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "16.0.0",
+            "change": "@testing-library/dom is a peer dependency and must be installed explicitly",
+            "migration": "npm install --save-dev @testing-library/dom",
+            "source": "https://github.com/testing-library/react-testing-library/releases/tag/v16.0.0",
+            "quote": "`@testing-library/dom` was moved to a peer dependency and needs to be explicitly installed."
+          },
+          {
+            "version": "16.0.0",
+            "change": "@types/react-dom must be installed for type checking",
+            "migration": null,
+            "source": "https://github.com/testing-library/react-testing-library/releases/tag/v16.0.0",
+            "quote": "`@types/react-dom` needs to be installed if you're typechecking files using `@testing-library/react`."
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": []
       }
     },
     {
@@ -375,9 +2519,244 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "5.0.0",
+            "change": "Hooks and methods take a single object argument",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "Supports a single signature, one object"
+          },
+          {
+            "version": "5.0.0",
+            "change": "getQueryData accepts the queryKey only",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "`queryClient.getQueryData` now accepts queryKey only as an Argument"
+          },
+          {
+            "version": "5.0.0",
+            "change": "getQueryState accepts the queryKey only",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "`queryClient.getQueryState` now accepts queryKey only as an Argument"
+          },
+          {
+            "version": "5.0.0",
+            "change": "onSuccess, onError and onSettled were removed from useQuery",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "Callbacks on useQuery (and QueryObserver) have been removed"
+          },
+          {
+            "version": "5.0.0",
+            "change": "The refetchInterval callback only gets the query",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "The `refetchInterval` callback function only gets `query` passed"
+          },
+          {
+            "version": "5.0.0",
+            "change": "useQuery's remove method was removed",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "The `remove` method has been removed from useQuery"
+          },
+          {
+            "version": "5.0.0",
+            "change": "TypeScript 4.7 or newer is required",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "The minimum required TypeScript version is now 4.7"
+          },
+          {
+            "version": "5.0.0",
+            "change": "isDataEqual was removed",
+            "migration": "Use structuralSharing",
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "The `isDataEqual` option has been removed from useQuery"
+          },
+          {
+            "version": "5.0.0",
+            "change": "The deprecated custom logger was removed",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "The deprecated custom logger has been removed"
+          },
+          {
+            "version": "5.0.0",
+            "change": "Browser support changed",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "Supported Browsers"
+          },
+          {
+            "version": "5.0.0",
+            "change": "Private class fields and methods are used",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "Private class fields and methods"
+          },
+          {
+            "version": "5.0.0",
+            "change": "cacheTime was renamed to gcTime",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "Rename `cacheTime` to `gcTime`"
+          },
+          {
+            "version": "5.0.0",
+            "change": "useErrorBoundary was renamed to throwOnError",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "The `useErrorBoundary` option has been renamed to `throwOnError`"
+          },
+          {
+            "version": "5.0.0",
+            "change": "Error is the default error type instead of unknown",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "TypeScript: `Error` is now the default type for errors instead of `unknown`"
+          },
+          {
+            "version": "5.0.0",
+            "change": "The prefer-query-object-syntax ESLint rule was removed",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "eslint `prefer-query-object-syntax` rule is removed"
+          },
+          {
+            "version": "5.0.0",
+            "change": "keepPreviousData was removed",
+            "migration": "placeholderData: keepPreviousData",
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "Removed `keepPreviousData` in favor of `placeholderData` identity function"
+          },
+          {
+            "version": "5.0.0",
+            "change": "Window focus refetching no longer listens to the focus event",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "Window focus refetching no longer listens to the `focus` event"
+          },
+          {
+            "version": "5.0.0",
+            "change": "Network status no longer uses navigator.onLine",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "Network status no longer relies on the `navigator.onLine` property"
+          },
+          {
+            "version": "5.0.0",
+            "change": "The custom context prop was removed",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "Removed custom `context` prop in favor of custom `queryClient` instance"
+          },
+          {
+            "version": "5.0.0",
+            "change": "refetchPage was removed",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "Removed `refetchPage` in favor of `maxPages`"
+          },
+          {
+            "version": "5.0.0",
+            "change": "The dehydrate API changed",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "New `dehydrate` API"
+          },
+          {
+            "version": "5.0.0",
+            "change": "Infinite queries need initialPageParam",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "Infinite queries now need a `initialPageParam`"
+          },
+          {
+            "version": "5.0.0",
+            "change": "Manual mode for infinite queries was removed",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "Manual mode for infinite queries has been removed"
+          },
+          {
+            "version": "5.0.0",
+            "change": "null from getNextPageParam/getPreviousPageParam means no further page",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "Returning `null` from `getNextPageParam` or `getPreviousPageParam` now indicates that there is no further page available"
+          },
+          {
+            "version": "5.0.0",
+            "change": "No retries on the server",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "No retries on the server"
+          },
+          {
+            "version": "5.0.0",
+            "change": "status loading became pending, isLoading became isPending, isInitialLoading became isLoading",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "`status: loading` has been changed to `status: pending`"
+          },
+          {
+            "version": "5.0.0",
+            "change": "hashQueryKey was renamed to hashKey",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "`hashQueryKey` has been renamed to `hashKey`"
+          },
+          {
+            "version": "5.0.0",
+            "change": "React 18 or newer is required",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "The minimum required React version is now 18.0"
+          },
+          {
+            "version": "5.0.0",
+            "change": "contextSharing was removed from QueryClientProvider",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "The `contextSharing` prop has been removed from QueryClientProvider"
+          },
+          {
+            "version": "5.0.0",
+            "change": "unstable_batchedUpdates is no longer the batching function",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "No longer using `unstable_batchedUpdates` as the batching function in React and React Native"
+          },
+          {
+            "version": "5.0.0",
+            "change": "The hydration API changed",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "Hydration API changes"
+          },
+          {
+            "version": "5.0.0",
+            "change": "Query defaults changed",
+            "migration": null,
+            "source": "https://tanstack.com/query/v5/docs/react/guides/migrating-to-v5",
+            "quote": "Query defaults changes"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [
+          {
+            "version": "4.40.0",
+            "change": "isLoading is deprecated in favour of isPending in mutation observer results",
+            "migration": null,
+            "source": "https://github.com/TanStack/query/releases/tag/v4.40.0",
+            "quote": "deprecate `isLoading` in favor of `isPending` in mutation observer results"
+          }
+        ],
+        "notes": "Quotes are the headings of the v5 migration guide (the 5.0.0 release only links it). 'Imperative QueryClient methods' is a heading over the two getQuery* entries and is not counted separately."
       }
     },
     {
@@ -394,8 +2773,10 @@
       "expected": {
         "outcome": "found",
         "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "3.5.0 is a minor release; its changelog lists features and fixes and no breaking change or deprecation. Reactive props destructure becomes enabled by default in compiler-sfc; listed as a feature."
       }
     },
     {
@@ -412,9 +2793,186 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "2.0.0",
+            "change": "Top-level promises returned from load are no longer awaited",
+            "migration": "await the promises in load before returning them",
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "remove top-level promise awaiting"
+          },
+          {
+            "version": "2.0.0",
+            "change": "Dynamic env vars cannot be used during prerendering",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "prevent use of dynamic env vars during prerendering, serve env vars dynamically"
+          },
+          {
+            "version": "2.0.0",
+            "change": "Deprecated use:enhance callback values were removed",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "remove deprecated `use:enhance` callback values"
+          },
+          {
+            "version": "2.0.0",
+            "change": "error and redirect are commands and are no longer thrown by the caller",
+            "migration": "Call error(...) and redirect(...) instead of throw error(...)",
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "turn `error` and `redirect` into commands"
+          },
+          {
+            "version": "2.0.0",
+            "change": "depends() requires a ':' in the string",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "the type for `depends` now requires a `:` as part of the string"
+          },
+          {
+            "version": "2.0.0",
+            "change": "The baseUrl fallback was removed from the generated tsconfig",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "remove baseUrl fallback from generated tsconfig"
+          },
+          {
+            "version": "2.0.0",
+            "change": "A route with +page and +server marked prerenderable fails",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "fail if route with +page and +server is marked prerenderable"
+          },
+          {
+            "version": "2.0.0",
+            "change": "resolvePath was removed from $app/paths",
+            "migration": "Use resolveRoute",
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "remove `resolvePath` in favour of `resolveRoute` from `$app/paths`"
+          },
+          {
+            "version": "2.0.0",
+            "change": "Svelte 3 is no longer supported",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "drop support for Svelte 3"
+          },
+          {
+            "version": "2.0.0",
+            "change": "Vite 5.0.3 or newer is required",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "require Vite 5.0.3+"
+          },
+          {
+            "version": "2.0.0",
+            "change": "__data.json files are generated next to the .html files",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "generate `__data.json` files as sibling to `.html` files"
+          },
+          {
+            "version": "2.0.0",
+            "change": "Mismatched +page and +server config fails",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "fail if +page and +server have mismatched config"
+          },
+          {
+            "version": "2.0.0",
+            "change": "A form with a file input but without multipart/form-data enctype errors",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "error if form without multipart/form-data enctype contains a file input"
+          },
+          {
+            "version": "2.0.0",
+            "change": "Paths passed to preloadCode must include the base path",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "require paths pass to preloadCode to be prefixed with basepath"
+          },
+          {
+            "version": "2.0.0",
+            "change": "@sveltejs/vite-plugin-svelte is a peer dependency",
+            "migration": "Install @sveltejs/vite-plugin-svelte",
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "`@sveltejs/vite-plugin-svelte` is now a peer dependency and will need to be installed in each project using SvelteKit"
+          },
+          {
+            "version": "2.0.0",
+            "change": "vitePreprocess is no longer re-exported",
+            "migration": "Import it from @sveltejs/vite-plugin-svelte",
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "stop re-exporting vitePreprocess"
+          },
+          {
+            "version": "2.0.0",
+            "change": "Setting, deleting or serializing cookies requires a path",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "require path option when setting/deleting/serializing cookies"
+          },
+          {
+            "version": "2.0.0",
+            "change": "Error handling was tightened",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "tighten up error handling"
+          },
+          {
+            "version": "2.0.0",
+            "change": "The state option of goto was removed",
+            "migration": "Use shallow routing",
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "remove state option from goto in favor of shallow routing"
+          },
+          {
+            "version": "2.0.0",
+            "change": "goto no longer navigates to external URLs",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "disallow external navigation with `goto`"
+          },
+          {
+            "version": "2.0.0",
+            "change": "TypeScript 5 is required and moduleResolution defaults to bundler",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "upgrade to TypeScript 5."
+          },
+          {
+            "version": "2.0.0",
+            "change": "undefined is no longer valid for paths.relative",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "undefined is no longer a valid value for paths.relative"
+          },
+          {
+            "version": "2.0.0",
+            "change": "Node.js 18.13 or newer is required",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "require Node 18.13 or newer"
+          },
+          {
+            "version": "2.0.0",
+            "change": "Path resolution changed",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "fix path resolution"
+          },
+          {
+            "version": "2.0.0",
+            "change": "dangerZone.trackServerFetches was removed",
+            "migration": null,
+            "source": "https://github.com/sveltejs/kit/releases/tag/%40sveltejs/kit%402.0.0",
+            "quote": "remove `dangerZone.trackServerFetches`"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": []
       }
     },
     {
@@ -431,9 +2989,40 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "10.0.0",
+            "change": "Node.js 12 is no longer supported; 16 or newer is required",
+            "migration": null,
+            "source": "https://github.com/nestjs/nest/releases/tag/v10.0.0",
+            "quote": "Node v12 is no longer supported (>= v16 is required)."
+          },
+          {
+            "version": "10.0.0",
+            "change": "ValidationPipe transforms optional boolean parameters differently",
+            "migration": null,
+            "source": "https://github.com/nestjs/nest/releases/tag/v10.0.0",
+            "quote": "fix(common)!: when transforming optional boolean parameters on `ValidationPipe`"
+          },
+          {
+            "version": "10.0.0",
+            "change": "getInstance of the HTTP adapters has a narrower return type",
+            "migration": null,
+            "source": "https://github.com/nestjs/nest/releases/tag/v10.0.0",
+            "quote": "feat(common)!: narrow `getInstance` return type for http adapters"
+          },
+          {
+            "version": "10.0.0",
+            "change": "A middleware runs once for a matching route",
+            "migration": null,
+            "source": "https://github.com/nestjs/nest/releases/tag/v10.0.0",
+            "quote": "feat(core): middleware runs once for matching route"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "The release links docs.nestjs.com/migration-guide, which now describes v11 -> v12, not v9 -> v10. Reviewers: check the v10 article (trilon.io/blog/nestjs-10-is-now-available) for changes the release notes leave out, e.g. TypeScript 4.8+, CacheModule moving to @nestjs/cache-manager, and dependency majors. The middleware entry is listed under Enhancements but changes how often middleware runs."
       }
     },
     {
@@ -449,9 +3038,19 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "0.21.0",
+            "change": "Decorators in JavaScript, and in TypeScript without experimentalDecorators, are transformed as standard JavaScript decorators",
+            "migration": "Set \"experimentalDecorators\": true in tsconfig.json to keep TypeScript experimental decorators",
+            "source": "https://github.com/evanw/esbuild/releases/tag/v0.21.0",
+            "quote": "By default esbuild will parse and transform JavaScript decorators"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "The release says it 'doesn't contain any deliberately-breaking changes' and is versioned as breaking because of the decorators feature. The one entry is the behaviour change that follows from it."
       }
     },
     {
@@ -466,9 +3065,152 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "2.0.0",
+            "change": "Mock function generic types were simplified to match Jest",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Simplify mock function generic types and align with jest"
+          },
+          {
+            "version": "2.0.0",
+            "change": "--segfault-retry was removed",
+            "migration": "Use the forks pool",
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Remove `--segfault-retry`"
+          },
+          {
+            "version": "2.0.0",
+            "change": "Suite hooks run in a stack",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Run suite hooks in a stack"
+          },
+          {
+            "version": "2.0.0",
+            "change": "coverage.ignoreEmptyLines is on by default",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Enable `coverage.ignoreEmptyLines` by default"
+          },
+          {
+            "version": "2.0.0",
+            "change": "The JSON reporter's location field points to the test and needs includeTaskLocation",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Add correct location and snapshot fields in json reporter"
+          },
+          {
+            "version": "2.0.0",
+            "change": "chai 5",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Update dependency chai to v5"
+          },
+          {
+            "version": "2.0.0",
+            "change": "watchExclude was removed",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Remove watchExclude"
+          },
+          {
+            "version": "2.0.0",
+            "change": "The default pool is forks",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Change default `pool` to `'forks'`"
+          },
+          {
+            "version": "2.0.0",
+            "change": "--merge-reports supports coverage",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "`--merge-reports` to support coverage"
+          },
+          {
+            "version": "2.0.0",
+            "change": "spy.mock.returns no longer unwraps promises",
+            "migration": "Use spy.mock.settledResults or expect().toHaveResolved()",
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Vitest no longer unwraps promises in `spy.mock.returns`."
+          },
+          {
+            "version": "2.0.0",
+            "change": "A failed global setup does not exit the process",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Do not exit process if global setup has failed"
+          },
+          {
+            "version": "2.0.0",
+            "change": "A failed config does not exit the process",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Don't exit process if config failed"
+          },
+          {
+            "version": "2.0.0",
+            "change": "The json output has a meta field",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Add meta to `json` output"
+          },
+          {
+            "version": "2.0.0",
+            "change": "Browser config indexScripts was renamed to orchestratorScripts",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Rename `indexScripts` to `orchestratorScripts` in the browser config"
+          },
+          {
+            "version": "2.0.0",
+            "change": "A custom pool needs a collectTests method",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "This changes the custom `pool` API - now requires `collectTests` method alongside `runTests`."
+          },
+          {
+            "version": "2.0.0",
+            "change": "The empty suite was removed from the runner",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Remove the empty suite from the runner"
+          },
+          {
+            "version": "2.0.0",
+            "change": "Concurrent suites are supported",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Support concurrent suites"
+          },
+          {
+            "version": "2.0.0",
+            "change": "Overriding coverage.exclude no longer adds test files to it",
+            "migration": "Merge your patterns with coverageConfigDefaults.exclude",
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Vitest coverage no longer adds test files to `exclude` patterns if `coverage.exclude` was overridden in the config."
+          },
+          {
+            "version": "2.0.0",
+            "change": "The API no longer calls process.exit when a workspace project fails",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Remove `process.exit` if workspace project failed to be created"
+          },
+          {
+            "version": "2.0.0",
+            "change": "The API does not call process.exit manually",
+            "migration": null,
+            "source": "https://github.com/vitest-dev/vitest/releases/tag/v2.0.0",
+            "quote": "Don't call `process.exit` manually"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "All entries are from the release's 'Breaking Changes' list as written; a few read like features (concurrent suites, --merge-reports). Reviewers may drop those. 1.6.1 is a security patch (CVE-2025-24964), covered by OSV."
       }
     },
     {
@@ -486,8 +3228,10 @@
       "expected": {
         "outcome": "found",
         "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "4.17.21 has no release notes on GitHub. It is a security release: the advisories (GHSA-35jh-r3h4-6jhm and others) are checked by the OSV part, not this list."
       }
     },
     {
@@ -505,8 +3249,10 @@
       "expected": {
         "outcome": "found",
         "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "1.2.6 only fixes prototype pollution (CVE-2021-44906). No breaking change; the security fix is checked by the OSV part."
       }
     },
     {
@@ -521,9 +3267,19 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "17.0.0",
+            "change": "config() now logs an informational line (file and key count) by default",
+            "migration": "Pass { quiet: true } to config() to keep it silent",
+            "source": "https://github.com/motdotla/dotenv/blob/master/CHANGELOG.md",
+            "quote": "Default `quiet` to false - informational (file and keys count) runtime log message shows by default"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "Borderline, not counted: 16.5.0 'Remove `_log` method. Use `_debug`' removes an underscore-prefixed internal method. 16.6.0 turned the log on and 16.6.1 turned it off again, so only the 17.0.0 default matters for 16.4.7 -> 17.0.0."
       }
     },
     {
@@ -539,9 +3295,187 @@
       ],
       "expected": {
         "outcome": "found",
-        "breaking": [],
-        "draftedBy": null,
-        "reviewedBy": []
+        "breaking": [
+          {
+            "version": "8.0.0",
+            "change": "TSMappedType typeParameter is split into constraint and key (AST)",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "split TSMappedType typeParameter into constraint and key"
+          },
+          {
+            "version": "8.0.0",
+            "change": "The parser always enables comment, loc, range and tokens",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "always enable comment, loc, range, tokens"
+          },
+          {
+            "version": "8.0.0",
+            "change": "prefer-nullish-coalescing: ignoreConditionalTests defaults to true",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "[prefer-nullish-coalescing] change ignoreConditionalTests default to true"
+          },
+          {
+            "version": "8.0.0",
+            "change": "Dot globs are enabled for project by default",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "enable dot globs for project by default"
+          },
+          {
+            "version": "8.0.0",
+            "change": "The no-loss-of-precision extension rule is deprecated",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "deprecate no-loss-of-precision extension rule"
+          },
+          {
+            "version": "8.0.0",
+            "change": "Formatting and layout rules were removed",
+            "migration": "Use @stylistic/eslint-plugin",
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "remove formatting/layout rules"
+          },
+          {
+            "version": "8.0.0",
+            "change": "The slow deprecated and isolated programs were removed",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "remove slow deprecated and isolated programs"
+          },
+          {
+            "version": "8.0.0",
+            "change": "TSEnumDeclaration has a TSEnumBody node (AST)",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "add TSEnumBody node for TSEnumDeclaration body"
+          },
+          {
+            "version": "8.0.0",
+            "change": "automaticSingleRunInference was renamed to disallowAutomaticSingleRunInference",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "rename automaticSingleRunInference to disallowAutomaticSingleRunInference"
+          },
+          {
+            "version": "8.0.0",
+            "change": "Deprecated type params were removed from the AST spec",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "remove deprecated type params"
+          },
+          {
+            "version": "8.0.0",
+            "change": "The IsNullableTypeOptions interface was removed",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "remove IsNullableTypeOptions interface"
+          },
+          {
+            "version": "8.0.0",
+            "change": "no-unused-vars handles catch like ESLint 9",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "[no-unused-vars] align catch behavior to ESLint 9"
+          },
+          {
+            "version": "8.0.0",
+            "change": "The ESLint export of utils is FlatESLint instead of LegacyESLint",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "swap LegacyESLint out for FlatESLint as ESLint export"
+          },
+          {
+            "version": "8.0.0",
+            "change": "no-empty-object-type was split out of ban-types and no-empty-interface",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "split no-empty-object-type out from ban-types and no-empty-interfaces"
+          },
+          {
+            "version": "8.0.0",
+            "change": "RuleCreator rule meta.docs typing changed",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "allow specifying additional rule meta.docs in RuleCreator"
+          },
+          {
+            "version": "8.0.0",
+            "change": "The shared configs changed for v8",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "apply initial config changes for v8"
+          },
+          {
+            "version": "8.0.0",
+            "change": "ban-types was replaced by no-restricted-types, no-unsafe-function-type and no-wrapper-object-types",
+            "migration": "Move ban-types options to no-restricted-types",
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "replace ban-types with no-restricted-types, no-unsafe-function-type, no-wrapper-object-types"
+          },
+          {
+            "version": "8.0.0",
+            "change": "EXPERIMENTAL_useSourceOfProjectReferenceRedirect was removed",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "remove EXPERIMENTAL_useSourceOfProjectReferenceRedirect"
+          },
+          {
+            "version": "8.0.0",
+            "change": "no-useless-template-literals was removed",
+            "migration": "Use no-unnecessary-template-expression",
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "remove no-useless-template-literals"
+          },
+          {
+            "version": "8.0.0",
+            "change": "getTokenAtPosition was removed from type-utils",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "remove getTokenAtPosition"
+          },
+          {
+            "version": "8.0.0",
+            "change": "no-floating-promises: checkThenables is off by default",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "[no-floating-promises] disable checkThenables by default for v8"
+          },
+          {
+            "version": "8.0.0",
+            "change": "RuleTester uses flat config",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "switched to flat config"
+          },
+          {
+            "version": "8.0.0",
+            "change": "The deprecated no-throw-literal rule was removed",
+            "migration": "Use only-throw-error",
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "remove deprecated no-throw-literal rule"
+          },
+          {
+            "version": "8.0.0",
+            "change": "projectService is also removed in withoutProjectParserOptions",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "also remove projectService in withoutProjectParserOptions"
+          },
+          {
+            "version": "8.0.0",
+            "change": "Deprecated context helpers were removed from utils",
+            "migration": null,
+            "source": "https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.0.0",
+            "quote": "remove deprecated context helpers"
+          }
+        ],
+        "draftedBy": "Claude, from the release material on 2026-11-05; not reviewed",
+        "reviewedBy": [],
+        "deprecations": [],
+        "notes": "From the release's Breaking Changes list. Several only affect plugin authors (AST spec, type-utils, utils). The deprecation of no-loss-of-precision is listed there too."
       }
     },
     {
