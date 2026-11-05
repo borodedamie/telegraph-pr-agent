@@ -112,6 +112,9 @@ function labelKind(text: string): ReturnType<typeof headingKind> | null {
 }
 
 // In a migration guide every heading names one change; its first words say which kind.
+// A guide heading that names a group of changes rather than one.
+const GROUP_HEADING = /\bbreaking changes\b|\bdeprecations\b|\bremovals\b/i;
+
 function guideHeadingKind(title: string): Kind | null {
   // "Breaking changes for users" groups the changes below it; it is not one.
   if (/^(breaking changes?|deprecations?)\b/i.test(title)) return null;
@@ -158,6 +161,25 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
     });
   };
 
+  // Under a heading that groups changes ("Rule Breaking Changes"), each top-level bullet is one change, and the
+  // bullets nested under it say how to migrate. Bullets in code blocks are diff lines, not changes.
+  const addGroupItems = (index: number, body: string[]) => {
+    let inCode = false;
+    body.forEach((line, k) => {
+      if (line.trim().startsWith("```")) inCode = !inCode;
+      const item = inCode ? null : /^[-*+]\s+(\S.*)$/.exec(line);
+      if (!item) return;
+      const nested: string[] = [];
+      for (let m = k + 1; m < body.length && /^\s+[-*+]\s/.test(body[m]); m++) nested.push(body[m].replace(/^\s+[-*+]\s+/, ""));
+      const text = item[1].trimEnd();
+      // A table of contents ("[Removed multiple formatters](#removed-formatters)") points to the headings below.
+      if (/^\[[^\]]{0,300}\]\(#[^)\s]{0,200}\)$/.test(text)) return;
+      // "remove deprecated no-throw-literal rule" removes it; "deprecate no-loss-of-precision" only deprecates it.
+      const kind = /deprecat/i.test(text) && !/\b(remov\w*|drop\w*)\b/i.test(text) ? "deprecation" : "breaking";
+      add(index, kind, text, migrationLine(nested));
+    });
+  };
+
   sections.forEach((section, index) => {
     const lines = section.text.split("\n");
     if (sourceType(section) === "migration_guide") {
@@ -167,10 +189,14 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
         if (!heading) return;
         // Anchors before the title are markup, not words: eslint's `<a name="drop-old-node"></a> Node.js < v18.18 ...`.
         const title = heading[1].replace(/^(<a [^>]{0,200}><\/a>\s*)+/i, "").trimEnd();
-        const kind = guideHeadingKind(title);
-        if (kind === null) return;
         const body: string[] = [];
         for (let j = i + 1; j < lines.length && !/^#{1,4}\s/.test(lines[j]); j++) body.push(lines[j]);
+        if (GROUP_HEADING.test(title)) {
+          addGroupItems(index, body);
+          return;
+        }
+        const kind = guideHeadingKind(title);
+        if (kind === null) return;
         add(index, kind, title, migrationLine(body));
       });
       return;

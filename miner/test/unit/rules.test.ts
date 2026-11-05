@@ -76,6 +76,27 @@ describe("extractRules", () => {
     expect(candidates.map((c) => [c.kind, c.excerpt])).toEqual([["breaking", "Node.js < v18.18, v19 are no longer supported"]]);
   });
 
+  it("reads each bullet under a guide heading that groups changes, with its nested migration", () => {
+    // From the typescript-eslint v8 announcement.
+    const text = [
+      "### Rule Breaking Changes",
+      "",
+      "- [Removed multiple formatters](#removed-formatters)",
+      "- [feat(eslint-plugin): remove deprecated no-throw-literal rule](https://example.org/1)",
+      "  - If you have `no-throw-literal` manually enabled, remove that, and instead use `only-throw-error`.",
+      "- [feat(eslint-plugin): deprecate no-loss-of-precision extension rule](https://example.org/2)",
+      "",
+      "```diff",
+      "-  'no-loss-of-precision': '...',",
+      "```",
+    ].join("\n");
+    const { candidates } = extractRules([{ version: "8.0.0", consulted: 0, text }], () => "migration_guide");
+    expect(candidates.map((c) => [c.kind, c.excerpt, c.migration])).toEqual([
+      ["breaking", "[feat(eslint-plugin): remove deprecated no-throw-literal rule](https://example.org/1)", "If you have `no-throw-literal` manually enabled, remove that, and instead use `only-throw-error`."],
+      ["deprecation", "[feat(eslint-plugin): deprecate no-loss-of-precision extension rule](https://example.org/2)", null],
+    ]);
+  });
+
   it("ends a label whose items are nested under it at the next bullet that is not", () => {
     // From express's History.md, 5.0.0.
     const text = ["* breaking:", "  * `res.status()` accepts only integers", "* deps: debug@4.3.6", "* remove:", "  - `app.del` - use `app.delete`"].join("\n");

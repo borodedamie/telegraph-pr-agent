@@ -70,7 +70,7 @@ There are two contracts, and they are kept apart:
      - When there is no guide, a release post such as `blog/2023-07-05-3.0.0.md` is used, but only if its name is the release itself.
      - A tree above the 2 MB cap (next.js: 17 MB) falls back to the top-level tree, then the recursive trees of `docs/`, `doc/`, `documentation/`, `website/` and `guides/`, at the top level or under `packages/` (typescript-eslint's `packages/website/blog`).
      - A release post may also end with the line, as in `announcing-typescript-eslint-v8.md`; `…-v8-beta.mdx` does not match.
-     - Headings that group changes ("Breaking changes for users") are skipped, and leading `<a name>` anchors are dropped from titles.
+     - A heading that groups changes ("Rule Breaking Changes", "Deprecations", "Removals") is not an item itself. Each top-level bullet under it is one, with the bullets nested under it as its migration. Bullets in code blocks, and a table of contents of in-page links, are skipped. Leading `<a name>` anchors are dropped from titles.
      - Guides on other hosts (devblogs.microsoft.com, tailwindcss.com) are not fetched: the host allowlist is unchanged.
   4. **Tag comparison** via `GET /repos/{o}/{r}/compare/{base}...{head}` as a last resort, with the exact tags found by step 1's patterns.
      - Evidence comes from the changed code: `files[].patch` for files under the package `directory`, prioritizing type declarations (`*.d.ts`), entry points and `package.json` (`exports`, `main`, `engines`, `peerDependencies`). Commit messages and file names alone are never evidence.
