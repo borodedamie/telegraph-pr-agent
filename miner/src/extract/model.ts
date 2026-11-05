@@ -187,6 +187,7 @@ const Reply = z.object({ items: z.array(ReplyItem) });
 const JSON_INSTRUCTIONS = `Return only JSON, no prose:
 {"items":[{"id":"i1","sectionId":"x1","kind":"breaking","inferred":false,"change":"what changed","excerpt":"words copied exactly from the section","inferredFrom":[],"migration":"what to do, or null","migrationExcerpt":"words copied exactly from the section that state the step, or null","migrationInferredFrom":[]}]}
 kind is breaking, deprecation or security_fix. Include only those; skip features and fixes.
+List breaking changes first, then deprecations, then security fixes, and keep "change" short: a long reply is cut off.
 An inferred item (a likely concern the text implies but does not state) has "inferred":true, "excerpt":null, and lists in inferredFrom the ids of the items it rests on.
 If the section does not state the migration step in its own words, set migrationExcerpt to null; if you still suggest a step, list in migrationInferredFrom the item ids or section ids it rests on.`;
 
@@ -204,8 +205,34 @@ ${lineFormat ? LINE_INSTRUCTIONS : JSON_INSTRUCTIONS}`;
   return `${header}\n\n${sections.map((s) => `<section id="${s.id}">\n${s.text}\n</section>`).join("\n\n")}`;
 }
 
+/**
+ * The JSON reply, or the items before the cut when the reply was cut off: 302 replies stop at about 1,500–2,000
+ * characters (5 Nov), so a long JSON list ends mid-item. Items hold no nested objects, so a valid parse of
+ * `{"items":[...}]}` is only possible at an item boundary. Null when nothing parses.
+ */
+function readItems(json: string): { parsed: unknown; truncated: boolean } | null {
+  try {
+    return { parsed: JSON.parse(json), truncated: false };
+  } catch {
+    // Fall through to the cut-off reply.
+  }
+  for (let end = json.lastIndexOf("}"); end > 0; end = json.lastIndexOf("}", end - 1)) {
+    try {
+      return { parsed: JSON.parse(`${json.slice(0, end + 1)}]}`), truncated: true };
+    } catch {
+      // A "}" inside an excerpt or a cut item: try the one before.
+    }
+  }
+  return null;
+}
+
 /** Parses a reply into candidates; throws ModelFailure("invalid_reply") when it does not fit the schema. */
-export function parseReply(text: string, sectionIndex: Map<string, number>, lineFormat: boolean, refPrefix: string): Candidate[] {
+export function parseReply(
+  text: string,
+  sectionIndex: Map<string, number>,
+  lineFormat: boolean,
+  refPrefix: string
+): { candidates: Candidate[]; truncated: boolean } {
   if (lineFormat) {
     // An echoed format header or a "none" row is the model saying it found nothing.
     const lines = text
@@ -223,14 +250,14 @@ export function parseReply(text: string, sectionIndex: Map<string, number>, line
       }];
     });
     if (lines.length > 0 && candidates.length === 0) throw new ModelFailure("invalid_reply", "no line fits the format");
-    return candidates;
+    return { candidates, truncated: false };
   }
 
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
+  const read = readItems(text.slice(Math.max(text.indexOf("{"), 0)));
   let parsed: z.infer<typeof Reply>;
   try {
-    parsed = Reply.parse(JSON.parse(text.slice(start, end + 1)));
+    if (read === null) throw new Error("no JSON object");
+    parsed = Reply.parse(read.parsed);
   } catch (err) {
     throw new ModelFailure("invalid_reply", `reply is not the item schema: ${String(err).slice(0, 200)}`);
   }
@@ -239,7 +266,7 @@ export function parseReply(text: string, sectionIndex: Map<string, number>, line
   const seen = new Set<string>();
   const items = parsed.items.filter((item) => !seen.has(item.id) && seen.add(item.id));
   const refs = new Map(items.map((item) => [item.id, `${refPrefix}${item.id}`]));
-  return items.flatMap((item): Candidate[] => {
+  const candidates = items.flatMap((item): Candidate[] => {
     const section = sectionIndex.get(item.sectionId);
     if (section === undefined) return [];
     const ref = (id: string) => refs.get(id) ?? (sectionIndex.has(id) ? `section:${sectionIndex.get(id)}` : id);
@@ -249,6 +276,7 @@ export function parseReply(text: string, sectionIndex: Map<string, number>, line
       migrationExcerpt: item.migrationExcerpt, migrationInferredFrom: item.migrationInferredFrom.map(ref),
     }];
   });
+  return { candidates, truncated: read!.truncated };
 }
 
 export interface ModelResult {
@@ -347,14 +375,26 @@ export async function extractModel(
     result.minerId = miner.id;
     try {
       const reply = await withinSignal(caller(miner, prompt, signal), signal, miner.id);
+      let read: ReturnType<typeof parseReply>;
+      try {
+        read = parseReply(reply.text, ids, lineFormat, `m${miner.id}-`);
+      } catch (err) {
+        // The call was paid: carry its cost into the one failure record below.
+        if (err instanceof ModelFailure) throw new ModelFailure(err.reason, err.message, reply.costMicroUsdc);
+        throw err;
+      }
       budget.recordModelCall(prompt.length, reply.costMicroUsdc, chosen.length);
       result.inputChars += prompt.length;
       result.costMicroUsdc += reply.costMicroUsdc;
       result.msModel += now() - startedAt;
-      result.candidates = parseReply(reply.text, ids, lineFormat, `m${miner.id}-`);
+      result.candidates = read.candidates;
       // Reply text is untrusted and may be long: only its size and the item count are logged.
-      console.info(JSON.stringify({ kind: "llm_reply", minerId: miner.id, chars: reply.text.length, items: result.candidates.length, ms: now() - startedAt }));
-      result.complete = result.skipped.length === 0;
+      console.info(JSON.stringify({
+        kind: "llm_reply", minerId: miner.id, chars: reply.text.length, items: read.candidates.length, truncated: read.truncated, ms: now() - startedAt,
+      }));
+      // A cut-off reply may have dropped items, so the model pass is not complete. The answer is still kept: asking
+      // again would pay for the same cut. Breaking changes come first in the prompt, so the cut drops the least.
+      result.complete = result.skipped.length === 0 && !read.truncated;
       result.failure = null;
       return result;
     } catch (err) {

@@ -76,6 +76,20 @@ describe("extractModel", () => {
     expect(await store.get("llm:breaker:302")).toBe("invalid_reply");
   });
 
+  it("records a paid reply that does not parse once, at its quoted cost", async () => {
+    const budget = new Budget(limitsFromEnv({}));
+    const result = await extractModel(sections, new Set(), "4.0.0", budget, new MemoryStore(), miners, stub("not json"));
+    expect(budget.modelCalls).toBe(1);
+    expect(result).toMatchObject({ failure: "invalid_reply", costMicroUsdc: 10_000 });
+  });
+
+  it("uses a cut-off reply but marks the model pass incomplete", async () => {
+    const cut = goodReply.slice(0, goodReply.indexOf("TypeScript 5 required"));
+    const result = await extractModel(sections, new Set(), "4.0.0", new Budget(limitsFromEnv({})), new MemoryStore(), miners, stub(cut));
+    expect(result).toMatchObject({ failure: null, complete: false });
+    expect(result.candidates.map((c) => c.section)).toEqual([0]);
+  });
+
   it("does not trip the breaker when our escrow refused the payment", async () => {
     const store = new MemoryStore();
     const caller: ModelCaller = async () => {
@@ -153,7 +167,7 @@ describe("parseReply", () => {
         { id: "i2", sectionId: "x1", kind: "breaking", inferred: true, change: "b", inferredFrom: ["i1"], migration: "do", migrationInferredFrom: ["x1"] },
       ],
     });
-    const [, inferred] = parseReply(text, new Map([["x1", 0]]), false, "m-");
+    const [, inferred] = parseReply(text, new Map([["x1", 0]]), false, "m-").candidates;
     expect(inferred).toMatchObject({ ref: "m-i2", inferredFrom: ["m-i1"], migrationInferredFrom: ["section:0"] });
   });
 
@@ -161,14 +175,30 @@ describe("parseReply", () => {
     const text = JSON.stringify({
       items: [{ id: "i1", sectionId: "x1", kind: "breaking", change: "a", excerpt: "e", migration: "", migrationExcerpt: " " }],
     });
-    expect(parseReply(text, new Map([["x1", 0]]), false, "m-")[0]).toMatchObject({ migration: null, migrationExcerpt: null });
+    expect(parseReply(text, new Map([["x1", 0]]), false, "m-").candidates[0]).toMatchObject({ migration: null, migrationExcerpt: null });
   });
 
   it("reads an echoed header or a none row in line format as nothing found", () => {
     const sections = new Map([["x1", 0]]);
-    expect(parseReply("sectionId|kind|excerpt|migrationExcerpt", sections, true, "m-")).toEqual([]);
-    expect(parseReply("none|-|-|-", sections, true, "m-")).toEqual([]);
+    expect(parseReply("sectionId|kind|excerpt|migrationExcerpt", sections, true, "m-").candidates).toEqual([]);
+    expect(parseReply("none|-|-|-", sections, true, "m-").candidates).toEqual([]);
     expect(() => parseReply("x9|feature|a|-", sections, true, "m-")).toThrow(ModelFailure);
+  });
+
+  it("keeps the whole items of a reply cut off mid-item, and says it was cut", () => {
+    const full = JSON.stringify({
+      items: [
+        { id: "i1", sectionId: "x1", kind: "breaking", change: "a", excerpt: "uses `{ a: 1 }` and } braces" },
+        { id: "i2", sectionId: "x1", kind: "breaking", change: "b", excerpt: "second" },
+        { id: "i3", sectionId: "x1", kind: "deprecation", change: "c", excerpt: "third, cut here" },
+      ],
+    });
+    const cut = full.slice(0, full.indexOf("third, cut"));
+    const read = parseReply(cut, new Map([["x1", 0]]), false, "m-");
+    expect(read.truncated).toBe(true);
+    expect(read.candidates.map((c) => c.excerpt)).toEqual(["uses `{ a: 1 }` and } braces", "second"]);
+    expect(parseReply(full, new Map([["x1", 0]]), false, "m-").truncated).toBe(false);
+    expect(() => parseReply('{"items":[{"id":"i1","sec', new Map([["x1", 0]]), false, "m-")).toThrow(ModelFailure);
   });
 
   it("keeps only the first item of an id the reply repeats", () => {
@@ -178,7 +208,7 @@ describe("parseReply", () => {
         { id: "i1", sectionId: "x1", kind: "security_fix", change: "made up", excerpt: "not in the source" },
       ],
     });
-    const candidates = parseReply(text, new Map([["x1", 0]]), false, "m-");
+    const { candidates } = parseReply(text, new Map([["x1", 0]]), false, "m-");
     expect(candidates).toHaveLength(1);
     expect(candidates[0].change).toBe("real");
   });
