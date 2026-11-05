@@ -148,6 +148,10 @@ const row: LedgerRow = {
   timestamp: new Date().toISOString(),
   status: purchase.status,
   attemptId: attemptRow("delivered").attemptId,
+  network: purchase.network,
+  chainId: purchase.chainId,
+  usdcContract: purchase.usdcContract,
+  explorerBaseUrl: purchase.explorerBaseUrl,
 };
 
 try {

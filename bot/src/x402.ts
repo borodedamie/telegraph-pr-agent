@@ -15,7 +15,19 @@ export interface Purchase {
   signalHash: string;
   answer: string;
   status: "settled" | "failed";
+  /** From the 402 option that was paid (SPEC §4.5), so links never depend on config. */
+  network: string;
+  chainId: number;
+  usdcContract: string;
+  /** Empty when the chain is not in EXPLORERS; then no transaction link is shown. */
+  explorerBaseUrl: string;
 }
+
+// Transaction explorers for the chains the devnode has quoted.
+const EXPLORERS: Record<number, string> = {
+  11155111: "https://sepolia.etherscan.io",
+  84532: "https://sepolia.basescan.org",
+};
 
 export interface RankedMiner {
   id: string;
@@ -85,9 +97,15 @@ interface Accept {
   amount?: unknown;
 }
 
+interface QuotedAccept {
+  amount: string;
+  network: string;
+  asset: string;
+}
+
 // accepts[] also lists `escrow` and non-EVM entries; we only quote the one the
 // payment client is allowed to pay: `exact` on our network in our USDC.
-function quotedAmountAtomic(res: Response, network: string, asset: string): string | null {
+function quotedAccept(res: Response, network: string, asset: string): QuotedAccept | null {
   const parsed = decodeB64Json<{ accepts?: unknown }>(res.headers.get("payment-required"));
   if (!Array.isArray(parsed?.accepts)) return null;
   const match = (parsed.accepts as Accept[]).find(
@@ -97,7 +115,9 @@ function quotedAmountAtomic(res: Response, network: string, asset: string): stri
       typeof a.asset === "string" &&
       a.asset.toLowerCase() === asset.toLowerCase()
   );
-  return typeof match?.amount === "string" ? match.amount : null;
+  return typeof match?.amount === "string"
+    ? { amount: match.amount, network: match.network as string, asset: match.asset as string }
+    : null;
 }
 
 function settleHeader(res: Response): { success?: boolean; transaction?: string } | null {
@@ -212,11 +232,11 @@ export class IntelligenceClient {
     if (quoteRes.status !== 402) {
       throw new AskFailedError(`expected a 402 quote, got HTTP ${quoteRes.status}`);
     }
-    const atomic = quotedAmountAtomic(quoteRes, this.network, this.usdcAddress);
-    if (atomic === null) {
+    const accept = quotedAccept(quoteRes, this.network, this.usdcAddress);
+    if (accept === null) {
       throw new AskFailedError(`402 offers no exact payment on ${this.network} in ${this.usdcAddress}`);
     }
-    const amountUsdc = Number(atomic) / USDC_DECIMALS;
+    const amountUsdc = Number(accept.amount) / USDC_DECIMALS;
 
     if (amountUsdc > this.maxPricePerCallUsdc) {
       const reason = `quote ${amountUsdc} USDC exceeds maxPricePerCallUsdc ${this.maxPricePerCallUsdc} (${intent}, miner ${miner.id})`;
@@ -293,6 +313,10 @@ export class IntelligenceClient {
       signalHash: body.signal_hash ?? "",
       answer: answerText(body.result),
       status: "settled",
+      network: accept.network,
+      chainId: Number(accept.network.split(":")[1]),
+      usdcContract: accept.asset,
+      explorerBaseUrl: EXPLORERS[Number(accept.network.split(":")[1])] ?? "",
     };
   }
 }

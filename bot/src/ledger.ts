@@ -26,6 +26,11 @@ export interface LedgerRow {
   status: "settled" | "failed";
   /** Links the purchase to the attempt that paid for it. Absent on pre-attempt rows. */
   attemptId?: string;
+  // From the paid 402 option (SPEC §4.5). Absent on rows written before 5 Nov 2026.
+  network?: string;
+  chainId?: number;
+  usdcContract?: string;
+  explorerBaseUrl?: string;
 }
 
 // One payment try moves reserved → quote_refused, or reserved → request_sent →

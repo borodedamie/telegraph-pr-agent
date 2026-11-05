@@ -125,6 +125,10 @@ describe("IntelligenceClient.buy", () => {
       signalHash: "0xsignal",
       answer: LONG_ANSWER,
       status: "settled",
+      network: CHAIN,
+      chainId: CHAIN_ID,
+      usdcContract: USDC,
+      explorerBaseUrl: "https://sepolia.etherscan.io",
     });
     expect(client.spentUsdc).toBeCloseTo(0.01);
   });

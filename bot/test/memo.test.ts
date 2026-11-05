@@ -49,6 +49,18 @@ describe("renderMemo", () => {
     expect(memo).toContain("View payment");
   });
 
+  it("links a row to the explorer stored with it, whatever its date", () => {
+    const memo = renderMemo([{ ...row, explorerBaseUrl: "https://explorer.test" }], opts);
+    expect(memo).toContain("[View payment ↗](https://explorer.test/tx/0xdeadbeef)");
+    expect(memo).not.toContain("basescan");
+  });
+
+  it("shows no payment link when the row's chain has no known explorer", () => {
+    const memo = renderMemo([{ ...row, explorerBaseUrl: "" }], opts);
+    expect(memo).not.toContain("View payment");
+    expect(memo).toContain("miner `302`</sub>");
+  });
+
   it("links rows paid after the 1 Nov 2026 chain switch to Etherscan, and labels Ethereum Sepolia", () => {
     const memo = renderMemo([{ ...row, timestamp: "2026-11-03T14:30:00.000Z" }], opts);
     expect(memo).toContain("https://sepolia.etherscan.io/tx/0xdeadbeef");
