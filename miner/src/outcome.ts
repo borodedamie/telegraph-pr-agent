@@ -5,7 +5,8 @@ export type OutcomeState =
   | { stage: "parse"; kind: "needs_clarification" | "out_of_scope" }
   | { stage: "resolve"; kind: "unknown_package" | "needs_clarification" | "version_missing" }
   | { stage: "upstream_unavailable" }
-  | { stage: "retrieved"; coverage: Coverage; optionalSourceFailed: boolean };
+  /** `materialRead`: some release text was read, even if a release was later uncovered because the model could not fit it. */
+  | { stage: "retrieved"; coverage: Coverage; optionalSourceFailed: boolean; materialRead: boolean };
 
 export function selectOutcome(state: OutcomeState): Outcome {
   switch (state.stage) {
@@ -18,8 +19,9 @@ export function selectOutcome(state: OutcomeState): Outcome {
     case "upstream_unavailable":
       return "temporarily_unavailable";
     case "retrieved":
-      // Found means at least one release between A and B had material to read.
-      return state.coverage.covered.length > 0 ? "found" : "not_found";
+      // Found means at least one release between A and B had material to read. A release the model could not fit
+      // is listed as not covered (budget), but its material was read: vite 6.0.0's notes on 5 Nov.
+      return state.coverage.covered.length > 0 || state.materialRead ? "found" : "not_found";
   }
 }
 

@@ -12,10 +12,15 @@ describe("selectOutcome", () => {
     expect(selectOutcome({ stage: "resolve", kind: "unknown_package" })).toBe("out_of_scope");
     expect(selectOutcome({ stage: "resolve", kind: "version_missing" })).toBe("not_found");
     expect(selectOutcome({ stage: "upstream_unavailable" })).toBe("temporarily_unavailable");
-    expect(selectOutcome({ stage: "retrieved", coverage: complete, optionalSourceFailed: false })).toBe("found");
+    expect(selectOutcome({ stage: "retrieved", coverage: complete, optionalSourceFailed: false, materialRead: true })).toBe("found");
     expect(
-      selectOutcome({ stage: "retrieved", coverage: { complete: false, covered: [], notCovered: [] }, optionalSourceFailed: false })
+      selectOutcome({ stage: "retrieved", coverage: { complete: false, covered: [], notCovered: [] }, optionalSourceFailed: false, materialRead: false })
     ).toBe("not_found");
+  });
+
+  it("is found when the only release with material was uncovered because the model could not fit it", () => {
+    const coverage = { complete: false, covered: [], notCovered: [{ version: "6.0.0", reason: "budget" as const }] };
+    expect(selectOutcome({ stage: "retrieved", coverage, optionalSourceFailed: false, materialRead: true })).toBe("found");
   });
 });
 

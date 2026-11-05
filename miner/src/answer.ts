@@ -338,7 +338,8 @@ async function compute(
 
   // 7. Coverage, outcome, rendering.
   const coverage = tracker.result();
-  const state: OutcomeState = { stage: "retrieved", coverage, optionalSourceFailed };
+  const materialRead = material.sections.some((s) => s.text.trim() !== "");
+  const state: OutcomeState = { stage: "retrieved", coverage, optionalSourceFailed, materialRead };
   const outcome = selectOutcome(state);
   const security: Security = {
     status: osv.status,
