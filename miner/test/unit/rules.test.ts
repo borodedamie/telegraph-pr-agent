@@ -63,6 +63,19 @@ describe("extractRules", () => {
     expect(items.every((i) => text.includes(i.excerpt!))).toBe(true);
   });
 
+  it("reads a guide heading without its anchor and skips the headings that group changes", () => {
+    // From eslint's migrate-to-9.0.0 guide.
+    const text = [
+      "## Breaking changes for users",
+      "",
+      '## <a name="drop-old-node"></a> Node.js < v18.18, v19 are no longer supported',
+      "",
+      "Upgrade Node.js to v18.18.0 or later.",
+    ].join("\n");
+    const { candidates } = extractRules([{ version: "9.0.0", consulted: 0, text }], () => "migration_guide");
+    expect(candidates.map((c) => [c.kind, c.excerpt])).toEqual([["breaking", "Node.js < v18.18, v19 are no longer supported"]]);
+  });
+
   it("stays fast on long lines of untrusted release-note text", () => {
     const long = " ".repeat(20_000);
     const text = [`# a${long}b`, `# a${long}#${long}b`, `- a${long}b`, `**a${long}b`, `## a${long}`].join("\n");

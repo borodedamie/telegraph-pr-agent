@@ -112,6 +112,8 @@ function labelKind(text: string): ReturnType<typeof headingKind> | null {
 
 // In a migration guide every heading names one change; its first words say which kind.
 function guideHeadingKind(title: string): Kind | null {
+  // "Breaking changes for users" groups the changes below it; it is not one.
+  if (/^(breaking changes?|deprecations?)\b/i.test(title)) return null;
   if (/deprecat/i.test(title)) return "deprecation";
   if (/\b(drops?|dropped|remov\w*|no longer|stricter|changes?|throws|only|breaking|renam\w*|moves?)\b/i.test(title)) {
     return "breaking";
@@ -162,7 +164,8 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
       lines.forEach((line, i) => {
         const heading = /^#{2,4}\s+(\S.*)$/.exec(line);
         if (!heading) return;
-        const title = heading[1].trimEnd();
+        // Anchors before the title are markup, not words: eslint's `<a name="drop-old-node"></a> Node.js < v18.18 ...`.
+        const title = heading[1].replace(/^(<a [^>]{0,200}><\/a>\s*)+/i, "").trimEnd();
         const kind = guideHeadingKind(title);
         if (kind === null) return;
         const body: string[] = [];

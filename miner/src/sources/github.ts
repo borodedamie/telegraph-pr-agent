@@ -194,9 +194,10 @@ export async function retrieveReleaseNotes(
     }
   }
 
-  // 3. A migration guide in the repository, for the first release of a new major (or 0.y) line.
+  // 3. A migration guide in the repository, for the first release of a new major (or 0.y) line. Read even when
+  // the release has notes: they often only summarise the guide (prettier 3.0.0, next 15.0.0, mongoose 8.0.0).
   const lineStart = firstOfNewLine(tracker.releases, from);
-  if (lineStart !== null && wanted.has(lineStart)) {
+  if (lineStart !== null && (wanted.has(lineStart) || tracker.state(lineStart) === "covered")) {
     let guide: SourceDocument | null;
     try {
       guide = await findMigrationGuide(retrieval, repo, packument.name, lineStart, headers);
@@ -249,10 +250,15 @@ export function firstOfNewLine(releases: string[], from: string): string | null 
 
 const TreeResponse = z.object({
   truncated: z.boolean().optional(),
-  tree: z.array(z.object({ path: z.string(), type: z.string() })),
+  tree: z.array(z.object({ path: z.string(), type: z.string(), sha: z.string().optional() })),
 });
 
-const GUIDE_NAME = /(migrat|upgrad|changelog|breaking)[^/]*\.mdx?$/i;
+// A guide names its topic somewhere in its path: `guides/migrating-to-v5.md`, `upgrading/version-15.mdx`.
+const GUIDE_NAME = /(migrat|upgrad|changelog|breaking)[^]*\.mdx?$/i;
+// A release post, when the repository has no guide: `website/blog/2023-07-05-3.0.0.md`.
+const BLOG_POST = /\bblog\/[^/]*\.mdx?$/i;
+// Where a large repository keeps its documentation, read when its whole tree is over the size cap.
+const DOC_DIRS = new Set(["docs", "doc", "documentation", "website", "guides"]);
 
 /**
  * Picks a guide whose path names the new line, e.g. `docs/v4/changelog.mdx` or `guides/migrating-to-v5.md`.
@@ -261,8 +267,13 @@ const GUIDE_NAME = /(migrat|upgrad|changelog|breaking)[^/]*\.mdx?$/i;
 export function pickMigrationGuide(paths: string[], version: string, packageName: string): string | null {
   const major = semver.major(version);
   const label = major === 0 ? `0\\.${semver.minor(version)}` : `${major}`;
-  const names = new RegExp(`(^|[^0-9.])(v${label}|${label}\\.0|version-${label})([^0-9]|$)`, "i");
-  const candidates = paths.filter((p) => GUIDE_NAME.test(p) && names.test(p) && !/node_modules|\/test|__tests__/.test(p));
+  // The line as a path part: v5, 5.0, 3.0.0, version-15, migrating_to_8.md; not 3.0.1 or 15.2.
+  const names = new RegExp(`(^|[^0-9.])v?${label}(\\.0){0,2}(?=[^0-9.]|\\.mdx?$|$)`, "i");
+  // A post must name the release itself (3.0.0, 3.0): blogs hold posts on other releases of the line too.
+  const release = new RegExp(`(^|[^0-9.])${label}\\.0(\\.0)?\\.mdx?$`, "i");
+  const usable = paths.filter((p) => !/node_modules|\/test|__tests__/.test(p));
+  const guides = usable.filter((p) => GUIDE_NAME.test(p) && names.test(p));
+  const candidates = guides.length > 0 ? guides : usable.filter((p) => BLOG_POST.test(p) && release.test(p));
   const words = packageName.replace(/^@[^/]+\//, "").split(/[^a-z0-9]+/i).filter((w) => w.length > 1);
   const named = (path: string) => words.filter((w) => new RegExp(`(^|[^a-z0-9])${w}([^a-z0-9]|$)`, "i").test(path)).length;
   candidates.sort((a, b) => named(b) - named(a) || a.length - b.length || (a < b ? -1 : 1));
@@ -276,9 +287,30 @@ async function findMigrationGuide(
   version: string,
   headers: Record<string, string>
 ): Promise<SourceDocument | null> {
-  const treeUrl = `https://api.github.com/repos/${repo.owner}/${repo.repo}/git/trees/HEAD?recursive=1`;
-  // Over the size cap (a very large repository) or down: the caller decides, as for any optional source.
-  const tree = await fetchDocument(retrieval, treeUrl, {
+  const trees = `https://api.github.com/repos/${repo.owner}/${repo.repo}/git/trees`;
+  let paths: string[] | null;
+  try {
+    paths = await treePaths(retrieval, `${trees}/HEAD?recursive=1`, headers, "");
+  } catch (err) {
+    if (!(err instanceof TooLarge)) throw err;
+    // A very large repository (next.js: 17 MB of paths): read only its documentation directories. Down or
+    // over the cap again: the caller decides, as for any optional source.
+    const top = await fetchDocument(retrieval, `${trees}/HEAD`, { headers, toText: (body) => canonicalJson(TreeResponse.parse(JSON.parse(body)).tree) });
+    if (top === null) return null;
+    const dirs = z.array(TreeResponse.shape.tree.element).parse(JSON.parse(top.text)).filter((e) => e.type === "tree" && e.sha !== undefined && DOC_DIRS.has(e.path));
+    paths = [];
+    for (const dir of dirs) paths.push(...((await treePaths(retrieval, `${trees}/${dir.sha}?recursive=1`, headers, `${dir.path}/`)) ?? []));
+  }
+  if (paths === null) return null;
+  const path = pickMigrationGuide(paths, version, packageName);
+  if (path === null) return null;
+  const url = `https://raw.githubusercontent.com/${repo.owner}/${repo.repo}/HEAD/${path}`;
+  return fetchDocument(retrieval, url, { toText: normalizeText });
+}
+
+/** The file paths of a tree, each under `prefix`; null when the tree is not there. */
+async function treePaths(retrieval: Retrieval, url: string, headers: Record<string, string>, prefix: string): Promise<string[] | null> {
+  const tree = await fetchDocument(retrieval, url, {
     headers,
     // Only the file paths are kept.
     toText: (body) =>
@@ -288,9 +320,5 @@ async function findMigrationGuide(
           .map((entry) => entry.path)
       ),
   });
-  if (tree === null) return null;
-  const path = pickMigrationGuide(z.array(z.string()).parse(JSON.parse(tree.text)), version, packageName);
-  if (path === null) return null;
-  const url = `https://raw.githubusercontent.com/${repo.owner}/${repo.repo}/HEAD/${path}`;
-  return fetchDocument(retrieval, url, { toText: normalizeText });
+  return tree === null ? null : z.array(z.string()).parse(JSON.parse(tree.text)).map((path) => prefix + path);
 }
