@@ -68,6 +68,8 @@ describe("extractRules", () => {
     const text = [
       "## Breaking changes for users",
       "",
+      "## User-Facing Changes",
+      "",
       '## <a name="drop-old-node"></a> Node.js < v18.18, v19 are no longer supported',
       "",
       "Upgrade Node.js to v18.18.0 or later.",

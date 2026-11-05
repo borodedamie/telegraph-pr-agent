@@ -119,8 +119,8 @@ const GROUP_HEADING = /\bbreaking changes\b|\bdeprecations\b|\bremovals\b/i;
 const SECTION_HEADING = /^(breaking changes?|changes|changed|removed|removals|deprecat\w*)\b/i;
 
 function guideHeadingKind(title: string): Kind | null {
-  // "Breaking changes for users" groups the changes below it; it is not one.
-  if (/^(breaking changes?|deprecations?)\b/i.test(title)) return null;
+  // "Breaking changes for users" and "User-Facing Changes" group the changes below them; they are not one.
+  if (/^(breaking changes?|deprecations?)\b|\bchanges$/i.test(title)) return null;
   if (/deprecat/i.test(title)) return "deprecation";
   if (/\b(drops?|dropped|remov\w*|no longer|stricter|changes?|throws|only|breaking|renam\w*|moves?)\b/i.test(title)) {
     return "breaking";
