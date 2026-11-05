@@ -1,21 +1,21 @@
 # Benchmark report
 
-Run 2026-11-05T15:52:02.568Z against https://telegraph-pr-miner-ca5ja55b3-n30sk.vercel.app, processing version p5-bench5-miners_302-llm302-rules_and_model-s1.
+Run 2026-11-05T16:48:03.865Z against https://telegraph-pr-miner-otcztx454-n30sk.vercel.app, processing version p5-bench6-miners_302-llm302-rules_and_model-s1.
 38 cases answered, 2 skipped, 0 failed. Written by `bench/run.ts`.
 
 ## Success criteria
 
 | Criterion | Result | Target | Status |
 | --- | --- | --- | --- |
-| SC-001 evidence: excerpt found in the cited source, at a version in range | 581/581 (100.0%) | ≥ 90% | pass |
-| SC-002 recall of reviewed breaking changes, cases within the model budget | 222/368 (60.3%) | ≥ 80% | **FAIL** |
-| SC-002 recall, all positive cases (for information) | 235/427 (55.0%) | — | — |
+| SC-001 evidence: excerpt found in the cited source, at a version in range | 673/673 (100.0%) | ≥ 90% | pass |
+| SC-002 recall of reviewed breaking changes, cases within the model budget | 247/368 (67.1%) | ≥ 80% | **FAIL** |
+| SC-002 recall, all positive cases (for information) | 260/427 (60.9%) | — | — |
 | SC-003 invented versions, dates or links | 0 | 0 | pass |
 | SC-004 negative cases with the right outcome and no safe-upgrade claim | 8/8 | all | pass |
 | SC-005 answers whose coverage names every release in range | 38/38 | all | pass |
 | SC-006 repeats byte-identical | 38/38 | all | pass |
-| SC-006 repeat latency p95 | 1084 ms | < 500 ms | **FAIL** |
-| SC-006 first-time latency p50 / p95 (38 answers) | 4175 ms / 10761 ms | published; 2 s where the intent requires it | — |
+| SC-006 repeat latency p95 | 1056 ms | < 500 ms | **FAIL** |
+| SC-006 first-time latency p50 / p95 (38 answers) | 4344 ms / 11198 ms | published; 2 s where the intent requires it | — |
 | SC-008 security tests | see `test/unit/security.test.ts` | no private-network request, no package execution, no injection | — |
 | SC-011 model calls and cost, first-time answers | 24 calls, 0.2400 USDC | reported against the payout per answer | — |
 | SC-011 model cost, repeats | 0.0000 USDC | 0 | pass |
@@ -30,46 +30,46 @@ SC-002 matches an expected entry to an answer item of the same version when the 
 
 | Case | Outcome (expected) | First call | Repeat | Breaking found | Evidence | Problems |
 | --- | --- | --- | --- | --- | --- | --- |
-| p01 | found (found) | 6215 ms, miss, 1 model calls | 1084 ms, hit | 13/32 | 37/37 | none |
-| p02 | found (found) | 5880 ms, miss, 1 model calls | 393 ms, hit | 10/33 | 42/42 | none |
-| p03 | found (found) | 3999 ms, miss, 1 model calls | 702 ms, hit | 34/34 | 54/54 | none |
-| p04 | found (found) | 8206 ms, miss, 1 model calls | 434 ms, hit | 6/17 | 28/28 | none |
-| p05 | found (found) | 10761 ms, miss, 0 model calls | 1684 ms, hit | 0/27 | 2/2 | none |
-| p06 | found (found) | 2952 ms, miss, 0 model calls | 852 ms, hit | 19/24 | 73/73 | none |
-| p07 | found (found) | 1781 ms, miss, 0 model calls | 452 ms, hit | 0/8 | 0/0 | none |
-| p08 | found (found) | 2646 ms, miss, 0 model calls | 779 ms, hit | 10/22 | 15/15 | none |
-| p09 | found (found) | 5682 ms, miss, 1 model calls | 420 ms, hit | 11/11 | 11/11 | none |
-| p10 | found (found) | 6977 ms, miss, 1 model calls | 396 ms, hit | 12/19 | 20/20 | none |
-| p11 | found (found) | 12987 ms, miss, 1 model calls | 581 ms, hit | 3/6 | 44/44 | none |
-| p12 | found (found) | 5235 ms, miss, 1 model calls | 381 ms, hit | 7/7 | 21/21 | none |
-| p13 | found (found) | 6289 ms, miss, 1 model calls | 466 ms, hit | 1/33 | 30/30 | none |
-| p14 | found (found) | 5578 ms, miss, 1 model calls | 590 ms, hit | 0/7 | 37/37 | none |
-| p15 | found (found) | 9252 ms, miss, 1 model calls | 453 ms, hit | 1/1 | 1/1 | none |
-| p16 | found (found) | 10086 ms, miss, 1 model calls | 416 ms, hit | 15/15 | 15/15 | none |
-| p17 | found (found) | 4527 ms, miss, 1 model calls | 345 ms, hit | 1/1 | 2/2 | none |
-| p18 | found (found) | 4423 ms, miss, 1 model calls | 381 ms, hit | 5/5 | 18/18 | none |
-| p19 | found (found) | 3156 ms, miss, 1 model calls | 370 ms, hit | 7/12 | 8/8 | none |
-| p20 | found (found) | 3262 ms, miss, 1 model calls | 342 ms, hit | 1/2 | 1/1 | none |
-| p21 | found (found) | 10471 ms, miss, 0 model calls | 713 ms, hit | 21/34 | 22/22 | none |
-| p22 | found (found) | 4175 ms, miss, 1 model calls | 338 ms, hit | 0/0 | 2/2 | none |
-| p23 | found (found) | 8136 ms, miss, 1 model calls | 476 ms, hit | 25/25 | 33/33 | none |
-| p24 | found (found) | 6548 ms, miss, 1 model calls | 442 ms, hit | 0/2 | 2/2 | none |
-| p25 | found (found) | 3206 ms, miss, 1 model calls | 386 ms, hit | 0/1 | 4/4 | none |
-| p26 | found (found) | 6925 ms, miss, 1 model calls | 472 ms, hit | 16/16 | 33/33 | none |
-| p27 | not_found (found) | 1459 ms, miss, 0 model calls | 553 ms, hit | 0/0 | 0/0 | wrong outcome |
-| p28 | found (found) | 2658 ms, miss, 1 model calls | 332 ms, hit | 0/0 | 1/1 | none |
-| p29 | found (found) | 3224 ms, miss, 1 model calls | 341 ms, hit | 0/1 | 0/0 | safe-upgrade claim |
-| p30 | found (found) | 4508 ms, miss, 1 model calls | 722 ms, hit | 17/32 | 25/25 | none |
-| n01 | not_found (not_found) | 327 ms, miss, 0 model calls | 322 ms, miss | — | 0/0 | none |
-| n02 | not_found (not_found) | 381 ms, miss, 0 model calls | 315 ms, miss | — | 0/0 | none |
-| n03 | out_of_scope (out_of_scope) | 432 ms, miss, 0 model calls | 422 ms, miss | — | 0/0 | none |
-| n04 | out_of_scope (out_of_scope) | 294 ms, miss, 0 model calls | 296 ms, miss | — | 0/0 | none |
-| n05 | needs_clarification (needs_clarification) | 297 ms, miss, 0 model calls | 299 ms, miss | — | 0/0 | none |
-| n06 | not_found (not_found) | 1708 ms, miss, 0 model calls | 689 ms, hit | — | 0/0 | none |
-| n07 | not_found (found or not_found) | 1473 ms, miss, 0 model calls | 631 ms, hit | — | 0/0 | none |
+| p01 | found (found) | 6536 ms, miss, 1 model calls | 933 ms, hit | 13/32 | 36/36 | none |
+| p02 | found (found) | 7689 ms, miss, 1 model calls | 660 ms, hit | 16/33 | 75/75 | none |
+| p03 | found (found) | 4558 ms, miss, 1 model calls | 389 ms, hit | 34/34 | 54/54 | none |
+| p04 | found (found) | 14633 ms, miss, 1 model calls | 587 ms, hit | 6/17 | 29/29 | none |
+| p05 | found (found) | 11198 ms, miss, 0 model calls | 1525 ms, hit | 0/27 | 2/2 | none |
+| p06 | found (found) | 3659 ms, miss, 0 model calls | 1056 ms, hit | 21/24 | 86/86 | none |
+| p07 | found (found) | 2359 ms, miss, 0 model calls | 532 ms, hit | 0/8 | 0/0 | none |
+| p08 | found (found) | 2752 ms, miss, 0 model calls | 832 ms, hit | 16/22 | 19/19 | none |
+| p09 | found (found) | 5747 ms, miss, 1 model calls | 421 ms, hit | 11/11 | 16/16 | none |
+| p10 | found (found) | 7411 ms, miss, 1 model calls | 441 ms, hit | 12/19 | 20/20 | none |
+| p11 | found (found) | 5874 ms, miss, 1 model calls | 353 ms, hit | 3/6 | 41/41 | none |
+| p12 | found (found) | 5226 ms, miss, 1 model calls | 331 ms, hit | 7/7 | 20/20 | none |
+| p13 | found (found) | 5068 ms, miss, 1 model calls | 453 ms, hit | 4/33 | 59/59 | none |
+| p14 | found (found) | 6377 ms, miss, 1 model calls | 577 ms, hit | 0/7 | 39/39 | none |
+| p15 | found (found) | 5155 ms, miss, 1 model calls | 409 ms, hit | 1/1 | 1/1 | none |
+| p16 | found (found) | 5536 ms, miss, 1 model calls | 391 ms, hit | 15/15 | 18/18 | none |
+| p17 | found (found) | 7773 ms, miss, 1 model calls | 357 ms, hit | 1/1 | 1/1 | none |
+| p18 | found (found) | 4344 ms, miss, 1 model calls | 339 ms, hit | 5/5 | 19/19 | none |
+| p19 | found (found) | 3436 ms, miss, 1 model calls | 370 ms, hit | 7/12 | 8/8 | none |
+| p20 | found (found) | 4009 ms, miss, 1 model calls | 343 ms, hit | 1/2 | 1/1 | none |
+| p21 | found (found) | 7514 ms, miss, 0 model calls | 701 ms, hit | 29/34 | 33/33 | none |
+| p22 | found (found) | 3122 ms, miss, 1 model calls | 360 ms, hit | 0/0 | 1/1 | none |
+| p23 | found (found) | 9566 ms, miss, 1 model calls | 433 ms, hit | 25/25 | 32/32 | none |
+| p24 | found (found) | 6769 ms, miss, 1 model calls | 417 ms, hit | 0/2 | 1/1 | none |
+| p25 | found (found) | 4294 ms, miss, 1 model calls | 334 ms, hit | 0/1 | 4/4 | none |
+| p26 | found (found) | 6641 ms, miss, 1 model calls | 424 ms, hit | 16/16 | 33/33 | none |
+| p27 | not_found (found) | 1591 ms, miss, 0 model calls | 555 ms, hit | 0/0 | 0/0 | wrong outcome |
+| p28 | found (found) | 2681 ms, miss, 1 model calls | 345 ms, hit | 0/0 | 1/1 | none |
+| p29 | found (found) | 3668 ms, miss, 1 model calls | 335 ms, hit | 0/1 | 0/0 | safe-upgrade claim |
+| p30 | found (found) | 5587 ms, miss, 1 model calls | 898 ms, hit | 17/32 | 24/24 | none |
+| n01 | not_found (not_found) | 343 ms, miss, 0 model calls | 320 ms, miss | — | 0/0 | none |
+| n02 | not_found (not_found) | 326 ms, miss, 0 model calls | 308 ms, miss | — | 0/0 | none |
+| n03 | out_of_scope (out_of_scope) | 450 ms, miss, 0 model calls | 420 ms, miss | — | 0/0 | none |
+| n04 | out_of_scope (out_of_scope) | 290 ms, miss, 0 model calls | 325 ms, miss | — | 0/0 | none |
+| n05 | needs_clarification (needs_clarification) | 298 ms, miss, 0 model calls | 294 ms, miss | — | 0/0 | none |
+| n06 | not_found (not_found) | 1938 ms, miss, 0 model calls | 750 ms, hit | — | 0/0 | none |
+| n07 | not_found (found or not_found) | 1688 ms, miss, 0 model calls | 567 ms, hit | — | 0/0 | none |
 | n08 | — (temporarily_unavailable) | skipped: needs a local run with a simulated outage | | | | |
 | n09 | — (found) | skipped: needs a local run with a simulated outage | | | | |
-| n10 | needs_clarification (needs_clarification) | 313 ms, miss, 0 model calls | 435 ms, miss | — | 0/0 | none |
+| n10 | needs_clarification (needs_clarification) | 305 ms, miss, 0 model calls | 326 ms, miss | — | 0/0 | none |
 
 ## Details
 
@@ -99,26 +99,20 @@ SC-002 matches an expected entry to an answer item of the same version when the 
 
 - not found: 5.0.0 app.del() was removed
 - not found: 5.0.0 Pluralized method names: req.acceptsCharset, acceptsEncoding, acceptsLanguage were removed
-- not found: 5.0.0 A leading colon in app.param(name, fn) is no longer stripped
-- not found: 5.0.0 req.param(name) was removed
 - not found: 5.0.0 res.send(status) with a number was removed
 - not found: 5.0.0 res.sendfile() was removed
-- not found: 5.0.0 res.sendFile() options changed
-- not found: 5.0.0 express.static() options changed
 - not found: 5.0.0 router.param(fn) was removed
 - not found: 5.0.0 MIME types changed
-- not found: 5.0.0 The express:router debug logs changed
 - not found: 5.0.0 Path route matching syntax changed (path-to-regexp 8)
-- not found: 5.0.0 Rejected promises from middleware and handlers are handled as errors
 - not found: 5.0.0 express.urlencoded defaults extended to false
 - not found: 5.0.0 express.static no longer serves dotfiles by default
-- not found: 5.0.0 router.param() no longer accepts an array of names
 - not found: 5.0.0 app.listen behaviour changed
 - not found: 5.0.0 app.router was removed
 - not found: 5.0.0 req.body is undefined when the body has not been parsed
 - not found: 5.0.0 req.host keeps the port
 - not found: 5.0.0 req.params changed
 - not found: 5.0.0 req.query is a getter and its parser changed
+- not found: 5.0.0 res.clearCookie ignores maxAge and expires
 - not found: 5.0.0 res.vary throws without a field argument
 
 ### p04
@@ -167,8 +161,6 @@ SC-002 matches an expected entry to an answer item of the same version when the 
 
 ### p06
 
-- not found: 19.0.0 Errors in render are not re-thrown; uncaught ones go to window.reportError and caught ones to console.error
-- not found: 19.0.0 react-dom/test-utils was removed; act moved to react
 - not found: 19.0.0 StrictMode reuses useMemo/useCallback results in the second render and double-invokes ref callbacks on mount
 - not found: 19.0.0 react-dom throws when the react and react-dom versions differ
 - not found: 19.0.0 Empty src and href attributes are not rendered
@@ -186,16 +178,10 @@ SC-002 matches an expected entry to an answer item of the same version when the 
 
 ### p08
 
-- not found: 3.0.0 Print trailing comma in type parameters and tuple types when --trailing-comma=es5
 - not found: 3.0.0 --parser=css no longer parses SCSS or Less; those files need the scss or less parser
-- not found: 3.0.0 Npm package file structures changed
-- not found: 3.0.0 Update prettier.doc
-- not found: 3.0.0 textToDoc trims trailing hard lines
-- not found: 3.0.0 undefined and null are not passed to plugin's print function
-- not found: 3.0.0 getFileInfo() resolves config by default
-- not found: 3.0.0 Ignore .gitignored files by default
 - not found: 3.0.0 Markdown no longer gets spaces inserted between Chinese or Japanese and Western characters
 - not found: 3.0.0 A printer's embed method has a new, incompatible signature
+- not found: 3.0.0 --loglevel was renamed to --log-level
 - not found: 3.0.0 Unknown code is no longer formatted with the babel parser
 - not found: 3.0.0 Globs are not expanded through symbolic links
 
@@ -218,7 +204,6 @@ SC-002 matches an expected entry to an answer item of the same version when the 
 ### p13
 
 - not found: 4.0.0 Targets Safari 16.4, Chrome 111 and Firefox 128; older browsers are not supported
-- not found: 4.0.0 The @tailwind directives were removed
 - not found: 4.0.0 Several utilities were renamed
 - not found: 4.0.0 The shadow, radius and blur scales were renamed, so -sm utilities look different
 - not found: 4.0.0 outline sets a 1px width and outline-<number> defaults to solid
@@ -229,7 +214,6 @@ SC-002 matches an expected entry to an answer item of the same version when the 
 - not found: 4.0.0 The container configuration options were removed
 - not found: 4.0.0 border and divide default to currentColor instead of gray-200
 - not found: 4.0.0 Placeholder text uses the current text colour at 50% opacity
-- not found: 4.0.0 Buttons use cursor: default
 - not found: 4.0.0 Preflight resets dialog margins
 - not found: 4.0.0 The hidden attribute takes priority over display classes
 - not found: 4.0.0 A prefix is written like a variant at the start of the class
@@ -245,7 +229,6 @@ SC-002 matches an expected entry to an answer item of the same version when the 
 - not found: 4.0.0 A JavaScript config file is no longer detected automatically
 - not found: 4.0.0 resolveConfig is no longer exported
 - not found: 4.0.0 Separately bundled stylesheets (CSS modules, Vue/Svelte style blocks) do not see theme variables and custom utilities
-- not found: 4.0.0 Sass, Less and Stylus are not supported
 - not found: 4.0.0 The PostCSS plugin moved to @tailwindcss/postcss
 - not found: 4.0.0 The CLI moved to @tailwindcss/cli
 - not found: 4.0.0 theme() takes CSS variable names instead of dot notation
@@ -274,17 +257,9 @@ SC-002 matches an expected entry to an answer item of the same version when the 
 
 ### p21
 
-- not found: 5.0.0 Hooks and methods take a single object argument
-- not found: 5.0.0 TypeScript 4.7 or newer is required
-- not found: 5.0.0 The deprecated custom logger was removed
+- not found: 5.0.0 getQueryState accepts the queryKey only
 - not found: 5.0.0 Browser support changed
-- not found: 5.0.0 Private class fields and methods are used
-- not found: 5.0.0 Error is the default error type instead of unknown
 - not found: 5.0.0 The dehydrate API changed
-- not found: 5.0.0 Manual mode for infinite queries was removed
-- not found: 5.0.0 null from getNextPageParam/getPreviousPageParam means no further page
-- not found: 5.0.0 No retries on the server
-- not found: 5.0.0 React 18 or newer is required
 - not found: 5.0.0 The experimental suspense flag on query hooks was removed
 - not found: 5.0.0 HydrationBoundary no longer hydrates mutations
 
