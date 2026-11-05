@@ -127,7 +127,7 @@ There are two contracts, and they are kept apart:
   - **Timeout**: `LLM_TIMEOUT_MS` defaults to 12 s.
   - **Fallback**: when the call fails, times out or no miner is available, the answer is built by the deterministic pass only. It says that prose changes may be missing and is not cached, so it is retried next time.
 
-  The extractor mode (`rules_only` or `rules_and_model`) is part of `PROCESSING_VERSION`, so a rules-only answer never shares a cache key with a full one.
+  The extractor mode (`rules_only` or `rules_and_model`) is part of the answer's `processingVersion`. The cache key is fixed before extraction, so a rules-only answer is cached for one hour only (since 5 Nov; before, not at all): a repeat within the hour gets the same bytes, and a later request runs the model again.
 
   For a multi-release request, the version-specific sections are batched into as few calls as the token budget allows. Each section is labelled with an opaque section id, never a version. Releases fully handled by the deterministic pass are not sent to the model.
 - **Verification**:

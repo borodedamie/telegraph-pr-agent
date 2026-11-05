@@ -114,8 +114,9 @@ describe("US2: honest not found", () => {
     expect(metrics.declaredFailure).toBe(true);
   });
 
-  it("goes on without a changelog that is down, with lower confidence and no caching", async () => {
-    const store = new MemoryStore();
+  it("goes on without a changelog that is down, with lower confidence, cached for an hour only", async () => {
+    let clock = 0;
+    const store = new MemoryStore(() => clock);
     const fetcher = failingFetcher(NO_NOTES, (url) => url.endsWith("/CHANGELOG.md"), 500);
     const first = await answerQuestion("no-notes 1.0.0 to 2.0.0", deps(store, fetcher));
     expect(first.answer).toMatchObject({ outcome: "not_found", confidence: 0.6 });
@@ -123,7 +124,10 @@ describe("US2: honest not found", () => {
     expect(first.answer.answer).toContain(`Could not read, so material may exist that this answer did not see: ${changelog}.`);
     expect(first.answer.answer).not.toMatch(new RegExp(`Checked: [^\\n]*${changelog.replace(/[.?]/g, "\\$&")}`));
     const second = await answerQuestion("no-notes 1.0.0 to 2.0.0", deps(store, fetcher));
-    expect(second.cacheHit).toBe(false);
+    expect(second.cacheHit).toBe(true);
+    clock = 3_600_000;
+    const later = await answerQuestion("no-notes 1.0.0 to 2.0.0", deps(store, fetcher));
+    expect(later.cacheHit).toBe(false);
   });
 
   it("forces the outage path only from the environment", async () => {

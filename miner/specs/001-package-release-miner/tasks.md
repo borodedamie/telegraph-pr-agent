@@ -192,7 +192,7 @@ description: "Task list for the package-release miner"
   - It asks for JSON items `{sectionId, kind, evidenceType, change, excerpt, inferredFrom, migration, migrationExcerpt, migrationInferredFrom}`, validated with zod.
   - It never passes or accepts versions, dates or URLs.
   - It asks `budget.canCallModel` before every call, and records the miner id, calls, input size, cost and failure reason.
-  - Without `MINER_SPEND_KEY` or `LLM_MINERS`, or after a failure, it is skipped. The extractor mode `rules_only` then goes into `PROCESSING_VERSION`, and that answer is not cached.
+  - Without `MINER_SPEND_KEY` or `LLM_MINERS`, or after a failure, it is skipped. The extractor mode `rules_only` then goes into `PROCESSING_VERSION`, and that answer is cached for one hour only.
   - Tests stub the LLM miner and never buy.
 - [x] T039 [US1] Implement `verify(items, sources)` in `miner/src/extract/verify.ts`.
   - It normalizes each source once and drops every item whose `excerpt` is not an exact substring.

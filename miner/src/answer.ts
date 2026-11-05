@@ -61,6 +61,7 @@ export interface PipelineResult {
 /** Vercel kills the function at maxDuration (vercel.json). */
 const MAX_DURATION_MS = 30_000;
 const LOCK_WAIT_DEFAULT_MS = 5_000;
+const PARTIAL_ANSWER_TTL_SEC = 3_600;
 
 const NOT_CHECKED: Security = { status: "not_checked", checkedAt: null, advisories: [], documentedFixes: 0 };
 
@@ -256,8 +257,10 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
         osv,
       });
       const result = finish(answer);
-      // An optional source that was down is retried next time rather than cached around.
-      if (complete && !material.optionalSourceFailed && isCacheable(result.answer)) await putAnswer(deps.store, key, result.answer, result.json);
+      // A full answer is kept. One with text left unread (the model pass did not run, an optional source was down)
+      // is kept for an hour: a repeat gets the same bytes at once (SC-006), and a later one retries the sources.
+      const full = complete && !material.optionalSourceFailed;
+      await putAnswer(deps.store, key, result.answer, result.json, full ? undefined : PARTIAL_ANSWER_TTL_SEC);
       return result;
     } finally {
       if (leave) await leave();

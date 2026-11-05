@@ -188,10 +188,10 @@ export async function getAnswer(store: Store, key: string): Promise<string | nul
   return store.get(key);
 }
 
-/** Stores the exact JSON string the caller will send, so a later hit is byte-identical. */
-export async function putAnswer(store: Store, key: string, answer: Answer, json: string): Promise<boolean> {
+/** Stores the exact JSON string the caller will send, so a later hit is byte-identical; without `ttlSec`, for good. */
+export async function putAnswer(store: Store, key: string, answer: Answer, json: string, ttlSec?: number): Promise<boolean> {
   if (!isCacheable(answer)) return false;
-  await store.set(key, json);
+  await store.set(key, json, ttlSec);
   return true;
 }
 

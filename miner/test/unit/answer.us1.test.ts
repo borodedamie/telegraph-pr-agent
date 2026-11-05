@@ -91,14 +91,21 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     expect(model.calls()).toBe(1);
   });
 
-  it("never serves a rules-only answer for a full one", async () => {
-    const store = new MemoryStore();
+  it("serves a rules-only answer again for an hour only, then computes a full one", async () => {
+    let clock = 0;
+    const store = new MemoryStore(() => clock);
     const rulesOnly = await answerQuestion(QUESTION, deps(store, null));
     expect(rulesOnly.metrics.extractorMode).toBe("rules_only");
     expect(rulesOnly.answer.processingVersion).toContain("rules_only");
     expect(rulesOnly.answer.answer).toContain("Notice: the model pass did not run");
     expect(rulesOnly.answer.confidence).toBeLessThanOrEqual(0.5);
     const model = stubModel();
+    clock = 3_599_000;
+    const repeat = await answerQuestion(QUESTION, deps(store, model.caller));
+    expect(repeat.cacheHit).toBe(true);
+    expect(repeat.json).toBe(rulesOnly.json);
+    expect(model.calls()).toBe(0);
+    clock = 3_600_000;
     const full = await answerQuestion(QUESTION, deps(store, model.caller));
     expect(full.cacheHit).toBe(false);
     expect(model.calls()).toBe(1);
