@@ -30,7 +30,7 @@ description: "Task list for the package-release miner"
   - name `@telegraph-pr-agent/miner`, `type: module`, Node ≥20;
   - scripts `test`, `build`, `dev` (`vercel dev`) and `bench`.
 - [x] T002 ⚠ Add dependencies to `miner/package.json`. Justification: plan.md Complexity Tracking.
-  - Runtime: `zod`, `@x402/fetch`, `@x402/evm` and `viem` (same versions as `bot/`), `semver`, `@upstash/redis`. Approved 3 Nov.
+  - Runtime: `zod`, `@x402/fetch`, `@x402/evm` and `viem` (same versions as `bot/`), `semver`, `@upstash/redis`. Approved 3 Nov. The two `@x402` packages were removed on 5 Nov, when model calls moved to escrow payments.
   - Dev: `typescript`, `vitest`, `tsx`, `@types/node`, `@types/semver`, `@vercel/node`.
 - [x] T003 [P] Create `miner/tsconfig.json`, copied from `bot/tsconfig.json`, with `include: ["src", "api", "test", "bench"]`
 - [x] T004 [P] Create `miner/.env.example`, each variable with a one-line comment, and confirm `miner/.env` is ignored by the root `.gitignore` (`.env*`). Variables:

@@ -17,7 +17,7 @@ Resolution, sourcing and verification are deterministic. A language model only c
 **Primary Dependencies**:
 - `zod` for boundary validation;
 - `semver` for version resolution;
-- `@x402/fetch`, `@x402/evm` and `viem`, as in `bot/`, to buy LLM extraction from a Telegraph LLM miner behind the `ChangeExtractor` interface ([R7](research.md));
+- `viem`, as in `bot/`, to sign the escrow payments that buy LLM extraction from a Telegraph LLM miner behind the `ChangeExtractor` interface ([R7](research.md)). The x402 packages were dropped on 5 Nov, when payment moved to the `escrow` scheme;
 - `@upstash/redis` for the cache.
 
 HTTP uses Node's built-in `fetch`, wrapped in `safeFetch`, and the server is a Vercel Node function. No web framework.
@@ -151,5 +151,5 @@ Phases 3–8 can be developed against fixtures while phases 1–2 wait on deploy
 | Item | Why needed | Simpler alternative rejected because |
 | --- | --- | --- |
 | `semver` dependency | Correct range resolution and ordering, including prereleases | Hand-written comparison gets prerelease and range edge cases wrong |
-| `@x402/fetch`, `@x402/evm`, `viem` | Buying LLM extraction on Telegraph with test USDC, so the hackathon costs no real money | A direct LLM API needs a paid key; rules alone miss changes written as prose. Same packages and versions as `bot/` |
+| `viem` | Signing the escrow payments that buy LLM extraction on Telegraph with test USDC, so the hackathon costs no real money | A direct LLM API needs a paid key; rules alone miss changes written as prose. Same version as `bot/`. `@x402/fetch` and `@x402/evm` were used until 5 Nov for x402 `exact` and removed with the move to `escrow` |
 | `@upstash/redis` dependency | Shared cache across serverless instances (FR-018, FR-019, SC-006) | An in-memory cache is lost between invocations |
