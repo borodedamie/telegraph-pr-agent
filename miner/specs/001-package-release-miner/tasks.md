@@ -339,7 +339,7 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 - [x] T057 Implement the benchmark harness in `miner/bench/run.ts`.
   - It runs the set against a local or deployed URL, with the key.
   - It writes `miner/bench/report.md` with SC-001 to SC-006, SC-008, SC-011 and SC-012, plus p50/p95 latency, model calls and cost, split into cache-hit and first-time runs.
-- [ ] T058 [P] Security tests in `miner/test/unit/security.test.ts` (SC-008):
+- [x] T058 [P] Security tests in `miner/test/unit/security.test.ts` (SC-008):
   - a release note containing instruction text produces no behaviour change and no extra fetch;
   - a package with an `install` script is never executed (nothing is downloaded);
   - a repository URL pointing at a private host is refused;
