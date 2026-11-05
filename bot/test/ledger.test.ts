@@ -5,8 +5,10 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   appendLedgerRow,
   commitLedgerRow,
+  AttemptConflictError,
   type AttemptKey,
   type AttemptRow,
+  checkMayPay,
   hasLedgerRow,
   LEDGER_FILE,
   type LedgerRow,
@@ -119,6 +121,34 @@ describe("preflight", () => {
   });
 });
 
+describe("checkMayPay", () => {
+  const key: AttemptKey = { repo: "o/r", prNumber: 9, headSha: "sha9", step: "qa" };
+  const at = (attempt: number, state: AttemptRow["state"]): AttemptRow => ({
+    kind: "attempt",
+    ...key,
+    attemptId: `run:${attempt}`,
+    attempt,
+    state,
+    minerId: "148002",
+    timestamp: "2026-11-05T00:00:00.000Z",
+  });
+  const ledger = (...rows: AttemptRow[]) => rows.reduce(appendLedgerRow, "");
+
+  it("allows paying when only this attempt, or finished ones, exist", () => {
+    expect(() => checkMayPay(ledger(at(1, "failed_and_credited"), at(2, "reserved")), key, "run:2")).not.toThrow();
+  });
+
+  it("refuses when another attempt is mid-payment (a concurrent run got there first)", () => {
+    expect(() => checkMayPay(ledger(at(1, "reserved"), at(1, "request_sent"), at(2, "reserved")), key, "run:2")).toThrow(
+      AttemptConflictError
+    );
+  });
+
+  it("refuses when another attempt already delivered", () => {
+    expect(() => checkMayPay(ledger(at(1, "delivered")), key, "run:2")).toThrow(/run:1 \(delivered\)/);
+  });
+});
+
 describe("appendLedgerRow", () => {
   it("appends the row as exactly one JSON line to existing content", () => {
     const out = appendLedgerRow("", row);
@@ -206,6 +236,29 @@ describe("commitLedgerRow", () => {
     await commitLedgerRow(dir, [row, second], { runGit: git.runGit });
     expect(git.calls.filter((c) => c[0] === "commit")).toHaveLength(1);
     expect(readFileSync(ledgerPath(), "utf8")).toBe(`${JSON.stringify(row)}\n${JSON.stringify(second)}\n`);
+  });
+
+  it("rebuilds the rows from the fresh ledger on every push retry, and aborts if the build throws", async () => {
+    // First fetch: empty ledger, our push loses the race. Second fetch: the other
+    // run's row is there, so the build sees it and refuses.
+    const remote = ["", "other-run-request-sent\n"];
+    let fetches = 0;
+    const calls: string[][] = [];
+    const runGit = async (args: string[]) => {
+      calls.push(args);
+      if (args[0] === "fetch") fetches += 1;
+      if (args[0] === "checkout") writeFileSync(ledgerPath(), remote[fetches - 1]);
+      if (args[0] === "push") throw new Error("rejected (non-fast-forward)");
+    };
+    const seen: string[] = [];
+    const build = (existing: string) => {
+      seen.push(existing);
+      if (existing.includes("other-run")) throw new AttemptConflictError("another run is paying");
+      return row;
+    };
+    await expect(commitLedgerRow(dir, build, { runGit })).rejects.toBeInstanceOf(AttemptConflictError);
+    expect(seen).toEqual(["", "other-run-request-sent\n"]);
+    expect(calls.filter((c) => c[0] === "push")).toHaveLength(1); // the refused build never pushes
   });
 
   it("throws after 3 failed push attempts", async () => {

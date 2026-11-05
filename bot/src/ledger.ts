@@ -92,12 +92,11 @@ export function hasLedgerRow(existing: string, prNumber: number, headSha: string
   return false;
 }
 
-/** Decides, before any money moves, whether this key may be bought now. */
-export function preflight(existing: string, key: AttemptKey): Preflight {
-  // Pre-attempt purchase rows carry no repo or step; matching PR + SHA is the old rule.
-  if (hasLedgerRow(existing, key.prNumber, key.headSha)) {
-    return { action: "skip", reason: `PR #${key.prNumber} @ ${key.headSha} already has a purchase` };
-  }
+/** Thrown when the fresh ledger shows another run got there first; never retried. */
+export class AttemptConflictError extends Error {}
+
+/** The latest row of each attempt for this key. */
+function latestAttempts(existing: string, key: AttemptKey): AttemptRow[] {
   const latest = new Map<string, AttemptRow>();
   for (const row of parseRows(existing)) {
     if (row.kind !== "attempt") continue;
@@ -106,10 +105,21 @@ export function preflight(existing: string, key: AttemptKey): Preflight {
       latest.set(a.attemptId, a);
     }
   }
-  const attempts = [...latest.values()];
+  return [...latest.values()];
+}
+
+const isOpen = (a: AttemptRow) => a.state === "request_sent" || a.state === "unknown_needs_reconciliation";
+
+/** Decides, before any money moves, whether this key may be bought now. */
+export function preflight(existing: string, key: AttemptKey): Preflight {
+  // Pre-attempt purchase rows carry no repo or step; matching PR + SHA is the old rule.
+  if (hasLedgerRow(existing, key.prNumber, key.headSha)) {
+    return { action: "skip", reason: `PR #${key.prNumber} @ ${key.headSha} already has a purchase` };
+  }
+  const attempts = latestAttempts(existing, key);
   const delivered = attempts.find((a) => a.state === "delivered");
   if (delivered) return { action: "skip", reason: `attempt ${delivered.attemptId} already delivered` };
-  const open = attempts.filter((a) => a.state === "request_sent" || a.state === "unknown_needs_reconciliation");
+  const open = attempts.filter(isOpen);
   if (open.length > 0) {
     return {
       action: "halt",
@@ -121,18 +131,41 @@ export function preflight(existing: string, key: AttemptKey): Preflight {
   return { action: "buy", nextAttempt: Math.max(0, ...attempts.map((a) => a.attempt)) + 1 };
 }
 
+/**
+ * Run on the freshly fetched ledger right before recording request_sent: another run
+ * for the same key may have started paying since this run's own check.
+ */
+export function checkMayPay(existing: string, key: AttemptKey, attemptId: string): void {
+  if (hasLedgerRow(existing, key.prNumber, key.headSha)) {
+    throw new AttemptConflictError(`PR #${key.prNumber} @ ${key.headSha} already has a purchase`);
+  }
+  const others = latestAttempts(existing, key).filter(
+    (a) => a.attemptId !== attemptId && (a.state === "delivered" || isOpen(a))
+  );
+  if (others.length > 0) {
+    throw new AttemptConflictError(
+      `another run is paying or has paid: ${others.map((a) => `${a.attemptId} (${a.state})`).join(", ")}`
+    );
+  }
+}
+
 const describeRow = (r: LedgerEntry) =>
   "kind" in r && r.kind === "attempt"
     ? `PR #${r.prNumber} ${r.attemptId} ${r.state}`
     : `PR #${r.prNumber} ${(r as LedgerRow).intent} ${(r as LedgerRow).txHash}`;
 
-/** Appends one row, or several in a single commit, and pushes. */
+type RowsToWrite = LedgerEntry | LedgerEntry[];
+
+/**
+ * Appends one row, or several in a single commit, and pushes. Pass a function to
+ * build the rows from the freshly fetched ledger; it runs again on every push retry,
+ * so a check it makes always sees the latest ledger. Anything it throws aborts.
+ */
 export async function commitLedgerRow(
   repoDir: string,
-  rowOrRows: LedgerEntry | LedgerEntry[],
+  rowsOrBuild: RowsToWrite | ((existing: string) => RowsToWrite),
   deps: LedgerDeps = {}
 ): Promise<void> {
-  const rows = Array.isArray(rowOrRows) ? rowOrRows : [rowOrRows];
   const runGit =
     deps.runGit ??
     ((args: string[]) => execFileAsync("git", args, { cwd: repoDir }).then(() => undefined));
@@ -143,6 +176,8 @@ export async function commitLedgerRow(
     await runGit(["fetch", "origin", LEDGER_BRANCH]);
     await runGit(["checkout", "-B", LEDGER_BRANCH, `origin/${LEDGER_BRANCH}`]);
     const existing = existsSync(ledgerPath) ? readFileSync(ledgerPath, "utf8") : "";
+    const built = typeof rowsOrBuild === "function" ? rowsOrBuild(existing) : rowsOrBuild;
+    const rows = Array.isArray(built) ? built : [built];
     writeFileSync(ledgerPath, rows.reduce(appendLedgerRow, existing));
     await runGit(["add", LEDGER_FILE]);
     await runGit(["commit", "-m", `ledger: ${rows.map(describeRow).join("; ")}`]);

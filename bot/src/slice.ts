@@ -6,8 +6,10 @@ import { loadConfig } from "./config.js";
 import { detectCutoffTriggers } from "./trigger.js";
 import { IntelligenceClient } from "./x402.js";
 import {
+  AttemptConflictError,
   type AttemptKey,
   type AttemptRow,
+  checkMayPay,
   commitLedgerRow,
   LEDGER_FILE,
   type LedgerRow,
@@ -95,7 +97,7 @@ if (check.action !== "buy") {
 
 // Every stage is pushed before the bot moves on, so a crash or failed push
 // leaves the attempt at its last recorded stage instead of erasing it.
-let attempt = check.nextAttempt - 1;
+let attempt = 0; // set from the fresh ledger as each attempt is reserved
 const attemptRow = (state: AttemptRow["state"], fields: Partial<AttemptRow> = {}): AttemptRow => ({
   kind: "attempt",
   ...key,
@@ -114,8 +116,18 @@ const purchase = await client.buy(
   `What notable API changes or upgrade risks does ${t.package}@${t.version} ` +
     `(released ${t.releaseDate}) introduce compared with earlier versions? Cite sources.`,
   async (e) => {
-    if (e.state === "reserved") attempt += 1;
-    await commitLedgerRow(dir, attemptRow(e.state, e));
+    await commitLedgerRow(dir, (fresh) => {
+      // Re-checked on the freshly fetched ledger: another run for the same key may
+      // have started since this run read it. A push is rejected if someone else
+      // pushed first, and the retry re-runs this check, so only one run can pay.
+      if (e.state === "reserved") {
+        const now = preflight(fresh, key);
+        if (now.action !== "buy") throw new AttemptConflictError(now.reason);
+        attempt = now.nextAttempt;
+      }
+      if (e.state === "request_sent") checkMayPay(fresh, key, attemptRow(e.state).attemptId);
+      return attemptRow(e.state, e);
+    });
   },
 );
 console.log("purchase:", JSON.stringify(purchase, null, 2));
