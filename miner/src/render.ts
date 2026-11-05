@@ -169,7 +169,7 @@ export function render(
       "",
       answer.coverage!.complete
         ? "No breaking changes or deprecations are documented in the covered releases."
-        : "No breaking changes or deprecations were found in the covered releases; the releases not covered may still have some."
+        : "The releases not covered may still hold breaking changes or deprecations; none were found in the covered releases."
     );
   }
   lines.push(...advisoryLines(answer));
