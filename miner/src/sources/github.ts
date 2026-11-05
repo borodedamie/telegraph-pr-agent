@@ -2,6 +2,7 @@
 import semver from "semver";
 import { z } from "zod";
 import { canonicalJson } from "../cache.js";
+import { pointerLink } from "../extract/rules.js";
 import type { CoverageTracker } from "../coverage.js";
 import type { Packument } from "../resolve.js";
 import { normalizeText } from "../text.js";
@@ -109,6 +110,8 @@ export async function retrieveReleaseNotes(
   const headers = githubHeaders(env);
   const monorepo = repo.directory !== null;
   const wanted = new Set(tracker.missing());
+  // Releases whose notes only point to a changelog or guide: still wanted, so the next steps read that material.
+  const pointers: string[] = [];
   const previous = (version: string) => {
     const index = tracker.releases.indexOf(version);
     return index > 0 ? tracker.releases[index - 1] : from;
@@ -131,8 +134,11 @@ export async function retrieveReleaseNotes(
     for (const release of releases) {
       const version = matchRelease(release.tag, release.body, packument.name, monorepo);
       if (version === null || !wanted.has(version) || release.body.trim() === "") continue;
-      wanted.delete(version);
-      tracker.covered(version);
+      if (pointerLink(release.body) !== null) pointers.push(version);
+      else {
+        wanted.delete(version);
+        tracker.covered(version);
+      }
       material.tagTemplate ??= release.tag.replace(version, "{v}");
       material.consulted.push({
         type: "release",
@@ -217,6 +223,10 @@ export async function retrieveReleaseNotes(
     }
   }
 
+  // Nothing else had them: the pointer is their material, and the answer says what was not assessed.
+  for (const version of pointers) {
+    if (wanted.delete(version)) tracker.covered(version);
+  }
   return material;
 }
 

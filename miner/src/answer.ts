@@ -336,6 +336,14 @@ async function compute(
   const { items } = verify(candidates, material.sections, verifySources);
   const changes: ChangeItem[] = items;
 
+  // A release whose notes only point elsewhere, with nothing found in any source, was not read: it is not
+  // covered, so the answer cannot say it has no changes.
+  const withItems = new Set(candidates.map((c) => material.sections[c.section].version));
+  const unassessed = rules.unassessed
+    .map((gap) => ({ version: material.sections[gap.section].version, url: gap.url }))
+    .filter((gap, i, gaps) => !withItems.has(gap.version) && gaps.findIndex((g) => g.version === gap.version) === i);
+  for (const gap of unassessed) tracker.uncover(gap.version, "no_material");
+
   // 7. Coverage, outcome, rendering.
   const coverage = tracker.result();
   const materialRead = material.sections.some((s) => s.text.trim() !== "");
@@ -354,7 +362,6 @@ async function compute(
   };
   const processingVersion = `${processingBase}-${model.minerId && modelRan ? `llm${model.minerId}` : "nollm"}-${mode}-s1`;
   const base = { outcome, request, targetReleasedAt, changes, security, coverage, sources, clarification: null, processingVersion };
-  const unassessed = rules.unassessed.map((gap) => ({ version: material.sections[gap.section].version, url: gap.url }));
   const rendered = render(base, mode === "rules_only", { ...lookups, unassessed });
   const answer: Answer = { ...base, ...rendered, confidence: confidence(base, optionalSourceFailed, mode === "rules_only" || unassessed.length > 0) };
   // A model pass that ran is cached even when sections did not fit: their releases are already reported

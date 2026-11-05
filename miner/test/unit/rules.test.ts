@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { extractRules } from "../../src/extract/rules.js";
+import { extractRules, pointerLink } from "../../src/extract/rules.js";
 import { verify } from "../../src/extract/verify.js";
 import type { Section } from "../../src/sources/github.js";
 import { normalizeText } from "../../src/text.js";
@@ -117,5 +117,29 @@ describe("extractRules", () => {
     const { candidates, unassessed } = extractRules([{ version: "5.0.0", consulted: 0, text }], () => "release");
     expect(candidates).toEqual([]);
     expect(unassessed).toEqual([{ section: 0, url: "https://example.org/docs/migrating-to-v5" }]);
+  });
+
+  it("recognises notes that only point to a changelog or announcement, in any release", () => {
+    // The shapes of typescript 5.6.2, react-router 7.0.0, vue 3.5.0 and prettier 3.0.0 on GitHub.
+    const typescript =
+      "For release notes, check out the [release announcement](https://devblogs.microsoft.com/typescript/announcing-typescript-5-6/).\n\n" +
+      "For the complete list of fixed issues, check out the\n\n* [fixed issues query for Typescript 5.6.2 (Stable)](https://github.com/Microsoft/TypeScript/issues?q=milestone).";
+    expect(pointerLink(typescript)).toBe("https://devblogs.microsoft.com/typescript/announcing-typescript-5-6/");
+    expect(pointerLink("See the changelog for release notes: https://github.com/remix-run/react-router/blob/main/CHANGELOG.md#v700")).toBe(
+      "https://github.com/remix-run/react-router/blob/main/CHANGELOG.md#v700"
+    );
+    expect(pointerLink("For stable releases, please refer to [CHANGELOG.md](https://github.com/vuejs/core/blob/main/CHANGELOG.md) for details.")).toBe(
+      "https://github.com/vuejs/core/blob/main/CHANGELOG.md"
+    );
+    expect(pointerLink("🔗 [Release note](https://prettier.io/blog/2023/07/05/3.0.0.html)")).toBe("https://prettier.io/blog/2023/07/05/3.0.0.html");
+
+    const { unassessed, handled } = extractRules([{ version: "5.6.2", consulted: 0, text: typescript }], () => "release");
+    expect(unassessed).toEqual([{ section: 0, url: "https://devblogs.microsoft.com/typescript/announcing-typescript-5-6/" }]);
+    expect(handled).toEqual(new Set([0]));
+  });
+
+  it("does not take notes that list changes of their own for a pointer", () => {
+    const text = `- Fixed a crash when the config is empty\n- ${"Improved the error message for a missing file. ".repeat(8)}\n\nFull changelog: https://github.com/a/b/blob/main/CHANGELOG.md`;
+    expect(pointerLink(text)).toBeNull();
   });
 });

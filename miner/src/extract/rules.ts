@@ -67,6 +67,23 @@ function isLineStart(version: string): boolean {
 
 // A link to a guide or announcement: what a line-start release's notes point to when they list no changes.
 const GUIDE_LINK = /\[([^\]]{0,80}\b(?:migrat\w*|upgrad\w*|guide|blog|announc\w*|release notes|what'?s new)\b[^\]]{0,80})\]\((https:\/\/[^)\s]{1,300})\)/i;
+// The same, plus a changelog, as a markdown link or a bare URL: "See the changelog: https://.../CHANGELOG.md#v700".
+const POINTER_LINK =
+  /\[([^\]]{0,80}\b(?:migrat\w*|upgrad\w*|guide|blog|announc\w*|release notes?|what'?s new|changelog)\b[^\]]{0,80})\]\((https:\/\/[^)\s]{1,300})\)|(https:\/\/[^\s)\]]{0,300}(?:changelog|migrat|upgrad|blog|announc)[^\s)\]]{0,300})/i;
+const LINK_OR_URL = /\[[^\]]{0,200}\]\([^)\s]{0,400}\)|https?:\/\/\S{1,400}/g;
+// Release notes with less prose than this, once links are taken out, list nothing of their own.
+const POINTER_MAX_CHARS = 300;
+
+/**
+ * The page that release notes send the reader to, when the notes are only that pointer: TypeScript's
+ * "For release notes, check out the [release announcement](...)", react-router's "See the changelog: ...".
+ */
+export function pointerLink(text: string): string | null {
+  const link = POINTER_LINK.exec(text);
+  if (link === null) return null;
+  const prose = text.replace(LINK_OR_URL, "").replace(/[\s#*=_`>-]+/g, " ").trim();
+  return prose.length < POINTER_MAX_CHARS ? link[2] ?? link[3] : null;
+}
 const SENTENCE_END = /(?<=[.!?])\s+(?=[A-Z`*_])/;
 
 // Outside a headed section only explicit markers count: "BREAKING", a conventional-commit "!:", or a
@@ -201,9 +218,12 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
     }
     // A line-start release is never "handled" by headings alone: its unmarked prose may still hold changes.
     if (marked && !phrases) handled.add(index);
-    if (phrases && candidates.length === found) {
-      const link = GUIDE_LINK.exec(section.text);
-      if (link) unassessed.push({ section: index, url: link[2] });
+    if (candidates.length === found) {
+      const pointer = pointerLink(section.text);
+      // Notes that are only a pointer hold nothing for the model to read.
+      if (pointer !== null) handled.add(index);
+      const url = pointer ?? (phrases ? GUIDE_LINK.exec(section.text)?.[2] ?? null : null);
+      if (url !== null) unassessed.push({ section: index, url });
     }
   });
   return { candidates, handled, unassessed };

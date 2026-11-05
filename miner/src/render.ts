@@ -10,6 +10,8 @@ const KIND_TITLES: Record<ChangeItem["kind"], string> = {
 };
 
 const MAX_LISTED_NOT_COVERED = 10;
+// Releases that only point elsewhere get a line each up to this many; the rest are named on one line.
+const MAX_UNASSESSED_LINES = 3;
 
 function plural(count: number, word: string, many = `${word}s`): string {
   return `${count} ${count === 1 ? word : many}`;
@@ -136,8 +138,13 @@ export function render(
   }
   lines.push(coverageLine(answer.coverage!));
   lines.push(securityLine(answer.security));
-  for (const gap of lookups.unassessed ?? []) {
+  const unassessed = lookups.unassessed ?? [];
+  for (const gap of unassessed.slice(0, MAX_UNASSESSED_LINES)) {
     lines.push(`Not assessed: the ${gap.version} release notes list no changes and point to ${gap.url}; changes described there are not in this answer.`);
+  }
+  if (unassessed.length > MAX_UNASSESSED_LINES) {
+    const rest = unassessed.slice(MAX_UNASSESSED_LINES).map((gap) => gap.version);
+    lines.push(`Not assessed either, for the same reason: ${rest.join(", ")}.`);
   }
   if (rulesOnly) {
     lines.push("Notice: the model pass did not run. Marked sections and common breaking-change phrases in major releases were read; other prose may hold changes this list misses.");
@@ -157,7 +164,14 @@ export function render(
       lines.push(`${number}. ${item.change} (${item.version}). ${migrationText(item)} ${evidence}`);
     }
   }
-  if (answer.changes.length === 0) lines.push("", "No breaking changes or deprecations are documented in the covered releases.");
+  if (answer.changes.length === 0) {
+    lines.push(
+      "",
+      answer.coverage!.complete
+        ? "No breaking changes or deprecations are documented in the covered releases."
+        : "No breaking changes or deprecations were found in the covered releases; the releases not covered may still have some."
+    );
+  }
   lines.push(...advisoryLines(answer));
   lines.push("", sourcesLine(answer));
   return { answer: lines.join("\n"), summary: summaryFor(answer) };

@@ -70,7 +70,21 @@ describe("US2: honest not found", () => {
     const { answer } = await answerQuestion("no-notes 1.1.0 to 2.0.0", deps(new MemoryStore(), fixtureFetcher(files).fetcher));
     expect(answer).toMatchObject({ outcome: "found", changes: [] });
     expect(answer.confidence).toBeLessThanOrEqual(0.5);
+    expect(answer.coverage!.notCovered).toEqual([{ version: "2.0.0", reason: "no_material" }]);
     expect(answer.answer).toContain("Not assessed: the 2.0.0 release notes list no changes and point to https://example.org/docs/migrating-to-v2");
+    expect(answer.answer).not.toMatch(/no breaking changes or deprecations are documented/i);
+  });
+
+  it("reads the changelog a release points to instead of counting the pointer as the release's notes", async () => {
+    const files = {
+      ...NO_NOTES,
+      "https://api.github.com/repos/example/no-notes/releases?per_page=100&page=1": "negative/github/changelog-pointer.releases.json",
+      "https://raw.githubusercontent.com/example/no-notes/HEAD/CHANGELOG.md": "negative/github/no-notes.CHANGELOG.md",
+    };
+    const { answer } = await answerQuestion("no-notes 1.1.0 to 2.0.0", deps(new MemoryStore(), fixtureFetcher(files).fetcher));
+    expect(answer.coverage).toMatchObject({ complete: true, covered: ["2.0.0"] });
+    expect(answer.changes.map((c) => [c.kind, c.version, c.excerpt])).toEqual([["breaking", "2.0.0", "Removed the `legacy` option; use `modern` instead."]]);
+    expect(answer.answer).not.toContain("Not assessed");
   });
 
   it("marks a question about something else out of scope", async () => {

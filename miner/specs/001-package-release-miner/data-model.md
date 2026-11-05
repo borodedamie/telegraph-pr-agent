@@ -120,7 +120,7 @@ Correlation then follows the spec's User Story 4 table; with no evidence, no cla
 | `found`, complete coverage, every item `documented` | 0.9 |
 | `found`, complete coverage, some `repository_evidence` or `inferred` items | 0.7 |
 | `found`, partial coverage | 0.5 |
-| `found`, some release text not read (the model pass did not run, or a major release only links to a guide: "not assessed") | at most 0.5 |
+| `found`, some release text not read (the model pass did not run, or a release's notes only point to a changelog, guide or blog: "not assessed", and that release is not covered) | at most 0.5 |
 | `found`, complete coverage, no items (no breaking changes or deprecations documented) | 0.9 |
 | `not_found`, every listed source responded | 0.8 |
 | `not_found`, an optional source (e.g. the changelog) failed | 0.6 |
