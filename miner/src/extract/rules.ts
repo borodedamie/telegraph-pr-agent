@@ -16,7 +16,7 @@ const MIGRATION_HINT = /\b(instead|replace[sd]?|use|migrate to|switch to|rename[
 
 function headingKind(title: string): Kind | "migration" | "fix" | "other" {
   if (/security|vulnerab/i.test(title)) return "security_fix";
-  if (/breaking|removed|removal|dropped/i.test(title)) return "breaking";
+  if (/breaking|\bremov(e|es|ed|al|als)\b|dropped/i.test(title)) return "breaking";
   if (/deprecat/i.test(title)) return "deprecation";
   if (/migrat|upgrad/i.test(title)) return "migration";
   // Under a fixes heading "X no longer crashes" is a fix, so phrases are not read there.
@@ -105,7 +105,8 @@ function removedNow(text: string): boolean {
 /** A bullet that is only a label ("**Breaking Changes**:") opens a section like a heading. */
 function labelKind(text: string): ReturnType<typeof headingKind> | null {
   const label = text.replace(/[*_`:]/g, "").trim();
-  return /^(breaking changes?|deprecations?|deprecated|removed|removals|security( fixes)?|migration( guide)?)$/i.test(label)
+  // express's History.md labels its groups "breaking:" and "remove:".
+  return /^(breaking( changes?)?|deprecations?|deprecated|remove[sd]?|removals|security( fixes)?|migration( guide)?)$/i.test(label)
     ? headingKind(label)
     : null;
 }
@@ -179,6 +180,9 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
     const phrases = sourceType(section) !== "tag_compare" && isLineStart(section.version);
     const found = candidates.length;
     let current: ReturnType<typeof headingKind> = "other";
+    // A label bullet ("* breaking:") whose items are nested under it ends at the next bullet that is not.
+    type Label = { indent: number; outer: ReturnType<typeof headingKind>; nested: boolean | null };
+    let label = null as Label | null;
     let marked = false;
     let inCode = false;
     for (const line of lines) {
@@ -189,6 +193,7 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
       if (inCode) continue;
       const heading = HEADING.exec(line);
       if (heading) {
+        label = null;
         current = headingKind(heading[1] ?? heading[2]);
         marked ||= current === "breaking" || current === "deprecation" || current === "security_fix";
         continue;
@@ -205,9 +210,18 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
         continue;
       }
       const text = bullet[1].trimEnd();
-      const label = labelKind(text);
+      const indent = line.length - line.trimStart().length;
       if (label !== null) {
-        current = label;
+        label.nested ??= indent > label.indent;
+        if (label.nested && indent <= label.indent) {
+          current = label.outer;
+          label = null;
+        }
+      }
+      const kindOfLabel = labelKind(text);
+      if (kindOfLabel !== null) {
+        label = { indent, outer: label?.outer ?? current, nested: null };
+        current = kindOfLabel;
         marked ||= current === "breaking" || current === "deprecation" || current === "security_fix";
         continue;
       }

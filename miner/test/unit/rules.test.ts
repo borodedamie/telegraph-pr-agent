@@ -76,6 +76,16 @@ describe("extractRules", () => {
     expect(candidates.map((c) => [c.kind, c.excerpt])).toEqual([["breaking", "Node.js < v18.18, v19 are no longer supported"]]);
   });
 
+  it("ends a label whose items are nested under it at the next bullet that is not", () => {
+    // From express's History.md, 5.0.0.
+    const text = ["* breaking:", "  * `res.status()` accepts only integers", "* deps: debug@4.3.6", "* remove:", "  - `app.del` - use `app.delete`"].join("\n");
+    const { candidates } = extractRules([{ version: "5.0.0", consulted: 0, text }], () => "changelog");
+    expect(candidates.map((c) => [c.kind, c.excerpt])).toEqual([
+      ["breaking", "`res.status()` accepts only integers"],
+      ["breaking", "`app.del` - use `app.delete`"],
+    ]);
+  });
+
   it("stays fast on long lines of untrusted release-note text", () => {
     const long = " ".repeat(20_000);
     const text = [`# a${long}b`, `# a${long}#${long}b`, `- a${long}b`, `**a${long}b`, `## a${long}`].join("\n");

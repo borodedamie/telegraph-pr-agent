@@ -154,11 +154,19 @@ export async function retrieveReleaseNotes(
     if (releases.length < PER_PAGE || (oldest && Date.parse(oldest) < fromTime)) break;
   }
 
-  // 2. CHANGELOG.md, package directory first.
-  if (wanted.size > 0) {
-    const paths = repo.directory ? [`${repo.directory}/CHANGELOG.md`, "CHANGELOG.md"] : ["CHANGELOG.md"];
-    for (const path of paths) {
-      if (wanted.size === 0) break;
+  // The first release of a new major (or 0.y) line: its changelog section and migration guide are read even when
+  // the release has notes, since those often only summarise them (express 5.0.0, prettier 3.0.0, mongoose 8.0.0).
+  const lineStart = firstOfNewLine(tracker.releases, from);
+  const alsoRead = lineStart !== null && tracker.state(lineStart) === "covered" ? lineStart : null;
+
+  // 2. The changelog, package directory first. In each directory the first name that exists is read:
+  // express keeps its changelog in History.md.
+  const readFromChangelog = (version: string) => wanted.has(version) || version === alsoRead;
+  if (wanted.size > 0 || alsoRead !== null) {
+    const directories = repo.directory ? [`${repo.directory}/`, ""] : [""];
+    const paths = directories.map((dir) => CHANGELOG_NAMES.map((name) => dir + name));
+    directory: for (const names of paths) for (const path of names) {
+      if (wanted.size === 0 && alsoRead === null) break directory;
       const url = `https://raw.githubusercontent.com/${repo.owner}/${repo.repo}/HEAD/${path}`;
       let document: SourceDocument | null;
       try {
@@ -172,11 +180,14 @@ export async function retrieveReleaseNotes(
         if (failure === "cut") return material;
         if (failure === "down") material.optionalSourceFailed = true;
         if (failure === "too_large") (material.tooLargeFor ??= []).push(...wanted);
-        continue;
+        continue directory;
       }
       if (document === null) continue;
-      const sections = splitChangelog(document.text, packument.name).filter((s) => wanted.has(s.version));
-      if (sections.length === 0) continue;
+      // A prerelease section of a wanted release (express's 5.0.0-alpha.1 … 5.0.0-beta.3) shipped in that release.
+      const sections = splitChangelog(document.text, packument.name)
+        .map((section) => (readFromChangelog(section.version) ? section : { ...section, version: releaseOf(section.version) }))
+        .filter((section) => readFromChangelog(section.version));
+      if (sections.length === 0) continue directory;
       const versions = sections.map((s) => s.version).sort(semver.compare);
       material.consulted.push({
         type: "changelog",
@@ -191,12 +202,11 @@ export async function retrieveReleaseNotes(
         tracker.covered(section.version);
         material.sections.push({ version: section.version, consulted: material.consulted.length - 1, text: section.text });
       }
+      continue directory;
     }
   }
 
-  // 3. A migration guide in the repository, for the first release of a new major (or 0.y) line. Read even when
-  // the release has notes: they often only summarise the guide (prettier 3.0.0, next 15.0.0, mongoose 8.0.0).
-  const lineStart = firstOfNewLine(tracker.releases, from);
+  // 3. A migration guide in the repository, for the first release of a new major (or 0.y) line.
   if (lineStart !== null && (wanted.has(lineStart) || tracker.state(lineStart) === "covered")) {
     let guide: SourceDocument | null;
     try {
@@ -242,6 +252,14 @@ function optionalFailure(err: unknown, retrieval: Retrieval): "too_large" | "dow
   return null;
 }
 
+const CHANGELOG_NAMES = ["CHANGELOG.md", "History.md", "HISTORY.md", "CHANGES.md"];
+
+/** The release a prerelease ships in (5.0.0-beta.3 → 5.0.0); a release is its own. */
+function releaseOf(version: string): string {
+  const parsed = semver.parse(version)!;
+  return `${parsed.major}.${parsed.minor}.${parsed.patch}`;
+}
+
 /** The first release in range whose breaking-change line (major, or minor for 0.x) differs from "from". */
 export function firstOfNewLine(releases: string[], from: string): string | null {
   const line = (v: string) => (semver.major(v) === 0 ? `0.${semver.minor(v)}` : `${semver.major(v)}`);
@@ -255,7 +273,8 @@ const TreeResponse = z.object({
 
 // A guide names its topic somewhere in its path: `guides/migrating-to-v5.md`, `upgrading/version-15.mdx`.
 const GUIDE_NAME = /(migrat|upgrad|changelog|breaking)[^]*\.mdx?$/i;
-// A release post, when the repository has no guide: `website/blog/2023-07-05-3.0.0.md`.
+// A release post, when the repository has no guide: `website/blog/2023-07-05-3.0.0.md`,
+// `blog/2024-07-31-announcing-typescript-eslint-v8.md`.
 const BLOG_POST = /\bblog\/[^/]*\.mdx?$/i;
 // Where a large repository keeps its documentation, read when its whole tree is over the size cap.
 const DOC_DIRS = new Set(["docs", "doc", "documentation", "website", "guides"]);
@@ -269,8 +288,9 @@ export function pickMigrationGuide(paths: string[], version: string, packageName
   const label = major === 0 ? `0\\.${semver.minor(version)}` : `${major}`;
   // The line as a path part: v5, 5.0, 3.0.0, version-15, migrating_to_8.md; not 3.0.1 or 15.2.
   const names = new RegExp(`(^|[^0-9.])v?${label}(\\.0){0,2}(?=[^0-9.]|\\.mdx?$|$)`, "i");
-  // A post must name the release itself (3.0.0, 3.0): blogs hold posts on other releases of the line too.
-  const release = new RegExp(`(^|[^0-9.])${label}\\.0(\\.0)?\\.mdx?$`, "i");
+  // A post must end with the release itself (3.0.0, 3.0, announcing-…-v8): blogs hold posts on other releases
+  // of the line, and on its betas, too.
+  const release = new RegExp(`(^|[^0-9.])(v${label}|${label}\\.0(\\.0)?)\\.mdx?$`, "i");
   const usable = paths.filter((p) => !/node_modules|\/test|__tests__/.test(p));
   const guides = usable.filter((p) => GUIDE_NAME.test(p) && names.test(p));
   const candidates = guides.length > 0 ? guides : usable.filter((p) => BLOG_POST.test(p) && release.test(p));
@@ -297,7 +317,18 @@ async function findMigrationGuide(
     // over the cap again: the caller decides, as for any optional source.
     const top = await fetchDocument(retrieval, `${trees}/HEAD`, { headers, toText: (body) => canonicalJson(TreeResponse.parse(JSON.parse(body)).tree) });
     if (top === null) return null;
-    const dirs = z.array(TreeResponse.shape.tree.element).parse(JSON.parse(top.text)).filter((e) => e.type === "tree" && e.sha !== undefined && DOC_DIRS.has(e.path));
+    const entries = z.array(TreeResponse.shape.tree.element).parse(JSON.parse(top.text));
+    const dirs = entries.filter((e) => e.type === "tree" && e.sha !== undefined && DOC_DIRS.has(e.path));
+    // A monorepo keeps its site in a package: typescript-eslint's packages/website/blog.
+    const packagesDir = entries.find((e) => e.type === "tree" && e.path === "packages" && e.sha !== undefined);
+    if (packagesDir) {
+      const packages = await fetchDocument(retrieval, `${trees}/${packagesDir.sha}`, { headers, toText: (body) => canonicalJson(TreeResponse.parse(JSON.parse(body)).tree) });
+      if (packages !== null) {
+        for (const entry of z.array(TreeResponse.shape.tree.element).parse(JSON.parse(packages.text))) {
+          if (entry.type === "tree" && entry.sha !== undefined && DOC_DIRS.has(entry.path)) dirs.push({ ...entry, path: `packages/${entry.path}` });
+        }
+      }
+    }
     paths = [];
     for (const dir of dirs) paths.push(...((await treePaths(retrieval, `${trees}/${dir.sha}?recursive=1`, headers, `${dir.path}/`)) ?? []));
   }

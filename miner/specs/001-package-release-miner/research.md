@@ -58,12 +58,18 @@ There are two contracts, and they are kept apart:
 
 - **Decision**: Resolve the repository from the registry's `repository` field: GitHub only, with `directory` noted for monorepos. Then try, in order:
   1. **GitHub Releases** via `GET /repos/{o}/{r}/releases`, paged. A release is matched to the package version by tag pattern (`v1.2.3`, `1.2.3`, `<pkg>@1.2.3`, `<pkg>-v1.2.3`, `<pkg>/v1.2.3`). In monorepos it is also used only if the release body or tag names the package.
-  2. **`CHANGELOG.md`** in the package directory, falling back to the repo root, via `raw.githubusercontent.com`, split into sections by version headings.
+  2. **`CHANGELOG.md`** in the package directory, falling back to the repo root, via `raw.githubusercontent.com`, split into sections by version headings. Since 5 Nov:
+     - In each directory the first of `CHANGELOG.md`, `History.md`, `HISTORY.md` and `CHANGES.md` that exists is read (express keeps its changelog in `History.md`).
+     - Underlined headings (`5.0.0 / 2024-09-10` over `===`) count as version headings.
+     - Prerelease sections of a wanted release (express's `5.0.0-alpha.1` … `5.0.0-beta.3`) are counted toward that release.
+     - The first release of a new major line has its changelog section read even when it has release notes.
+     - A label bullet such as `* breaking:`, with items nested under it, ends at the next bullet that is not nested, so `* deps: debug@4.3.6` after it is not a breaking change.
   3. **Migration guide** (added 3 Nov, after zod 4.0.0 turned out to have no GitHub release and no `CHANGELOG.md`): for the first release of a new major line (or 0.y line), one `GET /repos/{o}/{r}/git/trees/HEAD?recursive=1`, then the shortest Markdown/MDX file whose name says migration, upgrade, changelog or breaking and whose path names the new line (`v4`, `4.0`, `version-4`), preferring paths that name the package (`react` for `@tanstack/react-query`). It is fetched from `raw.githubusercontent.com` and each of its change headings becomes a documented item. Since 5 Nov:
      - The guide is read even when the release has notes, because those often only summarise it (prettier 3.0.0, mongoose 8.0.0, eslint 9.0.0).
      - The topic word may be in a directory name (`upgrading/version-15.mdx`), and the line may follow an underscore (`migrating_to_8.md`). A later release of the line (`3.0.1`) does not match.
      - When there is no guide, a release post such as `blog/2023-07-05-3.0.0.md` is used, but only if its name is the release itself.
-     - A tree above the 2 MB cap (next.js: 17 MB) falls back to the top-level tree, then the recursive trees of `docs/`, `doc/`, `documentation/`, `website/` and `guides/`.
+     - A tree above the 2 MB cap (next.js: 17 MB) falls back to the top-level tree, then the recursive trees of `docs/`, `doc/`, `documentation/`, `website/` and `guides/`, at the top level or under `packages/` (typescript-eslint's `packages/website/blog`).
+     - A release post may also end with the line, as in `announcing-typescript-eslint-v8.md`; `…-v8-beta.mdx` does not match.
      - Headings that group changes ("Breaking changes for users") are skipped, and leading `<a name>` anchors are dropped from titles.
      - Guides on other hosts (devblogs.microsoft.com, tailwindcss.com) are not fetched: the host allowlist is unchanged.
   4. **Tag comparison** via `GET /repos/{o}/{r}/compare/{base}...{head}` as a last resort, with the exact tags found by step 1's patterns.

@@ -87,6 +87,13 @@ describe("US2: honest not found", () => {
     expect(answer.answer).not.toContain("Not assessed");
   });
 
+  it("reads a History.md changelog and counts its prerelease sections toward the release", async () => {
+    const files = { ...NO_NOTES, "https://raw.githubusercontent.com/example/no-notes/HEAD/History.md": "negative/github/no-notes.History.md" };
+    const { answer } = await answerQuestion("no-notes 1.1.0 to 2.0.0", deps(new MemoryStore(), fixtureFetcher(files).fetcher));
+    expect(answer.coverage).toMatchObject({ complete: true, covered: ["2.0.0"] });
+    expect(answer.changes.map((c) => [c.kind, c.version, c.excerpt])).toEqual([["breaking", "2.0.0", "Removed the `legacy` option"]]);
+  });
+
   it("marks a question about something else out of scope", async () => {
     const { answer } = await answerQuestion("What is the weather in Paris?", deps(new MemoryStore(), fixtureFetcher({}).fetcher));
     expect(answer).toMatchObject({ outcome: "out_of_scope", confidence: 0.9 });

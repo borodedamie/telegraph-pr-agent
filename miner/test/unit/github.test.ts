@@ -54,6 +54,8 @@ describe("pickMigrationGuide", () => {
     // A real guide wins over a post; a post on a later release of the line is not the release's post.
     expect(pickMigrationGuide(["content/blog/zod-4-5.mdx", "content/v4/changelog.mdx"], "4.0.0", "zod")).toBe("content/v4/changelog.mdx");
     expect(pickMigrationGuide(["website/blog/2023-07-13-3.0.1.md"], "3.0.0", "prettier")).toBeNull();
+    const announcements = ["packages/website/blog/2024-05-27-announcing-typescript-eslint-v8-beta.mdx", "packages/website/blog/2024-07-31-announcing-typescript-eslint-v8.md"];
+    expect(pickMigrationGuide(announcements, "8.0.0", "typescript-eslint")).toBe("packages/website/blog/2024-07-31-announcing-typescript-eslint-v8.md");
   });
 });
 
