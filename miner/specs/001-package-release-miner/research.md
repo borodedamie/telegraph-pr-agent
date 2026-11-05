@@ -96,7 +96,7 @@ There are two contracts, and they are kept apart:
   2. **Model pass**: classify and extract items from version-specific text, returning JSON validated with zod. The model may also return `inferred` items and steps, each with the ids of the items or sections it relies on.
 
   **Where the model comes from**: it is bought on Telegraph itself, paid in test USDC, so the hackathon costs no real money and the miner is itself a buyer on the network.
-  - An ordered list of LLM miners comes from `LLM_MINERS`, as `<minerId>:<method>:<path>`. Each one is called directly via `POST /engine/v1/ask/<minerId>`, using the same x402 client as `bot/src/x402.ts`, from the miner's spend wallet (R11).
+  - An ordered list of LLM miners comes from `LLM_MINERS`, as `<minerId>:<method>:<path>`. Each one is called directly via `POST /engine/v1/ask/<minerId>`, paid with the `escrow` scheme from the spend wallet's prefunded Telegraph escrow balance (R11). The miner signs the 402 `extra.message` template with EIP-191 `personal_sign` and sends it as `X-PAYMENT`, only after checking that the template names the Telegraph Diamond as payee, Sepolia and the quoted amount.
   - Paid tests on 3 Nov, one release-note section each ([snapshot](../../../docs/telegraph/miner-yaml-and-ranking-2026-11-03.md)):
 
     | Miner | Result | Miner time / total |
@@ -106,7 +106,14 @@ There are two contracts, and they are kept apart:
     | `901` `groq-llama31-instant-miner`, `POST /chat` | `200` with "AuthenticationError" inside, charged | 33 s / 43 s |
 
   - Default order: `LLM_MINERS=302:POST:/gen,7413:GET:/language-generation`. With 7413, prompts ask for the compact line format `kind|excerpt|migration`, so one reply fits its length limit.
-  - Most of the total time was x402 `exact` settlement before the miner was called. Production uses the `escrow` scheme, which skips per-request on-chain settlement; its latency is measured in T063.
+  - **Payment scheme, measured 5 Nov** ([network log](../../bench/network.md)): 10 calls each to `302` with the same 6,000-character prompt.
+
+    | Scheme | Median total | Range | Miner's own `duration_ms` |
+    | --- | --- | --- | --- |
+    | x402 `exact` | 13.3 s | 8.1–20.8 s | 1.2–2.1 s |
+    | `escrow` | 2.0 s | 1.7–4.1 s | 1.2–2.3 s |
+
+    With `exact`, each call waits for its own settlement transaction: the 10 transfers were mined one per block. `escrow` settles at epoch close, with no per-request transaction. So the miner pays with `escrow`. An escrow refusal (`402`, for example "insufficient escrow for delivery") is not billed and falls back to the deterministic pass.
   - The chosen miner id is part of `PROCESSING_VERSION`.
   - **A `200` is not trusted.** A miner that answers `200` with an error inside counts as delivered and is charged. So a reply only counts if it parses into the zod item schema. Otherwise the call is a failure, and that miner is skipped for 15 minutes (a circuit breaker in Redis).
   - **One model call per first-time answer** (`MAX_MODEL_CALLS = 1`): one call costs 0.01, the same as our price.
@@ -153,7 +160,7 @@ There are two contracts, and they are kept apart:
 | Intermediate releases processed | 50 |
 | Model calls per request (`MAX_MODEL_CALLS`) | 1 |
 | Model input per call (`MAX_MODEL_INPUT_CHARS`) | 24k characters; tuned to what the chosen LLM miner accepts |
-| Model cost per request (`MAX_MODEL_COST_USDC`) | 0.01 test USDC, from the x402 quote; a higher quote is refused |
+| Model cost per request (`MAX_MODEL_COST_USDC`) | 0.01 test USDC, from the escrow quote; a higher quote is refused |
 | Model call timeout (`LLM_TIMEOUT_MS`) | 12 s |
 | Releases sent to the model (`MAX_MODEL_RELEASES`) | 20 |
 
@@ -183,7 +190,7 @@ When a budget stops work, the answer's coverage is partial and the cut releases 
   - Live docs: with `status_path` set, a `200` whose status is not a success value is treated as a failure. The caller is not charged and no signal is recorded.
   - So `temporarily_unavailable` stays a `200` with a full body for logs, but is not billed.
 - **Payout wallet**: a new wallet for the miner, separate from the bot's `0x46D0…C77b`. Validate and register at anjoman.ai/dashboard/earn, which pins the YAML. Registration is on chain and can't be edited. Its key never goes on the server.
-- **Spend wallet**: a second new wallet whose key is set as `MINER_SPEND_KEY` in Vercel. It pays for LLM calls, holds a small balance of minted test USDC, and the x402 client limits it with `spendControls.allowedAssets` (test USDC only, at most `MAX_MODEL_COST_USDC` per payment). Leaking it can only lose that balance.
+- **Spend wallet**: a second new wallet whose key is set as `MINER_SPEND_KEY` in Vercel. It pays for LLM calls from its Telegraph escrow balance, funded with `depositUSDC` or `depositUSDCFor` on the Diamond (`0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b`). The caller signs only escrow authorizations to that Diamond, at most `MAX_MODEL_COST_USDC` each and valid for 100 s. Leaking the key can lose at most the escrow balance and the wallet's test USDC. When the escrow runs dry, model calls are refused unbilled and answers fall back to rules only, so the balance needs topping up.
 - **Payout accounting**: the buyer's price is not the miner's income.
   - Per call, the miner records the quoted and settled price and whether it was charged.
   - The protocol share, the provider accrual and the payout currency are read from receipts and settlement data.

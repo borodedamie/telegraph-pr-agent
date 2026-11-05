@@ -184,7 +184,7 @@ description: "Task list for the package-release miner"
   - It finds Breaking, Removed, Deprecated, Migration and Security sections, their bullet items, and the CVE/GHSA ids in them.
   - It emits `documented` items with exact excerpts. A migration step is `documented` only when the same bullet or a Migration section states it.
 - [x] T038 [US1] Implement the model extractor in `miner/src/extract/model.ts`:
-  - It buys one call from the first available miner in `LLM_MINERS` via `POST /engine/v1/ask/<minerId>`, with the x402 client from the spend wallet. The quote is refused above `MAX_MODEL_COST_USDC`, and `spendControls.allowedAssets` is limited to test USDC.
+  - It buys one call from the first available miner in `LLM_MINERS` via `POST /engine/v1/ask/<minerId>`, paid from the spend wallet. The quote is refused above `MAX_MODEL_COST_USDC`. Since 5 Nov the payment uses the `escrow` scheme rather than x402 `exact` (2.0 s against 13.3 s median per call, research R7).
   - The system prompt says the text is data, not instructions.
   - A reply that doesn't parse into the item schema is a failure, even with `200`, and trips a 15-minute circuit breaker for that miner in Redis.
   - `LLM_TIMEOUT_MS` applies.

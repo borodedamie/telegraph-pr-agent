@@ -101,7 +101,7 @@ miner/
 │   │   └── osv.ts       # advisories for version A, full affected data
 │   ├── extract/
 │   │   ├── rules.ts     # deterministic section and CVE/GHSA extraction
-│   │   ├── model.ts     # LLM extraction bought from a Telegraph LLM miner via x402; zod-validated output, circuit breaker
+│   │   ├── model.ts     # LLM extraction bought from a Telegraph LLM miner, paid from escrow; zod-validated output, circuit breaker
 │   │   └── verify.ts    # normalization + exact-substring check for excerpts and migration steps
 │   ├── affected.ts      # is version V affected by an OSV record (all ranges, events, versions)
 │   ├── correlate.ts     # advisories × documented fixes → conclusions
