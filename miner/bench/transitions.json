@@ -1,7 +1,7 @@
 {
   "version": 1,
   "created": "2026-11-05",
-  "status": "reviewed: all 30 positive cases drafted by Claude, checked by three other models against the sources and corrected on 5 Nov 2026; every quote is found word for word on its source page (see REVIEW.md). n06 and n07 still need a package.",
+  "status": "reviewed: all 30 positive cases drafted by Claude, checked by three other models against the sources and corrected on 5 Nov 2026; every quote is found word for word on its source page (see REVIEW.md).",
   "cases": [
     {
       "id": "p01",
@@ -3891,20 +3891,27 @@
     },
     {
       "id": "n06",
-      "query": null,
+      "query": "What changed in left-pad from 1.0.1 to 1.0.2?",
       "expected": {
         "outcome": "not_found",
-        "why": "a real package whose release has no release notes, changelog or tag (to pick in drafting)",
+        "why": "left-pad 1.0.1 and 1.0.2 have no GitHub release or tag (tags start at v1.1.0) and the repository has no changelog; checked 5 Nov 2026",
         "mustNotSuggestSafeUpgrade": true
       }
     },
     {
       "id": "n07",
-      "query": null,
+      "query": "What changed in is-number from 1.0.0 to 2.0.0?",
       "expected": {
-        "outcome": "found",
-        "why": "a real package whose GitHub tags do not match the npm versions (unresolved tags); coverage must name the releases as not covered",
-        "mustNotSuggestSafeUpgrade": true
+        "outcome": [
+          "found",
+          "not_found"
+        ],
+        "why": "is-number has no GitHub releases or changelog, and its tags have no 'v' prefix (1.0.0, 1.1.0, 2.0.0) while 1.1.1 and 1.1.2 have no tag at all; checked 5 Nov 2026. 1.1.1 and 1.1.2 can never be covered and must be named as not covered. The outcome is not_found while the miner only tries 'v'-prefixed tags without a release to learn from, and may become found if it learns bare tags.",
+        "mustNotSuggestSafeUpgrade": true,
+        "notCoveredMustInclude": [
+          "1.1.1",
+          "1.1.2"
+        ]
       }
     },
     {
@@ -3914,7 +3921,8 @@
         "outcome": "temporarily_unavailable",
         "why": "simulated upstream outage: run locally with SIMULATE_UPSTREAM_OUTAGE=1; not charged",
         "mustNotSuggestSafeUpgrade": true
-      }
+      },
+      "localOnly": true
     },
     {
       "id": "n09",
@@ -3923,14 +3931,15 @@
         "outcome": "found",
         "why": "OSV outage (local run with OSV stubbed to 503): security.status unavailable, no 'no known advisories' claim, not cached",
         "mustNotSuggestSafeUpgrade": true
-      }
+      },
+      "localOnly": true
     },
     {
       "id": "n10",
       "query": "What changed in zod from 4.0.0 to 3.23.8?",
       "expected": {
         "outcome": "needs_clarification",
-        "why": "target older than the start: never presented as an upgrade (to confirm against FR-002 during drafting)",
+        "why": "target older than the start: never presented as an upgrade; the resolver answers needs_clarification when from is not lower than to (src/resolve.ts)",
         "mustNotSuggestSafeUpgrade": true
       }
     }
