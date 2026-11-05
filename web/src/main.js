@@ -1,8 +1,9 @@
 const REPO = "borodedamie/telegraph-pr-agent";
 const LEDGER_URL = `https://raw.githubusercontent.com/${REPO}/ledger/ledger.jsonl`;
-// ponytail: devnode moved Base Sepolia → Ethereum Sepolia on 1 Nov 2026; rows carry no chain, so date decides (mirrors bot/src/memo.ts).
-const explorerTx = (row) =>
-  `${row.timestamp < "2026-11-01" ? "https://sepolia.basescan.org" : "https://sepolia.etherscan.io"}/tx/${row.txHash}`;
+// Rows store the explorer of the chain they paid on. Rows written before 5 Nov 2026
+// don't, so their date decides: the devnode moved Base → Ethereum Sepolia on 1 Nov (mirrors bot/src/memo.ts).
+const explorerBase = (row) =>
+  row.explorerBaseUrl ?? (row.timestamp < "2026-11-01" ? "https://sepolia.basescan.org" : "https://sepolia.etherscan.io");
 const SIGNAL_URL = "https://devnode.telegraphprotocol.com/engine/v1/signal/";
 
 const app = document.getElementById("app");
@@ -25,7 +26,9 @@ async function loadRows() {
   return (await res.text())
     .split("\n")
     .filter((line) => line.trim())
-    .map((line) => JSON.parse(line));
+    .map((line) => JSON.parse(line))
+    // Attempt rows track payment stages; only purchases are shown for now.
+    .filter((row) => row.kind !== "attempt");
 }
 
 const usdc = (n) =>
@@ -100,9 +103,14 @@ function fields(row) {
     ["Miner ID", row.minerId],
     ["Miner", row.minerName],
     ["Amount", `${row.amountUsdc} USDC`],
+    ["Answer quality", row.resultStatus],
+    ["Network", row.network],
+    ["USDC contract", row.usdcContract],
     [
       "Tx hash",
-      el("a", { href: explorerTx(row), target: "_blank", rel: "noopener" }, `${row.txHash} ↗`),
+      explorerBase(row)
+        ? el("a", { href: `${explorerBase(row)}/tx/${row.txHash}`, target: "_blank", rel: "noopener" }, `${row.txHash} ↗`)
+        : row.txHash,
     ],
     ["Receipt hash", row.receiptHash],
     [
@@ -242,12 +250,8 @@ async function main() {
       el(
         "div",
         { class: "empty" },
-        el("p", {}, "No receipts on the wire yet."),
-        el(
-          "p",
-          { class: "detail" },
-          `Receipts appear here once the bot settles its first PR answer. (${err.message})`
-        )
+        el("p", {}, "Couldn't load the ledger."),
+        el("p", { class: "detail" }, `${err.message}. The receipts are in ledger.jsonl on the ledger branch.`)
       )
     );
   }

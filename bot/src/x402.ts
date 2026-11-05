@@ -1,6 +1,7 @@
 import { wrapFetchWithPaymentFromConfig } from "@x402/fetch";
 import { ExactEvmScheme, toClientEvmSigner } from "@x402/evm";
 import { privateKeyToAccount } from "viem/accounts";
+import type { AttemptState } from "./ledger.js";
 
 export interface Purchase {
   intent: string;
@@ -14,7 +15,19 @@ export interface Purchase {
   signalHash: string;
   answer: string;
   status: "settled" | "failed";
+  /** From the 402 option that was paid (SPEC §4.5), so links never depend on config. */
+  network: string;
+  chainId: number;
+  usdcContract: string;
+  /** Empty when the chain is not in EXPLORERS; then no transaction link is shown. */
+  explorerBaseUrl: string;
 }
+
+// Transaction explorers for the chains the devnode has quoted.
+const EXPLORERS: Record<number, string> = {
+  11155111: "https://sepolia.etherscan.io",
+  84532: "https://sepolia.basescan.org",
+};
 
 export interface RankedMiner {
   id: string;
@@ -28,6 +41,17 @@ export interface RankedMiner {
 export class PriceGuardError extends Error {}
 export class BudgetCapError extends Error {}
 export class AskFailedError extends Error {}
+/** The paid request went out but its outcome is unclear; never retry automatically. */
+export class PaymentUnknownError extends Error {}
+
+/** One stage of one payment try. `delivered` is recorded by the caller with the purchase. */
+export interface AttemptEvent {
+  state: Exclude<AttemptState, "delivered">;
+  minerId: string;
+  quotedAmountUsdc?: number;
+  reason?: string;
+}
+export type OnAttempt = (event: AttemptEvent) => Promise<void>;
 
 export interface IntelligenceClientDeps {
   nodeUrl: string;
@@ -73,9 +97,15 @@ interface Accept {
   amount?: unknown;
 }
 
+interface QuotedAccept {
+  amount: string;
+  network: string;
+  asset: string;
+}
+
 // accepts[] also lists `escrow` and non-EVM entries; we only quote the one the
 // payment client is allowed to pay: `exact` on our network in our USDC.
-function quotedAmountAtomic(res: Response, network: string, asset: string): string | null {
+function quotedAccept(res: Response, network: string, asset: string): QuotedAccept | null {
   const parsed = decodeB64Json<{ accepts?: unknown }>(res.headers.get("payment-required"));
   if (!Array.isArray(parsed?.accepts)) return null;
   const match = (parsed.accepts as Accept[]).find(
@@ -85,7 +115,9 @@ function quotedAmountAtomic(res: Response, network: string, asset: string): stri
       typeof a.asset === "string" &&
       a.asset.toLowerCase() === asset.toLowerCase()
   );
-  return typeof match?.amount === "string" ? match.amount : null;
+  return typeof match?.amount === "string"
+    ? { amount: match.amount, network: match.network as string, asset: match.asset as string }
+    : null;
 }
 
 function settleHeader(res: Response): { success?: boolean; transaction?: string } | null {
@@ -169,13 +201,15 @@ export class IntelligenceClient {
   // The routed /engine/v1/ask re-classifies a free-form query and can ignore
   // the intent we name (seen live: QA routed to SECURITY_REVIEW). So we read
   // Telegraph's leaderboard ourselves and pay the top-ranked miner directly,
-  // stepping down a rank only when a call fails (failed calls are not charged).
-  async buy(intent: string, query: string): Promise<Purchase> {
+  // stepping down a rank only when a call fails (failed calls are credited to escrow).
+  // onAttempt is awaited at each stage, so a stage that can't be recorded stops
+  // the purchase before the next one starts.
+  async buy(intent: string, query: string, onAttempt: OnAttempt = async () => {}): Promise<Purchase> {
     const miners = (await this.rankedMiners(intent)).slice(0, MAX_MINERS_TRIED);
     const failures: string[] = [];
     for (const miner of miners) {
       try {
-        return await this.buyFrom(intent, query, miner);
+        return await this.buyFrom(intent, query, miner, onAttempt);
       } catch (err) {
         if (!(err instanceof AskFailedError)) throw err;
         failures.push(`#${miner.rank} ${miner.id}: ${err.message}`);
@@ -184,7 +218,8 @@ export class IntelligenceClient {
     throw new AskFailedError(`${intent}: no ranked miner answered — ${failures.join(" | ") || "none ranked"}`);
   }
 
-  private async buyFrom(intent: string, query: string, miner: RankedMiner): Promise<Purchase> {
+  private async buyFrom(intent: string, query: string, miner: RankedMiner, onAttempt: OnAttempt): Promise<Purchase> {
+    await onAttempt({ state: "reserved", minerId: miner.id });
     const url = `${this.nodeUrl}/engine/v1/ask/${encodeURIComponent(miner.id)}`;
     const init: RequestInit = {
       method: "POST",
@@ -197,35 +232,58 @@ export class IntelligenceClient {
     if (quoteRes.status !== 402) {
       throw new AskFailedError(`expected a 402 quote, got HTTP ${quoteRes.status}`);
     }
-    const atomic = quotedAmountAtomic(quoteRes, this.network, this.usdcAddress);
-    if (atomic === null) {
+    const accept = quotedAccept(quoteRes, this.network, this.usdcAddress);
+    if (accept === null) {
       throw new AskFailedError(`402 offers no exact payment on ${this.network} in ${this.usdcAddress}`);
     }
-    const amountUsdc = Number(atomic) / USDC_DECIMALS;
+    const amountUsdc = Number(accept.amount) / USDC_DECIMALS;
 
     if (amountUsdc > this.maxPricePerCallUsdc) {
-      throw new PriceGuardError(
-        `quote ${amountUsdc} USDC exceeds maxPricePerCallUsdc ${this.maxPricePerCallUsdc} (${intent}, miner ${miner.id})`
-      );
+      const reason = `quote ${amountUsdc} USDC exceeds maxPricePerCallUsdc ${this.maxPricePerCallUsdc} (${intent}, miner ${miner.id})`;
+      await onAttempt({ state: "quote_refused", minerId: miner.id, quotedAmountUsdc: amountUsdc, reason });
+      throw new PriceGuardError(reason);
     }
     // The signer may settle anything up to maxPricePerCallUsdc (a repriced call),
     // so reserve that worst case against the budget, not the quote.
     const worstCaseUsdc = Math.max(amountUsdc, this.maxPricePerCallUsdc);
     if (this.spentUsdc + worstCaseUsdc > this.budgetCapUsdc) {
-      throw new BudgetCapError(
-        `spend ${this.spentUsdc} + worst-case ${worstCaseUsdc} USDC (quote ${amountUsdc}) exceeds budgetCapUsdc ${this.budgetCapUsdc}`
-      );
+      const reason = `spend ${this.spentUsdc} + worst-case ${worstCaseUsdc} USDC (quote ${amountUsdc}) exceeds budgetCapUsdc ${this.budgetCapUsdc}`;
+      await onAttempt({ state: "quote_refused", minerId: miner.id, quotedAmountUsdc: amountUsdc, reason });
+      throw new BudgetCapError(reason);
     }
 
-    // The node settles only on a delivered answer, so a non-2xx here cost nothing.
-    const res = await this.paymentFetch(url, init);
+    await onAttempt({ state: "request_sent", minerId: miner.id, quotedAmountUsdc: amountUsdc });
+    let res: Response;
+    try {
+      res = await this.paymentFetch(url, init);
+    } catch (err) {
+      // No response: the payment may or may not have settled.
+      const reason = `no response: ${String(err)}`.slice(0, 300);
+      await onAttempt({ state: "unknown_needs_reconciliation", minerId: miner.id, reason });
+      throw new PaymentUnknownError(`${miner.id}: ${reason}`);
+    }
+    // https://anjoman.ai/docs/using/x402-inference (Step 3): a payload that does not
+    // verify gets a bare 402 and an invalid one gets 400 "Invalid payment", so nothing
+    // was paid. A valid payment settles before the miner is called; if the call then
+    // fails, the amount is credited to our escrow balance and never charged.
     if (!res.ok) {
-      const detail = (await res.text().catch(() => "")).slice(0, 300);
-      throw new AskFailedError(`HTTP ${res.status} ${detail}`.trim());
+      const reason = `HTTP ${res.status} ${(await res.text().catch(() => "")).slice(0, 300)}`.trim();
+      const notPaid = res.status === 402 || (res.status === 400 && /invalid payment/i.test(reason));
+      await onAttempt({ state: notPaid ? "failed_not_charged" : "failed_and_credited", minerId: miner.id, reason });
+      throw new AskFailedError(reason);
     }
     const settle = settleHeader(res);
-    if (!settle?.success || typeof settle.transaction !== "string") {
-      throw new AskFailedError("answered without a settlement proof");
+    if (settle?.success === false) {
+      // An explicit "not settled": nothing was charged, so the next miner may be tried.
+      const reason = "settlement reported success: false";
+      await onAttempt({ state: "failed_not_charged", minerId: miner.id, reason });
+      throw new AskFailedError(reason);
+    }
+    if (settle?.success !== true || typeof settle.transaction !== "string") {
+      // No readable settlement proof: we can't tell whether we paid.
+      const reason = "answered without a readable settlement proof";
+      await onAttempt({ state: "unknown_needs_reconciliation", minerId: miner.id, reason });
+      throw new PaymentUnknownError(`${miner.id}: ${reason}`);
     }
     // Dynamic pricing can make the settled amount differ from the quote; the
     // receipt carries what was actually charged, so the record must use it.
@@ -255,6 +313,10 @@ export class IntelligenceClient {
       signalHash: body.signal_hash ?? "",
       answer: answerText(body.result),
       status: "settled",
+      network: accept.network,
+      chainId: Number(accept.network.split(":")[1]),
+      usdcContract: accept.asset,
+      explorerBaseUrl: EXPLORERS[Number(accept.network.split(":")[1])] ?? "",
     };
   }
 }

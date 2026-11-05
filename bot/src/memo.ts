@@ -7,11 +7,12 @@ export interface MemoOptions {
   dashboardUrl: string;
 }
 
-// ponytail: the devnode moved from Base Sepolia to Ethereum Sepolia on 1 Nov 2026 and
-// rows carry no chain field, so the date picks the explorer. Store `network` per row
-// if the chain changes again.
-const explorerTx = (r: LedgerRow) =>
-  `${r.timestamp < "2026-11-01" ? "https://sepolia.basescan.org" : "https://sepolia.etherscan.io"}/tx/${r.txHash}`;
+// Rows store the explorer of the chain they paid on. Rows written before 5 Nov 2026
+// don't, so their date decides: the devnode moved Base → Ethereum Sepolia on 1 Nov.
+function explorerBase(r: LedgerRow): string {
+  if (r.explorerBaseUrl !== undefined) return r.explorerBaseUrl;
+  return r.timestamp < "2026-11-01" ? "https://sepolia.basescan.org" : "https://sepolia.etherscan.io";
+}
 
 const BOUNDARY =
   "Testnet build. Routing, miners, verification and settlement are real; " +
@@ -35,7 +36,7 @@ function receipt(r: LedgerRow): string {
     ? `Paid **${usdc(r.amountUsdc)} USDC** to **${r.minerName}** for **${task(r.intent)}** on **PR #${r.prNumber}**.`
     : `Payment of **${usdc(r.amountUsdc)} USDC** to **${r.minerName}** for **${task(r.intent)}** on **PR #${r.prNumber}** didn’t go through.`;
   const foot = settled
-    ? `settled · ${utc(r.timestamp)} · miner \`${r.minerId}\` · [View payment ↗](${explorerTx(r)})`
+    ? `settled · ${utc(r.timestamp)} · miner \`${r.minerId}\`${explorerBase(r) ? ` · [View payment ↗](${explorerBase(r)}/tx/${r.txHash})` : ""}`
     : `failed · ${utc(r.timestamp)} · miner \`${r.minerId}\``;
   return [sentence, "", quote(r.answer), "", `<sub>${foot}</sub>`].join("\n");
 }

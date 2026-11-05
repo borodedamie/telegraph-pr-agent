@@ -5,9 +5,15 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   appendLedgerRow,
   commitLedgerRow,
+  AttemptConflictError,
+  type AttemptKey,
+  DuplicateReceiptError,
+  type AttemptRow,
+  checkMayPay,
   hasLedgerRow,
   LEDGER_FILE,
   type LedgerRow,
+  preflight,
 } from "../src/ledger.js";
 
 const row: LedgerRow = {
@@ -49,6 +55,98 @@ describe("hasLedgerRow", () => {
     const older: LedgerRow = { ...row, prNumber: 6, headSha: "oldsha" };
     const existing = appendLedgerRow(appendLedgerRow("", older), row);
     expect(hasLedgerRow(existing, older.prNumber, older.headSha)).toBe(true);
+  });
+});
+
+describe("preflight", () => {
+  const key: AttemptKey = { repo: "o/r", prNumber: 9, headSha: "sha9", step: "qa" };
+  const at = (attempt: number, state: AttemptRow["state"], over: Partial<AttemptRow> = {}): AttemptRow => ({
+    kind: "attempt",
+    ...key,
+    attemptId: `o/r#9@sha9:qa:${attempt}`,
+    attempt,
+    state,
+    minerId: "148002",
+    timestamp: "2026-11-04T00:00:00.000Z",
+    ...over,
+  });
+  const ledger = (...rows: (LedgerRow | AttemptRow)[]) => rows.reduce(appendLedgerRow, "");
+
+  it("buys attempt 1 on an empty ledger", () => {
+    expect(preflight("", key)).toEqual({ action: "buy", nextAttempt: 1 });
+  });
+
+  it("halts when the process died after request_sent (we may have paid)", () => {
+    const p = preflight(ledger(at(1, "reserved"), at(1, "request_sent")), key);
+    expect(p.action).toBe("halt");
+    expect(p).toMatchObject({ reason: expect.stringContaining("o/r#9@sha9:qa:1 (request_sent)") });
+  });
+
+  it("halts on unknown_needs_reconciliation", () => {
+    expect(preflight(ledger(at(1, "request_sent"), at(1, "unknown_needs_reconciliation")), key).action).toBe("halt");
+  });
+
+  it("skips once an attempt is delivered", () => {
+    expect(preflight(ledger(at(1, "request_sent"), at(1, "delivered")), key).action).toBe("skip");
+  });
+
+  it("retries as a new, numbered attempt after any outcome where no money is unaccounted for", () => {
+    const rows = ledger(
+      at(1, "reserved"),
+      at(2, "reserved"),
+      at(2, "quote_refused"),
+      at(3, "request_sent"),
+      at(3, "failed_and_credited"),
+      at(4, "request_sent"),
+      at(4, "failed_not_charged")
+    );
+    expect(preflight(rows, key)).toEqual({ action: "buy", nextAttempt: 5 });
+  });
+
+  it("ignores attempts for another repo, PR, SHA or step", () => {
+    const rows = ledger(
+      at(1, "request_sent", { repo: "x/y" }),
+      at(1, "request_sent", { prNumber: 10 }),
+      at(1, "request_sent", { headSha: "other" }),
+      at(1, "request_sent", { step: "fix" })
+    );
+    expect(preflight(rows, key)).toEqual({ action: "buy", nextAttempt: 1 });
+  });
+
+  it("skips when a pre-attempt purchase row exists for the PR and SHA", () => {
+    expect(preflight(ledger({ ...row, prNumber: 9, headSha: "sha9" }), key).action).toBe("skip");
+  });
+
+  it("does not mistake an attempt row for a purchase in hasLedgerRow", () => {
+    expect(hasLedgerRow(ledger(at(1, "reserved")), 9, "sha9")).toBe(false);
+  });
+});
+
+describe("checkMayPay", () => {
+  const key: AttemptKey = { repo: "o/r", prNumber: 9, headSha: "sha9", step: "qa" };
+  const at = (attempt: number, state: AttemptRow["state"]): AttemptRow => ({
+    kind: "attempt",
+    ...key,
+    attemptId: `run:${attempt}`,
+    attempt,
+    state,
+    minerId: "148002",
+    timestamp: "2026-11-05T00:00:00.000Z",
+  });
+  const ledger = (...rows: AttemptRow[]) => rows.reduce(appendLedgerRow, "");
+
+  it("allows paying when only this attempt, or finished ones, exist", () => {
+    expect(() => checkMayPay(ledger(at(1, "failed_and_credited"), at(2, "reserved")), key, "run:2")).not.toThrow();
+  });
+
+  it("refuses when another attempt is mid-payment (a concurrent run got there first)", () => {
+    expect(() => checkMayPay(ledger(at(1, "reserved"), at(1, "request_sent"), at(2, "reserved")), key, "run:2")).toThrow(
+      AttemptConflictError
+    );
+  });
+
+  it("refuses when another attempt already delivered", () => {
+    expect(() => checkMayPay(ledger(at(1, "delivered")), key, "run:2")).toThrow(/run:1 \(delivered\)/);
   });
 });
 
@@ -131,6 +229,64 @@ describe("commitLedgerRow", () => {
     // final worktree content has the row exactly once (checkout reset each attempt)
     const lines = readFileSync(ledgerPath(), "utf8").trim().split("\n");
     expect(lines).toEqual([JSON.stringify(row)]);
+  });
+
+  it("writes several rows in one commit", async () => {
+    const git = makeFakeGit();
+    const second: LedgerRow = { ...row, receiptHash: "0xother" };
+    await commitLedgerRow(dir, [row, second], { runGit: git.runGit });
+    expect(git.calls.filter((c) => c[0] === "commit")).toHaveLength(1);
+    expect(readFileSync(ledgerPath(), "utf8")).toBe(`${JSON.stringify(row)}\n${JSON.stringify(second)}\n`);
+  });
+
+  it("rebuilds the rows from the fresh ledger on every push retry, and aborts if the build throws", async () => {
+    // First fetch: empty ledger, our push loses the race. Second fetch: the other
+    // run's row is there, so the build sees it and refuses.
+    const remote = ["", "other-run-request-sent\n"];
+    let fetches = 0;
+    const calls: string[][] = [];
+    const runGit = async (args: string[]) => {
+      calls.push(args);
+      if (args[0] === "fetch") fetches += 1;
+      if (args[0] === "checkout") writeFileSync(ledgerPath(), remote[fetches - 1]);
+      if (args[0] === "push") throw new Error("rejected (non-fast-forward)");
+    };
+    const seen: string[] = [];
+    const build = (existing: string) => {
+      seen.push(existing);
+      if (existing.includes("other-run")) throw new AttemptConflictError("another run is paying");
+      return row;
+    };
+    await expect(commitLedgerRow(dir, build, { runGit })).rejects.toBeInstanceOf(AttemptConflictError);
+    expect(seen).toEqual(["", "other-run-request-sent\n"]);
+    expect(calls.filter((c) => c[0] === "push")).toHaveLength(1); // the refused build never pushes
+  });
+
+  it("refuses a purchase whose receipt_hash is already on the ledger, without pushing", async () => {
+    const git = makeFakeGit({ remoteContent: `${JSON.stringify(row)}\n` });
+    await expect(commitLedgerRow(dir, { ...row, prNumber: 99 }, { runGit: git.runGit })).rejects.toBeInstanceOf(
+      DuplicateReceiptError
+    );
+    expect(git.calls.filter((c) => c[0] === "push")).toHaveLength(0);
+  });
+
+  it("allows a new receipt, and attempt rows that repeat a receipt_hash", async () => {
+    const git = makeFakeGit({ remoteContent: `${JSON.stringify(row)}\n` });
+    const delivered: AttemptRow = {
+      kind: "attempt",
+      repo: "o/r",
+      prNumber: 7,
+      headSha: "abc123def",
+      step: "qa",
+      attemptId: "a:1",
+      attempt: 1,
+      state: "delivered",
+      minerId: "302",
+      receiptHash: row.receiptHash,
+      timestamp: "2026-11-05T00:00:00.000Z",
+    };
+    await commitLedgerRow(dir, [{ ...row, receiptHash: "0xnew" }, delivered], { runGit: git.runGit });
+    expect(git.calls.filter((c) => c[0] === "push")).toHaveLength(1);
   });
 
   it("throws after 3 failed push attempts", async () => {
