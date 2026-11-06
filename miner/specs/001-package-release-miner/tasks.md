@@ -367,12 +367,12 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 - [x] T061 [US5] ⚠ Create two miner wallets, both separate from the bot's `0x46D0…C77b`, and record only their addresses in `miner/bench/network.md`:
   - **Payout wallet**: its key goes in a local gitignored file only, never in chat, the repo or the server.
   - **Spend wallet** (research R11): mint a small test-USDC balance to it, and set its key as `MINER_SPEND_KEY` in Vercel production.
-- [ ] T062 [US5] Finalize and validate `miner/specs/001-package-release-miner/contracts/telegraph-miner.yaml`:
+- [x] T062 [US5] Finalize and validate `miner/specs/001-package-release-miner/contracts/telegraph-miner.yaml`:
   - the production `base_url`;
   - an unused numeric `id` and an unused slug, checked with `GET /api/miners`;
   - `external_path`, the auth header, `errors`, the rate limits, `on_chain.transform` and `min_price_usdc` as a decimal;
   - re-check the field rules against the live YAML docs, and `isCanonicalIntent("QUESTION_ANSWERING_GENERAL")` live.
-- [ ] T063 [US5] ⚠ Register, install the key and run the paid tests, in this order, recording each step in `miner/bench/network.md`:
+- [x] T063 [US5] ⚠ Register, install the key and run the paid tests, in this order, recording each step in `miner/bench/network.md`:
   1. Register at anjoman.ai/dashboard/earn from the payout wallet. This is on chain and permanent. Record the registration tx, id and activation status.
   2. Immediately afterwards, generate the API key locally, install it against the slug (signed by the payout wallet), and set the same value as `MINER_API_KEY` in Vercel production. Verify that a direct unauthenticated call gets `401` and does no work. Record the install time, never the key.
   3. Paid test from the bot wallet, capped at 0.03 test USDC:
@@ -381,6 +381,13 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
      - one more direct call with `SIMULATE_UPSTREAM_OUTAGE=1` set on production for that call only and removed straight after. Compare `declaredFailure` in our metrics with `charged` on Telegraph's receipt.
 
      Capture the routed request as our endpoint received it. Record the receipt, signal, tx, which miner answered, the latency and the charge. Update research R1 and `render.ts` if the routed request differs from the sandbox one. Note that the bot wallet is team-controlled.
+
+  Status 6 Nov (`miner/bench/network.md`):
+  - Registered: registrationId 5083, miner id 7314, slug `package-release-intel`, `active`, floor 0.02 USDC; registerMiner tx `0xffa82f09…4157`.
+  - Key installed and validated by the node.
+  - Paid tests: the direct call was served by our miner, settled 0.02 USDC. The routed call was classified as `WEB_SEARCH_GENERAL` and went to another miner.
+  - Not run: the outage call, which needs `SIMULATE_UPSTREAM_OUTAGE` on production.
+
 - [ ] T064 [US5] Ranking check (plan phase 11), from the three endpoints in research R12:
   - `/api/miners?intent=…` (`scores[]`, `activation_status`, `scored`);
   - `/engine/v1/intents/QUESTION_ANSWERING_GENERAL/miners` (whether the miner is listed);
