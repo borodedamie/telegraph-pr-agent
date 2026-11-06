@@ -211,11 +211,14 @@ ${lineFormat ? LINE_INSTRUCTIONS : JSON_INSTRUCTIONS}`;
  * `{"items":[...}]}` is only possible at an item boundary. Null when nothing parses.
  */
 function readItems(json: string): { parsed: unknown; truncated: boolean } | null {
-  // A whole object, even with prose after it ("{...}\n\nNote: ..."): that reply was not cut.
-  try {
-    return { parsed: JSON.parse(json.slice(0, json.lastIndexOf("}") + 1)), truncated: false };
-  } catch {
-    // Fall through to the cut-off reply.
+  // A whole object, even with prose after it ("{...}\n\nNote: use `{ message }` instead."): that reply was not
+  // cut. The prose may hold a "}" of its own, so the object may end at any "}" from the last one back.
+  for (let end = json.lastIndexOf("}"); end > 0; end = json.lastIndexOf("}", end - 1)) {
+    try {
+      return { parsed: JSON.parse(json.slice(0, end + 1)), truncated: false };
+    } catch {
+      // Not a whole object yet: try the "}" before.
+    }
   }
   for (let end = json.lastIndexOf("}"); end > 0; end = json.lastIndexOf("}", end - 1)) {
     try {
