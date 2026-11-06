@@ -17,7 +17,7 @@ Resolution, sourcing and verification are deterministic. A language model only c
 **Primary Dependencies**:
 - `zod` for boundary validation;
 - `semver` for version resolution;
-- `@x402/fetch`, `@x402/evm` and `viem`, as in `bot/`, to buy LLM extraction from a Telegraph LLM miner behind the `ChangeExtractor` interface ([R7](research.md));
+- `viem`, as in `bot/`, to sign the escrow payments that buy LLM extraction from a Telegraph LLM miner behind the `ChangeExtractor` interface ([R7](research.md)). The x402 packages were dropped on 5 Nov, when payment moved to the `escrow` scheme;
 - `@upstash/redis` for the cache.
 
 HTTP uses Node's built-in `fetch`, wrapped in `safeFetch`, and the server is a Vercel Node function. No web framework.
@@ -37,7 +37,7 @@ HTTP uses Node's built-in `fetch`, wrapped in `safeFetch`, and the server is a V
 **Constraints**:
 - per-request budgets from [R9](research.md), including model calls (one per first-time answer), input size, cost and timeout;
 - origin authentication and rate limits ([R10](research.md));
-- fetches only to allowlisted hosts, connecting to the validated address;
+- fetches only to allowlisted hosts, connecting to the validated address; the one exception is a migration guide on the package's own website, linked from the release's notes (research R8);
 - no package execution;
 - the model never supplies versions, dates or links.
 
@@ -93,15 +93,16 @@ miner/
 │   ├── auth.ts          # X-Telegraph-Key check, origin rate and concurrency limits
 │   ├── parse.ts         # query → NormalizedRequest (unresolved)
 │   ├── resolve.ts       # npm registry + semver → resolved versions
-│   ├── safeFetch.ts     # allowlist, DNS/IP checks, manual redirects, size and time limits
+│   ├── safeFetch.ts     # allowlist (plus one website host per call), DNS/IP checks, manual redirects, size and time limits
 │   ├── sources/
 │   │   ├── github.ts    # repo identity, releases, changelog
 │   │   ├── compare.ts   # tag-comparison fallback: bounded patches, repository evidence
 │   │   ├── match.ts     # tag/heading → version correspondence (monorepo-aware)
+│   │   ├── site.ts      # migration guide on the package's website: link, Edit source, HTML to text
 │   │   └── osv.ts       # advisories for version A, full affected data
 │   ├── extract/
 │   │   ├── rules.ts     # deterministic section and CVE/GHSA extraction
-│   │   ├── model.ts     # LLM extraction bought from a Telegraph LLM miner via x402; zod-validated output, circuit breaker
+│   │   ├── model.ts     # LLM extraction bought from a Telegraph LLM miner, paid from escrow; zod-validated output, circuit breaker
 │   │   └── verify.ts    # normalization + exact-substring check for excerpts and migration steps
 │   ├── affected.ts      # is version V affected by an OSV record (all ranges, events, versions)
 │   ├── correlate.ts     # advisories × documented fixes → conclusions
@@ -151,5 +152,5 @@ Phases 3–8 can be developed against fixtures while phases 1–2 wait on deploy
 | Item | Why needed | Simpler alternative rejected because |
 | --- | --- | --- |
 | `semver` dependency | Correct range resolution and ordering, including prereleases | Hand-written comparison gets prerelease and range edge cases wrong |
-| `@x402/fetch`, `@x402/evm`, `viem` | Buying LLM extraction on Telegraph with test USDC, so the hackathon costs no real money | A direct LLM API needs a paid key; rules alone miss changes written as prose. Same packages and versions as `bot/` |
+| `viem` | Signing the escrow payments that buy LLM extraction on Telegraph with test USDC, so the hackathon costs no real money | A direct LLM API needs a paid key; rules alone miss changes written as prose. Same version as `bot/`. `@x402/fetch` and `@x402/evm` were used until 5 Nov for x402 `exact` and removed with the move to `escrow` |
 | `@upstash/redis` dependency | Shared cache across serverless instances (FR-018, FR-019, SC-006) | An in-memory cache is lost between invocations |

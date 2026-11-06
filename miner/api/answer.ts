@@ -71,6 +71,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       },
     });
     writeMetrics({ requestHash, authOk: true, msTotal: Date.now() - startedAt, ...result.metrics });
+    // Cache state and model spend for the benchmark (SC-006, SC-011); never secrets.
+    res.setHeader("x-miner-cache", result.metrics.cacheHit ? "hit" : "miss");
+    res.setHeader("x-miner-model-calls", String(result.metrics.modelCalls));
+    res.setHeader("x-miner-model-cost-usdc", String(result.metrics.modelCostUsdc));
     // Send the stored string itself, so a cache hit is byte-identical (FR-018).
     res.status(200).setHeader("content-type", "application/json; charset=utf-8").send(result.json);
   } catch (err) {

@@ -39,6 +39,13 @@ describe("splitChangelog", () => {
     expect(sections[2].text).toBe("# v3.24.0\n- Fixed z");
   });
 
+  it("splits a changelog with underlined headings, as in express's History.md", () => {
+    const text = ["5.0.0 / 2024-09-10", "==================", "", "* remove `app.del()`", "", "5.0.0-beta.3", "============", "", "* deps: x", "", "4.21.0", "------", "* Fixed"].join("\n");
+    const sections = splitChangelog(text, "express");
+    expect(sections.map((s) => s.version)).toEqual(["5.0.0", "5.0.0-beta.3", "4.21.0"]);
+    expect(sections[0].text).toBe("5.0.0 / 2024-09-10\n==================\n\n* remove `app.del()`");
+  });
+
   it("keeps only this package's headings in a monorepo root changelog", () => {
     const text = ["## @scope/b@2.0.0", "- Breaking: b only", "", "## @scope/a@1.5.0", "- Breaking: a change", "", "## a@1.4.0", "- Fixed"].join("\n");
     const sections = splitChangelog(text, "@scope/a");

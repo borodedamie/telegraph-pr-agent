@@ -39,6 +39,8 @@ const HEADING = new RegExp(
   String.raw`^#{1,4}\s+\[?(?:([\w@/.-]+)@)?v?` + VERSION + String.raw`\]?(?:\([^)]*\))?(?:\s.*)?$`,
   "gm"
 );
+// An underlined heading, as in express's History.md: "5.0.0 / 2024-09-10" over a line of "=".
+const UNDERLINED = new RegExp(String.raw`^v?` + VERSION + String.raw`(?:[ \t][^\n]*)?\n(?:={3,}|-{3,})[ \t]*$`, "gm");
 
 /**
  * Splits a changelog into this package's version sections; each runs from its heading to the next version
@@ -46,7 +48,8 @@ const HEADING = new RegExp(
  */
 export function splitChangelog(text: string, packageName: string): ChangelogSection[] {
   const shortName = packageName.replace(/^@[^/]+\//, "");
-  const headings = [...text.matchAll(HEADING)];
+  const underlined = [...text.matchAll(UNDERLINED)].map((m) => Object.assign([m[0], undefined, m[1]], { index: m.index }));
+  const headings = [...text.matchAll(HEADING), ...underlined].sort((a, b) => a.index! - b.index!);
   const sections: ChangelogSection[] = [];
   headings.forEach((heading, i) => {
     const prefix = heading[1];

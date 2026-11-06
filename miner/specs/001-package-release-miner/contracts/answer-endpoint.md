@@ -31,6 +31,14 @@ Authenticated, well-formed queries always get `200` with a JSON `Answer` (see [d
 | `found`, `not_found`, `needs_clarification`, `out_of_scope` | Yes: valid answers (FR-025) |
 | `temporarily_unavailable` | No: declared a failure through `errors.success_values` |
 
+A `200` also carries three headers for the benchmark (SC-006, SC-011). They are not part of the answer and never carry secrets:
+
+| Header | Value |
+| --- | --- |
+| `x-miner-cache` | `hit` when the answer came from the cache, else `miss` |
+| `x-miner-model-calls` | LLM miner calls made for this request (0 on a hit) |
+| `x-miner-model-cost-usdc` | What those calls cost, in USDC |
+
 Non-200 codes:
 
 | Status | When |

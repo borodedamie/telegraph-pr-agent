@@ -177,7 +177,7 @@ export function answerKey(request: NormalizedRequest, contentHashes: string[], p
  */
 export function isCacheable(answer: Answer): boolean {
   if (answer.outcome === "temporarily_unavailable") return false;
-  // not_checked: the OSV check is not wired into the pipeline yet (T053); its key changes when it is.
+  // not_checked: a version was not resolved, so OSV was never queried and the registry hash keys the answer.
   if (answer.outcome === "found" || answer.outcome === "not_found") {
     return answer.security.status === "complete" || answer.security.status === "not_checked";
   }
@@ -188,10 +188,10 @@ export async function getAnswer(store: Store, key: string): Promise<string | nul
   return store.get(key);
 }
 
-/** Stores the exact JSON string the caller will send, so a later hit is byte-identical. */
-export async function putAnswer(store: Store, key: string, answer: Answer, json: string): Promise<boolean> {
+/** Stores the exact JSON string the caller will send, so a later hit is byte-identical; without `ttlSec`, for good. */
+export async function putAnswer(store: Store, key: string, answer: Answer, json: string, ttlSec?: number): Promise<boolean> {
   if (!isCacheable(answer)) return false;
-  await store.set(key, json);
+  await store.set(key, json, ttlSec);
   return true;
 }
 

@@ -43,6 +43,20 @@ describe("pickMigrationGuide", () => {
     );
     expect(pickMigrationGuide(paths, "6.0.0", "@tanstack/react-query")).toBeNull();
   });
+
+  it("finds guides named by their directory or with the version after an underscore, and release posts", () => {
+    // next 15.0.0, mongoose 8.0.0 and prettier 3.0.0 keep theirs at these paths.
+    const next = ["docs/01-app/02-guides/upgrading/version-14.mdx", "docs/01-app/02-guides/upgrading/version-15.mdx", "docs/02-pages/02-guides/upgrading/version-15.mdx"];
+    expect(pickMigrationGuide(next, "15.0.0", "next")).toBe("docs/01-app/02-guides/upgrading/version-15.mdx");
+    expect(pickMigrationGuide(["docs/migrating_to_7.md", "docs/migrating_to_8.md"], "8.0.0", "mongoose")).toBe("docs/migrating_to_8.md");
+    const blog = ["website/blog/2023-07-05-3.0.0.md", "website/blog/2023-07-13-3.0.1.md", "website/blog/2020-03-21-2.0.0.md"];
+    expect(pickMigrationGuide(blog, "3.0.0", "prettier")).toBe("website/blog/2023-07-05-3.0.0.md");
+    // A real guide wins over a post; a post on a later release of the line is not the release's post.
+    expect(pickMigrationGuide(["content/blog/zod-4-5.mdx", "content/v4/changelog.mdx"], "4.0.0", "zod")).toBe("content/v4/changelog.mdx");
+    expect(pickMigrationGuide(["website/blog/2023-07-13-3.0.1.md"], "3.0.0", "prettier")).toBeNull();
+    const announcements = ["packages/website/blog/2024-05-27-announcing-typescript-eslint-v8-beta.mdx", "packages/website/blog/2024-07-31-announcing-typescript-eslint-v8.md"];
+    expect(pickMigrationGuide(announcements, "8.0.0", "typescript-eslint")).toBe("packages/website/blog/2024-07-31-announcing-typescript-eslint-v8.md");
+  });
 });
 
 describe("retrieveReleaseNotes", () => {

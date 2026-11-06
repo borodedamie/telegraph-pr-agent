@@ -5,19 +5,21 @@ import { MemoryStore } from "../../src/cache.js";
 import { registryUrl } from "../../src/resolve.js";
 import { Timeout, type SafeResponse } from "../../src/safeFetch.js";
 import { Outcome } from "../../src/types.js";
-import { fixtureFetcher } from "../fixtures.js";
+import { OSV_NONE, fixtureFetcher } from "../fixtures.js";
 
 const NO_NOTES = {
   [registryUrl("no-notes")]: "negative/npm/no-notes.json",
   "https://api.github.com/repos/example/no-notes/releases?per_page=100&page=1": "negative/github/empty.releases.json",
   "https://api.github.com/repos/example/no-notes/git/trees/HEAD?recursive=1": "negative/github/empty.tree.json",
+  ...OSV_NONE,
 };
 const MONO = {
   [registryUrl("@mono/a")]: "negative/npm/@mono__a.json",
   "https://api.github.com/repos/example/mono/releases?per_page=100&page=1": "negative/github/mono.releases.json",
   "https://api.github.com/repos/example/mono/git/trees/HEAD?recursive=1": "negative/github/empty.tree.json",
+  ...OSV_NONE,
 };
-const ZOD = { [registryUrl("zod")]: "npm/zod.json" };
+const ZOD = { [registryUrl("zod")]: "npm/zod.json", ...OSV_NONE };
 
 function deps(store: MemoryStore, fetcher: PipelineDeps["fetcher"], env: NodeJS.ProcessEnv = {}): PipelineDeps {
   return { store, env, fetcher, caller: null };
@@ -26,8 +28,8 @@ function deps(store: MemoryStore, fetcher: PipelineDeps["fetcher"], env: NodeJS.
 /** Serves fixtures, but answers `status` for every URL `failing` matches. */
 function failingFetcher(files: Record<string, string>, failing: (url: string) => boolean, status: number) {
   const { fetcher } = fixtureFetcher(files);
-  return async (url: string): Promise<SafeResponse> =>
-    failing(url) ? { status, url, headers: {}, body: "", notModified: false } : fetcher(url);
+  return async (url: string, options?: { body?: string }): Promise<SafeResponse> =>
+    failing(url) ? { status, url, headers: {}, body: "", notModified: false } : fetcher(url, options);
 }
 
 describe("US2: honest not found", () => {
@@ -68,7 +70,28 @@ describe("US2: honest not found", () => {
     const { answer } = await answerQuestion("no-notes 1.1.0 to 2.0.0", deps(new MemoryStore(), fixtureFetcher(files).fetcher));
     expect(answer).toMatchObject({ outcome: "found", changes: [] });
     expect(answer.confidence).toBeLessThanOrEqual(0.5);
+    expect(answer.coverage!.notCovered).toEqual([{ version: "2.0.0", reason: "no_material" }]);
     expect(answer.answer).toContain("Not assessed: the 2.0.0 release notes list no changes and point to https://example.org/docs/migrating-to-v2");
+    expect(answer.answer).not.toMatch(/no breaking changes or deprecations are documented/i);
+  });
+
+  it("reads the changelog a release points to instead of counting the pointer as the release's notes", async () => {
+    const files = {
+      ...NO_NOTES,
+      "https://api.github.com/repos/example/no-notes/releases?per_page=100&page=1": "negative/github/changelog-pointer.releases.json",
+      "https://raw.githubusercontent.com/example/no-notes/HEAD/CHANGELOG.md": "negative/github/no-notes.CHANGELOG.md",
+    };
+    const { answer } = await answerQuestion("no-notes 1.1.0 to 2.0.0", deps(new MemoryStore(), fixtureFetcher(files).fetcher));
+    expect(answer.coverage).toMatchObject({ complete: true, covered: ["2.0.0"] });
+    expect(answer.changes.map((c) => [c.kind, c.version, c.excerpt])).toEqual([["breaking", "2.0.0", "Removed the `legacy` option; use `modern` instead."]]);
+    expect(answer.answer).not.toContain("Not assessed");
+  });
+
+  it("reads a History.md changelog and counts its prerelease sections toward the release", async () => {
+    const files = { ...NO_NOTES, "https://raw.githubusercontent.com/example/no-notes/HEAD/History.md": "negative/github/no-notes.History.md" };
+    const { answer } = await answerQuestion("no-notes 1.1.0 to 2.0.0", deps(new MemoryStore(), fixtureFetcher(files).fetcher));
+    expect(answer.coverage).toMatchObject({ complete: true, covered: ["2.0.0"] });
+    expect(answer.changes.map((c) => [c.kind, c.version, c.excerpt])).toEqual([["breaking", "2.0.0", "Removed the `legacy` option"]]);
   });
 
   it("marks a question about something else out of scope", async () => {
@@ -89,17 +112,18 @@ describe("US2: honest not found", () => {
 
   it("declares a GitHub timeout temporarily unavailable", async () => {
     const { fetcher } = fixtureFetcher(NO_NOTES);
-    const timingOut = async (url: string): Promise<SafeResponse> => {
+    const timingOut = async (url: string, options?: { body?: string }): Promise<SafeResponse> => {
       if (url.startsWith("https://api.github.com/")) throw new Timeout(url);
-      return fetcher(url);
+      return fetcher(url, options);
     };
     const { answer, metrics } = await answerQuestion("no-notes 1.0.0 to 2.0.0", deps(new MemoryStore(), timingOut));
     expect(answer.outcome).toBe("temporarily_unavailable");
     expect(metrics.declaredFailure).toBe(true);
   });
 
-  it("goes on without a changelog that is down, with lower confidence and no caching", async () => {
-    const store = new MemoryStore();
+  it("goes on without a changelog that is down, with lower confidence, cached for an hour only", async () => {
+    let clock = 0;
+    const store = new MemoryStore(() => clock);
     const fetcher = failingFetcher(NO_NOTES, (url) => url.endsWith("/CHANGELOG.md"), 500);
     const first = await answerQuestion("no-notes 1.0.0 to 2.0.0", deps(store, fetcher));
     expect(first.answer).toMatchObject({ outcome: "not_found", confidence: 0.6 });
@@ -107,7 +131,10 @@ describe("US2: honest not found", () => {
     expect(first.answer.answer).toContain(`Could not read, so material may exist that this answer did not see: ${changelog}.`);
     expect(first.answer.answer).not.toMatch(new RegExp(`Checked: [^\\n]*${changelog.replace(/[.?]/g, "\\$&")}`));
     const second = await answerQuestion("no-notes 1.0.0 to 2.0.0", deps(store, fetcher));
-    expect(second.cacheHit).toBe(false);
+    expect(second.cacheHit).toBe(true);
+    clock = 3_600_000;
+    const later = await answerQuestion("no-notes 1.0.0 to 2.0.0", deps(store, fetcher));
+    expect(later.cacheHit).toBe(false);
   });
 
   it("forces the outage path only from the environment", async () => {

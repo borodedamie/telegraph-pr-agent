@@ -58,8 +58,25 @@ There are two contracts, and they are kept apart:
 
 - **Decision**: Resolve the repository from the registry's `repository` field: GitHub only, with `directory` noted for monorepos. Then try, in order:
   1. **GitHub Releases** via `GET /repos/{o}/{r}/releases`, paged. A release is matched to the package version by tag pattern (`v1.2.3`, `1.2.3`, `<pkg>@1.2.3`, `<pkg>-v1.2.3`, `<pkg>/v1.2.3`). In monorepos it is also used only if the release body or tag names the package.
-  2. **`CHANGELOG.md`** in the package directory, falling back to the repo root, via `raw.githubusercontent.com`, split into sections by version headings.
-  3. **Migration guide** (added 3 Nov, after zod 4.0.0 turned out to have no GitHub release and no `CHANGELOG.md`): for the first release of a new major line (or 0.y line), one `GET /repos/{o}/{r}/git/trees/HEAD?recursive=1`, then the shortest Markdown/MDX file whose name says migration, upgrade, changelog or breaking and whose path names the new line (`v4`, `4.0`, `version-4`), preferring paths that name the package (`react` for `@tanstack/react-query`). It is fetched from `raw.githubusercontent.com` and each of its change headings becomes a documented item. A tree above the 2 MB cap skips this step.
+  2. **`CHANGELOG.md`** in the package directory, falling back to the repo root, via `raw.githubusercontent.com`, split into sections by version headings. Since 5 Nov:
+     - In each directory the first of `CHANGELOG.md`, `History.md`, `HISTORY.md` and `CHANGES.md` that exists is read (express keeps its changelog in `History.md`).
+     - Underlined headings (`5.0.0 / 2024-09-10` over `===`) count as version headings.
+     - Prerelease sections of a wanted release (express's `5.0.0-alpha.1` … `5.0.0-beta.3`) are counted toward that release.
+     - The first release of a new major line has its changelog section read even when it has release notes.
+     - A label bullet such as `* breaking:`, with items nested under it, ends at the next bullet that is not nested, so `* deps: debug@4.3.6` after it is not a breaking change.
+  3. **Migration guide** (added 3 Nov, after zod 4.0.0 turned out to have no GitHub release and no `CHANGELOG.md`): for the first release of a new major line (or 0.y line), one `GET /repos/{o}/{r}/git/trees/HEAD?recursive=1`, then the shortest Markdown/MDX file whose name says migration, upgrade, changelog or breaking and whose path names the new line (`v4`, `4.0`, `version-4`), preferring paths that name the package (`react` for `@tanstack/react-query`). It is fetched from `raw.githubusercontent.com` and each of its change headings becomes a documented item. Since 5 Nov:
+     - The guide is read even when the release has notes, because those often only summarise it (prettier 3.0.0, mongoose 8.0.0, eslint 9.0.0).
+     - The topic word may be in a directory name (`upgrading/version-15.mdx`), and the line may follow an underscore (`migrating_to_8.md`). A later release of the line (`3.0.1`) does not match.
+     - When there is no guide, a release post such as `blog/2023-07-05-3.0.0.md` is used, but only if its name is the release itself.
+     - A tree above the 2 MB cap (next.js: 17 MB) falls back to the top-level tree, then the recursive trees of `docs/`, `doc/`, `documentation/`, `website/` and `guides/`, at the top level or under `packages/` (typescript-eslint's `packages/website/blog`).
+     - A release post may also end with the line, as in `announcing-typescript-eslint-v8.md`; `…-v8-beta.mdx` does not match.
+     - A heading that groups changes ("Rule Breaking Changes", "Deprecations", "Removals") is not an item itself. Each top-level bullet under it is one, with the bullets nested under it as its migration. Bullets in code blocks, and a table of contents of in-page links, are skipped. Leading `<a name>` anchors are dropped from titles.
+     - When the repository has no guide for the line, a guide on the package's website is read (since 5 Nov; R8, FR-020):
+       - The link comes from that release's notes read so far, and its host must be the host of the npm `homepage`, with or without `www.`. A migration or upgrade guide is preferred over a guide, and a guide over a blog post.
+       - One page is fetched. When it has an "Edit this page" link (`github.com/<o>/<r>/edit/<ref>/<path>.md(x)`), that source is read from `raw.githubusercontent.com` instead (expressjs.com's `migrating-5.mdx`). Otherwise the page's `<main>` or `<article>` is turned into headings, list items and fenced code; navigation and scripts are dropped, in one linear pass.
+       - A website shows the guide for its latest release, so the guide counts only when its title, or the first line under a title without a version, names this release's line, or the line before it after "from" ("Migration from v7" for v8). vite.dev's "Migration from v7" is not taken for vite 6.
+       - In a guide with sections that name a kind of change ("Removed methods and properties", "Changed", "Breaking Changes", "Changes from v3"), only those sections are read. Each innermost heading in them is one change, and "How to update" text under it is its migration.
+       - Hosts that are not the homepage's (devblogs.microsoft.com for typescript, whose homepage is typescriptlang.org) are not fetched.
   4. **Tag comparison** via `GET /repos/{o}/{r}/compare/{base}...{head}` as a last resort, with the exact tags found by step 1's patterns.
      - Evidence comes from the changed code: `files[].patch` for files under the package `directory`, prioritizing type declarations (`*.d.ts`), entry points and `package.json` (`exports`, `main`, `engines`, `peerDependencies`). Commit messages and file names alone are never evidence.
      - GitHub returns at most 300 files and 250 commits per comparison, and omits large patches. Hitting any of these limits makes coverage `partial`, with reason `truncated`.
@@ -80,17 +97,23 @@ There are two contracts, and they are kept apart:
   - `unavailable` when OSV could not be reached.
 
   An OSV failure never fails the migration answer.
+- **Implementation (4 Nov 2026)**: `src/sources/osv.ts`, `src/affected.ts`, `src/correlate.ts`.
+  - Both queries run after resolve and before the GitHub retrieval, and count against `MAX_SOURCE_REQUESTS` (two requests, more if a query pages).
+  - A query reads at most 3 pages; a longer list makes the check `partial`. One of the two queries failing makes it `partial`; both failing makes it `unavailable`, with `checkedAt: null`.
+  - Of each record, only the `affected` entries for the npm package with exactly the asked name are kept (one record often lists `lodash-es`, `lodash.template` or a RubyGems package too), with its `summary`, `aliases`, `severity`, `database_specific.severity` and `modified`. A new or edited advisory changes the response hash and so the answer key.
+  - Each page read is an `advisory` source. The conclusion follows the record's ranges, whichever query returned it.
+  - A `security_fix` item is linked to an advisory only when its excerpt names the advisory id or an alias.
 - **Rationale**: OSV is free, needs no key and is authoritative for affected ranges. A single "first fixed" version is wrong for advisories with several ranges.
 - **Alternatives**: the GitHub Advisory Database API was rejected, because OSV already aggregates it and it needs a token.
 
 ## R7. Change extraction and the language model
 
 - **Decision**: Use a two-step extractor behind a `ChangeExtractor` interface.
-  1. **Deterministic pass**: find sections headed Breaking, Removed, Deprecated, Migration or Security, and CVE/GHSA patterns. Since 4 Nov it also reads common breaking-change phrases ("no longer", "has been removed", "drop support for", "requires Node", "renamed", "use X instead" …) in bullets and prose sentences of line-start releases (x.0.0, 0.y.0), outside Fixes headings and maintenance lines. The phrases were chosen from 284 major-release notes of 89 packages: [miner/bench/phrase-rules.md](../../bench/phrase-rules.md). A line-start release is never "handled" by its headings alone, so its unmarked prose stays open for the model. A line-start release with no item whose notes only link to a guide is reported as "not assessed", and the answer's confidence is capped at 0.5.
+  1. **Deterministic pass**: find sections headed Breaking, Removed, Deprecated, Migration or Security, and CVE/GHSA patterns. Since 4 Nov it also reads common breaking-change phrases ("no longer", "has been removed", "drop support for", "requires Node", "renamed", "use X instead" …) in bullets and prose sentences of line-start releases (x.0.0, 0.y.0), outside Fixes headings and maintenance lines. The phrases were chosen from 284 major-release notes of 89 packages: [miner/bench/phrase-rules.md](../../bench/phrase-rules.md). A line-start release is never "handled" by its headings alone, so its unmarked prose stays open for the model. A line-start release with no item whose notes only link to a guide is reported as "not assessed", and the answer's confidence is capped at 0.5. Since 5 Nov this also holds for any release whose notes are only a pointer (under 300 characters of prose besides a link to a changelog, guide, blog or announcement: typescript 5.6.2, react-router 7.0.0, vue 3.5.0). Such a release does not count as covered by its notes: the changelog and the migration guide are still read for it. If no source yields an item for it, it is listed as not covered (`no_material`), so the answer no longer says it has no changes.
   2. **Model pass**: classify and extract items from version-specific text, returning JSON validated with zod. The model may also return `inferred` items and steps, each with the ids of the items or sections it relies on.
 
   **Where the model comes from**: it is bought on Telegraph itself, paid in test USDC, so the hackathon costs no real money and the miner is itself a buyer on the network.
-  - An ordered list of LLM miners comes from `LLM_MINERS`, as `<minerId>:<method>:<path>`. Each one is called directly via `POST /engine/v1/ask/<minerId>`, using the same x402 client as `bot/src/x402.ts`, from the miner's spend wallet (R11).
+  - An ordered list of LLM miners comes from `LLM_MINERS`, as `<minerId>:<method>:<path>`. Each one is called directly via `POST /engine/v1/ask/<minerId>`, paid with the `escrow` scheme from the spend wallet's prefunded Telegraph escrow balance (R11). The miner signs the 402 `extra.message` template with EIP-191 `personal_sign` and sends it as `X-PAYMENT`, only after checking that the template names the Telegraph Diamond as payee, Sepolia and the quoted amount.
   - Paid tests on 3 Nov, one release-note section each ([snapshot](../../../docs/telegraph/miner-yaml-and-ranking-2026-11-03.md)):
 
     | Miner | Result | Miner time / total |
@@ -100,14 +123,22 @@ There are two contracts, and they are kept apart:
     | `901` `groq-llama31-instant-miner`, `POST /chat` | `200` with "AuthenticationError" inside, charged | 33 s / 43 s |
 
   - Default order: `LLM_MINERS=302:POST:/gen,7413:GET:/language-generation`. With 7413, prompts ask for the compact line format `kind|excerpt|migration`, so one reply fits its length limit.
-  - Most of the total time was x402 `exact` settlement before the miner was called. Production uses the `escrow` scheme, which skips per-request on-chain settlement; its latency is measured in T063.
+  - **Payment scheme, measured 5 Nov** ([network log](../../bench/network.md)): 10 calls each to `302` with the same 6,000-character prompt.
+
+    | Scheme | Median total | Range | Miner's own `duration_ms` |
+    | --- | --- | --- | --- |
+    | x402 `exact` | 13.3 s | 8.1–20.8 s | 1.2–2.1 s |
+    | `escrow` | 2.0 s | 1.7–4.1 s | 1.2–2.3 s |
+
+    With `exact`, each call waits for its own settlement transaction: the 10 transfers were mined one per block. `escrow` settles at epoch close, with no per-request transaction. So the miner pays with `escrow`. An escrow refusal (`402`, for example "insufficient escrow for delivery") is not billed and falls back to the deterministic pass.
   - The chosen miner id is part of `PROCESSING_VERSION`.
-  - **A `200` is not trusted.** A miner that answers `200` with an error inside counts as delivered and is charged. So a reply only counts if it parses into the zod item schema. Otherwise the call is a failure, and that miner is skipped for 15 minutes (a circuit breaker in Redis).
+  - **A `200` is not trusted.** A miner that answers `200` with an error inside counts as delivered and is charged. So a reply only counts if it parses into the zod item schema. Otherwise the call is a failure. A circuit breaker in Redis skips that miner from its third failure in a row: for 1, 3, 9 and then at most 15 minutes. A good reply resets the streak. Since 5 Nov, because `302` sometimes answers without JSON while it works; it used to be 15 minutes after one failure. An escrow refusal for our own balance and a call cut by the answer's deadline do not count.
+  - **Cut-off replies.** `302` stops replying at about 1,500–2,000 characters (5 Nov): a long item list ends mid-JSON. Such a reply keeps its whole items, the model pass is marked incomplete, and the answer is still cached, because asking again pays for the same cut. The prompt lists breaking changes first, so the cut drops the least important items. Since `p4`.
   - **One model call per first-time answer** (`MAX_MODEL_CALLS = 1`): one call costs 0.01, the same as our price.
   - **Timeout**: `LLM_TIMEOUT_MS` defaults to 12 s.
   - **Fallback**: when the call fails, times out or no miner is available, the answer is built by the deterministic pass only. It says that prose changes may be missing and is not cached, so it is retried next time.
 
-  The extractor mode (`rules_only` or `rules_and_model`) is part of `PROCESSING_VERSION`, so a rules-only answer never shares a cache key with a full one.
+  The extractor mode (`rules_only` or `rules_and_model`) is part of the answer's `processingVersion`. The cache key is fixed before extraction, so a rules-only answer is cached for one hour only (since 5 Nov; before, not at all): a repeat within the hour gets the same bytes, and a later request runs the model again.
 
   For a multi-release request, the version-specific sections are batched into as few calls as the token budget allows. Each section is labelled with an opaque section id, never a version. Releases fully handled by the deterministic pass are not sent to the model.
 - **Verification**:
@@ -125,7 +156,8 @@ There are two contracts, and they are kept apart:
     - `registry.npmjs.org`;
     - `api.github.com` and `github.com`, on repository paths;
     - `raw.githubusercontent.com`, on validated repository paths;
-    - `api.osv.dev`, `POST /v1/query` only.
+    - `api.osv.dev`, `POST /v1/query` only;
+    - since 5 Nov, the package's website (the host of its npm `homepage`): `GET` only, 2 MB, and only for the call that reads a migration guide linked from the release's notes (`siteHost`). A redirect to any other host is refused.
 
     `https` only, default port only.
   - **Addresses**: DNS is resolved, and every address is checked against private, loopback, link-local, CGNAT and metadata ranges. The connection then goes to the validated address. Requests use `node:https` with a `lookup` that returns that address, so a second resolution cannot rebind. Node's `fetch` cannot pin the address without an extra dependency.
@@ -147,7 +179,7 @@ There are two contracts, and they are kept apart:
 | Intermediate releases processed | 50 |
 | Model calls per request (`MAX_MODEL_CALLS`) | 1 |
 | Model input per call (`MAX_MODEL_INPUT_CHARS`) | 24k characters; tuned to what the chosen LLM miner accepts |
-| Model cost per request (`MAX_MODEL_COST_USDC`) | 0.01 test USDC, from the x402 quote; a higher quote is refused |
+| Model cost per request (`MAX_MODEL_COST_USDC`) | 0.01 test USDC, from the escrow quote; a higher quote is refused |
 | Model call timeout (`LLM_TIMEOUT_MS`) | 12 s |
 | Releases sent to the model (`MAX_MODEL_RELEASES`) | 20 |
 
@@ -177,7 +209,7 @@ When a budget stops work, the answer's coverage is partial and the cut releases 
   - Live docs: with `status_path` set, a `200` whose status is not a success value is treated as a failure. The caller is not charged and no signal is recorded.
   - So `temporarily_unavailable` stays a `200` with a full body for logs, but is not billed.
 - **Payout wallet**: a new wallet for the miner, separate from the bot's `0x46D0…C77b`. Validate and register at anjoman.ai/dashboard/earn, which pins the YAML. Registration is on chain and can't be edited. Its key never goes on the server.
-- **Spend wallet**: a second new wallet whose key is set as `MINER_SPEND_KEY` in Vercel. It pays for LLM calls, holds a small balance of minted test USDC, and the x402 client limits it with `spendControls.allowedAssets` (test USDC only, at most `MAX_MODEL_COST_USDC` per payment). Leaking it can only lose that balance.
+- **Spend wallet**: a second new wallet whose key is set as `MINER_SPEND_KEY` in Vercel. It pays for LLM calls from its Telegraph escrow balance, funded with `depositUSDC` or `depositUSDCFor` on the Diamond (`0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b`). The caller signs only escrow authorizations to that Diamond, at most `MAX_MODEL_COST_USDC` each and valid for 100 s. Leaking the key can lose at most the escrow balance and the wallet's test USDC. When the escrow runs dry, model calls are refused unbilled and answers fall back to rules only, so the balance needs topping up.
 - **Payout accounting**: the buyer's price is not the miner's income.
   - Per call, the miner records the quoted and settled price and whether it was charged.
   - The protocol share, the provider accrual and the payout currency are read from receipts and settlement data.

@@ -7,3 +7,7 @@ upstream response that reproduces its case. Packages `no-notes` and `@mono/a` an
   name it.
 - `github/empty.releases.json`, `github/empty.tree.json`: an empty release list and an empty file tree.
 - `github/link-only.releases.json`: a major release whose notes only link to a migration guide.
+- `github/changelog-pointer.releases.json`, `github/no-notes.CHANGELOG.md`: a major release whose notes only
+  say "see the changelog", and the changelog that lists its breaking change.
+- `github/no-notes.History.md`: a changelog kept in `History.md` with underlined headings, whose breaking change
+  is listed under a prerelease of 2.0.0.

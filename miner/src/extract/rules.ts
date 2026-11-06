@@ -16,7 +16,7 @@ const MIGRATION_HINT = /\b(instead|replace[sd]?|use|migrate to|switch to|rename[
 
 function headingKind(title: string): Kind | "migration" | "fix" | "other" {
   if (/security|vulnerab/i.test(title)) return "security_fix";
-  if (/breaking|removed|removal|dropped/i.test(title)) return "breaking";
+  if (/breaking|\bremov(e|es|ed|al|als)\b|dropped/i.test(title)) return "breaking";
   if (/deprecat/i.test(title)) return "deprecation";
   if (/migrat|upgrad/i.test(title)) return "migration";
   // Under a fixes heading "X no longer crashes" is a fix, so phrases are not read there.
@@ -67,6 +67,23 @@ function isLineStart(version: string): boolean {
 
 // A link to a guide or announcement: what a line-start release's notes point to when they list no changes.
 const GUIDE_LINK = /\[([^\]]{0,80}\b(?:migrat\w*|upgrad\w*|guide|blog|announc\w*|release notes|what'?s new)\b[^\]]{0,80})\]\((https:\/\/[^)\s]{1,300})\)/i;
+// The same, plus a changelog, as a markdown link or a bare URL: "See the changelog: https://.../CHANGELOG.md#v700".
+const POINTER_LINK =
+  /\[([^\]]{0,80}\b(?:migrat\w*|upgrad\w*|guide|blog|announc\w*|release notes?|what'?s new|changelog)\b[^\]]{0,80})\]\((https:\/\/[^)\s]{1,300})\)|(https:\/\/[^\s)\]]{0,300}(?:changelog|migrat|upgrad|blog|announc)[^\s)\]]{0,300})/i;
+const LINK_OR_URL = /\[[^\]]{0,200}\]\([^)\s]{0,400}\)|https?:\/\/\S{1,400}/g;
+// Release notes with less prose than this, once links are taken out, list nothing of their own.
+const POINTER_MAX_CHARS = 300;
+
+/**
+ * The page that release notes send the reader to, when the notes are only that pointer: TypeScript's
+ * "For release notes, check out the [release announcement](...)", react-router's "See the changelog: ...".
+ */
+export function pointerLink(text: string): string | null {
+  const link = POINTER_LINK.exec(text);
+  if (link === null) return null;
+  const prose = text.replace(LINK_OR_URL, "").replace(/[\s#*=_`>-]+/g, " ").trim();
+  return prose.length < POINTER_MAX_CHARS ? link[2] ?? link[3] : null;
+}
 const SENTENCE_END = /(?<=[.!?])\s+(?=[A-Z`*_])/;
 
 // Outside a headed section only explicit markers count: "BREAKING", a conventional-commit "!:", or a
@@ -88,13 +105,22 @@ function removedNow(text: string): boolean {
 /** A bullet that is only a label ("**Breaking Changes**:") opens a section like a heading. */
 function labelKind(text: string): ReturnType<typeof headingKind> | null {
   const label = text.replace(/[*_`:]/g, "").trim();
-  return /^(breaking changes?|deprecations?|deprecated|removed|removals|security( fixes)?|migration( guide)?)$/i.test(label)
+  // express's History.md labels its groups "breaking:" and "remove:".
+  return /^(breaking( changes?)?|deprecations?|deprecated|remove[sd]?|removals|security( fixes)?|migration( guide)?)$/i.test(label)
     ? headingKind(label)
     : null;
 }
 
 // In a migration guide every heading names one change; its first words say which kind.
+// A guide heading that names a group of changes rather than one.
+const GROUP_HEADING = /\bbreaking changes\b|\bdeprecations\b|\bremovals\b/i;
+// The same for a heading with subheadings: express's "Removed methods and properties" and "Changed",
+// tailwind's "Changes from v3".
+const SECTION_HEADING = /^(breaking changes?|changes|changed|removed|removals|deprecat\w*)\b/i;
+
 function guideHeadingKind(title: string): Kind | null {
+  // "Breaking changes for users" and "User-Facing Changes" group the changes below them; they are not one.
+  if (/^(breaking changes?|deprecations?)\b|\bchanges$/i.test(title)) return null;
   if (/deprecat/i.test(title)) return "deprecation";
   if (/\b(drops?|dropped|remov\w*|no longer|stricter|changes?|throws|only|breaking|renam\w*|moves?)\b/i.test(title)) {
     return "breaking";
@@ -138,19 +164,70 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
     });
   };
 
+  // Under a heading that groups changes ("Rule Breaking Changes"), each top-level bullet is one change, and the
+  // bullets nested under it say how to migrate. Bullets in code blocks are diff lines, not changes.
+  const addGroupItems = (index: number, body: string[]) => {
+    let inCode = false;
+    body.forEach((line, k) => {
+      if (line.trim().startsWith("```")) inCode = !inCode;
+      const item = inCode ? null : /^[-*+]\s+(\S.*)$/.exec(line);
+      if (!item) return;
+      const nested: string[] = [];
+      for (let m = k + 1; m < body.length && /^\s+[-*+]\s/.test(body[m]); m++) nested.push(body[m].replace(/^\s+[-*+]\s+/, ""));
+      const text = item[1].trimEnd();
+      // A table of contents ("[Removed multiple formatters](#removed-formatters)") points to the headings below.
+      if (/^\[[^\]]{0,300}\]\(#[^)\s]{0,200}\)$/.test(text)) return;
+      // "remove deprecated no-throw-literal rule" removes it; "deprecate no-loss-of-precision" only deprecates it.
+      const kind = /deprecat/i.test(text) && !/\b(remov\w*|drop\w*)\b/i.test(text) ? "deprecation" : "breaking";
+      add(index, kind, text, migrationLine(nested));
+    });
+  };
+
   sections.forEach((section, index) => {
     const lines = section.text.split("\n");
     if (sourceType(section) === "migration_guide") {
       handled.add(index);
+      // Headings outside code blocks, with their level.
+      let fenced = false;
+      const headings: { line: number; level: number; title: string }[] = [];
       lines.forEach((line, i) => {
-        const heading = /^#{2,4}\s+(\S.*)$/.exec(line);
-        if (!heading) return;
-        const title = heading[1].trimEnd();
-        const kind = guideHeadingKind(title);
+        if (line.trim().startsWith("```")) fenced = !fenced;
+        const heading = fenced ? null : /^(#{2,4})\s+(\S.*)$/.exec(line);
+        // Anchors before the title are markup, not words: eslint's `<a name="drop-old-node"></a> Node.js < v18.18 ...`.
+        const title = heading?.[2].replace(/^(<a [^>]{0,200}><\/a>\s*)+/i, "").trimEnd();
+        // "How to update" and "On this page" are part of the text around them, not headings of their own.
+        if (heading && title && !/^(how to\b|on this page$)/i.test(title)) headings.push({ line: i, level: heading[1].length, title });
+      });
+      // A section heading that names a kind of change and has subheadings ("## Removed methods and properties"
+      // over "### app.del()"): each innermost subheading in it is one change of that kind. prettier's "## Breaking
+      // Changes" › "### JavaScript" › "#### Change the default value for `trailingComma`" names the change last.
+      let section: { level: number; kind: Kind } | null = null;
+      const opensSection = (h: number) => (headings[h + 1]?.level ?? 0) > headings[h].level && SECTION_HEADING.test(headings[h].title);
+      // A guide with such sections says where its changes are: headings outside them (prettier's "Other Changes",
+      // express's "Installation") are not read.
+      const sectioned = headings.some((_, h) => opensSection(h));
+      headings.forEach((heading, h) => {
+        const next = headings.slice(h + 1).find((other) => other.level <= heading.level);
+        const body = lines.slice(heading.line + 1, next?.line ?? lines.length);
+        const textBody = lines.slice(heading.line + 1, headings[h + 1]?.line ?? lines.length);
+        const hasSubheadings = (headings[h + 1]?.level ?? 0) > heading.level;
+        if (section !== null && heading.level <= section.level) section = null;
+        if (section !== null) {
+          if (!hasSubheadings) add(index, section.kind, heading.title, migrationLine(body));
+          return;
+        }
+        if (opensSection(h)) {
+          section = { level: heading.level, kind: /deprecat/i.test(heading.title) ? "deprecation" : "breaking" };
+          return;
+        }
+        if (sectioned) return;
+        if (GROUP_HEADING.test(heading.title)) {
+          addGroupItems(index, textBody);
+          return;
+        }
+        const kind = guideHeadingKind(heading.title);
         if (kind === null) return;
-        const body: string[] = [];
-        for (let j = i + 1; j < lines.length && !/^#{1,4}\s/.test(lines[j]); j++) body.push(lines[j]);
-        add(index, kind, title, migrationLine(body));
+        add(index, kind, heading.title, migrationLine(body));
       });
       return;
     }
@@ -159,6 +236,9 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
     const phrases = sourceType(section) !== "tag_compare" && isLineStart(section.version);
     const found = candidates.length;
     let current: ReturnType<typeof headingKind> = "other";
+    // A label bullet ("* breaking:") whose items are nested under it ends at the next bullet that is not.
+    type Label = { indent: number; outer: ReturnType<typeof headingKind>; nested: boolean | null };
+    let label = null as Label | null;
     let marked = false;
     let inCode = false;
     for (const line of lines) {
@@ -169,6 +249,7 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
       if (inCode) continue;
       const heading = HEADING.exec(line);
       if (heading) {
+        label = null;
         current = headingKind(heading[1] ?? heading[2]);
         marked ||= current === "breaking" || current === "deprecation" || current === "security_fix";
         continue;
@@ -185,9 +266,18 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
         continue;
       }
       const text = bullet[1].trimEnd();
-      const label = labelKind(text);
+      const indent = line.length - line.trimStart().length;
       if (label !== null) {
-        current = label;
+        label.nested ??= indent > label.indent;
+        if (label.nested && indent <= label.indent) {
+          current = label.outer;
+          label = null;
+        }
+      }
+      const kindOfLabel = labelKind(text);
+      if (kindOfLabel !== null) {
+        label = { indent, outer: label?.outer ?? current, nested: null };
+        current = kindOfLabel;
         marked ||= current === "breaking" || current === "deprecation" || current === "security_fix";
         continue;
       }
@@ -201,9 +291,12 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
     }
     // A line-start release is never "handled" by headings alone: its unmarked prose may still hold changes.
     if (marked && !phrases) handled.add(index);
-    if (phrases && candidates.length === found) {
-      const link = GUIDE_LINK.exec(section.text);
-      if (link) unassessed.push({ section: index, url: link[2] });
+    if (candidates.length === found) {
+      const pointer = pointerLink(section.text);
+      // Notes that are only a pointer hold nothing for the model to read.
+      if (pointer !== null) handled.add(index);
+      const url = pointer ?? (phrases ? GUIDE_LINK.exec(section.text)?.[2] ?? null : null);
+      if (url !== null) unassessed.push({ section: index, url });
     }
   });
   return { candidates, handled, unassessed };

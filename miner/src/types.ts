@@ -86,6 +86,8 @@ const affectedState = z.enum(["yes", "no", "unknown"]);
 
 export const Advisory = z.object({
   id: z.string().min(1),
+  /** OSV's one-line summary, when the record has one. */
+  summary: z.string().nullable(),
   aliases: z.array(z.string()),
   severity: z.array(z.object({ type: z.string(), score: z.string() })),
   displaySeverity: z.enum(["critical", "high", "moderate", "low", "unknown"]),

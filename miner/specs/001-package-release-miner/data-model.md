@@ -58,6 +58,7 @@ Keeps enough of the OSV record to decide, for any version, whether it is affecte
 | Field | Type | Rule |
 | --- | --- | --- |
 | `id` | string | OSV id |
+| `summary` | string \| null | OSV's one-line summary |
 | `aliases` | string[] | CVE/GHSA ids, from OSV |
 | `severity` | `{type, score}[]` | OSV severity entries, kept as-is |
 | `displaySeverity` | `critical` \| `high` \| `moderate` \| `low` \| `unknown` | Derived for display only, from `database_specific.severity` or a CVSS score |
@@ -82,7 +83,7 @@ Correlation then follows the spec's User Story 4 table; with no evidence, no cla
 
 | Field | Type | Rule |
 | --- | --- | --- |
-| `status` | `complete` \| `partial` \| `unavailable` \| `not_checked` | `partial` when the OSV response was truncated or a referenced record could not be read. `not_checked` when no package was resolved (`out_of_scope`, `needs_clarification`). Until OSV is wired in (T053) every answer is `not_checked`, carries no confidence penalty and is cacheable; adding OSV changes the processing version |
+| `status` | `complete` \| `partial` \| `unavailable` \| `not_checked` | `partial` when one of the two queries failed, a query paged beyond 3 pages, or a record could not be read; `unavailable` when both queries failed. `not_checked` when both versions were not resolved (`out_of_scope`, `needs_clarification`, or a resolve-stage `not_found`): OSV is never queried, there is no confidence penalty, and the answer is cacheable |
 | `checkedAt` | ISO timestamp \| null | When OSV was queried (both queries, A and B) |
 | `advisories` | Advisory[] | Empty means "none known" only when `status = complete` |
 | `documentedFixes` | number | Count of `security_fix` ChangeItems |
@@ -119,7 +120,7 @@ Correlation then follows the spec's User Story 4 table; with no evidence, no cla
 | `found`, complete coverage, every item `documented` | 0.9 |
 | `found`, complete coverage, some `repository_evidence` or `inferred` items | 0.7 |
 | `found`, partial coverage | 0.5 |
-| `found`, some release text not read (the model pass did not run, or a major release only links to a guide: "not assessed") | at most 0.5 |
+| `found`, some release text not read (the model pass did not run, or a release's notes only point to a changelog, guide or blog: "not assessed", and that release is not covered) | at most 0.5 |
 | `found`, complete coverage, no items (no breaking changes or deprecations documented) | 0.9 |
 | `not_found`, every listed source responded | 0.8 |
 | `not_found`, an optional source (e.g. the changelog) failed | 0.6 |
@@ -148,7 +149,7 @@ query → auth check ──(missing or wrong key)──> 401, no work
      found / not_found → answer stored (only if security.status = complete) → render
 ```
 
-The answer-cache key is `sha256(answer identity + sorted contentHashes of every source consulted, OSV responses included + PROCESSING_VERSION)`. "Consulted" is fixed by the retrieval step, before extraction, so the same key is computed at lookup and at store. A new advisory changes the OSV response hash and so the key. An answer whose security check was partial or unavailable is not cached, so it is retried. The same holds when an optional source (the changelog or migration guide) was down. A source over its size cap also gives the lower `not_found` band, but that answer is cached: the cap gives the same result next time. Releases the model could not fit are reported as not covered (`budget`), and that answer is cached.
+The answer-cache key is `sha256(answer identity + sorted contentHashes of every source consulted, OSV responses included + PROCESSING_VERSION)`. "Consulted" is fixed by the retrieval step, before extraction, so the same key is computed at lookup and at store. A new advisory changes the OSV response hash and so the key. An answer whose security check was partial or unavailable is not cached, so it is retried. An answer with text left unread, because an optional source (the changelog or migration guide) was down or the model pass did not run, is cached for one hour only: a repeat within the hour gets the same bytes (SC-006), and a later one retries the sources and the model. A source over its size cap also gives the lower `not_found` band, but that answer is cached: the cap gives the same result next time. Releases the model could not fit are reported as not covered (`budget`), and that answer is cached.
 
 ## Metrics record (one per request, FR-027)
 

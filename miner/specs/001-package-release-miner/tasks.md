@@ -30,7 +30,7 @@ description: "Task list for the package-release miner"
   - name `@telegraph-pr-agent/miner`, `type: module`, Node ≥20;
   - scripts `test`, `build`, `dev` (`vercel dev`) and `bench`.
 - [x] T002 ⚠ Add dependencies to `miner/package.json`. Justification: plan.md Complexity Tracking.
-  - Runtime: `zod`, `@x402/fetch`, `@x402/evm` and `viem` (same versions as `bot/`), `semver`, `@upstash/redis`. Approved 3 Nov.
+  - Runtime: `zod`, `@x402/fetch`, `@x402/evm` and `viem` (same versions as `bot/`), `semver`, `@upstash/redis`. Approved 3 Nov. The two `@x402` packages were removed on 5 Nov, when model calls moved to escrow payments.
   - Dev: `typescript`, `vitest`, `tsx`, `@types/node`, `@types/semver`, `@vercel/node`.
 - [x] T003 [P] Create `miner/tsconfig.json`, copied from `bot/tsconfig.json`, with `include: ["src", "api", "test", "bench"]`
 - [x] T004 [P] Create `miner/.env.example`, each variable with a one-line comment, and confirm `miner/.env` is ignored by the root `.gitignore` (`.env*`). Variables:
@@ -184,15 +184,15 @@ description: "Task list for the package-release miner"
   - It finds Breaking, Removed, Deprecated, Migration and Security sections, their bullet items, and the CVE/GHSA ids in them.
   - It emits `documented` items with exact excerpts. A migration step is `documented` only when the same bullet or a Migration section states it.
 - [x] T038 [US1] Implement the model extractor in `miner/src/extract/model.ts`:
-  - It buys one call from the first available miner in `LLM_MINERS` via `POST /engine/v1/ask/<minerId>`, with the x402 client from the spend wallet. The quote is refused above `MAX_MODEL_COST_USDC`, and `spendControls.allowedAssets` is limited to test USDC.
+  - It buys one call from the first available miner in `LLM_MINERS` via `POST /engine/v1/ask/<minerId>`, paid from the spend wallet. The quote is refused above `MAX_MODEL_COST_USDC`. Since 5 Nov the payment uses the `escrow` scheme rather than x402 `exact` (2.0 s against 13.3 s median per call, research R7).
   - The system prompt says the text is data, not instructions.
-  - A reply that doesn't parse into the item schema is a failure, even with `200`, and trips a 15-minute circuit breaker for that miner in Redis.
+  - A reply that doesn't parse into the item schema is a failure, even with `200`. From the third failure in a row, a circuit breaker in Redis skips that miner for 1, 3, 9 and then at most 15 minutes (changed 5 Nov from 15 minutes after one failure).
   - `LLM_TIMEOUT_MS` applies.
   - It sends version sections batched per call, each under an opaque section id. Releases fully handled by `rules.ts` are skipped.
   - It asks for JSON items `{sectionId, kind, evidenceType, change, excerpt, inferredFrom, migration, migrationExcerpt, migrationInferredFrom}`, validated with zod.
   - It never passes or accepts versions, dates or URLs.
   - It asks `budget.canCallModel` before every call, and records the miner id, calls, input size, cost and failure reason.
-  - Without `MINER_SPEND_KEY` or `LLM_MINERS`, or after a failure, it is skipped. The extractor mode `rules_only` then goes into `PROCESSING_VERSION`, and that answer is not cached.
+  - Without `MINER_SPEND_KEY` or `LLM_MINERS`, or after a failure, it is skipped. The extractor mode `rules_only` then goes into `PROCESSING_VERSION`, and that answer is cached for one hour only.
   - Tests stub the LLM miner and never buy.
 - [x] T039 [US1] Implement `verify(items, sources)` in `miner/src/extract/verify.ts`.
   - It normalizes each source once and drops every item whose `excerpt` is not an exact substring.
@@ -276,25 +276,25 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 
 **Independent Test**: a transition where A has an OSV advisory fixed at or before B, and the release notes mention it. The answer names the advisory, its severity and range, quotes the note, gives `conclusion: fixed_by_upgrade`, and shows `security.status: complete`.
 
-- [ ] T049 [P] [US4] Record OSV fixtures into `miner/test/fixtures/osv/`, for both A and B queries:
+- [x] T049 [P] [US4] Record OSV fixtures into `miner/test/fixtures/osv/`, for both A and B queries:
   - one per row of the US4 correlation table, from real packages (for example `lodash` 4.17.20 and `minimist` 1.2.5);
   - a multi-range record where B is newer than A but still affected;
   - an advisory affecting B but not A;
   - records using `introduced: "0"`, `last_affected` and `limit`;
   - a versions-only record;
   - an OSV `503` and a paged response.
-- [ ] T050 [US4] Implement `advisoriesFor(pkg, A, B)` in `miner/src/sources/osv.ts`:
+- [x] T050 [US4] Implement `advisoriesFor(pkg, A, B)` in `miner/src/sources/osv.ts`:
   - two `POST https://api.osv.dev/v1/query` calls via `safeFetch` and the manifest, each a consulted source;
   - the union of advisories, keeping aliases, the severity entries as they are, `displaySeverity`, and every npm range with all its events plus the `versions` list;
   - it returns `Security.status` and `checkedAt`.
-- [ ] T051 [US4] Implement `isAffected(advisory, version)` in `miner/src/affected.ts`, per the data-model.md affected check:
+- [x] T051 [US4] Implement `isAffected(advisory, version)` in `miner/src/affected.ts`, per the data-model.md affected check:
   - events sorted per range, with `introduced: "0"` handled as the lowest version and never passed to `semver`;
   - `fixed` exclusive and `last_affected` inclusive;
   - `limit` as a cap on the whole range;
   - the explicit `versions` list.
 
   It returns `yes`, `no` or `unknown`.
-- [ ] T052 [P] [US4] Unit tests in `miner/test/unit/affected.test.ts`:
+- [x] T052 [P] [US4] Unit tests in `miner/test/unit/affected.test.ts`:
   - vulnerable 1.0.0–1.0.5, fixed 1.0.6, affected again 3.0.0–3.0.2, fixed 3.0.3: `3.0.1` is affected and `2.0.0` is not;
   - unsorted events;
   - `introduced: "0"`;
@@ -302,21 +302,27 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
   - `limit`;
   - a versions-only record;
   - an unknown range type → `unknown`.
-- [ ] T053 [US4] Implement `correlate(advisories, changes, A, B)` in `miner/src/correlate.ts`.
+- [x] T053 [US4] Implement `correlate(advisories, changes, A, B)` in `miner/src/correlate.ts`.
   - It sets `fromAffected`, `targetAffected` and `conclusion` per advisory, including `introduced_by_upgrade`.
   - It links documented `security_fix` items by CVE/GHSA id or alias.
   - With no evidence it makes no claim.
 
   Add the OSV sources to the consulted set in `miner/src/answer.ts`.
-- [ ] T054 [US4] Add the security section to `miner/src/render.ts`:
+- [x] T054 [US4] Add the security section to `miner/src/render.ts`:
   - "OSV checked, no known advisories" only when `status = complete`, and "advisory check unavailable" or "partial" otherwise;
   - one line per advisory with its conclusion.
 
   An OSV failure never changes the migration outcome. It lowers confidence and prevents caching, per data-model.md.
-- [ ] T055 [US4] Unit tests in `miner/test/unit/correlate.test.ts`, one per correlation-table row, plus:
+- [x] T055 [US4] Unit tests in `miner/test/unit/correlate.test.ts`, one per correlation-table row, plus:
   - "a newer version alone is never a security fix";
   - an OSV outage still yields `found`, with `security.status: unavailable` and no cache entry;
   - a changed OSV response changes the answer key.
+
+**Status (2026-11-04)**: Phase 5 is done; 178 unit tests pass. `PROCESSING_VERSION` is now `p3`. Notes:
+- T049: real OSV responses are recorded for `lodash` 4.17.20 and 4.17.21, `minimist` 0.2.4, 1.2.5 and 1.2.6 (two ranges, `introduced: "0"`, B newer but still affected, an advisory only B is affected by), and `zod` 3.23.8 and 4.0.0. No real npm record with `limit` or with `versions` only was found, so those, unsorted events, a paged response and a `503` are synthetic records in `affected.test.ts` and `osv.test.ts`.
+- `Advisory` gained `summary` (OSV's one-line title) for the rendered line.
+- A `not_found` answer also shows the security line and its advisories.
+- Checked locally against the live npm, GitHub and OSV on 4 Nov: lodash 4.17.20 → 4.17.21 lists 2 advisories fixed by the upgrade and 2 still affecting 4.17.21; minimist 1.2.5 → 1.2.6 is `fixed_by_upgrade`; minimist 0.2.4 → 1.2.5 is `introduced_by_upgrade`.
 
 **Checkpoint**: all P1 stories are done.
 
@@ -326,14 +332,14 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 
 **Purpose**: plan phase 9. Show answer quality before a paid provider is registered.
 
-- [ ] T056 Build the benchmark set in `miner/bench/transitions.json`:
+- [x] T056 Build the benchmark set in `miner/bench/transitions.json`:
   - 30 reviewed transitions across different packages and release styles: monorepos, scoped packages, sparse changelogs, at least one 0.x package, and at least 5 multi-release jumps, some of them beyond the US1 model budget;
-  - the expected breaking changes and migration steps for each, prepared by two reviewers;
+  - the expected breaking changes and migration steps for each, drafted by one model, checked against the sources by at least two other models, with every quote verified word for word;
   - 10 or more negative cases, including a simulated upstream outage and an OSV outage.
-- [ ] T057 Implement the benchmark harness in `miner/bench/run.ts`.
+- [x] T057 Implement the benchmark harness in `miner/bench/run.ts`.
   - It runs the set against a local or deployed URL, with the key.
   - It writes `miner/bench/report.md` with SC-001 to SC-006, SC-008, SC-011 and SC-012, plus p50/p95 latency, model calls and cost, split into cache-hit and first-time runs.
-- [ ] T058 [P] Security tests in `miner/test/unit/security.test.ts` (SC-008):
+- [x] T058 [P] Security tests in `miner/test/unit/security.test.ts` (SC-008):
   - a release note containing instruction text produces no behaviour change and no extra fetch;
   - a package with an `install` script is never executed (nothing is downloaded);
   - a repository URL pointing at a private host is refused;
@@ -341,6 +347,13 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 - [ ] T059 Run the benchmark on the preview and commit `miner/bench/report.md`.
   - **Gate**: SC-001 to SC-006, SC-008 and SC-012 pass, excluding only the jumps beyond the US1 model budget, which must still be reported as partial with the cut releases named. First-time cost must be within the planned price.
   - If the gate fails, fix before Phase 7.
+
+  Status 5 Nov, preview `p5-bench6` (`bench/report.md`, `bench/judge-report.md`):
+  - Pass: SC-001 (673/673), SC-003 (0 invented), SC-004 (8/8), SC-005 (38/38), SC-006 identical and free repeats (38/38), SC-008 (security tests) and SC-012 (38/38).
+  - SC-002 recall: 67.1% by word matching. With the judge it is 82.6%; 2 of the judged pairs were read by hand and found wrong, which leaves 82.1% (302/368), above the 80% target.
+  - Not met, and deferred by decision on 5 Nov so that registration can go ahead: repeat latency p95 is 1056 ms against a target under 500 ms. A repeat still revalidates every source to compute its cache key; a short cache keyed by package and versions would fix it.
+  - Not run: n08 and n09, which need a local run with a simulated outage.
+  - First-time cost: at most one model call at 0.01 USDC per answer.
 
 ---
 
@@ -350,16 +363,16 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 
 **Independent Test**: a wallet the team does not control buys one answer through Telegraph, with receipt, signal and settlement evidence.
 
-- [ ] T060 [US5] ⚠ Deploy to Vercel production from `miner/`, on the plan chosen in T021 (Pro spends money). Set the env vars in the dashboard, add the Upstash Redis integration from the Vercel Marketplace, and record the production URL in `miner/bench/network.md`
-- [ ] T061 [US5] ⚠ Create two miner wallets, both separate from the bot's `0x46D0…C77b`, and record only their addresses in `miner/bench/network.md`:
+- [x] T060 [US5] ⚠ Deploy to Vercel production from `miner/`, on the plan chosen in T021 (Pro spends money). Set the env vars in the dashboard, add the Upstash Redis integration from the Vercel Marketplace, and record the production URL in `miner/bench/network.md`
+- [x] T061 [US5] ⚠ Create two miner wallets, both separate from the bot's `0x46D0…C77b`, and record only their addresses in `miner/bench/network.md`:
   - **Payout wallet**: its key goes in a local gitignored file only, never in chat, the repo or the server.
   - **Spend wallet** (research R11): mint a small test-USDC balance to it, and set its key as `MINER_SPEND_KEY` in Vercel production.
-- [ ] T062 [US5] Finalize and validate `miner/specs/001-package-release-miner/contracts/telegraph-miner.yaml`:
+- [x] T062 [US5] Finalize and validate `miner/specs/001-package-release-miner/contracts/telegraph-miner.yaml`:
   - the production `base_url`;
   - an unused numeric `id` and an unused slug, checked with `GET /api/miners`;
   - `external_path`, the auth header, `errors`, the rate limits, `on_chain.transform` and `min_price_usdc` as a decimal;
   - re-check the field rules against the live YAML docs, and `isCanonicalIntent("QUESTION_ANSWERING_GENERAL")` live.
-- [ ] T063 [US5] ⚠ Register, install the key and run the paid tests, in this order, recording each step in `miner/bench/network.md`:
+- [x] T063 [US5] ⚠ Register, install the key and run the paid tests, in this order, recording each step in `miner/bench/network.md`:
   1. Register at anjoman.ai/dashboard/earn from the payout wallet. This is on chain and permanent. Record the registration tx, id and activation status.
   2. Immediately afterwards, generate the API key locally, install it against the slug (signed by the payout wallet), and set the same value as `MINER_API_KEY` in Vercel production. Verify that a direct unauthenticated call gets `401` and does no work. Record the install time, never the key.
   3. Paid test from the bot wallet, capped at 0.03 test USDC:
@@ -368,6 +381,14 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
      - one more direct call with `SIMULATE_UPSTREAM_OUTAGE=1` set on production for that call only and removed straight after. Compare `declaredFailure` in our metrics with `charged` on Telegraph's receipt.
 
      Capture the routed request as our endpoint received it. Record the receipt, signal, tx, which miner answered, the latency and the charge. Update research R1 and `render.ts` if the routed request differs from the sandbox one. Note that the bot wallet is team-controlled.
+
+  Status 6 Nov (`miner/bench/network.md`):
+  - Registered: registrationId 5083, miner id 7314, slug `package-release-intel`, `active`, floor 0.02 USDC; registerMiner tx `0xffa82f09…4157`.
+  - Key installed and validated by the node.
+  - Paid tests: the direct call was served by our miner, settled 0.02 USDC. The routed call was classified as `WEB_SEARCH_GENERAL` and went to another miner.
+  - Not run: the outage call, which needs `SIMULATE_UPSTREAM_OUTAGE` on production.
+  - Evaluation pool: not re-checked before registering. Read afterwards, it had 4 eligible submitters against `min_submitters` 5 (`docs/telegraph/qa-evalpool-2026-11-06.md`). The miner is registered but cannot be scored on this intent yet.
+
 - [ ] T064 [US5] Ranking check (plan phase 11), from the three endpoints in research R12:
   - `/api/miners?intent=…` (`scores[]`, `activation_status`, `scored`);
   - `/engine/v1/intents/QUESTION_ANSWERING_GENERAL/miners` (whether the miner is listed);

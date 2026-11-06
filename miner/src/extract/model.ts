@@ -1,6 +1,5 @@
 // Model extraction bought on Telegraph (research R7, step 2; R11). The model only proposes; verify.ts decides.
-import { ExactEvmScheme, toClientEvmSigner } from "@x402/evm";
-import { wrapFetchWithPayment, x402Client } from "@x402/fetch";
+import { randomUUID } from "node:crypto";
 import { privateKeyToAccount } from "viem/accounts";
 import semver from "semver";
 import { z } from "zod";
@@ -33,12 +32,14 @@ export function llmMinersFromEnv(env: NodeJS.ProcessEnv): LlmMiner[] {
 export class ModelFailure extends Error {
   /**
    * `payment` means nothing was paid (no quote, or a quote over the cap). For the others, `costMicroUsdc` is the
-   * amount that may have been paid; null when unknown.
+   * amount that may have been paid; null when unknown. `minerAtFault` is false when our side caused it (an
+   * escrow refusal for our balance), so the miner is not put behind the circuit breaker.
    */
   constructor(
     readonly reason: "timeout" | "invalid_reply" | "payment",
     message: string,
-    readonly costMicroUsdc: number | null = null
+    readonly costMicroUsdc: number | null = null,
+    readonly minerAtFault = true
   ) {
     super(message);
     this.name = "ModelFailure";
@@ -53,36 +54,41 @@ export interface ModelReply {
 /** Buys one call from one LLM miner. Throws ModelFailure. */
 export type ModelCaller = (miner: LlmMiner, prompt: string, signal: AbortSignal) => Promise<ModelReply>;
 
-// Sepolia test USDC (docs/telegraph snapshot); the spend wallet never pays in anything else.
-const TEST_USDC = "0xcc194e1a843B658526D0D5C431f670028582Ae17";
+// Sepolia (docs/telegraph snapshot). The spend wallet pays only into the Telegraph Diamond's escrow.
 const SEPOLIA = "eip155:11155111";
+const DIAMOND = "0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b";
+/** Escrow authorizations are valid for at most 2 minutes; the docs' examples use now - 5 to now + 100. */
+const VALID_FOR_SEC = 100;
+
+interface EscrowOffer {
+  scheme?: string;
+  network?: string;
+  amount?: string;
+  payTo?: string;
+  extra?: { message?: string };
+}
 
 function decodeHeader<T>(raw: string | null): T | null {
   if (!raw) return null;
   try {
     return JSON.parse(atob(raw)) as T;
   } catch (err) {
-    console.warn(JSON.stringify({ kind: "x402_header_unreadable", error: String(err) }));
+    console.warn(JSON.stringify({ kind: "payment_header_unreadable", error: String(err) }));
     return null;
   }
 }
 
-/** The real caller: POST /engine/v1/ask/<minerId>, paid from MINER_SPEND_KEY. Null when not configured. */
+/**
+ * The real caller: POST /engine/v1/ask/<minerId>, paid with the `escrow` scheme from MINER_SPEND_KEY's prefunded
+ * Telegraph escrow balance (research R7). Escrow settles at epoch close, so a call has no per-request transaction:
+ * about 2 s against 13 s for x402 `exact` (miner/bench/network.md, 5 Nov). Null when not configured.
+ */
 export function telegraphCaller(env: NodeJS.ProcessEnv, maxCostMicroUsdc: number): ModelCaller | null {
   const key = env.MINER_SPEND_KEY;
   const node = (env.TELEGRAPH_NODE_URL ?? "").replace(/\/$/, "");
   if (!key || !node) return null;
-
-  const client = x402Client.fromConfig({
-    schemes: [{ network: SEPOLIA, client: new ExactEvmScheme(toClientEvmSigner(privateKeyToAccount(key as `0x${string}`))) }],
-    spendControls: { allowedAssets: [{ network: SEPOLIA, asset: TEST_USDC, maxAmountPerPayment: String(maxCostMicroUsdc) }] },
-    // Default assets are allowed by spend controls too; this policy removes everything but test USDC.
-    policies: [
-      (_version, requirements) =>
-        requirements.filter((r) => r.network === SEPOLIA && r.asset.toLowerCase() === TEST_USDC.toLowerCase()),
-    ],
-  });
-  const paidFetch = wrapFetchWithPayment(fetch, client);
+  const account = privateKeyToAccount(key as `0x${string}`);
+  const from = account.address.toLowerCase();
 
   return async (miner, prompt, signal) => {
     const url = `${node}/engine/v1/ask/${encodeURIComponent(miner.id)}`;
@@ -100,21 +106,45 @@ export function telegraphCaller(env: NodeJS.ProcessEnv, maxCostMicroUsdc: number
       // Nothing is paid before the quote, so the next miner may still be tried.
       throw new ModelFailure("payment", `miner ${miner.id}: quote request failed: ${signal.aborted ? "timed out" : String(err)}`);
     }
-    let amount: number | null = null;
+    const offered = decodeHeader<{ accepts?: EscrowOffer[] }>(quote.headers.get("payment-required"));
+    const offer = offered?.accepts?.find((a) => a.scheme === "escrow" && a.network === SEPOLIA);
+    const amount = Number(offer?.amount);
+    const template = offer?.extra?.message;
+    if (quote.status !== 402 || !Number.isInteger(amount) || !template) {
+      throw new ModelFailure("payment", `miner ${miner.id}: no escrow quote (HTTP ${quote.status})`);
+    }
+    if (amount > maxCostMicroUsdc) {
+      throw new ModelFailure("payment", `miner ${miner.id}: quote ${amount} exceeds ${maxCostMicroUsdc} micro-USDC`);
+    }
+    // The signature covers the node's template as is, so check it names our payee, network and amount before signing.
+    const expected = [`Pay To: ${DIAMOND}`, `Network: ${SEPOLIA}`, `Amount: ${amount} uUSDC`];
+    if (offer?.payTo?.toLowerCase() !== DIAMOND.toLowerCase() || !expected.every((line) => template.toLowerCase().includes(line.toLowerCase()))) {
+      throw new ModelFailure("payment", `miner ${miner.id}: escrow quote does not match the Telegraph Diamond`);
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const authorization = {
+      from,
+      to: offer.payTo,
+      value: String(amount),
+      validAfter: String(now - 5),
+      validBefore: String(now + VALID_FOR_SEC),
+      nonce: randomUUID(),
+    };
     try {
-      const offered = decodeHeader<{ accepts?: { network?: string; asset?: string; amount?: string }[] }>(
-        quote.headers.get("payment-required")
-      );
-      const option = offered?.accepts?.find((a) => a.network === SEPOLIA && a.asset?.toLowerCase() === TEST_USDC.toLowerCase());
-      const quoted = Number(option?.amount);
-      if (quote.status !== 402 || !Number.isInteger(quoted)) {
-        throw new ModelFailure("payment", `miner ${miner.id}: no test USDC quote (HTTP ${quote.status})`);
+      const message = template
+        .replace("{from}", from)
+        .replace("{nonce}", authorization.nonce)
+        .replace("{validAfter}", authorization.validAfter)
+        .replace("{validBefore}", authorization.validBefore);
+      const signature = await account.signMessage({ message });
+      const header = btoa(JSON.stringify({ x402Version: 2, scheme: "escrow", network: SEPOLIA, payload: { signature, authorization } }));
+      const response = await fetch(url, { ...init, headers: { ...init.headers, "X-PAYMENT": header } });
+      if (response.status === 402) {
+        // A refusal (for example "insufficient escrow for delivery") is not billed.
+        const refusal = (await response.json().catch(() => ({}))) as { reason?: unknown };
+        throw new ModelFailure("payment", `miner ${miner.id}: escrow refused: ${String(refusal.reason ?? "no reason")}`, null, false);
       }
-      if (quoted > maxCostMicroUsdc) {
-        throw new ModelFailure("payment", `miner ${miner.id}: quote ${quoted} exceeds ${maxCostMicroUsdc} micro-USDC`);
-      }
-      amount = quoted;
-      const response = await paidFetch(url, init);
       if (!response.ok) throw new ModelFailure("invalid_reply", `miner ${miner.id}: HTTP ${response.status}`, amount);
       const body = (await response.json()) as { result?: unknown };
       return { text: replyText(body.result), costMicroUsdc: amount };
@@ -157,6 +187,7 @@ const Reply = z.object({ items: z.array(ReplyItem) });
 const JSON_INSTRUCTIONS = `Return only JSON, no prose:
 {"items":[{"id":"i1","sectionId":"x1","kind":"breaking","inferred":false,"change":"what changed","excerpt":"words copied exactly from the section","inferredFrom":[],"migration":"what to do, or null","migrationExcerpt":"words copied exactly from the section that state the step, or null","migrationInferredFrom":[]}]}
 kind is breaking, deprecation or security_fix. Include only those; skip features and fixes.
+List breaking changes first, then deprecations, then security fixes, and keep "change" short: a long reply is cut off.
 An inferred item (a likely concern the text implies but does not state) has "inferred":true, "excerpt":null, and lists in inferredFrom the ids of the items it rests on.
 If the section does not state the migration step in its own words, set migrationExcerpt to null; if you still suggest a step, list in migrationInferredFrom the item ids or section ids it rests on.`;
 
@@ -174,8 +205,38 @@ ${lineFormat ? LINE_INSTRUCTIONS : JSON_INSTRUCTIONS}`;
   return `${header}\n\n${sections.map((s) => `<section id="${s.id}">\n${s.text}\n</section>`).join("\n\n")}`;
 }
 
+/**
+ * The JSON reply, or the items before the cut when the reply was cut off: 302 replies stop at about 1,500–2,000
+ * characters (5 Nov), so a long JSON list ends mid-item. Items hold no nested objects, so a valid parse of
+ * `{"items":[...}]}` is only possible at an item boundary. Null when nothing parses.
+ */
+function readItems(json: string): { parsed: unknown; truncated: boolean } | null {
+  // A whole object, even with prose after it ("{...}\n\nNote: use `{ message }` instead."): that reply was not
+  // cut. The prose may hold a "}" of its own, so the object may end at any "}" from the last one back.
+  for (let end = json.lastIndexOf("}"); end > 0; end = json.lastIndexOf("}", end - 1)) {
+    try {
+      return { parsed: JSON.parse(json.slice(0, end + 1)), truncated: false };
+    } catch {
+      // Not a whole object yet: try the "}" before.
+    }
+  }
+  for (let end = json.lastIndexOf("}"); end > 0; end = json.lastIndexOf("}", end - 1)) {
+    try {
+      return { parsed: JSON.parse(`${json.slice(0, end + 1)}]}`), truncated: true };
+    } catch {
+      // A "}" inside an excerpt or a cut item: try the one before.
+    }
+  }
+  return null;
+}
+
 /** Parses a reply into candidates; throws ModelFailure("invalid_reply") when it does not fit the schema. */
-export function parseReply(text: string, sectionIndex: Map<string, number>, lineFormat: boolean, refPrefix: string): Candidate[] {
+export function parseReply(
+  text: string,
+  sectionIndex: Map<string, number>,
+  lineFormat: boolean,
+  refPrefix: string
+): { candidates: Candidate[]; truncated: boolean } {
   if (lineFormat) {
     // An echoed format header or a "none" row is the model saying it found nothing.
     const lines = text
@@ -193,14 +254,14 @@ export function parseReply(text: string, sectionIndex: Map<string, number>, line
       }];
     });
     if (lines.length > 0 && candidates.length === 0) throw new ModelFailure("invalid_reply", "no line fits the format");
-    return candidates;
+    return { candidates, truncated: false };
   }
 
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
+  const read = readItems(text.slice(Math.max(text.indexOf("{"), 0)));
   let parsed: z.infer<typeof Reply>;
   try {
-    parsed = Reply.parse(JSON.parse(text.slice(start, end + 1)));
+    if (read === null) throw new Error("no JSON object");
+    parsed = Reply.parse(read.parsed);
   } catch (err) {
     throw new ModelFailure("invalid_reply", `reply is not the item schema: ${String(err).slice(0, 200)}`);
   }
@@ -209,7 +270,7 @@ export function parseReply(text: string, sectionIndex: Map<string, number>, line
   const seen = new Set<string>();
   const items = parsed.items.filter((item) => !seen.has(item.id) && seen.add(item.id));
   const refs = new Map(items.map((item) => [item.id, `${refPrefix}${item.id}`]));
-  return items.flatMap((item): Candidate[] => {
+  const candidates = items.flatMap((item): Candidate[] => {
     const section = sectionIndex.get(item.sectionId);
     if (section === undefined) return [];
     const ref = (id: string) => refs.get(id) ?? (sectionIndex.has(id) ? `section:${sectionIndex.get(id)}` : id);
@@ -219,6 +280,7 @@ export function parseReply(text: string, sectionIndex: Map<string, number>, line
       migrationExcerpt: item.migrationExcerpt, migrationInferredFrom: item.migrationInferredFrom.map(ref),
     }];
   });
+  return { candidates, truncated: read!.truncated };
 }
 
 export interface ModelResult {
@@ -234,7 +296,14 @@ export interface ModelResult {
   skipped: number[];
 }
 
-const BREAKER_SEC = 15 * 60;
+/**
+ * Circuit breaker. One bad reply is forgiven: 302 sometimes answers without JSON while it works (5 Nov). From the
+ * third failure in a row the miner is skipped for 1, 3, 9, then at most 15 minutes. A good reply resets the streak.
+ */
+const FAILURES_BEFORE_BREAK = 3;
+const BREAK_SEC = [60, 180, 540, 900];
+/** A streak older than this starts again from one. */
+const FAILURE_STREAK_SEC = 60 * 60;
 // Prompt instructions and section tags on top of the section text.
 const PROMPT_OVERHEAD_CHARS = 1_500;
 
@@ -317,15 +386,28 @@ export async function extractModel(
     result.minerId = miner.id;
     try {
       const reply = await withinSignal(caller(miner, prompt, signal), signal, miner.id);
+      let read: ReturnType<typeof parseReply>;
+      try {
+        read = parseReply(reply.text, ids, lineFormat, `m${miner.id}-`);
+      } catch (err) {
+        // The call was paid: carry its cost into the one failure record below.
+        if (err instanceof ModelFailure) throw new ModelFailure(err.reason, err.message, reply.costMicroUsdc);
+        throw err;
+      }
       budget.recordModelCall(prompt.length, reply.costMicroUsdc, chosen.length);
       result.inputChars += prompt.length;
       result.costMicroUsdc += reply.costMicroUsdc;
       result.msModel += now() - startedAt;
-      result.candidates = parseReply(reply.text, ids, lineFormat, `m${miner.id}-`);
+      result.candidates = read.candidates;
       // Reply text is untrusted and may be long: only its size and the item count are logged.
-      console.info(JSON.stringify({ kind: "llm_reply", minerId: miner.id, chars: reply.text.length, items: result.candidates.length, ms: now() - startedAt }));
-      result.complete = result.skipped.length === 0;
+      console.info(JSON.stringify({
+        kind: "llm_reply", minerId: miner.id, chars: reply.text.length, items: read.candidates.length, truncated: read.truncated, ms: now() - startedAt,
+      }));
+      // A cut-off reply may have dropped items, so the model pass is not complete. The answer is still kept: asking
+      // again would pay for the same cut. Breaking changes come first in the prompt, so the cut drops the least.
+      result.complete = result.skipped.length === 0 && !read.truncated;
       result.failure = null;
+      await store.del(`llm:failures:${miner.id}`);
       return result;
     } catch (err) {
       result.msModel += now() - startedAt;
@@ -338,8 +420,15 @@ export async function extractModel(
       if (err.reason !== "payment") {
         budget.recordModelCall(prompt.length, err.costMicroUsdc ?? budget.limits.maxModelCostMicroUsdc, chosen.length);
       }
-      // The miner is not at fault when the answer's own deadline aborted the call.
-      if (!budget.signal.aborted) await store.set(`llm:breaker:${miner.id}`, err.reason, BREAKER_SEC);
+      // The miner is not at fault when the answer's own deadline aborted the call or our escrow refused it.
+      if (!budget.signal.aborted && err.minerAtFault) {
+        const streak = await store.incr(`llm:failures:${miner.id}`, FAILURE_STREAK_SEC);
+        if (streak >= FAILURES_BEFORE_BREAK) {
+          const breakSec = BREAK_SEC[Math.min(streak - FAILURES_BEFORE_BREAK, BREAK_SEC.length - 1)];
+          await store.set(`llm:breaker:${miner.id}`, err.reason, breakSec);
+          console.warn(JSON.stringify({ kind: "llm_breaker", minerId: miner.id, streak, breakSec }));
+        }
+      }
     }
   }
   result.skipped = needed;
