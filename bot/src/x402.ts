@@ -7,8 +7,9 @@ export interface Purchase {
   intent: string;
   minerId: string;
   minerName: string;
-  minerRank: number;
-  minerScore: number;
+  /** The miner's leaderboard rank and score for the intent; null when the node gave none (an unranked miner). */
+  minerRank: number | null;
+  minerScore: number | null;
   amountUsdc: number;
   txHash: string;
   receiptHash: string;
@@ -36,8 +37,9 @@ export interface RankedMiner {
   name: string;
   method: string;
   path: string;
-  rank: number;
-  score: number;
+  /** Null for a preferred miner the node has not ranked: never a rank the node did not give. */
+  rank: number | null;
+  score: number | null;
   selectedBy: "rank" | "our_choice";
 }
 
@@ -152,12 +154,12 @@ export function rankMiners(intent: string, miners: ApiMiner[]): RankedMiner[] {
       selectedBy: "rank",
     });
   }
-  return ranked.sort((a, b) => a.rank - b.rank);
+  return ranked.sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity));
 }
 
 /**
  * The miner we chose ourselves, if the node lists it for this intent: it need not be ranked yet. Rank and score
- * are its leaderboard values when it has them, else 0.
+ * are its leaderboard values when it has them, else null (SPEC §2.4: "rank unavailable").
  */
 export function preferredMiner(intent: string, miners: ApiMiner[], id: string): RankedMiner | null {
   const m = miners.find((x) => String(x.id) === id);
@@ -170,8 +172,8 @@ export function preferredMiner(intent: string, miners: ApiMiner[], id: string): 
     name: m.name ?? id,
     method: ep.method ?? "GET",
     path: ep.path,
-    rank: typeof s?.rank === "number" ? s.rank : 0,
-    score: s?.score ?? 0,
+    rank: typeof s?.rank === "number" ? s.rank : null,
+    score: typeof s?.rank === "number" ? s.score ?? null : null,
     selectedBy: "our_choice",
   };
 }
@@ -244,7 +246,7 @@ export class IntelligenceClient {
         return await this.buyFrom(intent, query, miner, onAttempt);
       } catch (err) {
         if (!(err instanceof AskFailedError)) throw err;
-        failures.push(`#${miner.rank} ${miner.id}: ${err.message}`);
+        failures.push(`#${miner.rank ?? "unranked"} ${miner.id}: ${err.message}`);
       }
     }
     throw new AskFailedError(`${intent}: no ranked miner answered — ${failures.join(" | ") || "none ranked"}`);

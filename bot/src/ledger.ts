@@ -15,8 +15,9 @@ export interface LedgerRow {
   intent: string;
   minerId: string;
   minerName: string;
-  minerRank: number;
-  minerScore: number;
+  /** Null when the node gave the miner no rank or score for the intent (an unranked miner we chose). */
+  minerRank: number | null;
+  minerScore: number | null;
   amountUsdc: number;
   txHash: string;
   receiptHash: string;

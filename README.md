@@ -139,7 +139,7 @@ Variables read by the current slice:
 | `BUDGET_CAP_USDC` | Ceiling for one CLI invocation, enforced in the application |
 | `TELEGRAPH_EVM_PRIVATE_KEY` | The paying wallet. Dedicated, low balance, never committed, never printed, never exposed to repository code |
 | `GH_PAT`, `DEMO_REPO` | Token and `owner/repo` for pushing the ledger branch |
-| `PREFERRED_MINER_ID` | Optional. A miner id to try before the leaderboard, even if it is not ranked yet; on a failed call the client steps down to the ranked miners. Its purchases are recorded with `selectedBy: "our_choice"`, ranked ones with `"rank"` (SPEC §2.4). Unset or empty: rank only |
+| `PREFERRED_MINER_ID` | Optional. A miner id to try before the leaderboard, even if it is not ranked yet; on a failed call the client steps down to the ranked miners. Its purchases are recorded with `selectedBy: "our_choice"`, ranked ones with `"rank"` (SPEC §2.4). If the node has not ranked it, `minerRank` and `minerScore` are `null`. Unset or empty: rank only |
 | `LLM_API_KEY`, `LLM_BASE_URL` | Required by config validation today but unused by the slice. Known defect: they are to be removed from validation until patch generation exists. Until then the template's placeholder values pass; never put a real key here for the slice |
 
 ## Network and spending limits

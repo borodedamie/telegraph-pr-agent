@@ -166,8 +166,15 @@ describe("IntelligenceClient.buy", () => {
     const paymentFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => engine200({ miner_id: "7314", miner_name: "Package Release Intelligence" }));
     const { client } = makeClient({ fetchImpl: fetchImpl as unknown as typeof fetch, paymentFetch, preferredMinerId: "7314" });
     const p = await client.buy("QUESTION_ANSWERING", "What changed in zod from 3.23.8 to 4.0.0?");
-    expect([p.minerId, p.minerRank, p.selectedBy]).toEqual(["7314", 0, "our_choice"]);
+    // Unranked: no rank or score is recorded, rather than a 0 that reads as better than rank 1.
+    expect([p.minerId, p.minerRank, p.minerScore, p.selectedBy]).toEqual(["7314", null, null, "our_choice"]);
     expect(String(paymentFetch.mock.calls[0][0])).toBe("https://devnode.test/engine/v1/ask/7314");
+  });
+
+  it("records a preferred miner's real rank and score when the node has ranked it", async () => {
+    const { client } = makeClient({ preferredMinerId: "148001" });
+    const p = await client.buy("QUESTION_ANSWERING", "x");
+    expect([p.minerRank, p.minerScore, p.selectedBy]).toEqual([4, 0.47, "our_choice"]);
   });
 
   it("steps down to the leaderboard when our preferred miner fails, and labels that purchase by rank", async () => {
