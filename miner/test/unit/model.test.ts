@@ -239,6 +239,10 @@ describe("parseReply", () => {
     const chatty = parseReply(`Here you go:\n${full}\n\nNote: all items are from the release notes.`, new Map([["x1", 0]]), false, "m-");
     expect(chatty.truncated).toBe(false);
     expect(chatty.candidates).toHaveLength(3);
+    // Prose with a brace of its own after the object is still not a cut.
+    const braced = parseReply(`${full}\n\nNote: use \`{ message }\` instead.`, new Map([["x1", 0]]), false, "m-");
+    expect(braced.truncated).toBe(false);
+    expect(braced.candidates).toHaveLength(3);
     expect(() => parseReply('{"items":[{"id":"i1","sec', new Map([["x1", 0]]), false, "m-")).toThrow(ModelFailure);
   });
 
