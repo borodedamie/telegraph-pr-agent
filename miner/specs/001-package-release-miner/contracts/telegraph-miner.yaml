@@ -1,10 +1,6 @@
-# DRAFT registration file. Do not register until the benchmark gate in plan.md passes:
-# registration is on chain and cannot be edited. Before registering, re-check:
-#   - the canonical intent id:
-#       cast call 0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b "isCanonicalIntent(string)(bool)" "QUESTION_ANSWERING_GENERAL" --rpc-url https://ethereum-sepolia-rpc.publicnode.com
-#   - the field rules at https://anjoman.ai/docs/miners/yaml-config (snapshot: docs/telegraph/miner-yaml-and-ranking-2026-11-03.md)
-#   - that `id` and `slug` are unused: GET /api/miners
-# The X-Telegraph-Key value is never in this file; it is installed against the slug after registration.
+# Telegraph miner registration for the npm package-release miner (miner/ in github.com/lemind/telegraph-pr-agent).
+# Registered from a commit-pinned URL; its SHA-256 is committed on chain. The X-Telegraph-Key value is never in
+# this file: it is installed against the slug after registration.
 version: "1"
 kind: miner
 id: 7314                                # unused on the dev node on 6 Nov (GET /api/miners, 2009 miners)
@@ -58,7 +54,7 @@ semantics:
     confidence_field: confidence
 on_chain:
   transform: direct
-  min_price_usdc: 0.01                  # decimal USDC; keep only if measured cost allows (FR-027)
+  min_price_usdc: 0.02                  # decimal USDC: a first-time answer may buy one 0.01 model call (FR-027)
   fields:                               # legacy, unread by jobs, but the validator requires it
     strings:
       - index: 0
