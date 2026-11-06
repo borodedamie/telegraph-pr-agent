@@ -15,6 +15,8 @@ export interface Purchase {
   signalHash: string;
   answer: string;
   status: "settled" | "failed";
+  /** Who picked the miner: the leaderboard, or our own PREFERRED_MINER_ID (never reported as the Engine's choice). */
+  selectedBy: "rank" | "our_choice";
   /** From the 402 option that was paid (SPEC §4.5), so links never depend on config. */
   network: string;
   chainId: number;
@@ -36,6 +38,7 @@ export interface RankedMiner {
   path: string;
   rank: number;
   score: number;
+  selectedBy: "rank" | "our_choice";
 }
 
 export class PriceGuardError extends Error {}
@@ -60,6 +63,8 @@ export interface IntelligenceClientDeps {
   usdcAddress: string;
   maxPricePerCallUsdc: number;
   budgetCapUsdc: number;
+  /** Tried before the leaderboard when the node lists it for the intent (SPEC §2.4 manual policy). */
+  preferredMinerId?: string | null;
   fetchImpl?: typeof fetch;
   paymentFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
@@ -144,9 +149,31 @@ export function rankMiners(intent: string, miners: ApiMiner[]): RankedMiner[] {
       path: ep.path,
       rank: s.rank,
       score: s.score ?? 0,
+      selectedBy: "rank",
     });
   }
   return ranked.sort((a, b) => a.rank - b.rank);
+}
+
+/**
+ * The miner we chose ourselves, if the node lists it for this intent: it need not be ranked yet. Rank and score
+ * are its leaderboard values when it has them, else 0.
+ */
+export function preferredMiner(intent: string, miners: ApiMiner[], id: string): RankedMiner | null {
+  const m = miners.find((x) => String(x.id) === id);
+  const eps = m?.endpoints ?? [];
+  const ep = eps.find((e) => (e.description ?? "").includes(intent)) ?? (eps.length === 1 ? eps[0] : undefined);
+  if (!m || !ep?.path) return null;
+  const s = m.scores?.find((x) => x.intent_id === intent);
+  return {
+    id,
+    name: m.name ?? id,
+    method: ep.method ?? "GET",
+    path: ep.path,
+    rank: typeof s?.rank === "number" ? s.rank : 0,
+    score: s?.score ?? 0,
+    selectedBy: "our_choice",
+  };
 }
 
 // The testnet USDC isn't one of @x402's built-in assets, so it must be allow-listed
@@ -176,6 +203,7 @@ export class IntelligenceClient {
   private readonly usdcAddress: string;
   private readonly maxPricePerCallUsdc: number;
   private readonly budgetCapUsdc: number;
+  private readonly preferredMinerId: string | null;
   private readonly fetchImpl: typeof fetch;
   private readonly paymentFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
@@ -185,6 +213,7 @@ export class IntelligenceClient {
     this.usdcAddress = deps.usdcAddress;
     this.maxPricePerCallUsdc = deps.maxPricePerCallUsdc;
     this.budgetCapUsdc = deps.budgetCapUsdc;
+    this.preferredMinerId = deps.preferredMinerId ?? null;
     this.fetchImpl = deps.fetchImpl ?? fetch;
     this.paymentFetch = deps.paymentFetch ?? wrapFetchWithPaymentFromConfig(this.fetchImpl, paymentConfig(deps));
   }
@@ -195,7 +224,10 @@ export class IntelligenceClient {
     );
     if (!res.ok) throw new AskFailedError(`${intent}: miner list HTTP ${res.status}`);
     const body = (await res.json()) as ApiMiner[] | { miners?: ApiMiner[] };
-    return rankMiners(intent, Array.isArray(body) ? body : body.miners ?? []);
+    const miners = Array.isArray(body) ? body : body.miners ?? [];
+    const ranked = rankMiners(intent, miners);
+    const preferred = this.preferredMinerId ? preferredMiner(intent, miners, this.preferredMinerId) : null;
+    return preferred ? [preferred, ...ranked.filter((m) => m.id !== preferred.id)] : ranked;
   }
 
   // The routed /engine/v1/ask re-classifies a free-form query and can ignore
@@ -307,6 +339,7 @@ export class IntelligenceClient {
       minerName: body.miner_name ?? miner.name,
       minerRank: miner.rank,
       minerScore: miner.score,
+      selectedBy: miner.selectedBy,
       amountUsdc: settledUsdc,
       txHash: settle.transaction,
       receiptHash: receipt?.receipt_hash ?? "",

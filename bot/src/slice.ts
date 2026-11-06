@@ -52,6 +52,7 @@ const client = new IntelligenceClient({
   usdcAddress: cfg.usdcAddress,
   maxPricePerCallUsdc: cfg.maxPricePerCallUsdc,
   budgetCapUsdc: cfg.budgetCapUsdc,
+  preferredMinerId: cfg.preferredMinerId,
 });
 
 // Clone and read the ledger BEFORE spending: the guard's whole point is to
@@ -141,6 +142,7 @@ const row: LedgerRow = {
   minerName: purchase.minerName,
   minerRank: purchase.minerRank,
   minerScore: purchase.minerScore,
+  selectedBy: purchase.selectedBy,
   amountUsdc: purchase.amountUsdc,
   txHash: purchase.txHash,
   receiptHash: purchase.receiptHash,

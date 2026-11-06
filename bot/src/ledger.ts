@@ -24,6 +24,8 @@ export interface LedgerRow {
   answer: string;
   timestamp: string;
   status: "settled" | "failed";
+  /** Who picked the miner: the leaderboard, or our PREFERRED_MINER_ID. Absent on rows written before 6 Nov 2026. */
+  selectedBy?: "rank" | "our_choice";
   /** Links the purchase to the attempt that paid for it. Absent on pre-attempt rows. */
   attemptId?: string;
   /**
