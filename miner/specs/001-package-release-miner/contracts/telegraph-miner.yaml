@@ -14,7 +14,7 @@ description: >
   What changed in an npm package between two versions: breaking changes, deprecations
   and security fixes, each with a verbatim quote and a link to the official release notes,
   plus known advisories (OSV) and whether the upgrade fixes them. Says "not found" instead of guessing.
-base_url: https://REPLACE.vercel.app
+base_url: https://telegraph-pr-miner-n30sk.vercel.app    # Vercel production alias (T060, 6 Nov)
 protocol: generic
 auth:
   type: header

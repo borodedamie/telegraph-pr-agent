@@ -363,7 +363,7 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 
 **Independent Test**: a wallet the team does not control buys one answer through Telegraph, with receipt, signal and settlement evidence.
 
-- [ ] T060 [US5] ⚠ Deploy to Vercel production from `miner/`, on the plan chosen in T021 (Pro spends money). Set the env vars in the dashboard, add the Upstash Redis integration from the Vercel Marketplace, and record the production URL in `miner/bench/network.md`
+- [x] T060 [US5] ⚠ Deploy to Vercel production from `miner/`, on the plan chosen in T021 (Pro spends money). Set the env vars in the dashboard, add the Upstash Redis integration from the Vercel Marketplace, and record the production URL in `miner/bench/network.md`
 - [x] T061 [US5] ⚠ Create two miner wallets, both separate from the bot's `0x46D0…C77b`, and record only their addresses in `miner/bench/network.md`:
   - **Payout wallet**: its key goes in a local gitignored file only, never in chat, the repo or the server.
   - **Spend wallet** (research R11): mint a small test-USDC balance to it, and set its key as `MINER_SPEND_KEY` in Vercel production.
