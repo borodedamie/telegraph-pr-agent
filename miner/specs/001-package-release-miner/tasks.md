@@ -387,6 +387,7 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
   - Key installed and validated by the node.
   - Paid tests: the direct call was served by our miner, settled 0.02 USDC. The routed call was classified as `WEB_SEARCH_GENERAL` and went to another miner.
   - Not run: the outage call, which needs `SIMULATE_UPSTREAM_OUTAGE` on production.
+  - Evaluation pool: not re-checked before registering. Read afterwards, it had 4 eligible submitters against `min_submitters` 5 (`docs/telegraph/qa-evalpool-2026-11-06.md`). The miner is registered but cannot be scored on this intent yet.
 
 - [ ] T064 [US5] Ranking check (plan phase 11), from the three endpoints in research R12:
   - `/api/miners?intent=…` (`scores[]`, `activation_status`, `scored`);
