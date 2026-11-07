@@ -48,6 +48,43 @@ Two separate gates. The App never waits on the Miner gate.
 
 ## 2. Bot (GitHub Action)
 
+**Implementation status, 4 Nov 2026.** The action prototype now scans current
+npm and pinned Python requirements, purchases a structured assessment from a
+miner selected from the ranked list (with fallback to the next ranked miner after
+a classified failure), and prepares draft dependency PRs for validated
+CVE/outdated findings. The miner selects recommended versions; the scanner does
+not select targets. At the user's request, a single action invocation now performs
+payment, preparation and publication in one job, without stage inputs or artifact
+files. It executes no repository scripts. npm lock generation receives a minimal
+credential-free subprocess environment and uses `--ignore-scripts`; separate-runner
+isolation remains a production requirement below. Public node/spending settings
+now default in action metadata (devnode URL, 0.10 USDC per call, 2 USDC per run);
+the wallet key remains secret-backed and is never bundled. Supported automatic edits are standalone public npm
+package-lock v2/v3 projects and plain Python `==` requirements; pnpm/workspace lock
+updates and hashed Python pins fail explicitly. Repository visibility is checked
+before assessment, and successful PR URLs survive later publication failures.
+Action dependency updates include the rebuilt runtime bundle, checked for
+reproducibility without executing repository scripts. npm resolved versions must satisfy their manifest ranges; invalid npm or Python
+versions are skipped before assessment. Findings accept npm prereleases and valid
+PEP 440 current versions, comparing upgrades using the matching ecosystem rules;
+recommended targets remain numeric stable versions. Findings, source paths, versions,
+prepared changes, the checked-out branch and its base commit are checked before updating
+existing dependency files on `fix/telegraph-dependency-*` branches. PRs target the
+branch that was checked out, rather than the repository default. No intermediate JSON
+files are created or added to the PR. Existing
+matching PRs, including closed ones, are reused. CVE claims and migration compatibility
+still require independent review. This is a draft-update prototype, not completion
+of the cutoff, crash-safe purchase, migration, verification or accounting requirements
+below. Automatic runs are restricted to pushes to `main` changing package.json,
+package-lock.json, requirements*.txt, or the root requirements/ tree; manual
+dispatch remains available for a selected branch except generated
+`fix/telegraph-dependency-*` branches. These trigger filters reduce
+repeat purchases but do not deduplicate assessments: dependency-file edits and
+manual reruns can still buy the same assessment. Without a durable purchase ledger
+or answer cache, the prototype does not yet satisfy the duplicate-purchase rule
+in §2.6 or acceptance test 3 in §2.11. Tests and builds are local; no live PR or payment is claimed. See the README
+for configuration and exact limitations.
+
 ### 2.1 Architecture
 
 - [PRODUCT] GitHub Action with draft PR and human label approval. The automatic first Q&A purchase followed by approval for the fix stage satisfies the autonomy requirement provided: the first purchase is initiated by the agent with no human approving that transaction; it is paid through Telegraph; the answer is used to complete a meaningful task, not merely displayed. It must not be a disguised manual or pre-funded demonstration.
@@ -55,7 +92,7 @@ Two separate gates. The App never waits on the Miner gate.
 ### 2.2 Installation and trigger
 
 - [PRODUCT] One workflow file installs it. Initial scope: public GitHub repositories only.
-- [PRODUCT] Runs on a schedule the developer sets in their workflow file (`on: schedule` cron; the example workflow uses weekly) and on manual `workflow_dispatch`; one run per repository at a time via concurrency controls. The Action does not trigger on human PRs: a developer who has already bumped a dependency gets nothing useful from it (decided 2 Nov; [ADR 0001 amendment](adr/0001-deterministic-cutoff-detection.md)).
+- [PRODUCT] Runs on pushes to `main` matching `**/package.json`, `**/package-lock.json`, `**/requirements*.txt`, or `requirements/**`, and manual `workflow_dispatch`; generated `fix/telegraph-dependency-*` branches and branch-deletion events are excluded. One run per repository at a time via concurrency controls. A developer-configured schedule remains optional future configuration. The Action does not trigger on human PRs: a developer who has already bumped a dependency gets nothing useful from it (decided 2 Nov; [ADR 0001 amendment](adr/0001-deterministic-cutoff-detection.md)).
 - [PRODUCT] The Action is pinned to a release or immutable commit SHA; installers never execute an unpinned latest.
 - [PRODUCT] Document repository Actions permissions, the setting allowing Actions to create pull requests, required `contents` and `pull-requests` permissions, fork limitations and unsupported layouts.
 
@@ -343,7 +380,7 @@ Recorded separately, never inferred from one another: **payment delivered** (val
 
 | Decision | Choice | Reason |
 | --- | --- | --- |
-| Trigger | Developer-configured schedule (default weekly) + manual run; lockfile A vs registry B; no PR-diff trigger in the Action | A developer who already bumped a dependency gets nothing from the bot; CLI v0 stays a prototype |
+| Trigger | Pushes to `main` matching dependency-file path filters (`**/package.json`, `**/package-lock.json`, `**/requirements*.txt`, `requirements/**`) + manual `workflow_dispatch`; exclude generated fix branches/deletions; no PR-diff trigger in the Action | A developer who already bumped a dependency gets nothing from the bot; CLI v0 stays a prototype |
 | Purchase route | Open: Engine auto-routing (recommended) or direct call to a chosen miner (current client) | Re-test routing with the canonical id first (§2.4) |
 | Vulnerabilities | OSV only inside upgrade PRs; no standalone vulnerability PRs | Scanners are a crowded space; our niche is the code migration |
 | Miner track | Separate entry; go/no-go 9 Nov (proposed) | Never blocks the App |

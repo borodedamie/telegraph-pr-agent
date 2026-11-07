@@ -455,3 +455,22 @@ describe("IntelligenceClient.buy attempt stages", () => {
     expect(rec.states().slice(0, 3)).toEqual(["reserved", "request_sent", "failed_not_charged"]);
   });
 });
+
+
+describe("canonical QA purchases", () => {
+  it("discovers ranked miners for the exact canonical intent and uses the existing payment path", async () => {
+    const intent = "QUESTION_ANSWERING_GENERAL";
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) =>
+      String(input).includes("/api/miners")
+        ? new Response(JSON.stringify([{ id: "148002", endpoints: [{ method: "GET", path: "/query" }],
+          scores: [{ intent_id: intent, rank: 1, score: 0.9 }] }]))
+        : quote402("10000")
+    );
+    const { client, paymentFetch } = makeClient({ fetchImpl });
+    const purchase = await client.buy(intent, "upgrade zod");
+    expect(fetchImpl.mock.calls[0][0]).toBe(`https://devnode.test/api/miners?intent=${intent}&status=active&limit=100`);
+    expect(paymentFetch.mock.calls[0][0]).toBe("https://devnode.test/engine/v1/ask/148002");
+    expect(purchase.intent).toBe(intent);
+    expect(purchase.amountUsdc).toBe(0.01);
+  });
+});
