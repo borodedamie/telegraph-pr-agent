@@ -150,7 +150,7 @@ export function rankMiners(intent: string, miners: ApiMiner[]): RankedMiner[] {
       method: ep.method ?? "GET",
       path: ep.path,
       rank: s.rank,
-      score: s.score ?? 0,
+      score: s.score ?? null,
       selectedBy: "rank",
     });
   }

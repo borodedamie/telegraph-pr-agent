@@ -109,6 +109,15 @@ describe("rankMiners", () => {
   });
 });
 
+describe("rankMiners scores", () => {
+  it("records no score for a ranked miner the node gave none, rather than 0", () => {
+    const ranked = rankMiners("QUESTION_ANSWERING", [
+      { id: "1", name: "No score", endpoints: [{ path: "/q", method: "GET" }], scores: [{ intent_id: "QUESTION_ANSWERING", rank: 2 }] },
+    ]);
+    expect([ranked[0].rank, ranked[0].score]).toEqual([2, null]);
+  });
+});
+
 describe("IntelligenceClient.buy", () => {
   it("pays the top-ranked miner and records receipt, signal, rank and the FULL answer", async () => {
     const { client } = makeClient();
