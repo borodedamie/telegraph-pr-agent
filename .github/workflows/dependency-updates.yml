@@ -2,8 +2,13 @@ name: Telegraph dependency updates
 
 on:
   push:
-    branches-ignore:
-      - 'fix/telegraph-dependency-**'
+    branches:
+      - main
+    paths:
+      - '**/package.json'
+      - '**/package-lock.json'
+      - '**/requirements*.txt'
+      - 'requirements/**'
   workflow_dispatch:
 
 concurrency:

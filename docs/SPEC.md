@@ -75,7 +75,13 @@ files are created or added to the PR. Existing
 matching PRs, including closed ones, are reused. CVE claims and migration compatibility
 still require independent review. This is a draft-update prototype, not completion
 of the cutoff, crash-safe purchase, migration, verification or accounting requirements
-below. Tests and builds are local; no live PR or payment is claimed. See the README
+below. Automatic runs are restricted to pushes to `main` changing package.json,
+package-lock.json, requirements*.txt, or the root requirements/ tree; manual
+dispatch remains available for a selected branch. These trigger filters reduce
+repeat purchases but do not deduplicate assessments: dependency-file edits and
+manual reruns can still buy the same assessment. Without a durable purchase ledger
+or answer cache, the prototype does not yet satisfy the duplicate-purchase rule
+in §2.6 or acceptance test 3 in §2.11. Tests and builds are local; no live PR or payment is claimed. See the README
 for configuration and exact limitations.
 
 ### 2.1 Architecture

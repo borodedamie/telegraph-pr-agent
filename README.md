@@ -201,9 +201,10 @@ If you try the slice, open an issue with what you ran, the signal hash and wheth
 
 ## Static-miner dependency update Action
 
-The workflow in `.github/workflows/dependency-updates.yml` runs on branch pushes and manual
-dispatch, targeting the selected branch. Pushes to the action-generated
-`fix/telegraph-dependency-*` branches and branch-deletion events do not run it. One action invocation scans dependencies, purchases an assessment,
+The workflow in `.github/workflows/dependency-updates.yml` runs automatically only
+on pushes to `main` that change `**/package.json`, `**/package-lock.json`,
+`**/requirements*.txt`, or `requirements/**`. Manual dispatch remains available
+for a selected branch. Branch-deletion events do not run it. One action invocation scans dependencies, purchases an assessment,
 prepares updates, and opens draft PRs; no stage inputs, intermediate artifact files,
 or separate caller jobs are needed.
 
@@ -300,8 +301,8 @@ from the workspace pnpm lockfile without lifecycle scripts, typechecks the bot/t
 builds the action, checks that the checked-in bundle matches its source, and runs
 the offline test suite. It receives no wallet or write credentials.
 
-`.github/workflows/dependency-updates.yml` runs on branch pushes and manual
-dispatch, excluding generated fix branches and branch deletions. It checks out
+`.github/workflows/dependency-updates.yml` runs on dependency-file pushes to
+`main` and manual dispatch, excluding branch deletions. It checks out
 the triggering branch without persisted Git credentials and invokes the packaged
 action once. Only the update job has write permissions. It supplies the wallet
 secret and GitHub token, relies on the action's public configuration defaults, and
