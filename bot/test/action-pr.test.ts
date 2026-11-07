@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -34,6 +34,31 @@ describe("action assessment", () => {
     expect(parseFindings('{"findings":[]}', [dependency])).toEqual([]);
     expect(assessmentPrompt([dependency])).toContain('"currentVersion":"3.23.8"');
     expect(assessmentPrompt([dependency])).toContain("no preferred target is supplied");
+  });
+  it.each([
+    { ecosystem: "npm" as const, currentVersion: "4.0.0-rc.1", targetVersion: "4.0.0" },
+    { ecosystem: "PyPI" as const, currentVersion: "1", targetVersion: "2.0" },
+    { ecosystem: "PyPI" as const, currentVersion: "1.0rc1", targetVersion: "1.0" },
+    { ecosystem: "PyPI" as const, currentVersion: "1.0.post1", targetVersion: "1.1" },
+    { ecosystem: "PyPI" as const, currentVersion: "1.0.dev1", targetVersion: "1.0" },
+  ])("accepts ecosystem current versions: %j", (versions) => {
+    const entry = { ...finding, ...versions };
+    expect(parseFindings(JSON.stringify({ findings: [entry] }), [{ ...dependency, ...versions }])).toEqual([entry]);
+  });
+  it.each([
+    { ecosystem: "npm" as const, currentVersion: "4.0.0+build.1", targetVersion: "4.0.0" },
+    { ecosystem: "npm" as const, currentVersion: "4.0.0-rc.1", targetVersion: "3.9.0" },
+    { ecosystem: "PyPI" as const, currentVersion: "1!1.0", targetVersion: "9.0" },
+    { ecosystem: "PyPI" as const, currentVersion: "1.0.post1", targetVersion: "1.0" },
+    { ecosystem: "PyPI" as const, currentVersion: "1.0.0", targetVersion: "1.0" },
+  ])("rejects equal versions and ecosystem downgrades: %j", (versions) => {
+    const entry = { ...finding, ...versions };
+    expect(() => parseFindings(JSON.stringify({ findings: [entry] }), [{ ...dependency, ...versions }])).toThrow(/must upgrade/);
+  });
+  it("keeps findings for distinct conditional Python pins", () => {
+    const findings = [pythonFinding, { ...pythonFinding, currentVersion: "2.30.0" }];
+    const dependencies = findings.map((entry) => ({ ...dependency, ...entry }));
+    expect(parseFindings(JSON.stringify({ findings }), dependencies)).toEqual(findings);
   });
   it.each([
     { ...finding, source: "../package.json" }, { ...finding, package: "other" },
@@ -117,12 +142,52 @@ describe("dependency preparation", () => {
       expect(invocation.keys).not.toContain("GITHUB_TOKEN");
       expect(invocation.args).toContain("--ignore-scripts");
       expect(invocation.args).toContain("--package-lock-only");
+      const configs = invocation.args.filter((arg: string) => /^--(?:user|global)config=/.test(arg));
+      expect(configs).toHaveLength(2);
+      expect(configs[0].split("=")[1]).not.toBe(configs[1].split("=")[1]);
     } finally {
       for (const [name, value] of [["PATH", previousPath], ["TELEGRAPH_EVM_PRIVATE_KEY", previousWallet], ["GITHUB_TOKEN", previousToken]]) {
         if (value === undefined) delete process.env[name!];
         else process.env[name!] = value;
       }
     }
+  });
+
+  it("rejects workspace members even with a local lock", async () => {
+    const root = directory();
+    mkdirSync(join(root, "packages/member"), { recursive: true });
+    writeFileSync(join(root, "package.json"), JSON.stringify({ workspaces: ["packages/*"] }));
+    writeFileSync(join(root, "packages/member/package.json"), JSON.stringify({ dependencies: { zod: "^3.23.0" } }));
+    writeFileSync(join(root, "packages/member/package-lock.json"), JSON.stringify({ lockfileVersion: 3, packages: {} }));
+    const npm = vi.fn();
+    await expect(prepareUpdate(root, { ...finding, source: "packages/member/package.json" },
+      async () => new Response(JSON.stringify({ name: "zod", version: "4.0.0" })), npm)).rejects.toThrow(/workspace members/);
+    expect(npm).not.toHaveBeenCalled();
+  });
+
+  it("includes only a verified rebuilt bundle in action dependency PRs", async () => {
+    const root = directory();
+    mkdirSync(join(root, "bot/actions/dist"), { recursive: true });
+    const actionFinding = { ...finding, source: "bot/actions/package.json" };
+    writeFileSync(join(root, actionFinding.source), JSON.stringify({ dependencies: { zod: "^3.23.0" } }));
+    writeFileSync(join(root, "bot/actions/dist/index.js"), "old bundle");
+    writeFileSync(join(root, "bot/actions/package-lock.json"), JSON.stringify({ lockfileVersion: 3, packages: {} }));
+    const update = await prepareUpdate(root, actionFinding,
+      async () => new Response(JSON.stringify({ name: "zod", version: "4.0.0" })),
+      (temporary) => writeFileSync(join(temporary, "package-lock.json"), JSON.stringify({ lockfileVersion: 3,
+        packages: { "": { dependencies: { zod: "4.0.0" } }, "node_modules/zod": { version: "4.0.0" } } })),
+      () => "verified rebuilt bundle");
+    expect(update.files.map((file) => file.path)).toEqual([
+      actionFinding.source, "bot/actions/package-lock.json", "bot/actions/dist/index.js",
+    ]);
+    expect(updateModule.hasVerifiedBundle(update)).toBe(true);
+    const fixture = publisherFixture();
+    const input = { ...fixture, root, update };
+    await expect(createDependencyPr(input)).resolves.toContain("/pull/1");
+    fixture.fetchImpl.mockClear();
+    update.files[2].content = "tampered bundle";
+    await expect(createDependencyPr(input)).rejects.toThrow(/not verified or has changed/);
+    expect(fixture.fetchImpl).not.toHaveBeenCalled();
   });
 
   it("rejects unresolvable target versions", async () => {
@@ -238,6 +303,15 @@ describe("draft dependency PR publication", () => {
   });
 });
 
+it.each([
+  { status: 200, body: { private: true } },
+  { status: 200, body: {} },
+  { status: 403, body: {} },
+])("fails closed on private or unknown repository visibility: %j", async ({ status, body }) => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(body), { status }));
+  await expect(prModule.assertPublicRepository("team/repo", "token")).rejects.toThrow();
+});
+
 it("scans mixed current versions offline and detects the repository without a workspace variable", async () => {
   const root = directory();
   execFileSync("git", ["init", "-q", root]);
@@ -256,6 +330,28 @@ it("scans mixed current versions offline and detects the repository without a wo
 });
 
 
+it("skips inconsistent or invalid versions before assessment without losing valid dependencies", async () => {
+  const root = directory();
+  execFileSync("git", ["init", "-q", root]);
+  writeFileSync(join(root, "package.json"), JSON.stringify({ dependencies: {
+    zod: "^4.0.0", valid: "^1.0.0", prerelease: "^2.0.0-rc.1", invalid: "*", invalidrange: "broken",
+  } }));
+  writeFileSync(join(root, "package-lock.json"), JSON.stringify({ packages: {
+    "node_modules/zod": { version: "3.23.8" }, "node_modules/valid": { version: "1.2.0" },
+    "node_modules/prerelease": { version: "2.0.0-rc.2" }, "node_modules/invalid": { version: "01.0.0" },
+    "node_modules/invalidrange": { version: "1.0.0" },
+  } }));
+  writeFileSync(join(root, "requirements.txt"), "short==1\ninvalid==nonsense\npreview==1.0rc1\n");
+  const scan = await scanRepository(root);
+  expect(scan.dependencies.map((entry) => [entry.package, entry.currentVersion])).toEqual([
+    ["valid", "1.2.0"], ["prerelease", "2.0.0-rc.2"], ["short", "1"], ["preview", "1.0rc1"],
+  ]);
+  expect(scan.skipped.map((entry) => entry.package)).toEqual(["zod", "invalid", "invalidrange", "invalid"]);
+  const findings = scan.dependencies.map((entry) => ({ ...finding, ecosystem: entry.ecosystem,
+    package: entry.package, source: entry.source, currentVersion: entry.currentVersion }));
+  expect(parseFindings(JSON.stringify({ findings }), scan.dependencies)).toHaveLength(4);
+});
+
 it("detects the checked-out branch and rejects detached HEAD instead of defaulting to main", () => {
   const root = directory();
   execFileSync("git", ["init", "-q", "-b", "feature/current", root]);
@@ -269,7 +365,7 @@ it("detects the checked-out branch and rejects detached HEAD instead of defaulti
 describe("one-invocation dependency updates", () => {
   const options = () => ({ root: "/unused", repository: "team/repo", baseBranch: "feature/current",
     baseSha: "a".repeat(40), token: "dummy-token", dependencies: [dependency], purchase: {
-      ...evidence, minerName: "Test miner", minerRank: null, minerScore: null,
+      ...evidence, minerName: "Test miner", minerRank: null, minerScore: null, selectedBy: "rank" as const,
       network: "eip155:11155111", chainId: 11155111,
       usdcContract: `0x${"b".repeat(40)}`, explorerBaseUrl: "https://sepolia.etherscan.io",
       status: "settled" as const, answer: answer(),
@@ -297,10 +393,28 @@ describe("one-invocation dependency updates", () => {
   });
 
   it("does not create a PR when a recommended update cannot be prepared", async () => {
-    vi.spyOn(updateModule, "prepareUpdate").mockRejectedValue(new Error("Unsupported lockfile"));
+    const prepare = vi.spyOn(updateModule, "prepareUpdate")
+      .mockResolvedValueOnce({ finding, files: [] })
+      .mockRejectedValueOnce(new Error("Unsupported lockfile"));
     const publish = vi.spyOn(prModule, "createDependencyPr");
-    await expect(applyAssessment(options())).rejects.toThrow("Unsupported lockfile");
+    const input = options();
+    input.dependencies.push({ ...dependency, package: "other" });
+    input.purchase.answer = JSON.stringify({ findings: [finding, { ...finding, package: "other" }] });
+    await expect(applyAssessment(input)).rejects.toThrow("Unsupported lockfile");
+    expect(prepare).toHaveBeenCalledTimes(2);
     expect(publish).not.toHaveBeenCalled();
+  });
+
+  it("reports earlier PRs when a later publication fails", async () => {
+    vi.spyOn(updateModule, "prepareUpdate").mockResolvedValue({ finding, files: [] });
+    vi.spyOn(prModule, "createDependencyPr").mockResolvedValueOnce("https://github.com/team/repo/pull/1")
+      .mockRejectedValueOnce(new Error("GitHub unavailable"));
+    const input = options();
+    input.dependencies.push({ ...dependency, package: "other" });
+    input.purchase.answer = JSON.stringify({ findings: [finding, { ...finding, package: "other" }] });
+    const onPublished = vi.fn();
+    await expect(applyAssessment({ ...input, onPublished })).rejects.toThrow("GitHub unavailable");
+    expect(onPublished).toHaveBeenCalledExactlyOnceWith(["https://github.com/team/repo/pull/1"]);
   });
 
   it("rejects malformed findings before attempting any updates", async () => {

@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 
@@ -18,16 +18,33 @@ export const findRepositoryRoot = (directory: string): string => {
   }).trim();
 };
 
-const listFiles = (directory: string): string[] => {
-  return [...new Set(execFileSync(
-    'git',
-    ['-C', directory, 'ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', '.'],
-    { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 },
-  ).split('\0'))].filter((filename) => {
-    return filename !== '' && !filename.split('/').some((part) => {
-      return ['node_modules', '.git', 'dist', 'build', 'coverage', 'vendor'].includes(part);
+const listFiles = async (directory: string): Promise<string[]> => {
+  const manifests = new Set<string>();
+  // Tracked manifests are source even under names such as build or vendor.
+  for (const tracked of [true, false]) {
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn('git', ['-C', directory, 'ls-files', '-z',
+        ...(tracked ? ['--cached'] : ['--others', '--exclude-standard']), '--', '.']);
+      let pending = '';
+      let error = '';
+      child.stdout.setEncoding('utf8');
+      child.stderr.setEncoding('utf8');
+      child.stdout.on('data', (chunk: string) => {
+        const paths = (pending + chunk).split('\0');
+        pending = paths.pop()!;
+        for (const filename of paths) {
+          if (filename !== 'package.json' && !filename.endsWith('/package.json')) continue;
+          const excluded = tracked ? ['node_modules', '.git']
+            : ['node_modules', '.git', 'dist', 'build', 'coverage', 'vendor'];
+          if (!filename.split('/').some((part) => excluded.includes(part))) manifests.add(filename);
+        }
+      });
+      child.stderr.on('data', (chunk: string) => { error = (error + chunk).slice(-4000); });
+      child.on('error', reject);
+      child.on('close', (code) => code === 0 ? resolve() : reject(new Error(`Git file listing failed (${code}): ${error}`)));
     });
-  });
+  }
+  return [...manifests];
 };
 
 const pnpmVersion = (directory: string, root: string, name: string): unknown => {
@@ -154,10 +171,6 @@ export const scanCodebase = async (
     throw new Error(`${selectedPackage} is not a direct dependency in this directory.`);
   }
 
-  if (entries.length > 100) {
-    throw new Error('More than 100 direct dependencies. Use --package to narrow the check.');
-  }
-
   const localLockPath = join(directory, 'package-lock.json');
   const lockDirectory = existsSync(localLockPath) ? directory : root;
   const lockPath = join(lockDirectory, 'package-lock.json');
@@ -176,21 +189,27 @@ export const scanCodebase = async (
       continue;
     }
 
-    const workspacePrefix = relative(lockDirectory, directory).split(sep).join('/');
-    const locked = lockPackages[`${workspacePrefix ? `${workspacePrefix}/` : ''}node_modules/${name}`]
-      ?? lockPackages[`node_modules/${name}`];
-    const installedPath = join(directory, 'node_modules', name, 'package.json');
+    let lookup = directory;
     let installed: unknown;
-
-    if (locked !== undefined) {
-      installed = asObject(locked).version;
-    } else if (existsSync(installedPath)) {
-      installed = readJson(installedPath).version;
-    } else if (existsSync(join(root, 'node_modules', name, 'package.json'))) {
-      installed = readJson(join(root, 'node_modules', name, 'package.json')).version;
-    } else {
-      installed = pnpmVersion(directory, root, name);
+    while (true) {
+      const prefix = relative(lockDirectory, lookup).split(sep).join('/');
+      const locked = lockPackages[`${prefix ? `${prefix}/` : ''}node_modules/${name}`];
+      if (locked !== undefined) { installed = asObject(locked).version; break; }
+      if (lookup === lockDirectory) break;
+      const parent = dirname(lookup);
+      if (parent === lookup) break;
+      lookup = parent;
     }
+    lookup = directory;
+    while (installed === undefined) {
+      const installedPath = join(lookup, 'node_modules', name, 'package.json');
+      if (existsSync(installedPath)) { installed = readJson(installedPath).version; break; }
+      if (lookup === root) break;
+      const parent = dirname(lookup);
+      if (parent === lookup) break;
+      lookup = parent;
+    }
+    if (installed === undefined) installed = pnpmVersion(directory, root, name);
 
     if (!stableVersion(installed)) {
       skipped.push({ package: name, reason: 'Stable installed version unavailable in a supported lockfile or node_modules.' });
@@ -231,7 +250,8 @@ export const scanRepository = async (
   skipped: { project: string; package: string; reason: string }[];
 }> => {
   const root = realpathSync(directory);
-  const manifests = listFiles(root).filter((filename) => {
+  const repositoryRoot = realpathSync(findRepositoryRoot(root));
+  const manifests = (await listFiles(root)).filter((filename) => {
     return filename === 'package.json' || filename.endsWith('/package.json');
   }).filter((filename) => {
     const path = join(root, filename);
@@ -287,13 +307,14 @@ export const scanRepository = async (
     }
 
     packageFound = true;
-    const scan = await scanCodebase(projectDirectory, selectedPackage, cachedFetch, root);
+    const scan = await scanCodebase(projectDirectory, selectedPackage, cachedFetch, repositoryRoot);
 
     skipped.push(...scan.skipped.map((entry) => ({ project, ...entry })));
 
     for (const candidate of scan.candidates) {
       const existing = candidates.find((entry) => {
-        return entry.package === candidate.package && entry.installed === candidate.installed;
+        return entry.package === candidate.package && entry.installed === candidate.installed
+          && entry.declared === candidate.declared;
       });
 
       if (existing) {

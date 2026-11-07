@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { dirname, join, sep } from "node:path";
 import type { Purchase } from "../../src/x402";
 import type { PreparedUpdate } from "./updates";
-import { readRepositoryFile, updateManifest } from "./updates";
+import { hasVerifiedBundle, readRepositoryFile, updateManifest } from "./updates";
 
 type GitReference = { ref: string; object: { sha: string } };
 type GitCommit = { tree: { sha: string }; parents: { sha: string }[] };
@@ -18,6 +18,16 @@ export const checkedOutBranch = (root: string): string => {
   } catch {
     throw new Error("Check out a named branch before running the action; detached HEAD checkouts have no PR target branch");
   }
+};
+
+export const assertPublicRepository = async (repository: string, token: string): Promise<void> => {
+  const response = await fetch(`https://api.github.com/repos/${repository}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+    redirect: "error", signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) throw new Error(`Repository visibility check failed: HTTP ${response.status}`);
+  const repositoryInfo = await response.json() as { private?: boolean };
+  if (repositoryInfo.private !== false) throw new Error("Automatic dependency PRs support public repositories only");
 };
 
 export const createDependencyPr = async (options: {
@@ -43,6 +53,10 @@ export const createDependencyPr = async (options: {
   }
   const lockPath = join(dirname(finding.source), "package-lock.json").split(sep).join("/");
   const allowed = finding.ecosystem === "npm" ? [finding.source, lockPath] : [finding.source];
+  if (finding.source === "bot/actions/package.json") {
+    if (!hasVerifiedBundle(update)) throw new Error("Prepared action bundle was not verified or has changed");
+    allowed.push("bot/actions/dist/index.js");
+  }
   if (files.length !== allowed.length || files.some((file) => !allowed.includes(file.path))) {
     throw new Error("Prepared changes contain unexpected or missing files");
   }

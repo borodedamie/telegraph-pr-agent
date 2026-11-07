@@ -1,4 +1,6 @@
 import { z } from "zod";
+import semver from "semver";
+import * as pep440 from "@renovatebot/pep440";
 import type { Dependency } from "./scan";
 import type { Purchase } from "../../src/x402";
 import { prepareUpdate } from "./updates";
@@ -14,7 +16,7 @@ export const findingSchema = z.object({
   ecosystem: z.enum(["npm", "PyPI"]),
   package: z.string().min(1).max(214),
   source: z.string().min(1),
-  currentVersion: version,
+  currentVersion: z.string().min(1).max(256),
   targetVersion: version,
   issue: z.enum(["cve", "outdated"]),
   reason: z.string().min(1).max(4000),
@@ -24,14 +26,11 @@ export const findingSchema = z.object({
 
 export type Finding = z.infer<typeof findingSchema>;
 
-export const isUpgrade = (current: string, target: string): boolean => {
-  const previous = current.split(".").map(BigInt);
-  const next = target.split(".").map(BigInt);
-  for (let index = 0; index < Math.max(previous.length, next.length); index += 1) {
-    const difference = (next[index] ?? 0n) - (previous[index] ?? 0n);
-    if (difference !== 0n) return difference > 0n;
+export const isUpgrade = (current: string, target: string, ecosystem: Dependency["ecosystem"]): boolean => {
+  if (ecosystem === "npm") {
+    return semver.valid(current) !== null && semver.valid(target) !== null && semver.gt(target, current);
   }
-  return false;
+  return pep440.valid(current) !== null && pep440.valid(target) !== null && pep440.gt(target, current);
 };
 
 export const parseFindings = (answer: string, dependencies: Dependency[]): Finding[] => {
@@ -43,7 +42,7 @@ export const parseFindings = (answer: string, dependencies: Dependency[]): Findi
       && entry.package === finding.package && entry.source === finding.source
       && entry.currentVersion === finding.currentVersion);
     if (!dependency) throw new Error(`Miner finding does not match a scanned dependency: ${finding.package}`);
-    if (!isUpgrade(finding.currentVersion, finding.targetVersion)) {
+    if (!isUpgrade(finding.currentVersion, finding.targetVersion, finding.ecosystem)) {
       throw new Error(`Miner target must upgrade ${finding.package}`);
     }
     if (finding.ecosystem === "npm" && !/^\d+\.\d+\.\d+$/.test(finding.targetVersion)) {
@@ -52,7 +51,7 @@ export const parseFindings = (answer: string, dependencies: Dependency[]): Findi
     if (finding.issue === "cve" && finding.cves.length === 0) {
       throw new Error(`CVE finding requires a CVE ID: ${finding.package}`);
     }
-    const key = `${finding.source}:${finding.package}`;
+    const key = JSON.stringify([finding.source, finding.package, finding.currentVersion]);
     if (seen.has(key)) throw new Error(`Duplicate miner finding: ${key}`);
     seen.add(key);
   }
@@ -71,6 +70,7 @@ export const applyAssessment = async (options: {
   token: string;
   dependencies: Dependency[];
   purchase: Purchase;
+  onPublished?: (urls: string[]) => void;
 }): Promise<string[]> => {
   const findings = parseFindings(options.purchase.answer, options.dependencies);
   const updates = [];
@@ -82,6 +82,7 @@ export const applyAssessment = async (options: {
   for (const update of updates) {
     urls.push(await createDependencyPr({ root: options.root, repository: options.repository,
       baseBranch: options.baseBranch, baseSha: options.baseSha, token: options.token, update, purchase }));
+    options.onPublished?.([...urls]);
   }
   return urls;
 };

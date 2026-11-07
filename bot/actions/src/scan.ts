@@ -1,3 +1,5 @@
+import semver from "semver";
+import * as pep440 from "@renovatebot/pep440";
 import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, sep } from 'node:path';
@@ -140,8 +142,12 @@ export const scanRepository = async (directory: string = process.cwd()): Promise
         const current = locked !== undefined ? asObject(locked).version
           : installedPath ? readJson(installedPath).version : pnpmVersion(directory, root, name);
         // A manifest range is never evidence of an installed version.
-        if (typeof current !== 'string' || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(current)) {
+        if (typeof current !== 'string' || semver.valid(current) === null) {
           skipped.push({ project, package: name, reason: 'Current version unavailable in a supported lockfile or node_modules.' });
+          continue;
+        }
+        if (!semver.satisfies(current, declared)) {
+          skipped.push({ project, package: name, reason: 'Resolved version does not satisfy the manifest range.' });
           continue;
         }
         dependencies.push({ ecosystem: 'npm', package: name, declared, currentVersion: current, source });
@@ -159,6 +165,10 @@ export const scanRepository = async (directory: string = process.cwd()): Promise
           continue;
         }
         const [, name, currentVersion] = requirement;
+        if (pep440.valid(currentVersion) === null) {
+          skipped.push({ project, package: name, reason: 'Invalid Python pinned version.' });
+          continue;
+        }
         const suffix = line.slice(requirement[0].length).trim();
         if (suffix && !suffix.startsWith(';') && !/^--hash=\S+(?:\s+--hash=\S+)*$/.test(suffix)) {
           skipped.push({ project, package: name, reason: 'Unsupported Python requirement suffix.' });

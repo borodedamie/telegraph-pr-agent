@@ -3,10 +3,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@actions/core": "^3.0.1"
+    "@actions/core": "^3.0.1",
+    "@renovatebot/pep440": "^4.2.4",
+    "semver": "^7.8.6"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
+    "@types/semver": "^7.8.0",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2"
   },

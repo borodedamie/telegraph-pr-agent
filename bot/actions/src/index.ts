@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { scanRepository } from "./scan";
 import { IntelligenceClient } from "../../src/x402";
 import { applyAssessment, assessmentPrompt } from "./assessment";
-import { checkedOutBranch } from "./pull-request";
+import { assertPublicRepository, checkedOutBranch } from "./pull-request";
 
 const INTENT_ID = "QUESTION_ANSWERING_GENERAL";
 // Verified against an unpaid devnode 402 challenge on 2026-11-05.
@@ -27,6 +27,7 @@ const run = async (): Promise<void> => {
     if (![maxPrice, budget].every((amount) => Number.isFinite(amount) && amount > 0)) {
       throw new Error("max-price-per-call-usdc and budget-cap-usdc must be positive finite numbers");
     }
+    await assertPublicRepository(repository, token);
     const scan = await scanRepository();
     const baseBranch = checkedOutBranch(scan.root);
     const baseSha = execFileSync("git", ["-C", scan.root, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
@@ -42,7 +43,10 @@ const run = async (): Promise<void> => {
       // Preserve paid evidence in the output even if the answer cannot drive a safe update.
       core.setOutput("message", JSON.stringify(purchase));
       const urls = await applyAssessment({ root: scan.root, repository, baseBranch, baseSha, token,
-        dependencies: scan.dependencies, purchase });
+        dependencies: scan.dependencies, purchase, onPublished: (published) => {
+          core.setOutput("has-findings", "true");
+          core.setOutput("pull-requests", JSON.stringify(published));
+        } });
       core.setOutput("has-findings", String(urls.length > 0));
       core.setOutput("pull-requests", JSON.stringify(urls));
       for (const url of urls) core.info(`Dependency pull request: ${url}`);

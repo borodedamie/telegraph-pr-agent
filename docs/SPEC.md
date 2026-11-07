@@ -50,7 +50,8 @@ Two separate gates. The App never waits on the Miner gate.
 
 **Implementation status, 4 Nov 2026.** The action prototype now scans current
 npm and pinned Python requirements, purchases a structured assessment from a
-static manually selected miner, and prepares draft dependency PRs for validated
+miner selected from the ranked list (with fallback to the next ranked miner after
+a classified failure), and prepares draft dependency PRs for validated
 CVE/outdated findings. The miner selects recommended versions; the scanner does
 not select targets. At the user's request, a single action invocation now performs
 payment, preparation and publication in one job, without stage inputs or artifact
@@ -60,7 +61,13 @@ isolation remains a production requirement below. Public node/spending settings
 now default in action metadata (devnode URL, 0.10 USDC per call, 2 USDC per run);
 the wallet key remains secret-backed and is never bundled. Supported automatic edits are standalone public npm
 package-lock v2/v3 projects and plain Python `==` requirements; pnpm/workspace lock
-updates and hashed Python pins fail explicitly. Findings, source paths, versions,
+updates and hashed Python pins fail explicitly. Repository visibility is checked
+before assessment, and successful PR URLs survive later publication failures.
+Action dependency updates include the rebuilt runtime bundle, checked for
+reproducibility without executing repository scripts. npm resolved versions must satisfy their manifest ranges; invalid npm or Python
+versions are skipped before assessment. Findings accept npm prereleases and valid
+PEP 440 current versions, comparing upgrades using the matching ecosystem rules;
+recommended targets remain numeric stable versions. Findings, source paths, versions,
 prepared changes, the checked-out branch and its base commit are checked before updating
 existing dependency files on `fix/telegraph-dependency-*` branches. PRs target the
 branch that was checked out, rather than the repository default. No intermediate JSON

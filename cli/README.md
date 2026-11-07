@@ -17,10 +17,11 @@ npm start -- --version
 dependencies and dev dependencies in every Git-listed `package.json`, including
 nested projects and workspaces. No path is required. An optional directory scopes
 the check to that subtree. Untracked files are included unless ignored. Generated
-directories (`node_modules`, `dist`, `build`, `coverage`, and `vendor`) are excluded.
+directories (`node_modules`, `dist`, `build`, `coverage`, and `vendor`) are excluded
+for untracked files; tracked source manifests under `build` or `vendor` are included.
 
 Installed versions come from npm v2/v3 lockfiles, including hoisted workspace
-entries, `node_modules`, or pnpm block-style importer versions. Peer suffixes in
+entries from the Git root even for scoped scans, `node_modules`, or pnpm block-style importer versions. Peer suffixes in
 pnpm versions are removed; unsupported YAML forms are not parsed. Yarn projects
 require installed dependencies. Manifest ranges are never treated as installed
 versions. Local, workspace, git and alias dependencies and non-stable installed
@@ -29,8 +30,8 @@ versions are skipped with a reason.
 The checker fetches each dependency's latest version from the npm registry and
 compares stable versions numerically. Output is JSON with `root`, `projects`,
 `updates`, and `skipped`. Each update includes the package name, declared range,
-installed version, latest version, and affected projects. Matching package/version
-pairs across projects are combined. Registry results are cached within each run.
+installed version, latest version, and affected projects. Matching package/version/range
+triples across projects are combined. Registry results are cached within each run.
 Current versions and unsupported dependencies appear in `skipped` with reasons.
 Registry failures exit with an error rather than reporting packages as current.
 

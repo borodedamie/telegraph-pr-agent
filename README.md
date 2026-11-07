@@ -254,7 +254,9 @@ review and merge remain required; this does not provide separate-runner isolatio
 using Git; no workspace environment variable is required. It reads npm dependencies
 and devDependencies from package-lock, node_modules or pnpm importer entries, and
 Python exact pins from requirements.txt, requirements-*.txt and requirements/*.txt.
-The scanner performs no registry requests or version comparisons. Python markers
+The scanner performs no registry requests. It checks npm resolved versions against
+manifest ranges using SemVer and validates Python pins using PEP 440; invalid or
+inconsistent entries are skipped before assessment. Python markers
 are preserved, not evaluated. Pins describe the repository environment rather than
 proving what is installed in a running interpreter. Unresolved versions are reported.
 
@@ -284,7 +286,11 @@ proving what is installed in a running interpreter. Unresolved versions are repo
 The action has no stage or artifact inputs. Public node/spending settings have
 action-defined defaults; the wallet remains a secret. Outputs are `has-findings`,
 `pull-requests` (JSON URLs), `message` (purchase details, retained even if later
-validation fails), and `status`. No new package dependency was added.
+validation fails), and `status`. Repository visibility is checked before assessment;
+private or unknown visibility fails closed. The `pull-requests` output retains earlier
+URLs if a later publication fails. Action dependency PRs also include a rebuilt
+`bot/actions/dist/index.js`, verified by two identical builds using fixed tooling
+and installs with lifecycle scripts disabled.
 
 ### Workflow checks
 
@@ -313,8 +319,10 @@ run locally. No live payment, GitHub PR or hosted workflow execution is claimed.
 PR preparation currently rejects pnpm/workspace updates, non-public npm registry
 sources and hashed/continued Python pins rather than publish stale lock data.
 Python ranges, includes and pyproject/Pipfile/setup manifests need exported exact pins.
-Simple numeric stable upgrades are supported; prerelease or complex Python version
-recommendations are rejected. Unsupported findings fail preparation before publication.
+Current npm prereleases and valid PEP 440 Python pins (including `==1`) are
+accepted and ordered using their ecosystem rules. Recommended targets remain
+numeric stable versions; npm targets require major.minor.patch. The action uses
+`semver` and `@renovatebot/pep440` for version validation and ordering. Unsupported findings fail preparation before publication.
 Registry checks confirm target availability, not the truth of CVE claims or migration
 compatibility. Repository tests and code migrations are not run automatically; draft
 PRs must be independently checked. GitHub's behavior for workflows triggered by a
