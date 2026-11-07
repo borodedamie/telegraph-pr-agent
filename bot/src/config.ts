@@ -14,6 +14,8 @@ const envSchema = z.object({
   LLM_API_KEY: z.string().min(1),
   LLM_BASE_URL: z.string().url(),
   DEMO_REPO: z.string().regex(/^[\w.-]+\/[\w.-]+$/, "must be owner/repo"),
+  // Our own miner choice, tried before the leaderboard (SPEC §2.4 manual policy). Empty or unset: rank only.
+  PREFERRED_MINER_ID: z.string().regex(/^\d*$/, "must be a numeric miner id").optional(),
 });
 
 export interface Config {
@@ -28,6 +30,7 @@ export interface Config {
   llmApiKey: string;
   llmBaseUrl: string;
   demoRepo: string;
+  preferredMinerId: string | null;
 }
 
 export function parseCutoff(raw: string): Date {
@@ -58,5 +61,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     llmApiKey: e.LLM_API_KEY,
     llmBaseUrl: e.LLM_BASE_URL.replace(/\/$/, ""),
     demoRepo: e.DEMO_REPO,
+    preferredMinerId: e.PREFERRED_MINER_ID || null,
   };
 }

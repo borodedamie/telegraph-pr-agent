@@ -15,8 +15,9 @@ export interface LedgerRow {
   intent: string;
   minerId: string;
   minerName: string;
-  minerRank: number;
-  minerScore: number;
+  /** Null when the node gave the miner no rank or score for the intent (an unranked miner we chose). */
+  minerRank: number | null;
+  minerScore: number | null;
   amountUsdc: number;
   txHash: string;
   receiptHash: string;
@@ -24,6 +25,8 @@ export interface LedgerRow {
   answer: string;
   timestamp: string;
   status: "settled" | "failed";
+  /** Who picked the miner: the leaderboard, or our PREFERRED_MINER_ID. Absent on rows written before 6 Nov 2026. */
+  selectedBy?: "rank" | "our_choice";
   /** Links the purchase to the attempt that paid for it. Absent on pre-attempt rows. */
   attemptId?: string;
   /**

@@ -109,6 +109,15 @@ describe("rankMiners", () => {
   });
 });
 
+describe("rankMiners scores", () => {
+  it("records no score for a ranked miner the node gave none, rather than 0", () => {
+    const ranked = rankMiners("QUESTION_ANSWERING", [
+      { id: "1", name: "No score", endpoints: [{ path: "/q", method: "GET" }], scores: [{ intent_id: "QUESTION_ANSWERING", rank: 2 }] },
+    ]);
+    expect([ranked[0].rank, ranked[0].score]).toEqual([2, null]);
+  });
+});
+
 describe("IntelligenceClient.buy", () => {
   it("pays the top-ranked miner and records receipt, signal, rank and the FULL answer", async () => {
     const { client } = makeClient();
@@ -119,6 +128,7 @@ describe("IntelligenceClient.buy", () => {
       minerName: "Crossref QA",
       minerRank: 3,
       minerScore: 0.59,
+      selectedBy: "rank",
       amountUsdc: 0.01,
       txHash: "0xdeadbeef",
       receiptHash: "0xreceipt",
@@ -154,6 +164,47 @@ describe("IntelligenceClient.buy", () => {
     const p = await client.buy("QUESTION_ANSWERING", "x");
     expect([p.minerId, p.minerRank]).toEqual(["148001", 4]);
     expect(client.spentUsdc).toBeCloseTo(0.01);
+  });
+
+  it("tries our preferred miner first, even unranked, and labels the purchase as our choice", async () => {
+    // Listed for the intent but not ranked yet, like a miner in its grace period.
+    const unranked = { id: "7314", name: "Package Release Intelligence", endpoints: [{ path: "/answer", method: "GET", description: "npm migrations" }] };
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) =>
+      String(input).includes("/api/miners") ? new Response(JSON.stringify([...API_MINERS, unranked])) : quote402("20000")
+    );
+    const paymentFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => engine200({ miner_id: "7314", miner_name: "Package Release Intelligence" }));
+    const { client } = makeClient({ fetchImpl: fetchImpl as unknown as typeof fetch, paymentFetch, preferredMinerId: "7314" });
+    const p = await client.buy("QUESTION_ANSWERING", "What changed in zod from 3.23.8 to 4.0.0?");
+    // Unranked: no rank or score is recorded, rather than a 0 that reads as better than rank 1.
+    expect([p.minerId, p.minerRank, p.minerScore, p.selectedBy]).toEqual(["7314", null, null, "our_choice"]);
+    expect(String(paymentFetch.mock.calls[0][0])).toBe("https://devnode.test/engine/v1/ask/7314");
+  });
+
+  it("records a preferred miner's real rank and score when the node has ranked it", async () => {
+    const { client } = makeClient({ preferredMinerId: "148001" });
+    const p = await client.buy("QUESTION_ANSWERING", "x");
+    expect([p.minerRank, p.minerScore, p.selectedBy]).toEqual([4, 0.47, "our_choice"]);
+  });
+
+  it("steps down to the leaderboard when our preferred miner fails, and labels that purchase by rank", async () => {
+    const unranked = { id: "7314", name: "Package Release Intelligence", endpoints: [{ path: "/answer", method: "GET" }] };
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) =>
+      String(input).includes("/api/miners") ? new Response(JSON.stringify([...API_MINERS, unranked])) : quote402("10000")
+    );
+    const paymentFetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('{"error":"down"}', { status: 503 }))
+      .mockResolvedValueOnce(engine200());
+    const { client } = makeClient({ fetchImpl: fetchImpl as unknown as typeof fetch, paymentFetch, preferredMinerId: "7314" });
+    const p = await client.buy("QUESTION_ANSWERING", "x");
+    expect([p.minerId, p.minerRank, p.selectedBy]).toEqual(["148002", 3, "rank"]);
+  });
+
+  it("buys by rank alone when the preferred miner is not listed for the intent", async () => {
+    const { client, paymentFetch } = makeClient({ preferredMinerId: "999" });
+    const p = await client.buy("QUESTION_ANSWERING", "x");
+    expect([p.minerId, p.selectedBy]).toEqual(["148002", "rank"]);
+    expect(paymentFetch).toHaveBeenCalledTimes(1);
   });
 
   it("throws AskFailedError naming each miner's failure when none answers", async () => {

@@ -27,6 +27,13 @@ describe("loadConfig", () => {
     expect(cfg.demoRepo).toBe("owner/repo");
   });
 
+  it("reads an optional preferred miner id, and treats unset or empty as none", () => {
+    expect(loadConfig(validEnv).preferredMinerId).toBeNull();
+    expect(loadConfig({ ...validEnv, PREFERRED_MINER_ID: "" }).preferredMinerId).toBeNull();
+    expect(loadConfig({ ...validEnv, PREFERRED_MINER_ID: "7314" }).preferredMinerId).toBe("7314");
+    expect(() => loadConfig({ ...validEnv, PREFERRED_MINER_ID: "package-release-intel" })).toThrow(/PREFERRED_MINER_ID/);
+  });
+
   it("fails fast naming the missing field", () => {
     const env: NodeJS.ProcessEnv = { ...validEnv };
     delete env.CHAIN_ID;
