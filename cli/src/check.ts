@@ -135,6 +135,15 @@ const isNewer = (latest: string, installed: string): boolean => {
   return false;
 };
 
+export class RegistryError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 export const fetchJson = async (
   url: string,
   fetchImpl: typeof fetch = fetch,
@@ -145,7 +154,7 @@ export const fetchJson = async (
   });
 
   if (!response.ok) {
-    throw new Error(`Request failed with HTTP ${response.status}: ${url}`);
+    throw new RegistryError(`Request failed with HTTP ${response.status}: ${url}`, response.status);
   }
 
   return asObject(await response.json());
@@ -158,6 +167,7 @@ export const scanCodebase = async (
   root: string = directory,
 ): Promise<{ candidates: Candidate[]; skipped: { package: string; reason: string }[] }> => {
   directory = realpathSync(directory);
+  root = realpathSync(root);
   const manifest = readJson(join(directory, 'package.json'));
   const dependencies = {
     ...asObject(manifest.dependencies ?? {}),
@@ -216,7 +226,16 @@ export const scanCodebase = async (
       continue;
     }
 
-    const metadata = await fetchJson(`https://registry.npmjs.org/${encodeURIComponent(name)}/latest`, fetchImpl);
+    let metadata: JsonObject;
+    try {
+      metadata = await fetchJson(`https://registry.npmjs.org/${encodeURIComponent(name)}/latest`, fetchImpl);
+    } catch (error) {
+      if (error instanceof RegistryError && error.status === 404) {
+        skipped.push({ package: name, reason: 'Package not found in the public npm registry.' });
+        continue;
+      }
+      throw error;
+    }
 
     if (metadata.name !== name || !stableVersion(metadata.version)) {
       skipped.push({ package: name, reason: 'Registry did not return a matching stable package version.' });

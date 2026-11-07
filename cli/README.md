@@ -33,7 +33,8 @@ compares stable versions numerically. Output is JSON with `root`, `projects`,
 installed version, latest version, and affected projects. Matching package/version/range
 triples across projects are combined. Registry results are cached within each run.
 Current versions and unsupported dependencies appear in `skipped` with reasons.
-Registry failures exit with an error rather than reporting packages as current.
+Packages returning HTTP 404 from the public registry are skipped with a reason.
+Other registry failures exit with an error rather than reporting packages as current.
 
 The command only checks version availability. It does not assess migration safety,
 scan source contents, call Telegraph, make payments, or change package files.

@@ -62,6 +62,7 @@ it("retains incremental PR output when publication fails", async () => {
   vi.stubEnv("TELEGRAPH_EVM_PRIVATE_KEY", `0x${"a".repeat(64)}`);
   vi.stubEnv("GITHUB_TOKEN", "test-token");
   vi.stubEnv("GITHUB_REPOSITORY", "team/repo");
+  mocks.buy.mockResolvedValue({ answer: '{"findings":[]}' });
   mocks.apply.mockImplementationOnce(async ({ onPublished }) => {
     onPublished(["https://github.com/team/repo/pull/1"]);
     throw new Error("Later publication failed");
