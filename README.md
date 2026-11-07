@@ -260,11 +260,16 @@ proving what is installed in a running interpreter. Unresolved versions are repo
 
 ### Enable the workflow
 
-- Fill the intentionally empty `MINER_ID` in `bot/actions/src/index.ts`. Until then,
-  assessment fails before scanning or spending.
+- The action uses the existing ranked-miner payment client for
+  `QUESTION_ANSWERING_GENERAL`; no static miner ID is needed.
+- The action fixes its payment allowlist to Sepolia (`11155111`) and USDC
+  `0xcc194e1a843B658526D0D5C431f670028582Ae17`. No chain or token variables
+  are required. These values were verified with an unsigned, unpaid devnode
+  [402 challenge on 5 Nov 2026](docs/telegraph/action-payment-2026-11-05.json).
+  The wallet must hold this token; quotes for other networks or assets are refused.
 - Public settings default in `bot/actions/action.yml`: `node-url` is
   `https://devnode.telegraphprotocol.com`, `max-price-per-call-usdc` is `0.10`,
-  and `budget-cap-usdc` is `2`. No repository variables are needed; optional
+  and `budget-cap-usdc` is `2`. Optional
   `with:` inputs can override these defaults. These are spending limits, not live prices.
 - Supply secret `TELEGRAPH_EVM_PRIVATE_KEY` for a dedicated wallet. Private keys
   are not bundled as action defaults.
@@ -272,7 +277,7 @@ proving what is installed in a running interpreter. Unresolved versions are repo
   job `contents: write` and `pull-requests: write`.
 - Run **Telegraph dependency updates** on the branch you want to update. A named
   branch must be checked out; detached HEAD is rejected instead of guessing a target.
-- After editing action source or the static miner ID, run `npm run build:prod` in
+- After editing action source, run `npm run build:prod` in
   `bot/actions` and include its updated distribution bundle in the same change.
   Building requires the existing action and shared bot dependencies; callers do not.
 
@@ -294,8 +299,9 @@ dispatch, excluding generated fix branches and branch deletions. It checks out
 the triggering branch without persisted Git credentials and invokes the packaged
 action once. Only the update job has write permissions. It supplies the wallet
 secret and GitHub token, relies on the action's public configuration defaults, and
-exposes `status` and `pull-requests` job outputs. It does not install, build, or
-execute repository test scripts. The static miner ID must be configured before use.
+sets up Node 24 for npm lockfile generation and exposes `status`, `has-findings`,
+`pull-requests`, and `message` job outputs. It does not install, build, or
+execute repository test scripts. No chain or USDC repository variables are needed.
 
 ### Verified scope and limits
 

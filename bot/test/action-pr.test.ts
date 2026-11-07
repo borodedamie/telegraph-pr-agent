@@ -270,6 +270,8 @@ describe("one-invocation dependency updates", () => {
   const options = () => ({ root: "/unused", repository: "team/repo", baseBranch: "feature/current",
     baseSha: "a".repeat(40), token: "dummy-token", dependencies: [dependency], purchase: {
       ...evidence, minerName: "Test miner", minerRank: null, minerScore: null,
+      network: "eip155:11155111", chainId: 11155111,
+      usdcContract: `0x${"b".repeat(40)}`, explorerBaseUrl: "https://sepolia.etherscan.io",
       status: "settled" as const, answer: answer(),
     } });
 

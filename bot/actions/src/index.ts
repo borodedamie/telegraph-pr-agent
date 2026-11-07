@@ -5,12 +5,13 @@ import { IntelligenceClient } from "../../src/x402";
 import { applyAssessment, assessmentPrompt } from "./assessment";
 import { checkedOutBranch } from "./pull-request";
 
-const MINER_ID = "";
 const INTENT_ID = "QUESTION_ANSWERING_GENERAL";
+// Verified against an unpaid devnode 402 challenge on 2026-11-05.
+const CHAIN_ID = 11155111;
+const USDC_ADDRESS = "0xcc194e1a843B658526D0D5C431f670028582Ae17";
 
 const run = async (): Promise<void> => {
   try {
-    if (!MINER_ID.trim()) throw new Error("Set MINER_ID in bot/actions/src/index.ts before running a purchase");
     const privateKey = process.env.TELEGRAPH_EVM_PRIVATE_KEY ?? "";
     const token = process.env.GITHUB_TOKEN ?? "";
     core.setSecret(privateKey);
@@ -36,8 +37,8 @@ const run = async (): Promise<void> => {
       core.setOutput("message", "No resolved dependency versions found; no purchase made");
     } else {
       const client = new IntelligenceClient({ nodeUrl, evmPrivateKey: privateKey as `0x${string}`,
-        maxPricePerCallUsdc: maxPrice, budgetCapUsdc: budget });
-      const purchase = await client.buyFromMiner(INTENT_ID, assessmentPrompt(scan.dependencies), MINER_ID);
+        chainId: CHAIN_ID, usdcAddress: USDC_ADDRESS, maxPricePerCallUsdc: maxPrice, budgetCapUsdc: budget });
+      const purchase = await client.buy(INTENT_ID, assessmentPrompt(scan.dependencies));
       // Preserve paid evidence in the output even if the answer cannot drive a safe update.
       core.setOutput("message", JSON.stringify(purchase));
       const urls = await applyAssessment({ root: scan.root, repository, baseBranch, baseSha, token,

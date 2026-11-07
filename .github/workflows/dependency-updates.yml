@@ -22,12 +22,18 @@ jobs:
       pull-requests: write
     outputs:
       status: ${{ steps.update.outputs.status }}
+      has-findings: ${{ steps.update.outputs.has-findings }}
       pull-requests: ${{ steps.update.outputs.pull-requests }}
+      message: ${{ steps.update.outputs.message }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           ref: ${{ github.ref_name }}
           persist-credentials: false
+      - name: Setup Node.js for npm lockfile generation
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
       - name: Assess dependencies and open update PRs
         id: update
         uses: ./bot/actions
