@@ -47,7 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           # Assumptions for setup only; miner 0 cannot initiate a paid purchase.
           MODEL_CUTOFF: ${{ vars.MODEL_CUTOFF || '2025-01-01' }}
-          PREFERRED_MINER_ID: ${{ vars.PREFERRED_MINER_ID || '0' }}
+          PREFERRED_MINER_ID: ${{ vars.PREFERRED_MINER_ID || '7314' }}
           MODEL_PROVIDER: ${{ vars.MODEL_PROVIDER || 'assumed-provider' }}
           MODEL_ID: ${{ vars.MODEL_ID || 'assumed-model' }}
           MODEL_CUTOFF_SOURCE_URL: ${{ vars.MODEL_CUTOFF_SOURCE_URL || 'https://github.com/borodedamie/telegraph-pr-agent/blob/main/docs/SPEC.md' }}

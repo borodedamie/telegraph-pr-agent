@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  merge: vi.fn(), read: vi.fn(), visibility: vi.fn(), candidates: vi.fn(), open: vi.fn(), purchase: vi.fn(),
+  InvalidAssessmentError: class extends Error {}, unusable: vi.fn(), notice: vi.fn(), merge: vi.fn(), read: vi.fn(), visibility: vi.fn(), candidates: vi.fn(), open: vi.fn(), purchase: vi.fn(),
   buy: vi.fn(), client: vi.fn(), apply: vi.fn(), failed: vi.fn(), output: vi.fn(),
   inputs: {} as Record<string, string>,
 }));
 vi.mock("../actions/node_modules/@actions/core/lib/core.js", () => ({
   setSecret: vi.fn(), setFailed: mocks.failed, setOutput: mocks.output,
-  warning: vi.fn(), info: vi.fn(), getInput: (name: string) => mocks.inputs[name] ?? "",
+  notice: mocks.notice, warning: vi.fn(), info: vi.fn(), getInput: (name: string) => mocks.inputs[name] ?? "",
 }));
 vi.mock("node:child_process", () => ({ execFileSync: () => "a".repeat(40) }));
 vi.mock("node:fs", () => ({ rmSync: vi.fn(), readFileSync: mocks.read }));
@@ -16,9 +16,9 @@ vi.mock("../actions/src/scan", () => ({ scanRepository: async () => ({
   root: "/repo", skipped: [], dependencies: [{ package: "zod" }],
 }) }));
 vi.mock("../actions/src/cutoff", () => ({ cutoffCandidates: mocks.candidates }));
-vi.mock("../actions/src/purchase", () => ({ openLedger: mocks.open, purchaseAssessment: mocks.purchase }));
+vi.mock("../actions/src/purchase", () => ({ openLedger: mocks.open, purchaseAssessment: mocks.purchase, markAssessmentUnusable: mocks.unusable }));
 vi.mock("../actions/src/pull-request", () => ({ checkedOutBranch: () => "feature", assertPublicRepository: mocks.visibility }));
-vi.mock("../actions/src/assessment", () => ({ assessmentPrompt: () => "assess dependencies", applyAssessment: mocks.apply }));
+vi.mock("../actions/src/assessment", () => ({ InvalidAssessmentError: mocks.InvalidAssessmentError, assessmentPrompt: () => "assess dependencies", applyAssessment: mocks.apply }));
 vi.mock("../src/x402", () => ({ IntelligenceClient: function (options: unknown) {
   mocks.client(options);
   return { buy: mocks.buy };
@@ -111,6 +111,7 @@ it("retains incremental PR output and paid evidence when publication fails", asy
   });
   await run("failed");
   expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("Later publication failed"));
+  expect(mocks.unusable).not.toHaveBeenCalled();
   expect(mocks.output).toHaveBeenCalledWith("pull-requests", '["https://github.com/team/repo/pull/1"]');
   expect(mocks.output).toHaveBeenCalledWith("message", '{"answer":"{\\"findings\\":[]}"}');
 });
@@ -151,12 +152,13 @@ it("stops before later candidates when payment or ledger handling fails", async 
   expect(mocks.apply).not.toHaveBeenCalled();
 });
 
-it("blocks the assumed miner placeholder before any ledger or paid request", async () => {
-  vi.stubEnv("PREFERRED_MINER_ID", "0");
-  await run("failed");
+it.each(["0"])("skips unavailable preferred miner %s before any ledger or paid request", async (miner) => {
+  vi.stubEnv("PREFERRED_MINER_ID", miner);
+  await run();
   expect(mocks.open).not.toHaveBeenCalled();
   expect(mocks.buy).not.toHaveBeenCalled();
-  expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("assumed placeholder"));
+  expect(mocks.failed).not.toHaveBeenCalled();
+  expect(mocks.notice).toHaveBeenCalledWith(expect.stringContaining("no purchase made"));
 });
 
 it.each([true, false])("reports registry failures after processing verified candidates (candidate: %s)", async (candidate) => {
@@ -168,4 +170,22 @@ it.each([true, false])("reports registry failures after processing verified cand
   expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("Registry lookups failed for 1 dependencies"));
   expect(mocks.output).toHaveBeenCalledWith("message", expect.stringContaining("1 registry lookups failed"));
   expect(mocks.buy).toHaveBeenCalledTimes(candidate ? 1 : 0);
+});
+
+it.each([false, true])("marks invalid answers unusable and stops if recording fails (%s)", async (writeFails) => {
+  mocks.candidates.mockResolvedValue([{ package: "bad" }, { package: "good" }]);
+  mocks.purchase.mockResolvedValue({ answer: "not JSON", assessmentId: "assessment" });
+  mocks.apply.mockRejectedValueOnce(new mocks.InvalidAssessmentError("Invalid JSON"));
+  if (writeFails) mocks.unusable.mockRejectedValueOnce(new Error("Ledger unavailable"));
+  await run("failed");
+  expect(mocks.unusable).toHaveBeenCalledExactlyOnceWith({ directory: "/mock-ledger" }, "assessment", "Invalid JSON");
+  expect(mocks.purchase).toHaveBeenCalledTimes(writeFails ? 1 : 2);
+});
+
+it("passes the required miner 7314 through to payment and assessment", async () => {
+  vi.stubEnv("PREFERRED_MINER_ID", "7314");
+  await run();
+  expect(mocks.client).toHaveBeenCalledWith(expect.objectContaining({ preferredMinerId: "7314" }));
+  expect(mocks.purchase).toHaveBeenCalledOnce();
+  expect(mocks.apply).toHaveBeenCalledOnce();
 });

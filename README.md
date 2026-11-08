@@ -53,7 +53,7 @@ Known gaps in this slice, kept here so nobody mistakes them for features:
 
 - The intent id `QUESTION_ANSWERING_GENERAL` is hardcoded; it was checked against `GET /engine/v1/intents` on 3 Nov 2026 and must be rechecked if the catalogue changes.
 - Each payment try is recorded on the ledger branch at every stage (`reserved`, then `quote_refused` or `request_sent`, then `delivered`, `failed_and_credited`, `failed_not_charged` or `unknown_needs_reconciliation`; definitions in [SPEC §2.6](docs/SPEC.md)) before the bot moves on. If a run dies or its push fails after `request_sent`, the next run for that PR and commit stops instead of paying again, and a person checks the wallet, escrow balance and signal. Before recording `reserved` and `request_sent`, the run re-checks the freshly fetched ledger, and a push loses if another run pushed first, so two runs for the same PR and commit can't both pay; the second stops. Nothing yet marks a stuck attempt as reconciled; that is done by hand on the ledger branch.
-- A purchase is recorded once per `receipt_hash`; writing a receipt that is already on the ledger is refused. Each purchase row has a `resultStatus` for answer quality, kept apart from payment: new rows start `unchecked`, and `useful`, `unusable` or `not_found` are set by hand until something judges answers.
+- A purchase is recorded once per `receipt_hash`; writing a receipt that is already on the ledger is refused. Each purchase row has a `resultStatus` for answer quality, kept apart from payment: new rows start `unchecked`, and `useful`, `unusable` or `not_found` can be recorded separately. The dependency action automatically appends `unusable` for invalid findings; the dashboard uses the latest quality update.
 - Each purchase row stores the network, chain id, USDC contract and explorer URL of the 402 option it paid, and transaction links are built from that. Rows written before 5 Nov 2026 lack these fields; their links use the date (before 1 Nov: Basescan, Base Sepolia; after: Etherscan, Ethereum Sepolia). The memo's summary line still names Ethereum Sepolia as fixed text.
 
 ## Repository layout
@@ -227,7 +227,7 @@ jobs:
           TELEGRAPH_EVM_PRIVATE_KEY: ${{ secrets.TELEGRAPH_EVM_PRIVATE_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
           MODEL_CUTOFF: ${{ vars.MODEL_CUTOFF || '2025-01-01' }}
-          PREFERRED_MINER_ID: ${{ vars.PREFERRED_MINER_ID || '0' }}
+          PREFERRED_MINER_ID: ${{ vars.PREFERRED_MINER_ID || '7314' }}
           MODEL_PROVIDER: ${{ vars.MODEL_PROVIDER || 'assumed-provider' }}
           MODEL_ID: ${{ vars.MODEL_ID || 'assumed-model' }}
           MODEL_CUTOFF_SOURCE_URL: ${{ vars.MODEL_CUTOFF_SOURCE_URL || 'https://github.com/borodedamie/telegraph-pr-agent/blob/main/docs/SPEC.md' }}
@@ -290,8 +290,9 @@ proving what is installed in a running interpreter. Unresolved versions are repo
   `MODEL_CUTOFF_STATUS` (`provider-documented` or `team-assumed`) for provenance.
   `MODEL_CONFIGURED_AT` is optional; otherwise the configuration-load time is recorded.
   The bundled workflow currently assumes provider `assumed-provider`, model
-  `assumed-model`, cutoff `2025-01-01` and miner `0`, with the assumption documented
-  in SPEC. Miner `0` is rejected before payment; replace it with a real numeric ID.
+  `assumed-model` and cutoff `2025-01-01`, with the assumption documented
+  in SPEC. It defaults to the required npm miner `7314`; an explicit miner `0` skips
+  with a notice before payment.
 - Inputs `chain-id` and `usdc-address` default the payment allowlist to Sepolia (`11155111`) and USDC
   `0xcc194e1a843B658526D0D5C431f670028582Ae17`. No chain or token variables
   are required; inputs can override the allowlist. These defaults were verified with an unsigned, unpaid devnode
@@ -379,7 +380,16 @@ another purchase; the ledger/dashboard flags incomplete evidence for reconciliat
 Merge accounting refuses receipts that are missing or do not match settled evidence.
 
 Purchase rows include amount, receipt, selection policy, package/version context,
-and `resultStatus: "unchecked"`. The existing dashboard displays these as assessments
+and `resultStatus: "unchecked"`. Invalid findings append an `unusable` quality update;
+the dashboard displays the latest quality without rewriting payment evidence.
+Publication failures do not mark answers unusable. Set `PREFERRED_MINER_ID=7314`
+to use the team's npm migration miner. It receives an exact two-version migration
+question; its structured response is retained in the purchase and ledger. The
+adapter validates package/version identity and source evidence, includes coverage
+and security caveats, and refuses introduced vulnerabilities. Python dependencies
+skip this npm-only miner before payment; ranked fallback retains the generic
+assessment prompt. Preferred miner `0` remains a notice-only setup placeholder.
+The existing dashboard displays purchases as assessments
 when no PR exists yet. `.github/workflows/merge-accounting.yml` records closed-and-merged generated PRs
 from this repository on any supported target branch, including release branches.
 Missing or reformatted evidence fails with a recovery message rather than silently

@@ -82,6 +82,7 @@ export interface AttemptKey {
 }
 
 export interface AttemptRow extends AttemptKey {
+  resultStatus?: LedgerRow["resultStatus"];
   kind: "attempt";
   attemptId: string;
   attempt: number;

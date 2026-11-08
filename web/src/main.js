@@ -1,4 +1,4 @@
-import { mergedCosts } from "./accounting.js";
+import { mergedCosts, purchaseRows } from "./accounting.js";
 const REPO = "borodedamie/telegraph-pr-agent";
 const LEDGER_URL = `https://raw.githubusercontent.com/${REPO}/ledger/ledger.jsonl`;
 // Rows store the explorer of the chain they paid on. Rows written before 5 Nov 2026
@@ -237,7 +237,7 @@ async function main() {
   try {
     const entries = await loadRows();
     const costs = mergedCosts(entries);
-    const rows = entries.filter((row) => !row.kind).reverse(); // newest purchases first
+    const rows = purchaseRows(entries).reverse(); // newest purchases first
     const settled = rows.filter((r) => r.status === "settled");
     const total = settled.reduce((sum, r) => sum + r.amountUsdc, 0);
     app.querySelector(".spend-total .figure").replaceChildren(

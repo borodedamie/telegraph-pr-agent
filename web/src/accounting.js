@@ -13,3 +13,10 @@ export const mergedCosts = (rows) => {
   }
   return { total, count: prs.size, average: prs.size ? total / prs.size : null };
 };
+
+export const purchaseRows = (rows) => {
+  const quality = new Map(rows.filter((row) => row.kind === "attempt" && row.assessmentId && row.resultStatus)
+    .map((row) => [row.assessmentId, row.resultStatus]));
+  return rows.filter((row) => !row.kind).map((row) => ({ ...row,
+    resultStatus: quality.get(row.assessmentId) ?? row.resultStatus }));
+};

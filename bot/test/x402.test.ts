@@ -134,6 +134,7 @@ describe("IntelligenceClient.buy", () => {
       receiptHash: "0xreceipt",
       signalHash: "0xsignal",
       answer: LONG_ANSWER,
+      result: { answer: LONG_ANSWER },
       status: "settled",
       network: CHAIN,
       chainId: CHAIN_ID,
@@ -174,7 +175,9 @@ describe("IntelligenceClient.buy", () => {
     );
     const paymentFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => engine200({ miner_id: "7314", miner_name: "Package Release Intelligence" }));
     const { client } = makeClient({ fetchImpl: fetchImpl as unknown as typeof fetch, paymentFetch, preferredMinerId: "7314" });
-    const p = await client.buy("QUESTION_ANSWERING", "What changed in zod from 3.23.8 to 4.0.0?");
+    const p = await client.buy("QUESTION_ANSWERING", (minerId) => minerId === "7314"
+      ? "What changed in zod from 3.23.8 to 4.0.0?" : "generic prompt");
+    expect(JSON.parse(String(paymentFetch.mock.calls[0][1]?.body)).payload.query).toBe("What changed in zod from 3.23.8 to 4.0.0?");
     // Unranked: no rank or score is recorded, rather than a 0 that reads as better than rank 1.
     expect([p.minerId, p.minerRank, p.minerScore, p.selectedBy]).toEqual(["7314", null, null, "our_choice"]);
     expect(String(paymentFetch.mock.calls[0][0])).toBe("https://devnode.test/engine/v1/ask/7314");
@@ -232,7 +235,9 @@ describe("IntelligenceClient.buy", () => {
   it("keeps a non-`answer` result whole rather than dropping it", async () => {
     const paymentFetch = vi.fn(async () => engine200({ result: { exit_status: 0, stdout: "ok" } }));
     const { client } = makeClient({ paymentFetch });
-    expect((await client.buy("QUESTION_ANSWERING", "x")).answer).toBe('{"exit_status":0,"stdout":"ok"}');
+    const purchase = await client.buy("QUESTION_ANSWERING", "x");
+    expect(purchase.answer).toBe('{"exit_status":0,"stdout":"ok"}');
+    expect(purchase.result).toEqual({ exit_status: 0, stdout: "ok" });
   });
 
   it("pays the EVM accept even when the Solana accept is listed first", async () => {

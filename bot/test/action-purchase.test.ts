@@ -2,9 +2,9 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
-import { purchaseAssessment } from "../actions/src/purchase.js";
+import { purchaseAssessment, markAssessmentUnusable } from "../actions/src/purchase.js";
 import { LEDGER_FILE, type AttemptRow } from "../src/ledger.js";
-import type { OnAttempt, Purchase } from "../src/x402.js";
+import { AskFailedError, type OnAttempt, type Purchase } from "../src/x402.js";
 
 const directories: string[] = [];
 afterEach(() => { for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true }); });
@@ -23,7 +23,7 @@ const fixture = () => {
     minerScore: null, selectedBy: "our_choice", amountUsdc: 0.01, answer: '{"findings":[]}',
     status: "settled", txHash: "tx", receiptHash: "receipt", signalHash: "signal", network: "eip155:11155111",
     chainId: 11155111, usdcContract: `0x${"b".repeat(40)}`, explorerBaseUrl: "https://sepolia.etherscan.io" };
-  const buy = vi.fn(async (_intent: string, _query: string, onAttempt?: OnAttempt) => {
+  const buy = vi.fn(async (_intent: string, _query: string | ((minerId: string) => string), onAttempt?: OnAttempt) => {
     await onAttempt!({ state: "reserved", minerId: "302" });
     await onAttempt!({ state: "request_sent", minerId: "302", quotedAmountUsdc: 0.01 });
     payments++;
@@ -133,5 +133,48 @@ it("reuses paid answers with missing evidence without paying twice", async () =>
   await purchaseAssessment(f.options);
   expect(await purchaseAssessment(f.options)).toMatchObject({ answer: '{"findings":[]}', receiptHash: "", signalHash: "", txHash: "" });
   expect(f.rows().find((row) => !row.kind).evidenceIncomplete).toBe(true);
+  expect(f.payments()).toBe(1);
+});
+
+it("skips the npm-only miner for Python before reserving or paying, allowing fallback", async () => {
+  const f = fixture();
+  const options = { ...f.options, dependency: { ...f.options.dependency, ecosystem: "PyPI" as const } };
+  const buy = f.buy.getMockImplementation()!;
+  f.buy.mockImplementationOnce(async (intent, query, onAttempt) => {
+    await expect(onAttempt!({ state: "reserved", minerId: "7314" })).rejects.toBeInstanceOf(AskFailedError);
+    expect(readFileSync(f.path, "utf8")).toBe("");
+    expect(f.payments()).toBe(0);
+    return buy(intent, query, onAttempt);
+  });
+  await purchaseAssessment(options);
+  expect(f.payments()).toBe(1);
+  expect(f.rows().every((row) => row.minerId === "302")).toBe(true);
+});
+
+it("appends unusable quality once without changing payment evidence or buying again", async () => {
+  const f = fixture();
+  const purchase = await purchaseAssessment(f.options);
+  await markAssessmentUnusable(f.options.ledger, purchase.assessmentId, "Invalid JSON");
+  await markAssessmentUnusable(f.options.ledger, purchase.assessmentId, "Invalid JSON");
+  expect(f.rows()).toHaveLength(5);
+  expect(f.rows()[4]).toMatchObject({ kind: "attempt", state: "delivered", resultStatus: "unusable", reason: "Invalid JSON" });
+  expect(f.rows()[2]).toMatchObject({ resultStatus: "unchecked", receiptHash: purchase.receiptHash });
+  await purchaseAssessment(f.options);
+  expect(f.payments()).toBe(1);
+});
+
+it("sends the miner-specific migration question and retains structured answers on reuse", async () => {
+  const f = fixture();
+  const result = { outcome: "found", changes: [{ kind: "breaking" }], security: { advisories: [] } };
+  const buy = f.buy.getMockImplementation()!;
+  f.buy.mockImplementationOnce(async (intent, query, onAttempt) => {
+    expect(typeof query).toBe("function");
+    if (typeof query !== "function") throw new Error("Expected miner-specific query");
+    expect(query("7314")).toBe("What changed in foo from 1.0.0 to 2.0.0?");
+    expect(query("302")).toBe(f.options.query);
+    return { ...await buy(intent, query, onAttempt), result };
+  });
+  expect(await purchaseAssessment(f.options)).toMatchObject({ result });
+  expect(await purchaseAssessment(f.options)).toMatchObject({ result });
   expect(f.payments()).toBe(1);
 });

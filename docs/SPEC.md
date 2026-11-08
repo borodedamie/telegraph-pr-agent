@@ -95,6 +95,18 @@ are excluded from ledger subprocesses. Malformed ledger JSON stops the action. N
 exact configured model ID, cutoff date/source/status and configuration timestamp.
 Paid answers with missing hashes remain reusable and are marked for evidence
 reconciliation; missing receipt hashes cannot be used for merge accounting.
+Answers failing findings parsing or validation append a delivered-attempt quality
+update with `resultStatus: "unusable"`; publication errors do not change answer
+quality. The dashboard projects the latest quality update onto the purchase.
+Miner `7314` receives a plain npm migration question for the exact installed and
+verified target versions. The client preserves its structured result alongside
+prose and the ledger retains it for reuse. An adapter validates the returned package,
+versions, quoted documented changes, advisory conclusions and HTTPS source links
+before producing findings. It reports coverage/security limitations, never treats
+inferred changes as documented evidence, and refuses introduced vulnerabilities.
+Non-found or malformed answers are unusable; evidence-free answers produce no PR.
+Python candidates skip this npm-only miner before payment and may use ranked
+fallback. Other miners retain the original assessment prompt.
 
 Registry lookup failures are reported per dependency while verified candidates
 continue, then the run reports any lookup failures rather than a clean success. The scanner validates all affected declarations, groups matching Python
@@ -130,10 +142,11 @@ purchase or hosted ledger write is claimed. See README for configuration.
 ### 2.3 Dependency eligibility and `MODEL_CUTOFF`
 
 **Temporary setup assumptions (8 Nov 2026):** provider `assumed-provider`, model
-`assumed-model`, cutoff `2025-01-01` (team-assumed, not provider-documented), and
-preferred miner `0`. These are placeholders, not verified provider or miner IDs.
-The workflow passes them as environment variables; miner `0` is refused before
-payment. Replace them through repository variables before a paid run.
+`assumed-model` and cutoff `2025-01-01` (team-assumed, not provider-documented).
+These model values are placeholders. The workflow defaults `PREFERRED_MINER_ID`
+to the required npm migration miner `7314`; repository variables override it.
+An explicit miner `0` still skips with a notice before payment. Replace the model
+assumptions through repository variables before a paid run.
 
 - [PRODUCT] `Eligible(A, B) = semver(B) > semver(A) AND releaseDate(B) > MODEL_CUTOFF`, where A is the installed version from the lockfile and B the latest eligible stable version from the registry. Release timestamps come from registry metadata, never the LLM. Prereleases excluded. Missing or ambiguous dates fail closed. If B equals A, do nothing. This rule is our design, not a Telegraph or hackathon requirement; the eligibility requirement is the autonomous purchase and its meaningful use (§1).
 - [PRODUCT] A comes from the lockfile, never from stripping `^`/`~` off a `package.json` range.

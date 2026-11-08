@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mergedCosts } from "./accounting.js";
+import { mergedCosts, purchaseRows } from "./accounting.js";
 
 test("allocates settled receipt costs once and excludes unmatched, failed and cross-repo records", () => {
   const purchase = { repo: "team/repo", status: "settled", receiptHash: "one", amountUsdc: 0.02 };
@@ -16,4 +16,14 @@ test("allocates settled receipt costs once and excludes unmatched, failed and cr
     { ...merge, repo: "other/repo", prNumber: 5 }];
   assert.deepEqual(mergedCosts(rows), { total: 0.06, count: 2, average: 0.03 });
   assert.deepEqual(mergedCosts([purchase]), { total: 0, count: 0, average: null });
+});
+
+test("projects the latest assessment quality without altering purchase evidence", () => {
+  const purchase = { assessmentId: "one", receiptHash: "receipt", resultStatus: "unchecked" };
+  assert.deepEqual(purchaseRows([purchase,
+    { kind: "attempt", assessmentId: "one", resultStatus: "useful" },
+    { kind: "attempt", assessmentId: "one", resultStatus: "unusable" },
+    { kind: "attempt", resultStatus: "unusable" }, { receiptHash: "legacy", resultStatus: "unchecked" }]),
+  [{ ...purchase, resultStatus: "unusable" }, { receiptHash: "legacy", resultStatus: "unchecked" }]);
+  assert.equal(purchase.resultStatus, "unchecked");
 });

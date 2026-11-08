@@ -6,7 +6,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AttemptConflictError, checkMayPay, commitLedgerRow, LEDGER_FILE, preflight,
   type AttemptKey, type AttemptRow, type LedgerRow, type ModelProvenance } from "../../src/ledger.js";
-import type { IntelligenceClient, Purchase } from "../../src/x402.js";
+import { AskFailedError, type IntelligenceClient, type Purchase } from "../../src/x402.js";
+import { migrationPrompt, MIGRATION_MINER_ID } from "./miner-assessment";
 import type { Dependency } from "./scan";
 
 export type Ledger = { directory: string; runGit: (args: string[]) => Promise<void> };
@@ -60,7 +61,7 @@ const savedPurchase = z.object({
   intent: z.string().min(1), minerId: z.string().min(1), minerName: z.string(),
   minerRank: z.number().nullable(), minerScore: z.number().nullable(),
   amountUsdc: z.number().finite().nonnegative(), txHash: z.string(),
-  receiptHash: z.string(), signalHash: z.string(), answer: z.string(),
+  receiptHash: z.string(), signalHash: z.string(), answer: z.string(), result: z.unknown().optional(),
   status: z.literal("settled"), selectedBy: z.enum(["rank", "our_choice"]),
   network: z.string().min(1), chainId: z.number().int().positive(),
   usdcContract: z.string().regex(/^0x[0-9a-fA-F]{40}$/), explorerBaseUrl: z.string(),
@@ -70,7 +71,7 @@ export const purchaseAssessment = async (options: {
   ledger: Ledger; repository: string; baseSha: string; dependency: Dependency;
   provenance: ModelProvenance; intent: string; query: string; client: Pick<IntelligenceClient, "buy">;
   onPurchase: (purchase: Purchase) => void;
-}): Promise<Purchase> => {
+}): Promise<Purchase & { assessmentId: string }> => {
   const { ledger, repository, baseSha, dependency, intent, query, client } = options;
   const assessmentId = createHash("sha256").update(JSON.stringify([
     repository, intent, dependency.ecosystem, dependency.source, dependency.package,
@@ -88,7 +89,7 @@ export const purchaseAssessment = async (options: {
     if (check.action === "skip") {
       const row = existing.split("\n").filter((line) => line.trim()).map((line) => JSON.parse(line))
         .find((row) => !row.kind && row.repo === repository && row.assessmentId === assessmentId);
-      const purchase = savedPurchase.parse(row);
+      const purchase = { ...savedPurchase.parse(row), assessmentId };
       options.onPurchase(purchase);
       return purchase;
     }
@@ -99,7 +100,10 @@ export const purchaseAssessment = async (options: {
     ...key, kind: "attempt", attemptId: `${assessmentId}:${attempt}`, attempt, state,
     minerId: "", timestamp: new Date().toISOString(), ...fields,
   });
-  const purchase = await client.buy(intent, query, async (event) => {
+  const paid = await client.buy(intent, (minerId) => minerId === MIGRATION_MINER_ID && dependency.ecosystem === "npm" ? migrationPrompt(dependency) : query, async (event) => {
+    if (event.state === "reserved" && event.minerId === MIGRATION_MINER_ID && dependency.ecosystem !== "npm") {
+      throw new AskFailedError("Miner 7314 supports npm migrations only");
+    }
     await commitLedgerRow(ledger.directory, (fresh) => {
       checkedLedger(fresh);
       if (event.state === "reserved") {
@@ -111,6 +115,7 @@ export const purchaseAssessment = async (options: {
       return attemptRow(event.state, event);
     }, ledger);
   });
+  const purchase = { ...paid, assessmentId };
   // Keep paid evidence available even if persisting it fails; request_sent then blocks another purchase.
   options.onPurchase(purchase);
   const row: LedgerRow = { ...purchase, model: options.provenance,
@@ -122,4 +127,14 @@ export const purchaseAssessment = async (options: {
     minerId: purchase.minerId, receiptHash: purchase.receiptHash,
   })], ledger);
   return purchase;
+};
+
+export const markAssessmentUnusable = async (ledger: Ledger, assessmentId: string, reason: string): Promise<void> => {
+  await commitLedgerRow(ledger.directory, (fresh) => {
+    const delivered = checkedLedger(fresh).split("\n").filter((line) => line.trim()).map((line) => JSON.parse(line))
+      .reverse().find((row): row is AttemptRow => row.kind === "attempt" && row.assessmentId === assessmentId && row.state === "delivered");
+    if (!delivered) throw new Error("Missing delivered assessment; cannot record answer quality");
+    return delivered.resultStatus === "unusable" ? [] : { ...delivered, resultStatus: "unusable" as const,
+      reason, timestamp: new Date().toISOString() };
+  }, ledger);
 };

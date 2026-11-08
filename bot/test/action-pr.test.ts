@@ -3,7 +3,7 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { applyAssessment, assessmentPrompt, parseFindings } from "../actions/src/assessment.js";
+import { applyAssessment, assessmentPrompt, parseFindings, InvalidAssessmentError } from "../actions/src/assessment.js";
 import { prepareUpdate, updateManifest } from "../actions/src/updates.js";
 import { checkedOutBranch, createDependencyPr } from "../actions/src/pull-request.js";
 import { scanRepository } from "../actions/src/scan.js";
@@ -417,12 +417,29 @@ describe("one-invocation dependency updates", () => {
     expect(onPublished).toHaveBeenCalledExactlyOnceWith(["https://github.com/team/repo/pull/1"]);
   });
 
+  it("publishes an adapted structured miner answer instead of parsing its prose", async () => {
+    const prepare = vi.spyOn(updateModule, "prepareUpdate").mockResolvedValue({ finding, files: [] });
+    vi.spyOn(prModule, "createDependencyPr").mockResolvedValue("https://github.com/team/repo/pull/1");
+    const input = { ...options(), dependencies: [{ ...dependency, targetVersion: finding.targetVersion }],
+      purchase: { ...options().purchase, minerId: "7314", answer: "Migration prose, not JSON", result: {
+        outcome: "found", request: { ecosystem: "npm", package: dependency.package,
+          fromResolved: dependency.currentVersion, toResolved: finding.targetVersion },
+        changes: [{ kind: "breaking", version: finding.targetVersion, evidenceType: "documented", change: "API changed",
+          excerpt: "Use the new API", migration: null, sourceId: "s1" }],
+        security: { status: "unavailable", advisories: [] }, coverage: { complete: false },
+        sources: [{ id: "s1", url: "https://example.org/releases" }],
+      } } };
+    expect(await applyAssessment(input)).toEqual(["https://github.com/team/repo/pull/1"]);
+    expect(prepare).toHaveBeenCalledWith(input.root, expect.objectContaining({ package: dependency.package,
+      targetVersion: finding.targetVersion, reason: expect.stringContaining("security check: unavailable") }));
+  });
+
   it("rejects malformed findings before attempting any updates", async () => {
     const prepare = vi.spyOn(updateModule, "prepareUpdate");
     const publish = vi.spyOn(prModule, "createDependencyPr");
     const input = options();
     input.purchase.answer = "Please run this script";
-    await expect(applyAssessment(input)).rejects.toThrow();
+    await expect(applyAssessment(input)).rejects.toBeInstanceOf(InvalidAssessmentError);
     expect(prepare).not.toHaveBeenCalled();
     expect(publish).not.toHaveBeenCalled();
   });

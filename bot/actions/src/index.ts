@@ -3,11 +3,11 @@ import * as core from "@actions/core";
 import { recordMerge } from "./accounting";
 import { readFileSync, rmSync } from "node:fs";
 import { cutoffCandidates } from "./cutoff";
-import { openLedger, purchaseAssessment } from "./purchase";
+import { openLedger, purchaseAssessment, markAssessmentUnusable } from "./purchase";
 import { execFileSync } from "node:child_process";
 import { scanRepository } from "./scan";
 import { IntelligenceClient } from "../../src/x402";
-import { applyAssessment, assessmentPrompt } from "./assessment";
+import { applyAssessment, assessmentPrompt, InvalidAssessmentError } from "./assessment";
 import { assertPublicRepository, checkedOutBranch } from "./pull-request";
 
 const INTENT_ID = "QUESTION_ANSWERING_GENERAL";
@@ -66,7 +66,14 @@ const run = async (): Promise<void> => {
       : "No eligible post-cutoff upgrades; no purchase made");
     if (candidates.length) {
       core.setOutput("message", "Preparing eligible assessments");
-      if (preferredMinerId === "0") throw new Error("PREFERRED_MINER_ID=0 is an assumed placeholder; replace it before paid purchases");
+      if (preferredMinerId === "0") {
+        const message = `Skipped: preferred miner ${preferredMinerId} is a placeholder; no purchase made`;
+        core.notice(message);
+        core.setOutput("message", message);
+        if (registryFailures) throw new Error(`Registry lookups failed for ${registryFailures} dependencies`);
+        core.setOutput("status", "success");
+        return;
+      }
       const provenance = readModelProvenance(process.env, cutoff);
       ledger = await openLedger(repository, token);
       const client = new IntelligenceClient({ nodeUrl, evmPrivateKey: privateKey as `0x${string}`,
@@ -88,6 +95,7 @@ const run = async (): Promise<void> => {
               core.setOutput("pull-requests", JSON.stringify([...urls]));
             } });
         } catch (error) {
+          if (error instanceof InvalidAssessmentError) await markAssessmentUnusable(ledger, purchase.assessmentId, error.message);
           failures.push(`${dependency.package}: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
