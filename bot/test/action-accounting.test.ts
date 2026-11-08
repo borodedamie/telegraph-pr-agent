@@ -7,14 +7,14 @@ import { recordMerge } from "../actions/src/accounting.js";
 
 const directories: string[] = [];
 afterEach(() => { for (const d of directories.splice(0)) rmSync(d, { recursive: true, force: true }); });
-const fixture = () => {
+const fixture = (status = "settled", baseBranch = "main") => {
   const directory = mkdtempSync(join(tmpdir(), "merge-cost-"));
   directories.push(directory);
   const path = join(directory, "ledger.jsonl");
   const paid = { repo: "team/repo", package: "foo", source: "package.json", currentVersion: "1.0.0",
-    targetVersion: "2.0.0", receiptHash: "receipt", status: "settled", amountUsdc: 0.01 };
+    targetVersion: "2.0.0", receiptHash: "receipt", status, amountUsdc: 0.01 };
   const detail = { ...paid, ecosystem: "npm", purchase: { receiptHash: "receipt" } };
-  const branch = createHash("sha256").update(JSON.stringify(["main", "npm", paid.source, paid.package,
+  const branch = createHash("sha256").update(JSON.stringify([baseBranch, "npm", paid.source, paid.package,
     paid.currentVersion, paid.targetVersion])).digest("hex").slice(0, 24);
   let remote = `${JSON.stringify(paid)}\n`;
   writeFileSync(path, remote);
@@ -24,7 +24,7 @@ const fixture = () => {
   });
   const pr = { number: 42, merged: true, merged_at: "2026-11-08T00:00:00Z", merge_commit_sha: "b".repeat(40),
     body: `Miner finding and purchase evidence:\n\n${JSON.stringify(detail, null, 2).split("\n").map((l) => `    ${l}`).join("\n")}\n\nDraft for human review.`,
-    base: { ref: "main", repo: { full_name: "team/repo" } },
+    base: { ref: baseBranch, repo: { full_name: "team/repo" } },
     head: { ref: `fix/telegraph-dependency-${branch}`, sha: "a".repeat(40), repo: { full_name: "team/repo" } } };
   return { ledger: { directory, runGit }, pr, rows: () => remote.trim().split("\n").map((l) => JSON.parse(l)) };
 };
@@ -52,4 +52,23 @@ it("rejects forged receipt claims and mismatched generated branches without ledg
   await expect(recordMerge(f.ledger, "team/repo", { ...f.pr,
     head: { ...f.pr.head, ref: "fix/telegraph-dependency-wrong" } })).rejects.toThrow(/branch differs/);
   expect(f.ledger.runGit.mock.calls.some(([args]) => args[0] === "push")).toBe(false);
+});
+
+it("records supported release-branch merges", async () => {
+  const f = fixture("settled", "release/next");
+  await recordMerge(f.ledger, "team/repo", f.pr);
+  expect(f.rows()[1]).toMatchObject({ kind: "merge", prNumber: 42 });
+});
+
+it("rejects failed purchase evidence without writing a merge", async () => {
+  const f = fixture("failed");
+  await expect(recordMerge(f.ledger, "team/repo", f.pr)).rejects.toThrow(/does not match/);
+  expect(f.ledger.runGit.mock.calls.some(([args]) => args[0] === "push")).toBe(false);
+});
+
+it("reports missing purchase evidence instead of silently omitting merged costs", async () => {
+  const f = fixture();
+  await expect(recordMerge(f.ledger, "team/repo", { ...f.pr, body: "Edited by maintainer" }))
+    .rejects.toThrow(/restore the receipt link/);
+  expect(f.ledger.runGit).not.toHaveBeenCalled();
 });

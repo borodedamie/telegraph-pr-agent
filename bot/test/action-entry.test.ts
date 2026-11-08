@@ -33,6 +33,10 @@ beforeEach(() => {
   vi.stubEnv("GITHUB_TOKEN", "test-token");
   vi.stubEnv("GITHUB_REPOSITORY", "team/repo");
   vi.stubEnv("MODEL_CUTOFF", "2025-01-01");
+  vi.stubEnv("MODEL_PROVIDER", "assumed-provider");
+  vi.stubEnv("MODEL_ID", "assumed-model");
+  vi.stubEnv("MODEL_CUTOFF_SOURCE_URL", "https://example.org/model-assumption");
+  vi.stubEnv("MODEL_CUTOFF_STATUS", "team-assumed");
   vi.stubEnv("PREFERRED_MINER_ID", "");
   vi.stubEnv("GITHUB_EVENT_NAME", "");
   mocks.candidates.mockResolvedValue([{ package: "zod", targetVersion: "4.0.0" }]);
@@ -145,4 +149,23 @@ it("stops before later candidates when payment or ledger handling fails", async 
   await run("failed");
   expect(mocks.purchase).toHaveBeenCalledOnce();
   expect(mocks.apply).not.toHaveBeenCalled();
+});
+
+it("blocks the assumed miner placeholder before any ledger or paid request", async () => {
+  vi.stubEnv("PREFERRED_MINER_ID", "0");
+  await run("failed");
+  expect(mocks.open).not.toHaveBeenCalled();
+  expect(mocks.buy).not.toHaveBeenCalled();
+  expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("assumed placeholder"));
+});
+
+it.each([true, false])("reports registry failures after processing verified candidates (candidate: %s)", async (candidate) => {
+  mocks.candidates.mockImplementationOnce(async (_dependencies, _cutoff, _fetch, report) => {
+    report({ package: "unavailable" }, new Error("HTTP 503"));
+    return candidate ? [{ package: "zod", targetVersion: "4.0.0" }] : [];
+  });
+  await run("failed");
+  expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("Registry lookups failed for 1 dependencies"));
+  expect(mocks.output).toHaveBeenCalledWith("message", expect.stringContaining("1 registry lookups failed"));
+  expect(mocks.buy).toHaveBeenCalledTimes(candidate ? 1 : 0);
 });

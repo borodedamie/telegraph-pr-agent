@@ -1,4 +1,4 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { cutoffCandidates } from "../actions/src/cutoff.js";
 import { parseFindings } from "../actions/src/assessment.js";
 
@@ -23,7 +23,9 @@ it("excludes unchanged and older targets, missing packages, and registry mismatc
   }
   expect(await cutoffCandidates([dependency], cutoff, async () => new Response("", { status: 404 }))).toEqual([]);
   expect(await cutoffCandidates([dependency], cutoff, response({ ...npm, name: "wrong" }))).toEqual([]);
-  await expect(cutoffCandidates([dependency], cutoff, async () => new Response("", { status: 500 }))).rejects.toThrow(/500/);
+  const report = vi.fn();
+  expect(await cutoffCandidates([dependency], cutoff, async () => new Response("", { status: 500 }), report)).toEqual([]);
+  expect(report).toHaveBeenCalledWith(dependency, expect.objectContaining({ message: expect.stringContaining("500") }));
 });
 
 it("falls back to the highest stable npm version when latest is prerelease", async () => {
@@ -56,4 +58,14 @@ it("uses the original Python release date, including earlier yanked artifacts", 
     "2.0": [{ yanked: true, upload_time_iso_8601: "2024-01-01T00:00:00Z" },
       { yanked: false, upload_time_iso_8601: "2026-01-01T00:00:00Z" }],
   } }))).toEqual([]);
+});
+
+it.each([429, 503])("keeps verified candidates when one dependency lookup fails with %s", async (status) => {
+  const report = vi.fn();
+  const failed = { ...dependency, package: "missing" };
+  const fetchImpl: typeof fetch = async (input) => String(input).includes("/missing")
+    ? new Response("", { status }) : new Response(JSON.stringify(npm));
+  expect((await cutoffCandidates([dependency, failed, dependency], cutoff, fetchImpl, report)).map((entry) => entry.package))
+    .toEqual(["foo", "foo"]);
+  expect(report).toHaveBeenCalledTimes(1);
 });

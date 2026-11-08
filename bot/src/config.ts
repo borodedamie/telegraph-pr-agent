@@ -1,3 +1,4 @@
+import type { ModelProvenance } from "./ledger.js";
 import { z } from "zod";
 
 const envSchema = z.object({
@@ -63,4 +64,21 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     demoRepo: e.DEMO_REPO,
     preferredMinerId: e.PREFERRED_MINER_ID || null,
   };
+}
+
+export function readModelProvenance(env: NodeJS.ProcessEnv, cutoff: Date): ModelProvenance {
+  const configuration = z.object({
+    MODEL_PROVIDER: z.string().trim().min(1),
+    MODEL_ID: z.string().trim().min(1),
+    MODEL_CUTOFF_SOURCE_URL: z.string().url().refine((value) => {
+      const url = new URL(value);
+      return url.protocol === "https:" && !url.username && !url.password;
+    }, "must be an HTTPS source URL without credentials"),
+    MODEL_CUTOFF_STATUS: z.enum(["provider-documented", "team-assumed"]),
+    MODEL_CONFIGURED_AT: z.string().datetime().optional(),
+  }).parse({ ...env, MODEL_CONFIGURED_AT: env.MODEL_CONFIGURED_AT || undefined });
+  return { provider: configuration.MODEL_PROVIDER, model: configuration.MODEL_ID,
+    cutoff: cutoff.toISOString(), sourceUrl: configuration.MODEL_CUTOFF_SOURCE_URL,
+    status: configuration.MODEL_CUTOFF_STATUS,
+    configuredAt: configuration.MODEL_CONFIGURED_AT ?? new Date().toISOString() };
 }

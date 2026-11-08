@@ -5,7 +5,7 @@ import { lstatSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AttemptConflictError, checkMayPay, commitLedgerRow, LEDGER_FILE, preflight,
-  type AttemptKey, type AttemptRow, type LedgerRow } from "../../src/ledger.js";
+  type AttemptKey, type AttemptRow, type LedgerRow, type ModelProvenance } from "../../src/ledger.js";
 import type { IntelligenceClient, Purchase } from "../../src/x402.js";
 import type { Dependency } from "./scan";
 
@@ -59,8 +59,8 @@ const checkedLedger = (contents: string): string => {
 const savedPurchase = z.object({
   intent: z.string().min(1), minerId: z.string().min(1), minerName: z.string(),
   minerRank: z.number().nullable(), minerScore: z.number().nullable(),
-  amountUsdc: z.number().finite().nonnegative(), txHash: z.string().min(1),
-  receiptHash: z.string().min(1), signalHash: z.string().min(1), answer: z.string(),
+  amountUsdc: z.number().finite().nonnegative(), txHash: z.string(),
+  receiptHash: z.string(), signalHash: z.string(), answer: z.string(),
   status: z.literal("settled"), selectedBy: z.enum(["rank", "our_choice"]),
   network: z.string().min(1), chainId: z.number().int().positive(),
   usdcContract: z.string().regex(/^0x[0-9a-fA-F]{40}$/), explorerBaseUrl: z.string(),
@@ -68,7 +68,7 @@ const savedPurchase = z.object({
 
 export const purchaseAssessment = async (options: {
   ledger: Ledger; repository: string; baseSha: string; dependency: Dependency;
-  intent: string; query: string; client: Pick<IntelligenceClient, "buy">;
+  provenance: ModelProvenance; intent: string; query: string; client: Pick<IntelligenceClient, "buy">;
   onPurchase: (purchase: Purchase) => void;
 }): Promise<Purchase> => {
   const { ledger, repository, baseSha, dependency, intent, query, client } = options;
@@ -77,7 +77,7 @@ export const purchaseAssessment = async (options: {
     dependency.currentVersion, dependency.targetVersion, query,
   ])).digest("hex");
   const key: AttemptKey = { repo: repository, headSha: baseSha,
-    step: `assessment:${dependency.ecosystem}:${dependency.source}:${dependency.package}`, assessmentId };
+    step: `assessment:${dependency.ecosystem}:${dependency.source}:${dependency.package}`, assessmentId, model: options.provenance };
   await ledger.runGit(["fetch", "origin", "ledger"]);
   await ledger.runGit(["checkout", "-B", "ledger", "origin/ledger"]);
   const ledgerPath = join(ledger.directory, LEDGER_FILE);
@@ -113,7 +113,8 @@ export const purchaseAssessment = async (options: {
   });
   // Keep paid evidence available even if persisting it fails; request_sent then blocks another purchase.
   options.onPurchase(purchase);
-  const row: LedgerRow = { ...purchase, repo: repository, headSha: baseSha, assessmentId,
+  const row: LedgerRow = { ...purchase, model: options.provenance,
+    evidenceIncomplete: !purchase.receiptHash || !purchase.signalHash || !purchase.txHash, repo: repository, headSha: baseSha, assessmentId,
     package: dependency.package, source: dependency.source, currentVersion: dependency.currentVersion,
     targetVersion: dependency.targetVersion, attemptId: attemptRow("delivered").attemptId,
     resultStatus: "unchecked", timestamp: new Date().toISOString() };

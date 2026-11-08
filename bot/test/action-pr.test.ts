@@ -446,3 +446,37 @@ it("skips dependencies that cannot be prepared before purchasing an assessment",
   expect(scan.dependencies.map((entry) => entry.package)).toEqual(["good"]);
   expect(scan.skipped.map((entry) => entry.package)).toEqual(expect.arrayContaining(["member", "noLock", "hashed", "continued"]));
 });
+
+it("validates every changed declaration and groups matching conditional Python pins", async () => {
+  const root = directory();
+  execFileSync("git", ["init", "-q", root]);
+  writeFileSync(join(root, "package.json"), JSON.stringify({
+    dependencies: { shared: ">=1.0.0", good: "^1.0.0" }, devDependencies: { shared: "^1.0.0" },
+  }));
+  writeFileSync(join(root, "package-lock.json"), JSON.stringify({ lockfileVersion: 3, packages: {
+    "node_modules/shared": { version: "1.0.0" }, "node_modules/good": { version: "1.0.0" },
+  } }));
+  writeFileSync(join(root, "requirements.txt"), 'same==1; python_version < "3.10"\nsame==1; python_version >= "3.10"\nblocked==1\nblocked==1 --hash=sha256:abc\nunrelated==1\nunrelated==2 --hash=sha256:def\ncontinued==1\ncontinued==1 \\\n --hash=sha256:def\n');
+  const scan = await scanRepository(root);
+  expect(scan.dependencies.map((entry) => entry.package)).toEqual(["good", "same", "unrelated"]);
+  expect(scan.dependencies.find((entry) => entry.package === "same")!.declared.split("\n")).toHaveLength(2);
+  expect(scan.skipped.map((entry) => entry.package)).toEqual(expect.arrayContaining(["shared", "blocked", "continued"]));
+});
+
+it("skips pnpm members with npm locks while including excluded standalone and tracked build packages", async () => {
+  const root = directory();
+  execFileSync("git", ["init", "-q", root]);
+  writeFileSync(join(root, "package.json"), "{}");
+  writeFileSync(join(root, "pnpm-workspace.yaml"), "packages:\n  - 'other/*'\n# additional sources\n  - 'packages/*'\n  - '!packages/standalone'\n");
+  for (const [project, name] of [["packages/member", "member"], ["packages/standalone", "standalone"],
+    ["tools/build", "source"], ["generated/build", "generated"]]) {
+    mkdirSync(join(root, project), { recursive: true });
+    writeFileSync(join(root, project, "package.json"), JSON.stringify({ dependencies: { [name]: "1.0.0" } }));
+    writeFileSync(join(root, project, "package-lock.json"), JSON.stringify({ lockfileVersion: 3,
+      packages: { [`node_modules/${name}`]: { version: "1.0.0" } } }));
+  }
+  execFileSync("git", ["-C", root, "add", "tools/build"]);
+  const scan = await scanRepository(root);
+  expect(scan.dependencies.map((entry) => entry.package)).toEqual(["standalone", "source"]);
+  expect(scan.skipped).toContainEqual(expect.objectContaining({ package: "member", reason: expect.stringContaining("pnpm workspace") }));
+});

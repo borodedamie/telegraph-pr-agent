@@ -91,11 +91,22 @@ receipt, provider selection, version context and `resultStatus: "unchecked"` bef
 PR preparation, supplying the existing ledger dashboard with assessment costs.
 Missing ledger branches are bootstrapped only after Git confirms their absence;
 read/auth/write errors stop payment. Ledger hooks are disabled and wallet credentials
-are excluded from ledger subprocesses. Malformed ledger JSON stops the action.
+are excluded from ledger subprocesses. Malformed ledger JSON stops the action. New attempts/purchases retain model provider,
+exact configured model ID, cutoff date/source/status and configuration timestamp.
+Paid answers with missing hashes remain reusable and are marked for evidence
+reconciliation; missing receipt hashes cannot be used for merge accounting.
 
-The merge-accounting workflow handles merged same-repository generated PRs using
+Registry lookup failures are reported per dependency while verified candidates
+continue, then the run reports any lookup failures rather than a clean success. The scanner validates all affected declarations, groups matching Python
+pins with their marker context, includes tracked source manifests under build,
+and rejects pnpm members even when they carry a local npm lock. pnpm detection
+supports block-style package globs/exclusions and fails closed for unsupported YAML.
+
+The merge-accounting workflow handles merged same-repository generated PRs on all
+supported target branches (including release branches) using
 the trusted base commit and no wallet credentials. It verifies receipt and branch
-identity against the purchase ledger, appends merge rows idempotently, and the
+identity against the purchase ledger, fails actionably when evidence is missing,
+appends merge rows idempotently, and the
 dashboard calculates recorded cost per merged PR from unique linked receipts.
 This remains a draft-update prototype: code migration, answer-quality verification
 and separate-runner isolation are not implemented. A delivered assessment whose
@@ -117,6 +128,12 @@ purchase or hosted ledger write is claimed. See README for configuration.
 - [PRODUCT] Document repository Actions permissions, the setting allowing Actions to create pull requests, required `contents` and `pull-requests` permissions, fork limitations and unsupported layouts.
 
 ### 2.3 Dependency eligibility and `MODEL_CUTOFF`
+
+**Temporary setup assumptions (8 Nov 2026):** provider `assumed-provider`, model
+`assumed-model`, cutoff `2025-01-01` (team-assumed, not provider-documented), and
+preferred miner `0`. These are placeholders, not verified provider or miner IDs.
+The workflow passes them as environment variables; miner `0` is refused before
+payment. Replace them through repository variables before a paid run.
 
 - [PRODUCT] `Eligible(A, B) = semver(B) > semver(A) AND releaseDate(B) > MODEL_CUTOFF`, where A is the installed version from the lockfile and B the latest eligible stable version from the registry. Release timestamps come from registry metadata, never the LLM. Prereleases excluded. Missing or ambiguous dates fail closed. If B equals A, do nothing. This rule is our design, not a Telegraph or hackathon requirement; the eligibility requirement is the autonomous purchase and its meaningful use (§1).
 - [PRODUCT] A comes from the lockfile, never from stripping `^`/`~` off a `package.json` range.

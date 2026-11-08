@@ -29,7 +29,8 @@ const fixture = () => {
     payments++;
     return { ...purchase, receiptHash: `receipt-${payments}` };
   });
-  const options = { ledger: { directory, runGit }, client: { buy }, repository: "team/repo", baseSha: "sha1",
+  const options = { provenance: { provider: "assumed-provider", model: "assumed-model", cutoff: "2025-01-01T00:00:00.000Z",
+    sourceUrl: "https://example.org/model-assumption", status: "team-assumed" as const, configuredAt: "2026-11-08T00:00:00.000Z" }, ledger: { directory, runGit }, client: { buy }, repository: "team/repo", baseSha: "sha1",
     dependency: { ecosystem: "npm" as const, package: "foo", source: "package.json", declared: "^1.0.0",
       currentVersion: "1.0.0", targetVersion: "2.0.0" }, intent: "qa", query: "assess foo 1 to 2", onPurchase: vi.fn() };
   return { options, buy, runGit, path, purchase, rows: () => remote.trim().split("\n").map((line) => JSON.parse(line)),
@@ -43,6 +44,8 @@ it("persists payment stages and one dashboard-compatible purchase before returni
   expect(f.rows()[2]).toMatchObject({ repo: "team/repo", package: "foo", currentVersion: "1.0.0", targetVersion: "2.0.0",
     amountUsdc: 0.01, selectedBy: "our_choice", resultStatus: "unchecked", receiptHash: purchase!.receiptHash });
   expect(f.rows()[2].prNumber).toBeUndefined();
+  expect(f.rows()[0].model).toEqual(f.options.provenance);
+  expect(f.rows()[2].model).toEqual(f.options.provenance);
   expect(f.options.onPurchase).toHaveBeenCalledWith(purchase);
 });
 
@@ -119,4 +122,16 @@ it("makes no paid request if reserving the attempt cannot be persisted", async (
   await expect(purchaseAssessment(f.options)).rejects.toThrow(/ledger push failed/);
   expect(f.payments()).toBe(0);
   expect(f.options.onPurchase).not.toHaveBeenCalled();
+});
+
+it("reuses paid answers with missing evidence without paying twice", async () => {
+  const f = fixture();
+  const original = f.buy.getMockImplementation()!;
+  f.buy.mockImplementation(async (intent, query, onAttempt) => ({
+    ...await original(intent, query, onAttempt), receiptHash: "", signalHash: "", txHash: "",
+  }));
+  await purchaseAssessment(f.options);
+  expect(await purchaseAssessment(f.options)).toMatchObject({ answer: '{"findings":[]}', receiptHash: "", signalHash: "", txHash: "" });
+  expect(f.rows().find((row) => !row.kind).evidenceIncomplete).toBe(true);
+  expect(f.payments()).toBe(1);
 });

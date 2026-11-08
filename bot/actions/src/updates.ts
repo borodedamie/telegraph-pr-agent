@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, isAbsolute, join, relative, sep } from "node:path";
+import { dirname, isAbsolute, join, matchesGlob, relative, sep } from "node:path";
 import type { Finding } from "./assessment";
 
 export type ChangedFile = { path: string; content: string };
@@ -71,7 +71,7 @@ export const readRepositoryFile = (root: string, source: string): string => {
   return readFileSync(path, "utf8");
 };
 
-export const updateManifest = (content: string, finding: Finding): string => {
+export const updateManifest = (content: string, finding: Pick<Finding, "ecosystem" | "package" | "currentVersion" | "targetVersion">): string => {
   if (finding.ecosystem === "npm") {
     const manifest = JSON.parse(content);
     let changed = false;
@@ -111,8 +111,26 @@ export const readNpmLock = (root: string, source: string): string => {
   if (manifest.workspaces || !existsSync(join(root, lockPath))) {
     throw new Error(`Automatic npm updates require a standalone package-lock.json: ${source}`);
   }
-  let ancestor = dirname(join(root, project));
+  let ancestor = join(root, project);
   while (ancestor.startsWith(`${root}${sep}`) || ancestor === root) {
+    const workspace = join(ancestor, "pnpm-workspace.yaml");
+    if (existsSync(workspace)) {
+      const configuration = readRepositoryFile(root, relative(root, workspace).split(sep).join("/"));
+      const block = configuration.match(/^packages:[ \t]*\r?\n((?:[ \t]+[^\n]*(?:\n|$)|#[^\n]*(?:\n|$)|\r?\n)*)/m)?.[1];
+      const patterns: string[] = [];
+      for (const line of (block ?? "").split(/\r?\n/).filter((line) => line.trim() && !line.trim().startsWith("#"))) {
+        const pattern = line.match(/^\s+-\s+(['"]?)([A-Za-z0-9_./!*?{}@()+,-]+)\1\s*(?:#.*)?$/)?.[2];
+        if (!pattern) throw new Error("Unsupported pnpm workspace configuration; skip automatic npm updates");
+        patterns.push(pattern);
+      }
+      // shortcut: parse block-style pnpm package globs only; fail closed on other YAML forms.
+      if (!patterns.some((pattern) => !pattern.startsWith("!"))) throw new Error("Unsupported pnpm workspace configuration; skip automatic npm updates");
+      const member = relative(ancestor, join(root, project)).split(sep).join("/");
+      if (!member || (patterns.some((pattern) => !pattern.startsWith("!") && matchesGlob(member, pattern))
+        && !patterns.some((pattern) => pattern.startsWith("!") && matchesGlob(member, pattern.slice(1))))) {
+        throw new Error(`Automatic npm updates do not support pnpm workspace members: ${source}`);
+      }
+    }
     const ancestorManifest = join(ancestor, "package.json");
     // Conservatively reject descendants of workspace roots, including members with local locks.
     if (existsSync(ancestorManifest) && JSON.parse(readRepositoryFile(root,

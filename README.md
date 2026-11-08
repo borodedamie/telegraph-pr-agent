@@ -226,6 +226,13 @@ jobs:
         env:
           TELEGRAPH_EVM_PRIVATE_KEY: ${{ secrets.TELEGRAPH_EVM_PRIVATE_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
+          MODEL_CUTOFF: ${{ vars.MODEL_CUTOFF || '2025-01-01' }}
+          PREFERRED_MINER_ID: ${{ vars.PREFERRED_MINER_ID || '0' }}
+          MODEL_PROVIDER: ${{ vars.MODEL_PROVIDER || 'assumed-provider' }}
+          MODEL_ID: ${{ vars.MODEL_ID || 'assumed-model' }}
+          MODEL_CUTOFF_SOURCE_URL: ${{ vars.MODEL_CUTOFF_SOURCE_URL || 'https://github.com/borodedamie/telegraph-pr-agent/blob/main/docs/SPEC.md' }}
+          MODEL_CUTOFF_STATUS: ${{ vars.MODEL_CUTOFF_STATUS || 'team-assumed' }}
+          MODEL_CONFIGURED_AT: ${{ vars.MODEL_CONFIGURED_AT }}
 ```
 
 Checkout makes the repository available; the dependency automation is a single step.
@@ -234,7 +241,9 @@ build steps. For another repository, use `OWNER/REPO/bot/actions@IMMUTABLE_SHA` 
 publishing a commit containing the bundle, rather than the local `./bot/actions` path.
 
 Before purchasing, the action selects newer stable npm/PyPI releases with verified
-release dates strictly after `MODEL_CUTOFF`. No candidate means no purchase or PR.
+release dates strictly after `MODEL_CUTOFF`. No candidate means no purchase or PR. Registry failures are reported per dependency
+without discarding other verified candidates; the run reports failure afterward
+so an outage is not mistaken for a clean no-upgrade result.
 The miner receives one dependency and its verified target per assessment. Findings must
 identify a scanned ecosystem, package, source and current version, a newer target,
 `cve` or `outdated`, a reason and HTTPS evidence sources. CVE findings require CVE IDs.
@@ -259,9 +268,14 @@ and devDependencies from standalone npm package-lock v2/v3 entries, and
 Python exact pins from requirements.txt, requirements-*.txt and requirements/*.txt.
 The scanner performs no registry requests. It checks npm resolved versions against
 manifest ranges using SemVer and validates Python pins using PEP 440; invalid or
-inconsistent entries are skipped before assessment. Unsupported workspace/no-lock
-npm projects and hashed/continued Python pins are also skipped before spending. Python markers
-are preserved, not evaluated. Pins describe the repository environment rather than
+inconsistent entries are skipped before assessment. All declarations the updater
+would change are validated; matching Python package/version pins are grouped with
+their markers preserved. Unsupported workspace/no-lock
+npm projects and hashed/continued Python pins are also skipped before spending.
+pnpm membership checks support block-style package globs and exclusions; other
+workspace YAML forms fail closed until a full workspace resolver is supported. Python markers
+are preserved, not evaluated. Tracked source packages under `build` are included;
+untracked generated directories remain excluded. Pins describe the repository environment rather than
 proving what is installed in a running interpreter. Unresolved versions are reported.
 
 ### Enable the workflow
@@ -272,6 +286,12 @@ proving what is installed in a running interpreter. Unresolved versions are repo
   retain the client's `selectedBy: "our_choice"`; an unranked choice has null rank/score.
 - Set repository variable `MODEL_CUTOFF` (or action input `model-cutoff`) to the model's
   training cutoff date, for example `2025-01-01`. Missing/invalid dates fail before payment.
+- Configure `MODEL_PROVIDER`, `MODEL_ID`, `MODEL_CUTOFF_SOURCE_URL` (HTTPS), and
+  `MODEL_CUTOFF_STATUS` (`provider-documented` or `team-assumed`) for provenance.
+  `MODEL_CONFIGURED_AT` is optional; otherwise the configuration-load time is recorded.
+  The bundled workflow currently assumes provider `assumed-provider`, model
+  `assumed-model`, cutoff `2025-01-01` and miner `0`, with the assumption documented
+  in SPEC. Miner `0` is rejected before payment; replace it with a real numeric ID.
 - Inputs `chain-id` and `usdc-address` default the payment allowlist to Sepolia (`11155111`) and USDC
   `0xcc194e1a843B658526D0D5C431f670028582Ae17`. No chain or token variables
   are required; inputs can override the allowlist. These defaults were verified with an unsigned, unpaid devnode
@@ -352,10 +372,18 @@ failed, without paying again. Findings and target availability are checked again
 before preparing or reusing a PR. A publication/answer failure is reported after
 processing other candidates; payment, ledger and uncertain-outcome failures stop
 further purchases immediately.
+Each new assessment records provider, exact configured model, cutoff date/source,
+assumed-or-documented status and configuration timestamp in its attempt and purchase
+rows. A settled answer with missing hashes is retained and can be reused without
+another purchase; the ledger/dashboard flags incomplete evidence for reconciliation.
+Merge accounting refuses receipts that are missing or do not match settled evidence.
+
 Purchase rows include amount, receipt, selection policy, package/version context,
 and `resultStatus: "unchecked"`. The existing dashboard displays these as assessments
 when no PR exists yet. `.github/workflows/merge-accounting.yml` records closed-and-merged generated PRs
-from this repository. It checks out the immutable trusted base commit, receives
+from this repository on any supported target branch, including release branches.
+Missing or reformatted evidence fails with a recovery message rather than silently
+omitting a merged cost. It checks out the immutable trusted base commit, receives
 no wallet key, and verifies the PR evidence and branch identity against an existing
 settled receipt before appending an idempotent merge row. The dashboard derives
 recorded cost per merged PR from these receipt links, excluding unmatched receipts

@@ -1,4 +1,4 @@
-import { readNpmLock } from "./updates";
+import { readNpmLock, readRepositoryFile, updateManifest } from "./updates";
 import semver from "semver";
 import * as pep440 from "@renovatebot/pep440";
 import { execFileSync } from 'node:child_process';
@@ -18,15 +18,13 @@ export type Dependency = {
 };
 
 const listFiles = (directory: string): string[] => {
-  return [...new Set(execFileSync(
-    'git',
-    ['-C', directory, 'ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', '.'],
-    { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 },
-  ).split('\0'))].filter((filename) => {
-    return filename !== '' && !filename.split('/').some((part) => {
-      return ['node_modules', '.git', 'dist', 'build', 'coverage', 'vendor', '.venv', 'venv', '__pycache__'].includes(part);
-    });
-  });
+  const tracked = new Set(execFileSync('git', ['-C', directory, 'ls-files', '-z', '--cached'],
+    { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 }).split('\0'));
+  const untracked = execFileSync('git', ['-C', directory, 'ls-files', '-z', '--others', '--exclude-standard'],
+    { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 }).split('\0');
+  return [...new Set([...tracked, ...untracked])].filter((filename) => filename !== '' && !filename.split('/').some((part) =>
+    ['node_modules', '.git', 'coverage', '.venv', 'venv', '__pycache__'].includes(part)
+    || (!tracked.has(filename) && ['build', 'dist', 'vendor'].includes(part))));
 };
 
 const asObject = (value: unknown): JsonObject => {
@@ -93,7 +91,9 @@ export const scanRepository = async (directory: string = process.cwd()): Promise
           skipped.push({ project, package: name, reason: 'Current version unavailable in the supported package-lock.json.' });
           continue;
         }
-        if (!semver.satisfies(current, declared)) {
+        const declarations = [asObject(manifest.dependencies ?? {})[name], asObject(manifest.devDependencies ?? {})[name]]
+          .filter((value) => value !== undefined);
+        if (!declarations.every((value) => typeof value === 'string' && semver.satisfies(current, value))) {
           skipped.push({ project, package: name, reason: 'Resolved version does not satisfy the manifest range.' });
           continue;
         }
@@ -138,5 +138,19 @@ export const scanRepository = async (directory: string = process.cwd()): Promise
         reason: 'Python manifest is not resolved here; provide pinned requirements.txt or requirements/*.txt.' });
     }
   }
-  return { root, dependencies, skipped };
+  const groups = new Map<string, Dependency>();
+  for (const dependency of dependencies) {
+    try {
+      // Validate every declaration the shared updater will touch, without changing the file.
+      updateManifest(readRepositoryFile(root, dependency.source), { ...dependency, targetVersion: dependency.currentVersion });
+      const key = JSON.stringify([dependency.ecosystem, dependency.source, dependency.package, dependency.currentVersion]);
+      const existing = groups.get(key);
+      if (existing) existing.declared = [...new Set([...existing.declared.split('\n'), dependency.declared])].sort().join('\n');
+      else groups.set(key, { ...dependency });
+    } catch (error) {
+      skipped.push({ project: dirname(dependency.source), package: dependency.package,
+        reason: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  return { root, dependencies: [...groups.values()], skipped };
 };

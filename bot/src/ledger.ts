@@ -9,7 +9,18 @@ export const LEDGER_FILE = "ledger.jsonl";
 const LEDGER_BRANCH = "ledger";
 const MAX_PUSH_ATTEMPTS = 3;
 
+export interface ModelProvenance {
+  provider: string;
+  model: string;
+  cutoff: string;
+  sourceUrl: string;
+  status: "provider-documented" | "team-assumed";
+  configuredAt: string;
+}
+
 export interface LedgerRow {
+  model?: ModelProvenance;
+  evidenceIncomplete?: boolean;
   repo?: string;
   assessmentId?: string;
   package?: string;
@@ -61,6 +72,7 @@ export type AttemptState =
   | "unknown_needs_reconciliation"; // sent, but no clear outcome; a person must check
 
 export interface AttemptKey {
+  model?: ModelProvenance;
   /** Stable dependency/query identity for assessments made before a PR exists. */
   assessmentId?: string;
   repo: string;

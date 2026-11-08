@@ -1,5 +1,5 @@
 export const mergedCosts = (rows) => {
-  const purchases = new Map(rows.filter((row) => !row.kind && row.status === "settled")
+  const purchases = new Map(rows.filter((row) => !row.kind && row.status === "settled" && row.receiptHash)
     .map((row) => [row.receiptHash, row]));
   const prs = new Set();
   const receipts = new Set();
