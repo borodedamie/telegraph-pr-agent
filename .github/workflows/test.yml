@@ -44,3 +44,6 @@ jobs:
 
       - name: Run bot and action tests without payment or write credentials
         run: npm test --prefix bot
+
+      - name: Test merged PR cost accounting
+        run: npm test --prefix web

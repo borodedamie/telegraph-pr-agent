@@ -45,3 +45,5 @@ jobs:
         env:
           TELEGRAPH_EVM_PRIVATE_KEY: ${{ secrets.TELEGRAPH_EVM_PRIVATE_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
+          MODEL_CUTOFF: ${{ vars.MODEL_CUTOFF }}
+          PREFERRED_MINER_ID: ${{ vars.PREFERRED_MINER_ID }}

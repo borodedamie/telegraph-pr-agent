@@ -316,7 +316,7 @@ it("scans mixed current versions offline and detects the repository without a wo
   const root = directory();
   execFileSync("git", ["init", "-q", root]);
   writeFileSync(join(root, "package.json"), JSON.stringify({ dependencies: { zod: "^3.23.0" } }));
-  writeFileSync(join(root, "package-lock.json"), JSON.stringify({ packages: { "node_modules/zod": { version: "3.23.8" } } }));
+  writeFileSync(join(root, "package-lock.json"), JSON.stringify({ lockfileVersion: 3, packages: { "node_modules/zod": { version: "3.23.8" } } }));
   writeFileSync(join(root, "requirements.txt"), "requests==2.31.0\nflask>=3.0\n");
   const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("No network allowed"));
   try {
@@ -336,7 +336,7 @@ it("skips inconsistent or invalid versions before assessment without losing vali
   writeFileSync(join(root, "package.json"), JSON.stringify({ dependencies: {
     zod: "^4.0.0", valid: "^1.0.0", prerelease: "^2.0.0-rc.1", invalid: "*", invalidrange: "broken",
   } }));
-  writeFileSync(join(root, "package-lock.json"), JSON.stringify({ packages: {
+  writeFileSync(join(root, "package-lock.json"), JSON.stringify({ lockfileVersion: 3, packages: {
     "node_modules/zod": { version: "3.23.8" }, "node_modules/valid": { version: "1.2.0" },
     "node_modules/prerelease": { version: "2.0.0-rc.2" }, "node_modules/invalid": { version: "01.0.0" },
     "node_modules/invalidrange": { version: "1.0.0" },
@@ -426,4 +426,23 @@ describe("one-invocation dependency updates", () => {
     expect(prepare).not.toHaveBeenCalled();
     expect(publish).not.toHaveBeenCalled();
   });
+});
+
+it("skips dependencies that cannot be prepared before purchasing an assessment", async () => {
+  const root = directory();
+  execFileSync("git", ["init", "-q", root]);
+  const write = (source: string, content: unknown) => {
+    mkdirSync(join(root, source, ".."), { recursive: true });
+    writeFileSync(join(root, source), typeof content === "string" ? content : JSON.stringify(content));
+  };
+  write("package.json", { workspaces: ["packages/*"] });
+  write("packages/member/package.json", { dependencies: { member: "1.0.0" } });
+  write("packages/member/package-lock.json", { lockfileVersion: 3, packages: { "node_modules/member": { version: "1.0.0" } } });
+  write("standalone/package.json", { dependencies: { noLock: "1.0.0" } });
+  write("standalone/node_modules/noLock/package.json", { version: "1.0.0" });
+  write("standalone/pnpm-lock.yaml", "lockfileVersion: '9.0'\n");
+  write("requirements.txt", "good==1\nhashed==1 --hash=sha256:abc\ncontinued==1 \\\n --hash=sha256:def\n");
+  const scan = await scanRepository(root);
+  expect(scan.dependencies.map((entry) => entry.package)).toEqual(["good"]);
+  expect(scan.skipped.map((entry) => entry.package)).toEqual(expect.arrayContaining(["member", "noLock", "hashed", "continued"]));
 });

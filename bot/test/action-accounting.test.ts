@@ -1,0 +1,55 @@
+import { createHash } from "node:crypto";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, expect, it, vi } from "vitest";
+import { recordMerge } from "../actions/src/accounting.js";
+
+const directories: string[] = [];
+afterEach(() => { for (const d of directories.splice(0)) rmSync(d, { recursive: true, force: true }); });
+const fixture = () => {
+  const directory = mkdtempSync(join(tmpdir(), "merge-cost-"));
+  directories.push(directory);
+  const path = join(directory, "ledger.jsonl");
+  const paid = { repo: "team/repo", package: "foo", source: "package.json", currentVersion: "1.0.0",
+    targetVersion: "2.0.0", receiptHash: "receipt", status: "settled", amountUsdc: 0.01 };
+  const detail = { ...paid, ecosystem: "npm", purchase: { receiptHash: "receipt" } };
+  const branch = createHash("sha256").update(JSON.stringify(["main", "npm", paid.source, paid.package,
+    paid.currentVersion, paid.targetVersion])).digest("hex").slice(0, 24);
+  let remote = `${JSON.stringify(paid)}\n`;
+  writeFileSync(path, remote);
+  const runGit = vi.fn(async (args: string[]) => {
+    if (args[0] === "checkout") writeFileSync(path, remote);
+    if (args[0] === "push") remote = readFileSync(path, "utf8");
+  });
+  const pr = { number: 42, merged: true, merged_at: "2026-11-08T00:00:00Z", merge_commit_sha: "b".repeat(40),
+    body: `Miner finding and purchase evidence:\n\n${JSON.stringify(detail, null, 2).split("\n").map((l) => `    ${l}`).join("\n")}\n\nDraft for human review.`,
+    base: { ref: "main", repo: { full_name: "team/repo" } },
+    head: { ref: `fix/telegraph-dependency-${branch}`, sha: "a".repeat(40), repo: { full_name: "team/repo" } } };
+  return { ledger: { directory, runGit }, pr, rows: () => remote.trim().split("\n").map((l) => JSON.parse(l)) };
+};
+
+it("links a merged generated PR to a settled receipt exactly once", async () => {
+  const f = fixture();
+  await recordMerge(f.ledger, "team/repo", f.pr);
+  await recordMerge(f.ledger, "team/repo", f.pr);
+  expect(f.rows()).toHaveLength(2);
+  expect(f.rows()[1]).toMatchObject({ kind: "merge", prNumber: 42, repo: "team/repo", receiptHash: "receipt" });
+  expect(f.ledger.runGit.mock.calls.filter(([args]) => args[0] === "push")).toHaveLength(1);
+});
+
+it("ignores unmerged and fork PRs", async () => {
+  const f = fixture();
+  await recordMerge(f.ledger, "team/repo", { ...f.pr, merged: false });
+  await recordMerge(f.ledger, "team/repo", { ...f.pr, head: { ...f.pr.head, repo: { full_name: "fork/repo" } } });
+  expect(f.ledger.runGit).not.toHaveBeenCalled();
+});
+
+it("rejects forged receipt claims and mismatched generated branches without ledger writes", async () => {
+  const f = fixture();
+  await expect(recordMerge(f.ledger, "team/repo", { ...f.pr,
+    body: f.pr.body.replaceAll('"receipt"', '"other-receipt"') })).rejects.toThrow(/does not match/);
+  await expect(recordMerge(f.ledger, "team/repo", { ...f.pr,
+    head: { ...f.pr.head, ref: "fix/telegraph-dependency-wrong" } })).rejects.toThrow(/branch differs/);
+  expect(f.ledger.runGit.mock.calls.some(([args]) => args[0] === "push")).toBe(false);
+});

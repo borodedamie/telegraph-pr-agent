@@ -48,42 +48,62 @@ Two separate gates. The App never waits on the Miner gate.
 
 ## 2. Bot (GitHub Action)
 
-**Implementation status, 4 Nov 2026.** The action prototype now scans current
+**Implementation status, 8 Nov 2026.** The action prototype now scans current
 npm and pinned Python requirements, purchases a structured assessment from a
-miner selected from the ranked list (with fallback to the next ranked miner after
+preferred miner when configured, then the ranked list (with fallback after
 a classified failure), and prepares draft dependency PRs for validated
-CVE/outdated findings. The miner selects recommended versions; the scanner does
-not select targets. At the user's request, a single action invocation now performs
+CVE/outdated findings. The action chooses newer stable npm/PyPI targets with
+verified release dates strictly after the configured model cutoff; no candidate
+means no payment or PR. Findings must preserve that verified target. At the user's request, a single action invocation now performs
 payment, preparation and publication in one job, without stage inputs or artifact
 files. It executes no repository scripts. npm lock generation receives a minimal
 credential-free subprocess environment and uses `--ignore-scripts`; separate-runner
 isolation remains a production requirement below. Public node/spending settings
-now default in action metadata (devnode URL, 0.10 USDC per call, 2 USDC per run);
+now default in action metadata (devnode URL, 0.10 USDC per call, 2 USDC per run,
+and overridable chain/token allowlist defaults backed by the dated unpaid snapshot);
 the wallet key remains secret-backed and is never bundled. Supported automatic edits are standalone public npm
 package-lock v2/v3 projects and plain Python `==` requirements; pnpm/workspace lock
-updates and hashed Python pins fail explicitly. Repository visibility is checked
+updates and hashed/continued Python pins are skipped before assessment. Repository visibility is checked
 before assessment, and successful PR URLs survive later publication failures.
 Action dependency updates include the rebuilt runtime bundle, checked for
 reproducibility without executing repository scripts. npm resolved versions must satisfy their manifest ranges; invalid npm or Python
 versions are skipped before assessment. Findings accept npm prereleases and valid
 PEP 440 current versions, comparing upgrades using the matching ecosystem rules;
-recommended targets remain numeric stable versions. Findings, source paths, versions,
+recommended targets must be stable versions. Findings, source paths, versions,
 prepared changes, the checked-out branch and its base commit are checked before updating
 existing dependency files on `fix/telegraph-dependency-*` branches. PRs target the
 branch that was checked out, rather than the repository default. No intermediate JSON
 files are created or added to the PR. Existing
 matching PRs, including closed ones, are reused. CVE claims and migration compatibility
-still require independent review. This is a draft-update prototype, not completion
-of the cutoff, crash-safe purchase, migration, verification or accounting requirements
-below. Automatic runs are restricted to pushes to `main` changing package.json,
-package-lock.json, requirements*.txt, or the root requirements/ tree; manual
-dispatch remains available for a selected branch except generated
-`fix/telegraph-dependency-*` branches. These trigger filters reduce
-repeat purchases but do not deduplicate assessments: dependency-file edits and
-manual reruns can still buy the same assessment. Without a durable purchase ledger
-or answer cache, the prototype does not yet satisfy the duplicate-purchase rule
-in §2.6 or acceptance test 3 in §2.11. Tests and builds are local; no live PR or payment is claimed. See the README
-for configuration and exact limitations.
+still require independent review. Automatic runs are limited to dependency-path
+pushes to `main` plus manual dispatch, excluding generated fix branches and deletions.
+`model-cutoff`/`MODEL_CUTOFF` is required; optional `preferred-miner-id`/`PREFERRED_MINER_ID`
+uses the existing client's explicitly labelled provider choice, without changing
+its payment network handling.
+
+The action reuses the shared attempt ledger and awaited payment callback. Its
+pre-PR key uses repository plus a per-dependency assessment identity (intent,
+source/package, installed/target versions and query hash), storing the base SHA
+as context rather than allowing a new commit to buy the same assessment again.
+Fresh-ledger preflight and request-sent checks run inside push retries. Delivered
+assessments reuse validated saved purchases without paying again; uncertain outcomes halt. Purchase rows are persisted with amount,
+receipt, provider selection, version context and `resultStatus: "unchecked"` before
+PR preparation, supplying the existing ledger dashboard with assessment costs.
+Missing ledger branches are bootstrapped only after Git confirms their absence;
+read/auth/write errors stop payment. Ledger hooks are disabled and wallet credentials
+are excluded from ledger subprocesses. Malformed ledger JSON stops the action.
+
+The merge-accounting workflow handles merged same-repository generated PRs using
+the trusted base commit and no wallet credentials. It verifies receipt and branch
+identity against the purchase ledger, appends merge rows idempotently, and the
+dashboard calculates recorded cost per merged PR from unique linked receipts.
+This remains a draft-update prototype: code migration, answer-quality verification
+and separate-runner isolation are not implemented. A delivered assessment whose
+publication failed reuses its recorded answer, revalidating findings and target
+availability without buying again. Publication errors do not starve later
+candidates; payment and ledger errors remain fatal. Merge accounting uses per-PR
+concurrency groups so different PR events do not replace pending runs. The standalone `cli/` package has been removed; action regression tests run in CI. Local mocks validate these paths; no live paid
+purchase or hosted ledger write is claimed. See README for configuration.
 
 ### 2.1 Architecture
 

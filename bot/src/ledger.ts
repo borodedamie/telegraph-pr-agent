@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
@@ -10,7 +10,13 @@ const LEDGER_BRANCH = "ledger";
 const MAX_PUSH_ATTEMPTS = 3;
 
 export interface LedgerRow {
-  prNumber: number;
+  repo?: string;
+  assessmentId?: string;
+  package?: string;
+  source?: string;
+  currentVersion?: string;
+  targetVersion?: string;
+  prNumber?: number;
   headSha: string;
   intent: string;
   minerId: string;
@@ -55,8 +61,10 @@ export type AttemptState =
   | "unknown_needs_reconciliation"; // sent, but no clear outcome; a person must check
 
 export interface AttemptKey {
+  /** Stable dependency/query identity for assessments made before a PR exists. */
+  assessmentId?: string;
   repo: string;
-  prNumber: number;
+  prNumber?: number;
   headSha: string;
   step: string;
 }
@@ -73,7 +81,18 @@ export interface AttemptRow extends AttemptKey {
   timestamp: string;
 }
 
-export type LedgerEntry = LedgerRow | AttemptRow;
+export interface MergeRow {
+  kind: "merge";
+  repo: string;
+  prNumber: number;
+  headSha: string;
+  mergeSha: string;
+  receiptHash: string;
+  mergedAt: string;
+  timestamp: string;
+}
+
+export type LedgerEntry = LedgerRow | AttemptRow | MergeRow;
 
 export type Preflight =
   | { action: "buy"; nextAttempt: number }
@@ -99,9 +118,10 @@ function* parseRows(existing: string): Generator<Partial<LedgerEntry> & { kind?:
 }
 
 /** True when a purchase row (not an attempt row) exists for this PR and head SHA. */
-export function hasLedgerRow(existing: string, prNumber: number, headSha: string): boolean {
+export function hasLedgerRow(existing: string, prNumber: number | undefined, headSha: string): boolean {
+  if (prNumber === undefined) return false;
   for (const row of parseRows(existing)) {
-    if (row.kind !== "attempt" && row.prNumber === prNumber && row.headSha === headSha) return true;
+    if (row.kind === undefined && row.prNumber === prNumber && row.headSha === headSha) return true;
   }
   return false;
 }
@@ -125,7 +145,9 @@ function latestAttempts(existing: string, key: AttemptKey): AttemptRow[] {
   for (const row of parseRows(existing)) {
     if (row.kind !== "attempt") continue;
     const a = row as AttemptRow;
-    if (a.repo === key.repo && a.prNumber === key.prNumber && a.headSha === key.headSha && a.step === key.step) {
+    if (a.repo === key.repo && a.step === key.step && (key.assessmentId
+      ? a.assessmentId === key.assessmentId
+      : a.assessmentId === undefined && a.prNumber === key.prNumber && a.headSha === key.headSha)) {
       latest.set(a.attemptId, a);
     }
   }
@@ -174,9 +196,10 @@ export function checkMayPay(existing: string, key: AttemptKey, attemptId: string
 }
 
 const describeRow = (r: LedgerEntry) =>
+  "kind" in r && r.kind === "merge" ? `PR #${r.prNumber} merged ${r.mergeSha}` :
   "kind" in r && r.kind === "attempt"
-    ? `PR #${r.prNumber} ${r.attemptId} ${r.state}`
-    : `PR #${r.prNumber} ${(r as LedgerRow).intent} ${(r as LedgerRow).txHash}`;
+    ? `${r.prNumber === undefined ? "assessment" : `PR #${r.prNumber}`} ${r.attemptId} ${r.state}`
+    : `${r.prNumber === undefined ? "assessment" : `PR #${r.prNumber}`} ${(r as LedgerRow).intent} ${(r as LedgerRow).txHash}`;
 
 type RowsToWrite = LedgerEntry | LedgerEntry[];
 
@@ -199,9 +222,14 @@ export async function commitLedgerRow(
   for (let attempt = 1; attempt <= MAX_PUSH_ATTEMPTS; attempt++) {
     await runGit(["fetch", "origin", LEDGER_BRANCH]);
     await runGit(["checkout", "-B", LEDGER_BRANCH, `origin/${LEDGER_BRANCH}`]);
+    const ledgerFile = lstatSync(ledgerPath, { throwIfNoEntry: false });
+    if (ledgerFile && !ledgerFile.isFile()) {
+      throw new Error("Ledger must be a regular file");
+    }
     const existing = existsSync(ledgerPath) ? readFileSync(ledgerPath, "utf8") : "";
     const built = typeof rowsOrBuild === "function" ? rowsOrBuild(existing) : rowsOrBuild;
     const rows = Array.isArray(built) ? built : [built];
+    if (rows.length === 0) return;
     // receipt_hash identifies a delivered purchase (SPEC §4.2): one row per receipt.
     const recorded = receiptHashes(existing);
     for (const r of rows) {

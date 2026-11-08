@@ -103,6 +103,41 @@ export const updateManifest = (content: string, finding: Finding): string => {
   return updated;
 };
 
+export const readNpmLock = (root: string, source: string): string => {
+  const project = dirname(source);
+  const manifest = JSON.parse(readRepositoryFile(root, source));
+  const lockPath = join(project, "package-lock.json").split(sep).join("/");
+  // shortcut: workspace and pnpm lock updates need their own resolver; never publish stale locks.
+  if (manifest.workspaces || !existsSync(join(root, lockPath))) {
+    throw new Error(`Automatic npm updates require a standalone package-lock.json: ${source}`);
+  }
+  let ancestor = dirname(join(root, project));
+  while (ancestor.startsWith(`${root}${sep}`) || ancestor === root) {
+    const ancestorManifest = join(ancestor, "package.json");
+    // Conservatively reject descendants of workspace roots, including members with local locks.
+    if (existsSync(ancestorManifest) && JSON.parse(readRepositoryFile(root,
+      relative(root, ancestorManifest).split(sep).join("/"))).workspaces) {
+      throw new Error(`Automatic npm updates do not support workspace members: ${source}`);
+    }
+    if (ancestor === root) break;
+    ancestor = dirname(ancestor);
+  }
+  const lockContent = readRepositoryFile(root, lockPath);
+  const lock = JSON.parse(lockContent);
+  if (![2, 3].includes(lock.lockfileVersion)) throw new Error("Only npm lockfile v2/v3 updates are supported");
+  for (const entry of Object.values(lock.packages ?? {}) as { resolved?: string; link?: boolean }[]) {
+    if (entry.link || (entry.resolved && !entry.resolved.startsWith("https://registry.npmjs.org/"))) {
+      throw new Error("Lock regeneration only supports public npm registry packages");
+    }
+  }
+  for (const section of ["dependencies", "devDependencies", "optionalDependencies"]) {
+    if (Object.values(manifest[section] ?? {}).some((value) => typeof value !== "string" || /^(?:file:|link:|git|https?:|npm:|workspace:)/.test(value))) {
+      throw new Error("Lock regeneration does not support local, URL, Git or alias dependencies");
+    }
+  }
+  return lockContent;
+};
+
 export const prepareUpdate = async (
   root: string,
   finding: Finding,
@@ -134,37 +169,8 @@ export const prepareUpdate = async (
   const updated = updateManifest(content, finding);
   const files = [{ path: finding.source, content: updated }];
   if (finding.ecosystem === "npm") {
-    const project = dirname(finding.source);
-    const manifest = JSON.parse(content);
-    const lockPath = join(project, "package-lock.json").split(sep).join("/");
-    // shortcut: workspace and pnpm lock updates need their own resolver; never publish stale locks.
-    if (manifest.workspaces || !existsSync(join(root, lockPath))) {
-      throw new Error(`Automatic npm updates require a standalone package-lock.json: ${finding.source}`);
-    }
-    let ancestor = dirname(join(root, project));
-    while (ancestor.startsWith(`${root}${sep}`) || ancestor === root) {
-      const ancestorManifest = join(ancestor, "package.json");
-      // Conservatively reject descendants of workspace roots, including members with local locks.
-      if (existsSync(ancestorManifest) && JSON.parse(readRepositoryFile(root,
-        relative(root, ancestorManifest).split(sep).join("/"))).workspaces) {
-        throw new Error(`Automatic npm updates do not support workspace members: ${finding.source}`);
-      }
-      if (ancestor === root) break;
-      ancestor = dirname(ancestor);
-    }
-    const lockContent = readRepositoryFile(root, lockPath);
-    const lock = JSON.parse(lockContent);
-    if (![2, 3].includes(lock.lockfileVersion)) throw new Error("Only npm lockfile v2/v3 updates are supported");
-    for (const entry of Object.values(lock.packages ?? {}) as { resolved?: string; link?: boolean }[]) {
-      if (entry.link || (entry.resolved && !entry.resolved.startsWith("https://registry.npmjs.org/"))) {
-        throw new Error("Lock regeneration only supports public npm registry packages");
-      }
-    }
-    for (const section of ["dependencies", "devDependencies", "optionalDependencies"]) {
-      if (Object.values(manifest[section] ?? {}).some((value) => typeof value !== "string" || /^(?:file:|link:|git|https?:|npm:|workspace:)/.test(value))) {
-        throw new Error("Lock regeneration does not support local, URL, Git or alias dependencies");
-      }
-    }
+    const lockPath = join(dirname(finding.source), "package-lock.json").split(sep).join("/");
+    const lockContent = readNpmLock(root, finding.source);
     const directory = mkdtempSync(join(tmpdir(), "telegraph-lock-"));
     try {
       const pinnedManifest = JSON.parse(updated);

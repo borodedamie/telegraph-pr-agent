@@ -1,4 +1,8 @@
 import * as core from "@actions/core";
+import { recordMerge } from "./accounting";
+import { readFileSync, rmSync } from "node:fs";
+import { cutoffCandidates } from "./cutoff";
+import { openLedger, purchaseAssessment } from "./purchase";
 import { execFileSync } from "node:child_process";
 import { scanRepository } from "./scan";
 import { IntelligenceClient } from "../../src/x402";
@@ -6,20 +10,26 @@ import { applyAssessment, assessmentPrompt } from "./assessment";
 import { assertPublicRepository, checkedOutBranch } from "./pull-request";
 
 const INTENT_ID = "QUESTION_ANSWERING_GENERAL";
-// Verified against an unpaid devnode 402 challenge on 2026-11-05.
-const CHAIN_ID = 11155111;
-const USDC_ADDRESS = "0xcc194e1a843B658526D0D5C431f670028582Ae17";
 
 const run = async (): Promise<void> => {
+  let ledger: Awaited<ReturnType<typeof openLedger>> | undefined;
   try {
-    const privateKey = process.env.TELEGRAPH_EVM_PRIVATE_KEY ?? "";
     const token = process.env.GITHUB_TOKEN ?? "";
-    core.setSecret(privateKey);
     core.setSecret(token);
-    if (!/^0x[0-9a-fA-F]{64}$/.test(privateKey)) throw new Error("Invalid TELEGRAPH_EVM_PRIVATE_KEY");
-    if (!token) throw new Error("GITHUB_TOKEN is required to create dependency PRs");
+    if (!token) throw new Error("GITHUB_TOKEN is required");
     const repository = process.env.GITHUB_REPOSITORY ?? "";
     if (!/^[\w.-]+\/[\w.-]+$/.test(repository)) throw new Error("GITHUB_REPOSITORY must be owner/repo");
+    if (process.env.GITHUB_EVENT_NAME === "pull_request_target") {
+      const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH ?? "", "utf8"));
+      await assertPublicRepository(repository, token);
+      ledger = await openLedger(repository, token);
+      await recordMerge(ledger, repository, event.pull_request);
+      core.setOutput("status", "success");
+      return;
+    }
+    const privateKey = process.env.TELEGRAPH_EVM_PRIVATE_KEY ?? "";
+    core.setSecret(privateKey);
+    if (!/^0x[0-9a-fA-F]{64}$/.test(privateKey)) throw new Error("Invalid TELEGRAPH_EVM_PRIVATE_KEY");
     const nodeUrl = core.getInput("node-url");
     if (new URL(nodeUrl).protocol !== "https:") throw new Error("node-url must use HTTPS");
     const maxPrice = Number(core.getInput("max-price-per-call-usdc"));
@@ -27,34 +37,57 @@ const run = async (): Promise<void> => {
     if (![maxPrice, budget].every((amount) => Number.isFinite(amount) && amount > 0)) {
       throw new Error("max-price-per-call-usdc and budget-cap-usdc must be positive finite numbers");
     }
+    const preferredMinerId = core.getInput("preferred-miner-id") || process.env.PREFERRED_MINER_ID || null;
+    if (preferredMinerId && !/^\d+$/.test(preferredMinerId)) throw new Error("preferred-miner-id must be numeric");
+    const chainId = Number(core.getInput("chain-id"));
+    const usdcAddress = core.getInput("usdc-address");
+    if (!Number.isSafeInteger(chainId) || chainId <= 0 || !/^0x[0-9a-fA-F]{40}$/.test(usdcAddress)) {
+      throw new Error("Invalid chain-id or usdc-address");
+    }
+    const cutoff = new Date(core.getInput("model-cutoff") || process.env.MODEL_CUTOFF || "");
+    if (!Number.isFinite(cutoff.getTime())) throw new Error("MODEL_CUTOFF or model-cutoff must be a valid date");
     await assertPublicRepository(repository, token);
     const scan = await scanRepository();
     const baseBranch = checkedOutBranch(scan.root);
     const baseSha = execFileSync("git", ["-C", scan.root, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
     for (const skipped of scan.skipped) core.warning(`${skipped.project}: ${skipped.package}: ${skipped.reason}`);
     core.setOutput("pull-requests", "[]");
-    if (scan.dependencies.length === 0) {
-      core.setOutput("has-findings", "false");
-      core.setOutput("message", "No resolved dependency versions found; no purchase made");
-    } else {
+    const candidates = await cutoffCandidates(scan.dependencies, cutoff);
+    const urls = new Set<string>();
+    const failures: string[] = [];
+    core.setOutput("has-findings", "false");
+    core.setOutput("message", "No eligible post-cutoff upgrades; no purchase made");
+    if (candidates.length) {
+      core.setOutput("message", "Preparing eligible assessments");
+      ledger = await openLedger(repository, token);
       const client = new IntelligenceClient({ nodeUrl, evmPrivateKey: privateKey as `0x${string}`,
-        chainId: CHAIN_ID, usdcAddress: USDC_ADDRESS, maxPricePerCallUsdc: maxPrice, budgetCapUsdc: budget });
-      const purchase = await client.buy(INTENT_ID, assessmentPrompt(scan.dependencies));
-      // Preserve paid evidence in the output even if the answer cannot drive a safe update.
-      core.setOutput("message", JSON.stringify(purchase));
-      const urls = await applyAssessment({ root: scan.root, repository, baseBranch, baseSha, token,
-        dependencies: scan.dependencies, purchase, onPublished: (published) => {
-          core.setOutput("has-findings", "true");
-          core.setOutput("pull-requests", JSON.stringify(published));
-        } });
-      core.setOutput("has-findings", String(urls.length > 0));
-      core.setOutput("pull-requests", JSON.stringify(urls));
+        chainId, usdcAddress, preferredMinerId, maxPricePerCallUsdc: maxPrice, budgetCapUsdc: budget });
+      for (const dependency of candidates) {
+        const purchase = await purchaseAssessment({ ledger, repository, baseSha, dependency, client,
+          intent: INTENT_ID, query: assessmentPrompt([dependency]),
+          onPurchase: (paid) => core.setOutput("message", JSON.stringify(paid)) });
+        try {
+          await applyAssessment({ root: scan.root, repository, baseBranch, baseSha, token,
+            dependencies: [dependency], purchase, onPublished: (published) => {
+              for (const url of published) urls.add(url);
+              core.setOutput("has-findings", String(urls.size > 0));
+              core.setOutput("pull-requests", JSON.stringify([...urls]));
+            } });
+        } catch (error) {
+          failures.push(`${dependency.package}: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+      core.setOutput("has-findings", String(urls.size > 0));
+      core.setOutput("pull-requests", JSON.stringify([...urls]));
       for (const url of urls) core.info(`Dependency pull request: ${url}`);
+      if (failures.length) throw new Error(`Publication failed for: ${failures.join("; ")}`);
     }
     core.setOutput("status", "success");
   } catch (error: unknown) {
     core.setOutput("status", "failed");
     core.setFailed(error instanceof Error ? error.message : String(error));
+  } finally {
+    if (ledger) rmSync(ledger.directory, { recursive: true, force: true });
   }
 };
 
