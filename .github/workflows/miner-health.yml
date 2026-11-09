@@ -1,0 +1,22 @@
+# Uptime check for the package-release miner (miner/ task T065). Every 15 minutes it reads the public
+# /api/health endpoint; the run fails when the miner or one of its upstreams (npm, GitHub, OSV, Redis) is down,
+# and GitHub emails whoever last changed the schedule. No secrets, no checkout, no paid call.
+name: miner-health
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: GET /api/health
+        run: |
+          body=$(curl -sS --max-time 30 https://telegraph-pr-miner-n30sk.vercel.app/api/health) || { echo "miner unreachable"; exit 1; }
+          echo "$body"
+          echo "$body" | jq -e '.ok == true' > /dev/null || { echo "miner reports a failed upstream"; exit 1; }

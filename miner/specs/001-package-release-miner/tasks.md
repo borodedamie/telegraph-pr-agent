@@ -399,6 +399,8 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 
   Status 8 Nov (`miner/bench/network.md`, `docs/telegraph/qa-scoring-2026-11-09.md`): scored on `QUESTION_ANSWERING_GENERAL`, rank 11 of 17, score 0.7955 at epoch 2042, on a pool of 426 rows from 5 of 5 submitters. The intent is `judgment`, scored by the `GENERIC` fallback adapter. On 9 Nov 30 package-upgrade questions were uploaded to the pool, and found answers lead with a "Key changes" line (`p8`).
 - [ ] T065 [US5] Monitor `https://<prod>/api/health` with an external uptime check (any free monitor). Log failures and routing suspensions in `miner/bench/network.md` (SC-007)
+
+  Status 9 Nov: `.github/workflows/miner-health.yml` checks `/api/health` every 15 minutes and fails the run when the miner or an upstream is down. Scheduled workflows run only from the default branch, so it starts once merged into `main`; tick this task after its first scheduled runs.
 - [ ] T066 [US5] Record payout accounting in `miner/bench/network.md`:
   - per call: the quoted and settled amount, and `charged` from the receipt;
   - per settlement batch: the protocol share, the provider accrual and the actual payout with its currency, from receipts and settlement data. This confirms or corrects the review's 2% / 98% / MACHINA description.
