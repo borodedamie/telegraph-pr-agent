@@ -10,8 +10,8 @@ The full spec is [specs/001-package-release-miner/spec.md](specs/001-package-rel
 | --- | --- |
 | Endpoint | `https://telegraph-pr-miner-n30sk.vercel.app` (Vercel production) |
 | Telegraph | miner id 7314, slug `package-release-intel`, intent `QUESTION_ANSWERING_GENERAL`, `active`, floor price 0.02 USDC |
-| Score | rank 6 of 17, score 0.9732 (epoch 2046; was rank 11, 0.7955, at epoch 2042 before our pool questions and the `p8` answer layout); the intent's judge is general, see [docs/telegraph/qa-scoring-2026-11-09.md](../docs/telegraph/qa-scoring-2026-11-09.md) |
-| Benchmark | 67.1% of reviewed breaking changes found by word matching, 82.6% with an LLM judge's matches added (target 80%); every quote checked against its source ([bench/report.md](bench/report.md), [bench/judge-report.md](bench/judge-report.md)) |
+| Score | rank 6 of 17, score 0.9732 (epoch 2046; was rank 11, 0.7955, at epoch 2042 before our pool questions and the `p8` answer layout). Rank 6 was measured with our own 30 questions in the pool (1 of 6 contributors), so it is not independent evidence of quality; the benchmark is the quality evidence. The intent's judge is general, see [docs/telegraph/qa-scoring-2026-11-09.md](../docs/telegraph/qa-scoring-2026-11-09.md) |
+| Benchmark | 67.1% of reviewed breaking changes found by word matching, 82.6% with matches counted by an LLM judge (target 80%); every quote checked against its source ([bench/report.md](bench/report.md), [bench/judge-report.md](bench/judge-report.md)) |
 
 Every step, with transactions and dates, is in [bench/network.md](bench/network.md).
 
