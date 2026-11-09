@@ -6,9 +6,12 @@ import {
   acquireLock,
   answerKey,
   getAnswer,
+  getRepeat,
   isCacheable,
   putAnswer,
+  putRepeat,
   releaseLock,
+  repeatKey,
   waitForAnswer,
   type Store,
 } from "./cache.js";
@@ -127,6 +130,11 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
     return finish(simple("temporarily_unavailable", null, []));
   }
 
+  // A repeat within the pointer's hour is served without touching npm, GitHub or OSV (SC-006 repeat latency).
+  const repeat = repeatKey(parsed, processingBase);
+  const repeated = await getRepeat(deps.store, repeat);
+  if (repeated !== null) return fromCache(repeated, metrics);
+
   const budget = new Budget(limits, now);
   const retrieval = newRetrieval(deps.store, budget, deps.fetcher ?? safeFetch);
   try {
@@ -233,12 +241,18 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
     const hashes = [...new Set(retrieval.documents.map((d) => d.contentHash))];
     const key = answerKey(request, hashes, processingBase);
     const cached = await getAnswer(deps.store, key);
-    if (cached !== null) return fromCache(cached, metrics);
+    if (cached !== null) {
+      await putRepeat(deps.store, repeat, key);
+      return fromCache(cached, metrics);
+    }
 
     const locked = await acquireLock(deps.store, key, limits.maxTimeMs);
     if (!locked) {
       const waited = await waitForAnswer(deps.store, key, Number(deps.env.LOCK_WAIT_MS || LOCK_WAIT_DEFAULT_MS));
-      if (waited !== null) return fromCache(waited, metrics);
+      if (waited !== null) {
+        await putRepeat(deps.store, repeat, key);
+        return fromCache(waited, metrics);
+      }
       if (now() - startedAt + limits.maxTimeMs > MAX_DURATION_MS) {
         return finish(simple("temporarily_unavailable", request, [registrySource]));
       }
@@ -260,7 +274,9 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
       // A full answer is kept. One with text left unread (the model pass did not run, an optional source was down)
       // is kept for an hour: a repeat gets the same bytes at once (SC-006), and a later one retries the sources.
       const full = complete && !material.optionalSourceFailed;
-      await putAnswer(deps.store, key, result.answer, result.json, full ? undefined : PARTIAL_ANSWER_TTL_SEC);
+      if (await putAnswer(deps.store, key, result.answer, result.json, full ? undefined : PARTIAL_ANSWER_TTL_SEC)) {
+        await putRepeat(deps.store, repeat, key);
+      }
       return result;
     } finally {
       if (leave) await leave();

@@ -184,6 +184,30 @@ export function isCacheable(answer: Answer): boolean {
   return true;
 }
 
+// --- Repeat pointer ---
+
+/** How long a repeat skips retrieval: an edited source or a new advisory reaches the answer at most this late. */
+export const REPEAT_POINTER_TTL_SEC = 3_600;
+
+/** Keyed by the question as parsed, before any upstream request, so a repeat needs no retrieval to find its answer. */
+export function repeatKey(parsed: { package: string; fromRequested: string | null; toRequested: string }, processingVersion: string): string {
+  const identity = canonicalJson({ package: parsed.package, fromRequested: parsed.fromRequested, toRequested: parsed.toRequested, processingVersion });
+  return `repeat:${sha256Hex(identity)}`;
+}
+
+/**
+ * The pointer holds the answer-cache key, not the answer, so the answer's own expiry still applies:
+ * a partial answer kept for an hour is not served longer through the pointer.
+ */
+export async function getRepeat(store: Store, key: string): Promise<string | null> {
+  const answerCacheKey = await store.get(key);
+  return answerCacheKey === null ? null : getAnswer(store, answerCacheKey);
+}
+
+export async function putRepeat(store: Store, key: string, answerCacheKey: string): Promise<void> {
+  await store.set(key, answerCacheKey, REPEAT_POINTER_TTL_SEC);
+}
+
 export async function getAnswer(store: Store, key: string): Promise<string | null> {
   return store.get(key);
 }

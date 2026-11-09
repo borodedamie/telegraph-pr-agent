@@ -95,6 +95,29 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     expect(model.calls()).toBe(1);
   });
 
+  it("serves a repeat within the hour without any upstream request, and re-reads the sources after it", async () => {
+    let clock = 0;
+    const store = new MemoryStore(() => clock);
+    const model = stubModel();
+    const roomy = (fetcher: PipelineDeps["fetcher"]): PipelineDeps => ({
+      ...deps(store, model.caller), fetcher, now: () => clock, limits: limitsFromEnv({ MAX_MODEL_RELEASES: "100", MAX_MODEL_INPUT_CHARS: "500000" }),
+    });
+    const first = await answerQuestion(QUESTION, roomy(fixtureFetcher(FILES).fetcher));
+    // Asked in other words: the parsed package and versions are the same.
+    const again = fixtureFetcher(FILES);
+    clock = 3_599_000;
+    const repeat = await answerQuestion("zod 3.23.8 to 4.0.0 breaking changes", roomy(again.fetcher));
+    expect(repeat.cacheHit).toBe(true);
+    expect(repeat.json).toBe(first.json);
+    expect(again.urls).toEqual([]);
+    clock = 3_600_000;
+    const later = fixtureFetcher(FILES);
+    const revalidated = await answerQuestion(QUESTION, roomy(later.fetcher));
+    expect(later.urls.length).toBeGreaterThan(0);
+    expect(revalidated.cacheHit).toBe(true);
+    expect(model.calls()).toBe(1);
+  });
+
   it("serves a rules-only answer again for an hour only, then computes a full one", async () => {
     let clock = 0;
     const store = new MemoryStore(() => clock);

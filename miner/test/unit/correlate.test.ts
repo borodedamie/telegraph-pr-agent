@@ -122,7 +122,8 @@ describe("the advisory check in the answer", () => {
   });
 
   it("computes a new answer when the OSV response changes", async () => {
-    const store = new MemoryStore();
+    // Reads Date.now on each call, so the mocked clock below also expires the repeat pointer.
+    const store = new MemoryStore(() => Date.now());
     await answerQuestion(QUESTION, deps(store, fixtureFetcher(FILES).fetcher));
     const changed = { ...FILES, [`${OSV_QUERY_URL}#zod@4.0.0`]: "osv/empty.json" };
     // Manifests are fresh for an hour; two hours later every source is read again.
