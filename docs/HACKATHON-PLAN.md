@@ -29,7 +29,7 @@ A GitHub Action, installed with one workflow file. It finds dependencies with a 
 ## Two tracks, two gates
 
 - **Apps & Agents (primary).** Never waits on our miner. It may buy from any suitable provider.
-- **Miner (secondary).** Go/no-go on **9 Nov** (proposed; owner in TEAM.md). Go only if the miner can be scored on an intent whose test questions it answers well: evaluation pool eligible (≥ 5 distinct independent submitters), response contract compatible. On 2 Nov `QUESTION_ANSWERING_GENERAL` had 3 of 5 submitters and a general test set ([contract snapshot](telegraph/qa-intent-contract-2026-11-02.md)). We asked Telegraph for a dedicated package-release sub-intent; fallbacks are a general QA miner strong on packages, or `SECURITY_REVIEW_GENERAL` for dependency vulnerabilities (SPEC §3.5). No-go: stop the miner build; A moves to App work.
+- **Miner (secondary).** Go/no-go on **9 Nov** (proposed; owner in TEAM.md). Go only if the miner can be scored on an intent whose test questions it answers well: evaluation pool eligible (≥ 5 distinct independent submitters), response contract compatible. On 2 Nov `QUESTION_ANSWERING_GENERAL` had 3 of 5 submitters and a general test set ([contract snapshot](telegraph/qa-intent-contract-2026-11-02.md)). We asked Telegraph for a dedicated package-release sub-intent; fallbacks are a general QA miner strong on packages, or `SECURITY_REVIEW_GENERAL` for dependency vulnerabilities (SPEC §3.5). No-go: stop the miner build; A moves to App work. Status 9 Nov: the miner is registered, in production and scored on `QUESTION_ANSWERING_GENERAL` (pool 5 of 5, rank 11 of 17, [scoring snapshot](telegraph/qa-scoring-2026-11-09.md)); the decision is not recorded yet.
 
 ## 14 Nov internal milestone — acceptance
 

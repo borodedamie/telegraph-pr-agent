@@ -25,7 +25,7 @@ Status is a snapshot, not a promise.
 | Append-only purchase ledger on a `ledger` git branch | Works; one row per CLI run, keyed on (PR, commit). Prototype schema: replaced by attempt and per-receipt records ([SPEC §4](docs/SPEC.md)) before the Action uses it. |
 | Purchase dashboard | Works locally: `pnpm install`, then `pnpm --filter @telegraph-pr-agent/web dev`; it reads `ledger.jsonl` from GitHub raw for a public repository. Not deployed to a public URL yet. Shows purchases only, not cost per merged PR. |
 | GitHub Action (developer-configured schedule and manual run, lockfile scan), draft PR, `telegraph:fix` label, fix job, merge accounting, cost per merged PR | Planned. |
-| Package-release Q&A miner | In progress. A Vercel preview gives real sourced answers from npm and GitHub release material, rules only (no model pass), with an OSV advisory check that says per advisory whether the upgrade fixes it, leaves it or introduces it; live runs on 4 Nov are in [miner/bench/network.md](miner/bench/network.md). The rules read marked sections and common breaking-change phrases in major releases (React 18 → 19: 42 breaking changes); other prose is missed, and the answer says so. Its registration YAML passed the Telegraph dashboard validation on 3 Nov. `not_found` for a missing version and `out_of_scope` were checked live; the outage and no-release-material cases only by fixture tests. Not registered. Still behind a go/no-go gate. On 2 Nov the live QA intent had too few evaluation contributors (3 of 5) for any miner to be scored, and its test set is general questions; we asked Telegraph for a dedicated package-release intent. The network's current Q&A providers have not shown package-release competence. |
+| Package-release Q&A miner | Working, in production at `https://telegraph-pr-miner-n30sk.vercel.app` and registered on Telegraph since 6 Nov as miner 7314 (`package-release-intel`, `QUESTION_ANSWERING_GENERAL`, 0.02 USDC). It answers what changed in an npm package between two versions from npm, GitHub release material, migration guides and OSV, each change with a verbatim quote and its source. A paid direct call through Telegraph was served and settled on 6 Nov; Engine routing sent the same kind of question to another intent (`WEB_SEARCH_GENERAL`), so buyers ask it by id. Benchmark: 67.1% of reviewed breaking changes by word matching, 82.6% with an LLM judge (target 80%), every quote checked. Scored by the intent's general-purpose judge: rank 11 of 17 on 8 Nov. Details: [miner/README.md](miner/README.md). |
 
 **About the one purchase so far.** On 28 Oct 2026 the CLI paid 0.01 testnet USDC through the devnode to Crossref QA, which was third in the provider list the old client read for question answering on that date (the client's ordering, not a saved Telegraph ranking snapshot), and recorded the tx hash, receipt hash and signal hash. The returned answer was academic search results unrelated to the package. That run is a pre-event integration test: it shows the payment flow was exercised. It is not event-period hackathon evidence and not a successful package-release answer. It also used the node interface as it stood on that date; the request shape and intent ids have to be rechecked against the live node before any new run.
 
@@ -165,7 +165,7 @@ On the documented x402 path a valid payment may settle before the miner is calle
 - npm only; `package.json` comparison only; no lockfile parsing. The CLI is a manifest-diff prototype; the planned Action scans the lockfile instead.
 - One Q&A purchase per CLI run; the first eligible dependency only.
 - Package-release answer quality has not been demonstrated by existing providers.
-- The team's package-release miner is planned, not registered or ranked.
+- The team's package-release miner is registered and scored, but the intent's test questions are mostly general, so it ranks in the middle (11 of 17 on 8 Nov).
 - GitHub Action, draft PR, label approval, patch generation, secretless CI and merge accounting are planned.
 - `CODE_GENERATION`, `CODE_PATCH_VERIFY` and `REGRESSION_VERIFY` are conditional on providers passing quality tests.
 - The dashboard shows purchase records, not cost per merged PR, and is not deployed publicly.
@@ -173,7 +173,7 @@ On the documented x402 path a valid payment may settle before the miner is calle
 
 ## Disclosure
 
-- The same team controls the agent and the planned package-release miner. Any agent purchase from that miner is related-party testing, not independent demand, adoption or third-party validation.
+- The same team controls the agent and the package-release miner (payout wallet `0x74f2840C8A564F791f50aD76c38EF078258588dC`). Any agent purchase from that miner is related-party testing, not independent demand, adoption or third-party validation.
 - Buyer wallet and miner wallet addresses, with explorer links, will be listed here before submission. Keys are never published.
 - Code written before 1 Nov 2026: the CLI vertical slice described above (commit `9faf16a` and earlier). Work added during the event will be summarised here.
 - Event window: purchases, transactions, usage, demos and adoption evidence claimed for Season II fall between 1 Nov and 1 Dec 2026. Package release notes and registry records keep their original dates, including dates before the event.

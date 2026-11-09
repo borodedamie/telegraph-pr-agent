@@ -389,13 +389,15 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
   - Not run: the outage call, which needs `SIMULATE_UPSTREAM_OUTAGE` on production.
   - Evaluation pool: not re-checked before registering. Read afterwards, it had 4 eligible submitters against `min_submitters` 5 (`docs/telegraph/qa-evalpool-2026-11-06.md`). Even so, by 11:41 UTC the same day it was scored: rank 4, score 0.9363 on `QUESTION_ANSWERING_GENERAL`, epoch 2026.
 
-- [ ] T064 [US5] Ranking check (plan phase 11), from the three endpoints in research R12:
+- [x] T064 [US5] Ranking check (plan phase 11), from the three endpoints in research R12:
   - `/api/miners?intent=…` (`scores[]`, `activation_status`, `scored`);
   - `/engine/v1/intents/QUESTION_ANSWERING_GENERAL/miners` (whether the miner is listed);
   - `/leaderboard/miners` (rank in the current epoch);
   - the evaluation-pool status.
 
   Record each response's actual shape, plus the score and rank if present or the observed reason they are absent, in `miner/bench/network.md`.
+
+  Status 8 Nov (`miner/bench/network.md`, `docs/telegraph/qa-scoring-2026-11-09.md`): scored on `QUESTION_ANSWERING_GENERAL`, rank 11 of 17, score 0.7955 at epoch 2042, on a pool of 426 rows from 5 of 5 submitters. The intent is `judgment`, scored by the `GENERIC` fallback adapter. On 9 Nov 30 package-upgrade questions were uploaded to the pool, and found answers lead with a "Key changes" line (`p8`).
 - [ ] T065 [US5] Monitor `https://<prod>/api/health` with an external uptime check (any free monitor). Log failures and routing suspensions in `miner/bench/network.md` (SC-007)
 - [ ] T066 [US5] Record payout accounting in `miner/bench/network.md`:
   - per call: the quoted and settled amount, and `charged` from the receipt;
@@ -425,13 +427,13 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 
 ## Phase 9: Polish, integration and evidence
 
-- [ ] T072 [P] Write `miner/README.md`:
+- [x] T072 [P] Write `miner/README.md`:
   - what it does, and the curl example with the key;
   - the outcomes and which are billed, and the limits;
   - origin authentication;
   - the payout wallet address and the payout economics as measured;
   - team-ownership disclosure (FR-026).
-- [ ] T073 Add a pointer to this spec in `docs/SPEC.md` §3, so the miner has one source of truth (plan Constitution Check)
+- [x] T073 Add a pointer to this spec in `docs/SPEC.md` §3, so the miner has one source of truth (plan Constitution Check)
 - [ ] T074 ⚠ PR-bot integration (plan phase 12): the bot buys from the miner, and one migration whose patch uses the answer passes the repository's tests (SC-010). Coordinate with the bot work in `bot/`
 - [ ] T075 ⚠ External adoption (plan phase 13): invite other hackathon teams or developers, publicly, to buy from the miner. Record any independent purchase with receipt, signal and settlement in `miner/bench/network.md` (SC-009)
 - [ ] T076 Package the Miners-track evidence (FR-028) in `miner/bench/evidence.md`: registration record, payout wallet, five sample requests and answers, network test results, benchmark report, latency, cost and payout
