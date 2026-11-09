@@ -61,7 +61,7 @@ The code defaults; each can be set by an env var (`ORIGIN_RATE_PER_MIN`, `MAX_CO
 - 120 requests a minute at the origin, 4 first-time answers computed at once; the YAML declares 2 a second and 1,000 a day.
 - A first-time answer has 20 seconds and at most one model call (0.01 USDC, paid from the miner's own spend wallet to LLM miner 302 on Telegraph). Text the rules or the model did not read is reported as not covered.
 - npm only. Sources: npm registry, GitHub releases, changelogs, migration guides (in the repository or on the package's own website), OSV.
-- Answers are cached by question, source content and processing version; a repeat is served from the cache.
+- Answers are cached by question, source content and processing version; a repeat is served from the cache. Within an hour of the last full check, a repeat skips the sources entirely (about 0.45 s end to end), so an edited release note or a new advisory can show up to an hour late.
 
 ## Wallets, payout and ownership
 
