@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, existsSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -208,6 +208,16 @@ describe("commitLedgerRow", () => {
     };
     return { calls, runGit };
   }
+
+  it("rejects dangling ledger symlinks before writing outside its checkout", async () => {
+    const outside = join(dir, "outside.jsonl");
+    symlinkSync(outside, ledgerPath());
+    const calls: string[][] = [];
+    await expect(commitLedgerRow(dir, row, { runGit: async (args) => { calls.push(args); } }))
+      .rejects.toThrow("Ledger must be a regular file");
+    expect(existsSync(outside)).toBe(false);
+    expect(calls.map((args) => args[0])).toEqual(["fetch", "checkout"]);
+  });
 
   it("fetches, checks out the ledger branch, appends, commits and pushes", async () => {
     const git = makeFakeGit({ remoteContent: "prior-row\n" });

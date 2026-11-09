@@ -1,0 +1,42 @@
+name: "Telegraph Dependency Updates"
+description: "Scan dependencies, purchase an assessment, and open draft dependency update PRs"
+author: "Lynx"
+branding:
+  icon: "git-pull-request"
+  color: "blue"
+inputs:
+  merge-pr-number:
+    description: "Merged PR number to recover accounting without making a purchase"
+  node-url:
+    description: "Telegraph node URL"
+    default: "https://devnode.telegraphprotocol.com"
+  preferred-miner-id:
+    description: "Optional numeric miner ID tried before the ranked list; env fallback PREFERRED_MINER_ID"
+  model-cutoff:
+    description: "Model training cutoff date; required here or through MODEL_CUTOFF"
+  # Model provenance is supplied through MODEL_PROVIDER, MODEL_ID,
+  # MODEL_CUTOFF_SOURCE_URL, MODEL_CUTOFF_STATUS and optional MODEL_CONFIGURED_AT.
+  chain-id:
+    description: "Allowed payment chain, default verified by the dated 2026-11-05 unpaid snapshot"
+    default: "11155111"
+  usdc-address:
+    description: "Allowed USDC contract on the configured chain"
+    default: "0xcc194e1a843B658526D0D5C431f670028582Ae17"
+  max-price-per-call-usdc:
+    description: "Maximum quoted USDC amount per purchase"
+    default: "0.10"
+  budget-cap-usdc:
+    description: "Maximum USDC spend per action run"
+    default: "2"
+outputs:
+  message:
+    description: "Purchase details or execution summary"
+  status:
+    description: "Execution status"
+  has-findings:
+    description: "Whether the assessment produced dependency update PRs"
+  pull-requests:
+    description: "JSON array of created or existing pull request URLs"
+runs:
+  using: "node24"
+  main: "dist/index.js"

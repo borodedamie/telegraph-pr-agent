@@ -4,3 +4,8 @@
 node_modules/
 dist/
 .claude/*
+
+# GitHub's Node action runs the packaged bundle directly.
+!bot/actions/dist/
+bot/actions/dist/*
+!bot/actions/dist/index.js

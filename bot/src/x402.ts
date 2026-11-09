@@ -15,6 +15,8 @@ export interface Purchase {
   receiptHash: string;
   signalHash: string;
   answer: string;
+  /** Original structured miner response, retained alongside its display text. */
+  result?: unknown;
   status: "settled" | "failed";
   /** Who picked the miner: the leaderboard, or our own PREFERRED_MINER_ID (never reported as the Engine's choice). */
   selectedBy: "rank" | "our_choice";
@@ -238,12 +240,12 @@ export class IntelligenceClient {
   // stepping down a rank only when a call fails (failed calls are credited to escrow).
   // onAttempt is awaited at each stage, so a stage that can't be recorded stops
   // the purchase before the next one starts.
-  async buy(intent: string, query: string, onAttempt: OnAttempt = async () => {}): Promise<Purchase> {
+  async buy(intent: string, query: string | ((minerId: string) => string), onAttempt: OnAttempt = async () => {}): Promise<Purchase> {
     const miners = (await this.rankedMiners(intent)).slice(0, MAX_MINERS_TRIED);
     const failures: string[] = [];
     for (const miner of miners) {
       try {
-        return await this.buyFrom(intent, query, miner, onAttempt);
+        return await this.buyFrom(intent, typeof query === "string" ? query : query(miner.id), miner, onAttempt);
       } catch (err) {
         if (!(err instanceof AskFailedError)) throw err;
         failures.push(`#${miner.rank ?? "unranked"} ${miner.id}: ${err.message}`);
@@ -347,6 +349,7 @@ export class IntelligenceClient {
       receiptHash: receipt?.receipt_hash ?? "",
       signalHash: body.signal_hash ?? "",
       answer: answerText(body.result),
+      result: body.result,
       status: "settled",
       network: accept.network,
       chainId: Number(accept.network.split(":")[1]),
