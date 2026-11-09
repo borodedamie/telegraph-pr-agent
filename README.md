@@ -20,11 +20,11 @@ Status is a snapshot, not a promise.
 
 | Part | State |
 | --- | --- |
-| Detect a changed dependency released after the cutoff | Works as a manifest-diff prototype. `bot/src/trigger.ts` diffs two `package.json` files and checks the npm release date of the version named in the changed range. It does not read a lockfile, scan a branch or look up the latest registry version. |
+| Detect a dependency upgrade released after the cutoff | The action resolves supported installed versions and selects newer stable npm/PyPI releases strictly after `MODEL_CUTOFF`, reusing `bot/src/trigger.ts` for npm date checks. Covered by offline tests; hosted operation remains unverified. |
 | Buy an answer on Telegraph with x402; record receipt hash, signal hash, tx hash | Historical integration test only: one pre-event payment succeeded on 28 Oct 2026; the returned content was unrelated to package releases. The current client is not compatible with the 2 Nov live intent contract until it sends the canonical intent id and request shape and is retested. |
-| Append-only purchase ledger on a `ledger` git branch | Works; one row per CLI run, keyed on (PR, commit). Prototype schema: replaced by attempt and per-receipt records ([SPEC §4](docs/SPEC.md)) before the Action uses it. |
-| Purchase dashboard | Works locally: `pnpm install`, then `pnpm --filter @telegraph-pr-agent/web dev`; it reads `ledger.jsonl` from GitHub raw for a public repository. Not deployed to a public URL yet. Shows purchases only, not cost per merged PR. |
-| GitHub Action (developer-configured schedule and manual run, lockfile scan), draft PR, `telegraph:fix` label, fix job, merge accounting, cost per merged PR | Planned. |
+| Append-only purchase ledger on a `ledger` git branch | Shared attempts and per-receipt records are wired into the action. Pre-PR assessments use dependency/version/query identity across commits; the slice retains its PR/commit keys. Failure and concurrency behavior is covered by offline tests; hosted writes remain unverified. |
+| Purchase dashboard | Works locally: `pnpm install`, then `pnpm --filter @telegraph-pr-agent/web dev`; it reads `ledger.jsonl` from GitHub raw for a public repository. Not deployed to a public URL yet. Shows purchases and receipt-linked merged PR costs; hosted merge capture remains unverified. |
+| GitHub Action, draft dependency PRs, migration and merge accounting | Packaged action with cutoff gating, attempt ledger and draft dependency PR preparation; validated locally. `telegraph:fix` and migration execution remain planned. Receipt-linked merge accounting is implemented and tested offline. |
 | Package-release Q&A miner | In progress. A Vercel preview gives real sourced answers from npm and GitHub release material, rules only (no model pass), with an OSV advisory check that says per advisory whether the upgrade fixes it, leaves it or introduces it; live runs on 4 Nov are in [miner/bench/network.md](miner/bench/network.md). The rules read marked sections and common breaking-change phrases in major releases (React 18 → 19: 42 breaking changes); other prose is missed, and the answer says so. Its registration YAML passed the Telegraph dashboard validation on 3 Nov. `not_found` for a missing version and `out_of_scope` were checked live; the outage and no-release-material cases only by fixture tests. Not registered. Still behind a go/no-go gate. On 2 Nov the live QA intent had too few evaluation contributors (3 of 5) for any miner to be scored, and its test set is general questions; we asked Telegraph for a dedicated package-release intent. The network's current Q&A providers have not shown package-release competence. |
 
 **About the one purchase so far.** On 28 Oct 2026 the CLI paid 0.01 testnet USDC through the devnode to Crossref QA, which was third in the provider list the old client read for question answering on that date (the client's ordering, not a saved Telegraph ranking snapshot), and recorded the tx hash, receipt hash and signal hash. The returned answer was academic search results unrelated to the package. That run is a pre-event integration test: it shows the payment flow was exercised. It is not event-period hackathon evidence and not a successful package-release answer. It also used the node interface as it stood on that date; the request shape and intent ids have to be rechecked against the live node before any new run.
@@ -53,13 +53,13 @@ Known gaps in this slice, kept here so nobody mistakes them for features:
 
 - The intent id `QUESTION_ANSWERING_GENERAL` is hardcoded; it was checked against `GET /engine/v1/intents` on 3 Nov 2026 and must be rechecked if the catalogue changes.
 - Each payment try is recorded on the ledger branch at every stage (`reserved`, then `quote_refused` or `request_sent`, then `delivered`, `failed_and_credited`, `failed_not_charged` or `unknown_needs_reconciliation`; definitions in [SPEC §2.6](docs/SPEC.md)) before the bot moves on. If a run dies or its push fails after `request_sent`, the next run for that PR and commit stops instead of paying again, and a person checks the wallet, escrow balance and signal. Before recording `reserved` and `request_sent`, the run re-checks the freshly fetched ledger, and a push loses if another run pushed first, so two runs for the same PR and commit can't both pay; the second stops. Nothing yet marks a stuck attempt as reconciled; that is done by hand on the ledger branch.
-- A purchase is recorded once per `receipt_hash`; writing a receipt that is already on the ledger is refused. Each purchase row has a `resultStatus` for answer quality, kept apart from payment: new rows start `unchecked`, and `useful`, `unusable` or `not_found` are set by hand until something judges answers.
+- A purchase is recorded once per `receipt_hash`; writing a receipt that is already on the ledger is refused. Each purchase row has a `resultStatus` for answer quality, kept apart from payment: new rows start `unchecked`, and `useful`, `unusable` or `not_found` can be recorded separately. The dependency action automatically appends `unusable` for invalid findings; the dashboard uses the latest quality update.
 - Each purchase row stores the network, chain id, USDC contract and explorer URL of the 402 option it paid, and transaction links are built from that. Rows written before 5 Nov 2026 lack these fields; their links use the date (before 1 Nov: Basescan, Base Sepolia; after: Etherscan, Ethereum Sepolia). The memo's summary line still names Ethereum Sepolia as fixed text.
 
 ## Repository layout
 
 ```
-bot/                TypeScript agent, Node 20, vitest
+bot/                TypeScript agent, Node 22.20+, vitest
   src/config.ts       env validation
   src/trigger.ts      post-cutoff detection from two package.json files
   src/x402.ts         Telegraph client: provider list, x402 payment, receipt capture
@@ -77,7 +77,7 @@ No workflow YAML, fixtures or sample ledger export exist yet; the `examples/` fi
 
 ## Run the current slice
 
-Prerequisites: Node 20.x, pnpm 9 or later, macOS or Linux shell, a dedicated testnet wallet holding a few cents of test USDC on the network the devnode quotes (Ethereum Sepolia as of 2 Nov 2026; the 402 challenge is authoritative), and a fine-grained GitHub token limited to a public repository you control (`DEMO_REPO`) with `contents: read/write`, so the run can push its ledger branch. Gas is handled by the x402 facilitator; the wallet needs test USDC only.
+Prerequisites: Node 22.20 or later, pnpm 9 or later, macOS or Linux shell, a dedicated testnet wallet holding a few cents of test USDC on the network the devnode quotes (Ethereum Sepolia as of 2 Nov 2026; the 402 challenge is authoritative), and a fine-grained GitHub token limited to a public repository you control (`DEMO_REPO`) with `contents: read/write`, so the run can push its ledger branch. Gas is handled by the x402 facilitator; the wallet needs test USDC only.
 
 All commands run from the repository root, in one shell.
 
@@ -198,3 +198,219 @@ To be filled in as each item exists; nothing below is claimed yet.
 | Technical tutorial and independent reproduction evidence | none yet |
 
 If you try the slice, open an issue with what you ran, the signal hash and whether the answer was useful. That is the kind of independent test the project needs.
+
+## Dependency update Action
+
+The workflow in `.github/workflows/dependency-updates.yml` runs automatically only
+on pushes to `main` that change `**/package.json`, `**/package-lock.json`,
+`**/requirements*.txt`, or `requirements/**`. Manual dispatch remains available
+for a selected branch. Branch-deletion events do not run it. One action invocation scans dependencies, purchases an assessment,
+prepares updates, and opens draft PRs; no stage inputs, intermediate artifact files,
+or separate caller jobs are needed.
+
+```yaml
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: false
+      - name: Update dependencies
+        uses: ./bot/actions
+        env:
+          TELEGRAPH_EVM_PRIVATE_KEY: ${{ secrets.TELEGRAPH_EVM_PRIVATE_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+          MODEL_CUTOFF: ${{ vars.MODEL_CUTOFF }}
+          PREFERRED_MINER_ID: ${{ vars.PREFERRED_MINER_ID || '7314' }}
+          MODEL_PROVIDER: ${{ vars.MODEL_PROVIDER }}
+          MODEL_ID: ${{ vars.MODEL_ID }}
+          MODEL_CUTOFF_SOURCE_URL: ${{ vars.MODEL_CUTOFF_SOURCE_URL }}
+          MODEL_CUTOFF_STATUS: ${{ vars.MODEL_CUTOFF_STATUS }}
+          MODEL_CONFIGURED_AT: ${{ vars.MODEL_CONFIGURED_AT }}
+```
+
+Checkout makes the repository available; the dependency automation is a single step.
+The packaged `bot/actions/dist/index.js` is included so callers need no install or
+build steps. For another repository, use `OWNER/REPO/bot/actions@IMMUTABLE_SHA` after
+publishing a commit containing the bundle, rather than the local `./bot/actions` path.
+
+Before purchasing, the action selects newer stable npm/PyPI releases with verified
+release dates strictly after `MODEL_CUTOFF`. No candidate means no purchase or PR. Registry failures are reported per dependency
+without discarding other verified candidates; the run reports failure afterward
+so an outage is not mistaken for a clean no-upgrade result.
+The miner receives one dependency and its verified target per assessment. Findings must
+identify a scanned ecosystem, package, source and current version, a newer target,
+`cve` or `outdated`, a reason and HTTPS evidence sources. CVE findings require CVE IDs.
+Invalid/prose answers fail; no findings means no updates or PRs.
+
+Recommended targets are checked against npm/PyPI. Existing dependency files are
+updated on `fix/telegraph-dependency-*` branches, with a draft PR per finding back
+to the checked-out branch. Standalone public npm projects get a regenerated
+package-lock v2/v3 alongside package.json. Plain Python pins retain extras, markers
+and comments. Matching PRs are reused, and existing branches are never force-updated.
+No assessment or prepared-update files are added to the repository.
+
+All orchestration now runs in one job with wallet and GitHub credentials. It never
+executes repository scripts or tests. npm lock generation runs in a temporary
+directory with `--package-lock-only --ignore-scripts`, a minimal environment without
+inherited wallet/GitHub credentials, and no repository npm configuration. Human
+review and merge remain required; this does not provide separate-runner isolation.
+
+`bot/actions/src/scan.ts` detects the repository from the current working directory
+using Git; no workspace environment variable is required. It reads npm dependencies
+and devDependencies from standalone npm package-lock v2/v3 entries, and
+Python exact pins from requirements.txt, requirements-*.txt and requirements/*.txt.
+The scanner performs no registry requests. It checks npm resolved versions against
+manifest ranges using SemVer and validates Python pins using PEP 440; invalid or
+inconsistent entries are skipped before assessment. All declarations the updater
+would change are validated; matching Python package/version pins are grouped with
+their markers preserved. Unsupported workspace/no-lock
+npm projects and hashed/continued Python pins are also skipped before spending.
+pnpm membership checks support block-style package globs and exclusions; other
+workspace YAML forms fail closed until a full workspace resolver is supported. Python markers
+are preserved, not evaluated. Tracked source packages under `build` are included;
+untracked generated directories remain excluded. Pins describe the repository environment rather than
+proving what is installed in a running interpreter. Unresolved versions are reported.
+
+### Enable the workflow
+
+- The action uses the existing ranked-miner payment client for
+  `QUESTION_ANSWERING_GENERAL`. Optional `preferred-miner-id` (or `PREFERRED_MINER_ID`
+  env/repository variable) tries a chosen miner before the ranked list. Its purchases
+  retain the client's `selectedBy: "our_choice"`; an unranked choice has null rank/score.
+- Set repository variable `MODEL_CUTOFF` (or action input `model-cutoff`) to the model's
+  training cutoff date, for example `2025-01-01`. Missing/invalid dates fail before payment.
+- Configure `MODEL_PROVIDER`, `MODEL_ID`, `MODEL_CUTOFF_SOURCE_URL` (HTTPS), and
+  `MODEL_CUTOFF_STATUS` (`provider-documented` or `team-assumed`) for provenance.
+  `MODEL_CONFIGURED_AT` is optional; otherwise the configuration-load time is recorded.
+  The workflow requires explicit cutoff and model provenance repository variables.
+  Placeholder provider/model names are rejected before payment. A team-assumed
+  cutoff is supported when the actual provider and model are named and its source
+  records the assumption. The preferred miner defaults to `7314`.
+- Inputs `chain-id` and `usdc-address` default the payment allowlist to Sepolia (`11155111`) and USDC
+  `0xcc194e1a843B658526D0D5C431f670028582Ae17`. No chain or token variables
+  are required; inputs can override the allowlist. These defaults were verified with an unsigned, unpaid devnode
+  [402 challenge on 5 Nov 2026](docs/telegraph/action-payment-2026-11-05.json).
+  The wallet must hold this token; quotes for other networks or assets are refused.
+- Public settings default in `bot/actions/action.yml`: `node-url` is
+  `https://devnode.telegraphprotocol.com`, `max-price-per-call-usdc` is `0.10`,
+  and `budget-cap-usdc` is `2`. Optional
+  `with:` inputs can override these defaults. These are spending limits, not live prices.
+- Supply secret `TELEGRAPH_EVM_PRIVATE_KEY` for a dedicated wallet. Private keys
+  are not bundled as action defaults.
+- Allow GitHub Actions to create pull requests in repository settings and grant the
+  job `contents: write` and `pull-requests: write`.
+- Run **Telegraph dependency updates** on the branch you want to update. A named
+  branch must be checked out; detached HEAD is rejected instead of guessing a target.
+- After editing action source, run `npm run build:prod` in
+  `bot/actions` and include its updated distribution bundle in the same change.
+  Building requires the existing action and shared bot dependencies; callers do not.
+
+The action has no stage or artifact inputs. Public node/spending settings have
+action-defined defaults; the wallet remains a secret. Outputs are `has-findings`,
+`pull-requests` (JSON URLs), `message` (purchase details, retained even if later
+validation fails), and `status`. Repository visibility is checked before assessment;
+private or unknown visibility fails closed. The `pull-requests` output retains earlier
+URLs if a later publication fails. Action dependency PRs also include a rebuilt
+`bot/actions/dist/index.js`, verified by two identical builds using fixed tooling
+and installs with lifecycle scripts disabled.
+
+### Workflow checks
+
+`.github/workflows/test.yml` runs on pushes, pull requests and manual dispatch.
+It installs action dependencies from their npm lockfile and shared bot dependencies
+from the workspace pnpm lockfile without lifecycle scripts, typechecks the bot/tests,
+builds the action, checks that the checked-in bundle matches its source, and runs
+the offline bot/action test suite. The standalone `cli/` package has been removed. It receives no wallet or write credentials.
+
+`.github/workflows/dependency-updates.yml` runs on dependency-file pushes to
+`main` and manual dispatch, excluding generated fix branches and branch deletions. It checks out
+the triggering branch without persisted Git credentials and invokes the packaged
+action once. Only the update job has write permissions. It supplies the wallet
+secret and GitHub token, relies on the action's public configuration defaults, and
+sets up Node 24 for npm lockfile generation and exposes `status`, `has-findings`,
+`pull-requests`, and `message` job outputs. It does not install, build, or
+execute repository test scripts. No chain or USDC repository variables are needed.
+
+### Verified scope and limits
+
+Automated tests mock Telegraph, registry and GitHub responses. They cover findings,
+manifest updates, lock-generation orchestration, offline mixed-language scanning,
+branch/PR creation and duplicate suppression. Typechecks and the action bundle build
+run locally. No live payment, GitHub PR or hosted workflow execution is claimed.
+
+PR preparation currently rejects pnpm/workspace updates, non-public npm registry
+sources and hashed/continued Python pins rather than publish stale lock data.
+Python ranges, includes and pyproject/Pipfile/setup manifests need exported exact pins.
+Current npm prereleases and valid PEP 440 Python pins (including `==1`) are
+accepted and ordered using their ecosystem rules. Recommended targets remain
+stable versions; npm targets require major.minor.patch. The action uses
+`semver` and `@renovatebot/pep440` for version validation and ordering. Unsupported findings fail preparation before publication.
+Registry checks confirm target availability, not the truth of CVE claims or migration
+compatibility. Repository tests and code migrations are not run automatically; draft
+PRs must be independently checked. GitHub's behavior for workflows triggered by a
+`GITHUB_TOKEN` PR can require human approval before checks run; check the PR's Actions
+status rather than assuming CI ran ([GitHub token behavior](https://docs.github.com/en/actions/concepts/security/github_token)).
+
+The action uses `bot/src/ledger.ts` on the target repository's `ledger` branch,
+bootstrapping it only when Git confirms the branch is missing. It records each
+attempt before advancing payment, rechecks freshly fetched state during push retries,
+and records the purchase and delivered state before preparing PRs. Authentication
+or ledger write failures stop payment. Unknown payment outcomes halt retries for
+manual reconciliation. Ledger Git subprocesses disable repository hooks and do not
+inherit wallet credentials.
+
+Assessment identity includes repository, intent, dependency source/name, installed
+and target versions, and query hash; a new base SHA alone does not buy again. A
+delivered assessment reuses its validated saved purchase, including after publication
+failed, without paying again. Findings and target availability are checked again
+before preparing or reusing a PR. A publication/answer failure is reported after
+processing other candidates; payment, ledger and uncertain-outcome failures stop
+further purchases immediately.
+Each new assessment records provider, exact configured model, cutoff date/source,
+assumed-or-documented status and configuration timestamp in its attempt and purchase
+rows. A settled answer with missing hashes is retained and can be reused without
+another purchase; the ledger/dashboard flags incomplete evidence for reconciliation.
+Merge accounting refuses receipts that are missing or do not match settled evidence.
+
+Purchase rows include amount, receipt, selection policy, package/version context,
+and `resultStatus: "unchecked"`. Invalid findings append an `unusable` quality update;
+the dashboard displays the latest quality without rewriting payment evidence.
+Publication failures do not mark answers unusable. Valid miner `not_found` answers
+append `not_found`, emit a notice and create no PR; invalid answers remain `unusable`.
+A missing receipt blocks publication until the saved evidence is reconciled. Set `PREFERRED_MINER_ID=7314`
+to use the team's npm migration miner. It receives an exact two-version migration
+question; its structured response is retained in the purchase and ledger. The
+adapter validates package/version identity and source evidence, includes coverage
+and security caveats, and refuses introduced vulnerabilities. Python dependencies
+skip this npm-only miner before payment; ranked fallback retains the generic
+assessment prompt. Preferred miner `0` remains a notice-only setup placeholder.
+The existing dashboard displays purchases as assessments
+when no PR exists yet. `.github/workflows/merge-accounting.yml` records closed-and-merged generated PRs
+from this repository on any supported target branch, including release branches.
+Missing or reformatted evidence fails with a recovery message rather than silently
+omitting a merged cost. It checks out the trusted default branch, receives
+no wallet key, and verifies the PR evidence and branch identity against an existing
+settled receipt before appending an idempotent merge row. The dashboard derives
+recorded net spend per merged PR from all settled spending, including unmerged
+and `not_found` assessments. Receipt-linked allocation and unmerged/unallocated
+spend are displayed separately; duplicate receipts and merge events are not counted twice. No merged costs are claimed until actual merge rows exist.
+
+Live intent/provider compatibility and answer quality must be verified before
+enabling payments. No live payment or hosted ledger write was exercised by these
+changes. The intent remains `QUESTION_ANSWERING_GENERAL`.
+
+Merge-accounting recovery: restore the evidence in the merged PR body, then rerun
+its accounting job or manually dispatch **Record merged dependency PR costs** from
+the default branch with `pr-number`. Both paths fetch the current PR body and
+validate the receipt against the hosted ledger. No payment wallet is used.
+Legacy prose-only miner 7314 purchases remain recorded. Their replacement migration
+question has a distinct versioned request identity; outstanding legacy payments
+must be reconciled before that request can be bought. New structured answers and
+other miners' saved answers continue to be reused.

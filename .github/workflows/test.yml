@@ -1,0 +1,49 @@
+name: Test Telegraph Agent
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            bot/actions/package-lock.json
+            pnpm-lock.yaml
+
+      - name: Install action build dependencies
+        working-directory: ./bot/actions
+        run: npm ci --ignore-scripts
+
+      - name: Install shared bot dependencies from the workspace lockfile
+        run: npm exec --yes --package=pnpm@10.18.3 -- pnpm --filter @telegraph-pr-agent/bot install --frozen-lockfile --ignore-scripts
+
+      - name: Typecheck shared bot and tests
+        run: npm run build --prefix bot
+
+      - name: Build packaged action
+        run: npm run build:prod --prefix bot/actions
+
+      - name: Check packaged action matches its source
+        run: git diff --exit-code -- bot/actions/dist/index.js
+
+      - name: Run bot and action tests without payment or write credentials
+        run: npm test --prefix bot
+
+      - name: Test merged PR cost accounting
+        run: npm test --prefix web

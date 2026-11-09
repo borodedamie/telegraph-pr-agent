@@ -1,3 +1,4 @@
+import { mergedCosts, purchaseRows } from "./accounting.js";
 const REPO = "borodedamie/telegraph-pr-agent";
 const LEDGER_URL = `https://raw.githubusercontent.com/${REPO}/ledger/ledger.jsonl`;
 // Rows store the explorer of the chain they paid on. Rows written before 5 Nov 2026
@@ -26,15 +27,14 @@ async function loadRows() {
   return (await res.text())
     .split("\n")
     .filter((line) => line.trim())
-    .map((line) => JSON.parse(line))
-    // Attempt rows track payment stages; only purchases are shown for now.
-    .filter((row) => row.kind !== "attempt");
+    .map((line) => JSON.parse(line));
 }
 
 const usdc = (n) =>
   n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
 const when = (ts) =>
   new Date(ts).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+const purchaseLabel = (row) => row.prNumber ? `PR #${row.prNumber}` : `${row.package ?? "Dependency"} assessment`;
 const task = (intent) =>
   intent
     .toLowerCase()
@@ -67,7 +67,7 @@ function openDrawer(row, trigger) {
             " to ",
             el("strong", {}, row.minerName),
             ` for ${task(row.intent)} on `,
-            el("strong", {}, `PR #${row.prNumber}`),
+            el("strong", {}, purchaseLabel(row)),
             "."
           )
         : el(
@@ -78,7 +78,7 @@ function openDrawer(row, trigger) {
             " to ",
             el("strong", {}, row.minerName),
             ` for ${task(row.intent)} on `,
-            el("strong", {}, `PR #${row.prNumber}`),
+            el("strong", {}, purchaseLabel(row)),
             " didn’t go through."
           ),
       // ponytail: answerPreview fallback is for pre-Engine rows; drop once the ledger is re-run in the event window.
@@ -98,7 +98,16 @@ function openDrawer(row, trigger) {
 // Every recorded field lives here — the table stays a table.
 function fields(row) {
   const pairs = [
-    ["PR", `#${row.prNumber}`],
+    ["PR", purchaseLabel(row)],
+    ["Repository", row.repo],
+    ["Package", row.package],
+    ["Target version", row.targetVersion],
+    ["Selected by", row.selectedBy],
+    ["Model", row.model && `${row.model.provider} / ${row.model.model}`],
+    ["Model cutoff", row.model && `${row.model.cutoff} (${row.model.status})`],
+    ["Cutoff source", row.model?.sourceUrl],
+    ["Configured at", row.model?.configuredAt],
+    ["Evidence", row.evidenceIncomplete && "Incomplete; reconcile missing payment hashes"],
     ["Intent", row.intent],
     ["Miner ID", row.minerId],
     ["Miner", row.minerName],
@@ -155,7 +164,7 @@ function table(rows) {
   rows.forEach((r, i) => {
     const view = el(
       "button",
-      { class: "view-btn", type: "button", "aria-label": `View receipt for PR #${r.prNumber}` },
+      { class: "view-btn", type: "button", "aria-label": `View receipt for ${purchaseLabel(r)}` },
       "View →"
     );
     view.addEventListener("click", () => openDrawer(r, view));
@@ -164,7 +173,7 @@ function table(rows) {
         "tr",
         { class: "row-anim", style: `--i:${i}` },
         el("td", {}, el("span", { class: "time" }, when(r.timestamp))),
-        el("td", {}, el("span", { class: "pr" }, `#${r.prNumber}`)),
+        el("td", {}, el("span", { class: "pr" }, purchaseLabel(r))),
         el("td", {}, el("span", { class: "intent" }, task(r.intent))),
         el("td", {}, el("span", { class: "miner", title: r.minerName }, r.minerName)),
         el("td", { class: "num" }, el("span", { class: "amount" }, usdc(r.amountUsdc), el("small", {}, "USDC"))),
@@ -226,7 +235,9 @@ async function main() {
     )
   );
   try {
-    const rows = (await loadRows()).reverse(); // newest first
+    const entries = await loadRows();
+    const costs = mergedCosts(entries);
+    const rows = purchaseRows(entries).reverse(); // newest purchases first
     const settled = rows.filter((r) => r.status === "settled");
     const total = settled.reduce((sum, r) => sum + r.amountUsdc, 0);
     app.querySelector(".spend-total .figure").replaceChildren(
@@ -243,6 +254,9 @@ async function main() {
         el("span", { class: "dot" }, "·"),
         `${rows.length - settled.length} failed`
       ),
+      el("p", { class: "tally" }, costs.count
+        ? `${usdc(costs.costPerMergedPr)} USDC recorded net spend per merged PR · ${costs.count} merged PRs · ${usdc(costs.netSpend)} USDC total · ${usdc(costs.total)} USDC allocated to merges · ${usdc(costs.unmergedSpend)} USDC unmerged/unallocated`
+        : `Cost per merged PR: N/A · ${usdc(costs.netSpend)} USDC recorded spend · no merged PRs`),
       table(rows)
     );
   } catch (err) {

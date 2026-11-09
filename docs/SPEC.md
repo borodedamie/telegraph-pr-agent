@@ -48,6 +48,90 @@ Two separate gates. The App never waits on the Miner gate.
 
 ## 2. Bot (GitHub Action)
 
+**Implementation status, 8 Nov 2026.** The action prototype now scans current
+npm and pinned Python requirements, purchases a structured assessment from a
+preferred miner when configured, then the ranked list (with fallback after
+a classified failure), and prepares draft dependency PRs for validated
+CVE/outdated findings. The action chooses newer stable npm/PyPI targets with
+verified release dates strictly after the configured model cutoff; no candidate
+means no payment or PR. Findings must preserve that verified target. At the user's request, a single action invocation now performs
+payment, preparation and publication in one job, without stage inputs or artifact
+files. It executes no repository scripts. npm lock generation receives a minimal
+credential-free subprocess environment and uses `--ignore-scripts`; separate-runner
+isolation remains a production requirement below. Public node/spending settings
+now default in action metadata (devnode URL, 0.10 USDC per call, 2 USDC per run,
+and overridable chain/token allowlist defaults backed by the dated unpaid snapshot);
+the wallet key remains secret-backed and is never bundled. Supported automatic edits are standalone public npm
+package-lock v2/v3 projects and plain Python `==` requirements; pnpm/workspace lock
+updates and hashed/continued Python pins are skipped before assessment. Repository visibility is checked
+before assessment, and successful PR URLs survive later publication failures.
+Action dependency updates include the rebuilt runtime bundle, checked for
+reproducibility without executing repository scripts. npm resolved versions must satisfy their manifest ranges; invalid npm or Python
+versions are skipped before assessment. Findings accept npm prereleases and valid
+PEP 440 current versions, comparing upgrades using the matching ecosystem rules;
+recommended targets must be stable versions. Findings, source paths, versions,
+prepared changes, the checked-out branch and its base commit are checked before updating
+existing dependency files on `fix/telegraph-dependency-*` branches. PRs target the
+branch that was checked out, rather than the repository default. No intermediate JSON
+files are created or added to the PR. Existing
+matching PRs, including closed ones, are reused. CVE claims and migration compatibility
+still require independent review. Automatic runs are limited to dependency-path
+pushes to `main` plus manual dispatch, excluding generated fix branches and deletions.
+`model-cutoff`/`MODEL_CUTOFF` is required; optional `preferred-miner-id`/`PREFERRED_MINER_ID`
+uses the existing client's explicitly labelled provider choice, without changing
+its payment network handling.
+
+The action reuses the shared attempt ledger and awaited payment callback. Its
+pre-PR key uses repository plus a per-dependency assessment identity (intent,
+source/package, installed/target versions and query hash), storing the base SHA
+as context rather than allowing a new commit to buy the same assessment again.
+Fresh-ledger preflight and request-sent checks run inside push retries. Delivered
+assessments reuse validated saved purchases without paying again; uncertain outcomes halt. Purchase rows are persisted with amount,
+receipt, provider selection, version context and `resultStatus: "unchecked"` before
+PR preparation, supplying the existing ledger dashboard with assessment costs.
+Missing ledger branches are bootstrapped only after Git confirms their absence;
+read/auth/write errors stop payment. Ledger hooks are disabled and wallet credentials
+are excluded from ledger subprocesses. Malformed ledger JSON stops the action. New attempts/purchases retain model provider,
+exact configured model ID, cutoff date/source/status and configuration timestamp.
+Paid answers with missing hashes remain reusable and are marked for evidence
+reconciliation; missing receipt hashes cannot be used for merge accounting.
+Answers failing findings parsing or validation append a delivered-attempt quality
+update with `resultStatus: "unusable"`; publication errors do not change answer
+quality. The dashboard projects the latest quality update onto the purchase.
+Miner `7314` receives a plain npm migration question for the exact installed and
+verified target versions. The client preserves its structured result alongside
+prose and the ledger retains it for reuse. An adapter validates the returned package,
+versions, quoted documented changes, advisory conclusions and HTTPS source links
+before producing findings. It reports coverage/security limitations, never treats
+inferred changes as documented evidence, and refuses introduced vulnerabilities.
+Valid `not_found` answers append quality `not_found`, emit a notice and produce no PR.
+Malformed answers append `unusable` and fail that candidate. Evidence-free found
+answers produce no PR. Missing receipts must be reconciled before publication.
+Python candidates skip this npm-only miner before payment and may use ranked
+fallback. Other miners retain the original assessment prompt.
+
+Registry lookup failures are reported per dependency while verified candidates
+continue, then the run reports any lookup failures rather than a clean success. The scanner validates all affected declarations, groups matching Python
+pins with their marker context, includes tracked source manifests under build,
+and rejects pnpm members even when they carry a local npm lock. pnpm detection
+supports block-style package globs/exclusions and fails closed for unsupported YAML.
+
+The merge-accounting workflow handles merged same-repository generated PRs on all
+supported target branches (including release branches) using
+the trusted default-branch action and no wallet credentials. It verifies receipt and branch
+identity against the purchase ledger, fails actionably when evidence is missing,
+appends merge rows idempotently, and the
+dashboard calculates recorded net spend per merged PR from all settled purchase
+rows, including unmerged and `not_found` assessments. Receipt-linked allocations
+remain separate.
+This remains a draft-update prototype: code migration, answer-quality verification
+and separate-runner isolation are not implemented. A delivered assessment whose
+publication failed reuses its recorded answer, revalidating findings and target
+availability without buying again. Publication errors do not starve later
+candidates; payment and ledger errors remain fatal. Merge accounting uses per-PR
+concurrency groups so different PR events do not replace pending runs. The standalone `cli/` package has been removed; action regression tests run in CI. Local mocks validate these paths; no live paid
+purchase or hosted ledger write is claimed. See README for configuration.
+
 ### 2.1 Architecture
 
 - [PRODUCT] GitHub Action with draft PR and human label approval. The automatic first Q&A purchase followed by approval for the fix stage satisfies the autonomy requirement provided: the first purchase is initiated by the agent with no human approving that transaction; it is paid through Telegraph; the answer is used to complete a meaningful task, not merely displayed. It must not be a disguised manual or pre-funded demonstration.
@@ -55,11 +139,17 @@ Two separate gates. The App never waits on the Miner gate.
 ### 2.2 Installation and trigger
 
 - [PRODUCT] One workflow file installs it. Initial scope: public GitHub repositories only.
-- [PRODUCT] Runs on a schedule the developer sets in their workflow file (`on: schedule` cron; the example workflow uses weekly) and on manual `workflow_dispatch`; one run per repository at a time via concurrency controls. The Action does not trigger on human PRs: a developer who has already bumped a dependency gets nothing useful from it (decided 2 Nov; [ADR 0001 amendment](adr/0001-deterministic-cutoff-detection.md)).
+- [PRODUCT] Runs on pushes to `main` matching `**/package.json`, `**/package-lock.json`, `**/requirements*.txt`, or `requirements/**`, and manual `workflow_dispatch`; generated `fix/telegraph-dependency-*` branches and branch-deletion events are excluded. One run per repository at a time via concurrency controls. A developer-configured schedule remains optional future configuration. The Action does not trigger on human PRs: a developer who has already bumped a dependency gets nothing useful from it (decided 2 Nov; [ADR 0001 amendment](adr/0001-deterministic-cutoff-detection.md)).
 - [PRODUCT] The Action is pinned to a release or immutable commit SHA; installers never execute an unpinned latest.
 - [PRODUCT] Document repository Actions permissions, the setting allowing Actions to create pull requests, required `contents` and `pull-requests` permissions, fork limitations and unsupported layouts.
 
 ### 2.3 Dependency eligibility and `MODEL_CUTOFF`
+
+**Required configuration:** cutoff, actual provider/model identity, cutoff source
+URL and documented-or-assumed status must be explicitly configured. The workflow
+has no cutoff/provenance fallbacks and rejects `assumed-provider` / `assumed-model`
+before payment. A genuinely team-assumed cutoff remains supported with explicit
+model identity and source. Miner `7314` is the default; an explicit miner `0` skips.
 
 - [PRODUCT] `Eligible(A, B) = semver(B) > semver(A) AND releaseDate(B) > MODEL_CUTOFF`, where A is the installed version from the lockfile and B the latest eligible stable version from the registry. Release timestamps come from registry metadata, never the LLM. Prereleases excluded. Missing or ambiguous dates fail closed. If B equals A, do nothing. This rule is our design, not a Telegraph or hackathon requirement; the eligibility requirement is the autonomous purchase and its meaningful use (§1).
 - [PRODUCT] A comes from the lockfile, never from stripping `^`/`~` off a `package.json` range.
@@ -142,7 +232,7 @@ reserved → quote_refused
 ### 2.7 Q&A result and `not_found` handling
 
 - [PRODUCT] The answer is untrusted text: evidence and input for the PR body and the LLM prompt, never instructions to the agent or a shell.
-- [PRODUCT] On `not_found` or an unusable answer: keep the delivered purchase and receipt; mark `unanswered` or the explicit status; state that suitable release information was not found; do not ask the LLM to invent a migration; do not proceed to the fix stage; leave a report-only draft or close by documented policy. Absence of release notes never implies an upgrade is safe.
+- [PRODUCT] On `not_found` or an unusable answer: keep the delivered purchase and receipt; mark valid missing-information responses `not_found` and invalid responses `unusable`; state that suitable release information was not found; do not ask the LLM to invent a migration; do not proceed to the fix stage; leave a report-only draft or close by documented policy. Absence of release notes never implies an upgrade is safe.
 - [PRODUCT] A 4 KB display cap is fine, but never truncate the only stored copy. Preserve the raw result or a content-addressed copy/hash; cap the displayed excerpt separately.
 
 ### 2.8 Draft PR report and call-site discovery
@@ -326,7 +416,7 @@ Recorded separately, never inferred from one another: **payment delivered** (val
 | Retry | New attempt, correctly linked |
 | Quote refused | No spend; refused quote recorded |
 | Failed paid delivery | Settlement/credit recorded separately |
-| `not_found` delivered answer | Spend included; status `unanswered` |
+| `not_found` delivered answer | Spend included; quality `not_found`; current action creates no update PR |
 | Tests fail | No successful patch/merge record |
 | PR closed unmerged | Spend retained |
 | PR merged | Separate merge outcome |
@@ -343,7 +433,7 @@ Recorded separately, never inferred from one another: **payment delivered** (val
 
 | Decision | Choice | Reason |
 | --- | --- | --- |
-| Trigger | Developer-configured schedule (default weekly) + manual run; lockfile A vs registry B; no PR-diff trigger in the Action | A developer who already bumped a dependency gets nothing from the bot; CLI v0 stays a prototype |
+| Trigger | Pushes to `main` matching dependency-file path filters (`**/package.json`, `**/package-lock.json`, `**/requirements*.txt`, `requirements/**`) + manual `workflow_dispatch`; exclude generated fix branches/deletions; no PR-diff trigger in the Action | A developer who already bumped a dependency gets nothing from the bot; CLI v0 stays a prototype |
 | Purchase route | Open: Engine auto-routing (recommended) or direct call to a chosen miner (current client) | Re-test routing with the canonical id first (§2.4) |
 | Vulnerabilities | OSV only inside upgrade PRs; no standalone vulnerability PRs | Scanners are a crowded space; our niche is the code migration |
 | Miner track | Separate entry; go/no-go 9 Nov (proposed) | Never blocks the App |
@@ -387,3 +477,17 @@ Recorded separately, never inferred from one another: **payment delivered** (val
 7. C coordinates developer trials, public updates, demo and evidence pack.
 
 The differentiator is not buying four AI responses. It is knowing when information may be stale, procuring relevant external intelligence, applying it to real software, verifying the change and accounting for the economics.
+
+### Review corrections (9 Nov 2026)
+
+The bot requires Node 22.20+ for its workspace glob matcher; the action runs Node 24.
+Merge accounting executes the default-branch action and fetches the current PR body
+on every attempt. Maintainers can restore missing evidence and rerun, or dispatch
+its workflow from the default branch with `pr-number`. Fork/unmerged PRs remain
+ineligible and receipt, branch and settlement checks remain mandatory.
+
+Quality updates attach to the exact purchase `attemptId`. A legacy prose-only 7314
+assessment can be followed by a distinctly versioned migration question; any
+outstanding legacy payment halts this path, including on a fresh-ledger retry.
+Structured assessments remain reusable. Report-only drafts on `not_found` remain
+planned behavior; today the action records `not_found` and publishes no PR.
