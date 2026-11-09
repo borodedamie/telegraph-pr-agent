@@ -22,7 +22,7 @@ Through Telegraph, ask this miner directly by id:
 ```bash
 # paid: x402 challenge, then payment (see the bot's IntelligenceClient in bot/src/x402.ts)
 POST https://devnode.telegraphprotocol.com/engine/v1/ask/7314
-{ "intent": "QUESTION_ANSWERING_GENERAL", "query": "What changed in express from 4.21.0 to 5.0.0?" }
+{ "method": "GET", "endpoint": "/answer", "payload": { "query": "What changed in express from 4.21.0 to 5.0.0?" } }
 ```
 
 Engine routing (`POST /engine/v1/ask` without an id) classified package questions as `WEB_SEARCH_GENERAL` on 6 Nov and sent them to another miner, so ask by id.
