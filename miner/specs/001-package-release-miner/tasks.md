@@ -401,9 +401,11 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 - [ ] T065 [US5] Monitor `https://<prod>/api/health` with an external uptime check (any free monitor). Log failures and routing suspensions in `miner/bench/network.md` (SC-007)
 
   Status 9 Nov: `.github/workflows/miner-health.yml` checks `/api/health` every 15 minutes and fails the run when the miner or an upstream is down. Scheduled workflows run only from the default branch, so it starts once merged into `main`; tick this task after its first scheduled runs.
-- [ ] T066 [US5] Record payout accounting in `miner/bench/network.md`:
+- [x] T066 [US5] Record payout accounting in `miner/bench/network.md`:
   - per call: the quoted and settled amount, and `charged` from the receipt;
   - per settlement batch: the protocol share, the provider accrual and the actual payout with its currency, from receipts and settlement data. This confirms or corrects the review's 2% / 98% / MACHINA description.
+
+  Status 9 Nov (`miner/bench/network.md`): confirmed. The one paid call so far (0.02 USDC, 6 Nov) shows as 0.0196 USDC accrued (98%), credited as 0.00368 MACHINA after the TWAP swap, claimable to the payout wallet; not claimed yet.
 
 ---
 

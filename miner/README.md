@@ -67,5 +67,5 @@ The code defaults; each can be set by an env var (`ORIGIN_RATE_PER_MIN`, `MAX_CO
 
 - Payout wallet (registered the miner, receives earnings): `0x74f2840C8A564F791f50aD76c38EF078258588dC`.
 - Spend wallet (pays the model calls): `0xe131…02A1`.
-- Payout economics are not measured yet (task T066): the protocol's share and the actual payout will be recorded from receipts and settlement data, not assumed.
+- Payout, as measured on 9 Nov: the buyer pays the floor (0.02 USDC at today's demand), Telegraph keeps 2%, and the remaining 98% is swapped to MACHINA at the end of each epoch and credited to the miner, to be claimed to the payout wallet. Earned so far: 0.0196 USDC, as 0.00368 MACHINA, from one paid call (our own test). Read it with `GET https://devnode.telegraphprotocol.com/v1/entitlements/miner/5083`.
 - The same team runs this miner and the PR bot in this repository (`bot/`). The bot's purchases from this miner are related-party tests, not independent demand. The 30 evaluation-pool questions uploaded on 9 Nov are signed by the payout wallet, so they are openly ours.
