@@ -11,3 +11,9 @@
 | Current epoch | 1983 | 2026 |
 
 The pool is still below `min_submitters`. The miner gate in SPEC §1 ("the evaluation pool is eligible") was not re-checked before registering on 6 Nov, so the miner was registered regardless. It answers direct calls by id. It cannot be scored or ranked on this intent until a fifth distinct eligible submitter joins.
+
+## Correction, same day
+
+The last sentence above was wrong. At 11:41 UTC on 6 Nov, with the pool still at 4 of 5 submitters, `GET /api/miners?intent=QUESTION_ANSWERING_GENERAL` already listed miner 7314 as `scored: true`, with `scores: [{"intent_id": "QUESTION_ANSWERING_GENERAL", "epoch_id": 2026, "rank": 4, "score": 0.9363, "scored_at": "2026-11-06T11:41:16Z"}]`. Being below `min_submitters` did not stop the miner from being scored and ranked. `/leaderboard/miners` returned no rows when read.
+
+Also seen: `/miner-dispatcher/miners/address/<address>/yamls` matches the address case-sensitively. The checksummed `0x74f2840C…88dC` returns `count: 0`; all lower case returns registration 5083.

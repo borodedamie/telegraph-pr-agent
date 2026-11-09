@@ -100,7 +100,7 @@ description: "Task list for the package-release miner"
   - `GET /api/answer` in `miner/api/answer.ts`: runs `checkKey` and `admit` first (`401` / `429`), validates `query` (required, at most 2,000 chars, otherwise `400`), and returns a fixed `Answer` with `outcome: "out_of_scope"` until T043;
   - `GET /api/health` in `miner/api/health.ts`: public, served from `probe.ts`.
 - [x] T018 Deploy the stub to a Vercel preview from `miner/`, with a preview `MINER_API_KEY`. Record the URL in `miner/bench/network.md`, and check that calls without the key get `401`
-- [ ] T019 Capture the Telegraph contract before registration (plan phase 1):
+- [x] T019 Capture the Telegraph contract before registration (plan phase 1):
   1. Read the live intent definition for `QUESTION_ANSWERING_GENERAL`, including any latency or timeout requirement, and save it as a dated snapshot under `docs/telegraph/`.
   2. Paste `contracts/telegraph-miner.yaml` into the anjoman.ai/dashboard/earn validator, with the preview `base_url`, `external_path: /api/answer`, the header auth and the errors block.
   3. Sandbox-test the endpoint. Record the validation result and the exact request the sandbox sends (path, query param, headers) in `miner/bench/network.md`.
@@ -108,6 +108,8 @@ description: "Task list for the package-release miner"
   No registration and no payment. If the dashboard asks for a signature or a payment, stop and ask.
 
   Status 3 Nov: steps 1 and 2 done and validation passed (`miner/bench/network.md`). Step 3 is open: the validator sent no `query` param, so the param name and headers the Engine sends on a real ask are still unknown. Capture them from the first sandbox or test ask before T062.
+
+  Status 9 Nov, done: the node's key check on 6 Nov called `GET /answer` (`external_path` `/api/answer`), and the direct paid test of 6 Nov (`POST /engine/v1/ask/7314`) reached the miner as `GET /api/answer` with the question in `query` and the installed `X-Telegraph-Key`, and got a `found` answer (`miner/bench/network.md`). Other headers the Engine sends were not logged.
 - [x] T020 With what T019 found, update research R1 and R9 in `miner/specs/001-package-release-miner/research.md` (the time budget and `LOCK_WAIT_MS` must fit the Engine timeout), and update `contracts/telegraph-miner.yaml`
 - [x] T021 Check Vercel Hobby eligibility for a payment-taking provider (research R2) and record the decision in `miner/bench/network.md`: stay on Hobby, or move to Pro (that is done in T059, with approval)
 
@@ -344,16 +346,18 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
   - a package with an `install` script is never executed (nothing is downloaded);
   - a repository URL pointing at a private host is refused;
   - an unauthenticated direct call does no upstream work.
-- [ ] T059 Run the benchmark on the preview and commit `miner/bench/report.md`.
+- [x] T059 Run the benchmark on the preview and commit `miner/bench/report.md`.
   - **Gate**: SC-001 to SC-006, SC-008 and SC-012 pass, excluding only the jumps beyond the US1 model budget, which must still be reported as partial with the cut releases named. First-time cost must be within the planned price.
   - If the gate fails, fix before Phase 7.
 
   Status 5 Nov, preview `p5-bench6` (`bench/report.md`, `bench/judge-report.md`):
   - Pass: SC-001 (673/673), SC-003 (0 invented), SC-004 (8/8), SC-005 (38/38), SC-006 identical and free repeats (38/38), SC-008 (security tests) and SC-012 (38/38).
   - SC-002 recall: 67.1% by word matching. With the judge it is 82.6%; 2 of the judged pairs were read by hand and found wrong, which leaves 82.1% (302/368), above the 80% target.
-  - Not met, and deferred by decision on 5 Nov so that registration can go ahead: repeat latency p95 is 1056 ms against a target under 500 ms. A repeat still revalidates every source to compute its cache key; a short cache keyed by package and versions would fix it.
+  - Not met, and deferred by decision on 5 Nov so that registration can go ahead: repeat latency p95 is 1056 ms against a target under 500 ms. A repeat still revalidates every source to compute its cache key; a short cache keyed by package and versions would fix it. Added 9 Nov as the one-hour repeat pointer (`data-model.md`); not deployed or measured yet.
   - Not run: n08 and n09, which need a local run with a simulated outage.
   - First-time cost: at most one model call at 0.01 USDC per answer.
+
+  Status 9 Nov: gate accepted by the team with the judge-assisted SC-002 recall (82.1% after the hand check; 67.1% by word matching alone). Still open, not part of the acceptance: repeat latency p95 (above), and n08 and n09.
 
 ---
 
@@ -387,19 +391,25 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
   - Key installed and validated by the node.
   - Paid tests: the direct call was served by our miner, settled 0.02 USDC. The routed call was classified as `WEB_SEARCH_GENERAL` and went to another miner.
   - Not run: the outage call, which needs `SIMULATE_UPSTREAM_OUTAGE` on production.
-  - Evaluation pool: not re-checked before registering. Read afterwards, it had 4 eligible submitters against `min_submitters` 5 (`docs/telegraph/qa-evalpool-2026-11-06.md`). The miner is registered but cannot be scored on this intent yet.
+  - Evaluation pool: not re-checked before registering. Read afterwards, it had 4 eligible submitters against `min_submitters` 5 (`docs/telegraph/qa-evalpool-2026-11-06.md`). Even so, by 11:41 UTC the same day it was scored: rank 4, score 0.9363 on `QUESTION_ANSWERING_GENERAL`, epoch 2026.
 
-- [ ] T064 [US5] Ranking check (plan phase 11), from the three endpoints in research R12:
+- [x] T064 [US5] Ranking check (plan phase 11), from the three endpoints in research R12:
   - `/api/miners?intent=…` (`scores[]`, `activation_status`, `scored`);
   - `/engine/v1/intents/QUESTION_ANSWERING_GENERAL/miners` (whether the miner is listed);
   - `/leaderboard/miners` (rank in the current epoch);
   - the evaluation-pool status.
 
   Record each response's actual shape, plus the score and rank if present or the observed reason they are absent, in `miner/bench/network.md`.
+
+  Status 8 Nov (`miner/bench/network.md`, `docs/telegraph/qa-scoring-2026-11-09.md`): scored on `QUESTION_ANSWERING_GENERAL`, rank 11 of 17, score 0.7955 at epoch 2042, on a pool of 426 rows from 5 of 5 submitters. The intent is `judgment`, scored by the `GENERIC` fallback adapter. On 9 Nov 30 package-upgrade questions were uploaded to the pool, and found answers lead with a "Key changes" line (`p8`).
 - [ ] T065 [US5] Monitor `https://<prod>/api/health` with an external uptime check (any free monitor). Log failures and routing suspensions in `miner/bench/network.md` (SC-007)
-- [ ] T066 [US5] Record payout accounting in `miner/bench/network.md`:
+
+  Status 9 Nov: `.github/workflows/miner-health.yml` checks `/api/health` every 15 minutes and fails the run when the miner or an upstream is down. Scheduled workflows run only from the default branch, so it starts once merged into `main`; tick this task after its first scheduled runs.
+- [x] T066 [US5] Record payout accounting in `miner/bench/network.md`:
   - per call: the quoted and settled amount, and `charged` from the receipt;
   - per settlement batch: the protocol share, the provider accrual and the actual payout with its currency, from receipts and settlement data. This confirms or corrects the review's 2% / 98% / MACHINA description.
+
+  Status 9 Nov (`miner/bench/network.md`): confirmed. The one paid call so far (0.02 USDC, 6 Nov) shows as 0.0196 USDC accrued (98%), credited as 0.00368 MACHINA after the TWAP swap, claimable to the payout wallet; not claimed yet.
 
 ---
 
@@ -425,13 +435,13 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 
 ## Phase 9: Polish, integration and evidence
 
-- [ ] T072 [P] Write `miner/README.md`:
+- [x] T072 [P] Write `miner/README.md`:
   - what it does, and the curl example with the key;
   - the outcomes and which are billed, and the limits;
   - origin authentication;
   - the payout wallet address and the payout economics as measured;
   - team-ownership disclosure (FR-026).
-- [ ] T073 Add a pointer to this spec in `docs/SPEC.md` §3, so the miner has one source of truth (plan Constitution Check)
+- [x] T073 Add a pointer to this spec in `docs/SPEC.md` §3, so the miner has one source of truth (plan Constitution Check)
 - [ ] T074 ⚠ PR-bot integration (plan phase 12): the bot buys from the miner, and one migration whose patch uses the answer passes the repository's tests (SC-010). Coordinate with the bot work in `bot/`
 - [ ] T075 ⚠ External adoption (plan phase 13): invite other hackathon teams or developers, publicly, to buy from the miner. Record any independent purchase with receipt, signal and settlement in `miner/bench/network.md` (SC-009)
 - [ ] T076 Package the Miners-track evidence (FR-028) in `miner/bench/evidence.md`: registration record, payout wallet, five sample requests and answers, network test results, benchmark report, latency, cost and payout

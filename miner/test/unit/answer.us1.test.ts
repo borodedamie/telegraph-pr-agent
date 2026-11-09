@@ -62,6 +62,10 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
       expect(findSpan(text, item.excerpt!)).toBe(item.excerpt);
     }
     expect(answer.answer).toMatch(/^zod 3\.23\.8 → 4\.0\.0 \(released 2025-07-09\)/);
+    const keyLine = answer.answer.split("\n")[1];
+    expect(keyLine).toMatch(/^Key changes: .+; and \d+ more below\.$/);
+    const firstBreaking = answer.changes.find((c) => c.kind === "breaking")!.change.replace(/\.$/, "");
+    expect(keyLine).toContain(firstBreaking.slice(0, 40));
   });
 
   it("shows a model step the source does not state as not documented", async () => {
@@ -88,6 +92,29 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     const second = await answerQuestion(QUESTION, roomy);
     expect(second.cacheHit).toBe(true);
     expect(second.json).toBe(first.json);
+    expect(model.calls()).toBe(1);
+  });
+
+  it("serves a repeat within the hour without any upstream request, and re-reads the sources after it", async () => {
+    let clock = 0;
+    const store = new MemoryStore(() => clock);
+    const model = stubModel();
+    const roomy = (fetcher: PipelineDeps["fetcher"]): PipelineDeps => ({
+      ...deps(store, model.caller), fetcher, now: () => clock, limits: limitsFromEnv({ MAX_MODEL_RELEASES: "100", MAX_MODEL_INPUT_CHARS: "500000" }),
+    });
+    const first = await answerQuestion(QUESTION, roomy(fixtureFetcher(FILES).fetcher));
+    // Asked in other words: the parsed package and versions are the same.
+    const again = fixtureFetcher(FILES);
+    clock = 3_599_000;
+    const repeat = await answerQuestion("zod 3.23.8 to 4.0.0 breaking changes", roomy(again.fetcher));
+    expect(repeat.cacheHit).toBe(true);
+    expect(repeat.json).toBe(first.json);
+    expect(again.urls).toEqual([]);
+    clock = 3_600_000;
+    const later = fixtureFetcher(FILES);
+    const revalidated = await answerQuestion(QUESTION, roomy(later.fetcher));
+    expect(later.urls.length).toBeGreaterThan(0);
+    expect(revalidated.cacheHit).toBe(true);
     expect(model.calls()).toBe(1);
   });
 
