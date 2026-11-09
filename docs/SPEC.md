@@ -364,7 +364,7 @@ The miner's detailed spec, plan and tasks are in [miner/specs/001-package-releas
 | Delivered purchase | `receipt_hash` |
 | Application operation | repo + PR + headSha + step + attempt |
 | Proposal (published dependency PR) | repo + PR; links to the paying attempt and `receipt_hash` |
-| Merge outcome | repo + PR + mergedHeadSha + eventType |
+| Merge outcome | repo + PR + mergedHeadSha + eventType (`merge` or `closed` row; a merge outranks an earlier close) |
 | Q&A cache/purchase reuse | repo + ecosystem + package + installed version + proposed version + intent + normalised question hash |
 
 `(PR, headSha)` alone is never the key: Q&A, generation, verification and retries are distinct billable activities. A duplicate merge event never creates a second merge count.

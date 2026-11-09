@@ -377,7 +377,7 @@ Each new assessment records provider, exact configured model, cutoff date/source
 assumed-or-documented status and configuration timestamp in its attempt and purchase
 rows. A settled answer with missing hashes is retained and can be reused without
 another purchase; the ledger/dashboard flags incomplete evidence for reconciliation.
-Each published dependency PR appends a `proposal` row (repo, PR number and URL, package and versions, and the attempt and receipt that paid for it), once per PR. Merge accounting refuses receipts that are missing or do not match settled evidence.
+Each published dependency PR appends a `proposal` row (repo, PR number and URL, package and versions, and the attempt and receipt that paid for it), once per PR. When a generated PR closes, merge accounting appends a `merge` row if it was merged or a `closed` row if it was not; a merge outranks an earlier close, and reruns add nothing. Merge accounting refuses receipts that are missing or do not match settled evidence.
 
 Purchase rows include amount, receipt, selection policy, package/version context,
 and `resultStatus: "unchecked"`. A published PR appends a `useful` quality update; invalid findings append `unusable`;
@@ -392,7 +392,7 @@ and security caveats, and refuses introduced vulnerabilities. Python dependencie
 skip this npm-only miner before payment; ranked fallback retains the generic
 assessment prompt. Preferred miner `0` remains a notice-only setup placeholder.
 The existing dashboard displays purchases as assessments
-when no PR exists yet. `.github/workflows/merge-accounting.yml` records closed-and-merged generated PRs
+when no PR exists yet. `.github/workflows/merge-accounting.yml` records closed generated PRs, merged or not,
 from this repository on any supported target branch, including release branches.
 Missing or reformatted evidence fails with a recovery message rather than silently
 omitting a merged cost. It checks out the trusted default branch, receives
