@@ -100,7 +100,7 @@ description: "Task list for the package-release miner"
   - `GET /api/answer` in `miner/api/answer.ts`: runs `checkKey` and `admit` first (`401` / `429`), validates `query` (required, at most 2,000 chars, otherwise `400`), and returns a fixed `Answer` with `outcome: "out_of_scope"` until T043;
   - `GET /api/health` in `miner/api/health.ts`: public, served from `probe.ts`.
 - [x] T018 Deploy the stub to a Vercel preview from `miner/`, with a preview `MINER_API_KEY`. Record the URL in `miner/bench/network.md`, and check that calls without the key get `401`
-- [ ] T019 Capture the Telegraph contract before registration (plan phase 1):
+- [x] T019 Capture the Telegraph contract before registration (plan phase 1):
   1. Read the live intent definition for `QUESTION_ANSWERING_GENERAL`, including any latency or timeout requirement, and save it as a dated snapshot under `docs/telegraph/`.
   2. Paste `contracts/telegraph-miner.yaml` into the anjoman.ai/dashboard/earn validator, with the preview `base_url`, `external_path: /api/answer`, the header auth and the errors block.
   3. Sandbox-test the endpoint. Record the validation result and the exact request the sandbox sends (path, query param, headers) in `miner/bench/network.md`.
@@ -108,6 +108,8 @@ description: "Task list for the package-release miner"
   No registration and no payment. If the dashboard asks for a signature or a payment, stop and ask.
 
   Status 3 Nov: steps 1 and 2 done and validation passed (`miner/bench/network.md`). Step 3 is open: the validator sent no `query` param, so the param name and headers the Engine sends on a real ask are still unknown. Capture them from the first sandbox or test ask before T062.
+
+  Status 9 Nov, done: the node's key check on 6 Nov called `GET /answer` (`external_path` `/api/answer`), and the direct paid test of 6 Nov (`POST /engine/v1/ask/7314`) reached the miner as `GET /api/answer` with the question in `query` and the installed `X-Telegraph-Key`, and got a `found` answer (`miner/bench/network.md`). Other headers the Engine sends were not logged.
 - [x] T020 With what T019 found, update research R1 and R9 in `miner/specs/001-package-release-miner/research.md` (the time budget and `LOCK_WAIT_MS` must fit the Engine timeout), and update `contracts/telegraph-miner.yaml`
 - [x] T021 Check Vercel Hobby eligibility for a payment-taking provider (research R2) and record the decision in `miner/bench/network.md`: stay on Hobby, or move to Pro (that is done in T059, with approval)
 
@@ -344,7 +346,7 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
   - a package with an `install` script is never executed (nothing is downloaded);
   - a repository URL pointing at a private host is refused;
   - an unauthenticated direct call does no upstream work.
-- [ ] T059 Run the benchmark on the preview and commit `miner/bench/report.md`.
+- [x] T059 Run the benchmark on the preview and commit `miner/bench/report.md`.
   - **Gate**: SC-001 to SC-006, SC-008 and SC-012 pass, excluding only the jumps beyond the US1 model budget, which must still be reported as partial with the cut releases named. First-time cost must be within the planned price.
   - If the gate fails, fix before Phase 7.
 
@@ -354,6 +356,8 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
   - Not met, and deferred by decision on 5 Nov so that registration can go ahead: repeat latency p95 is 1056 ms against a target under 500 ms. A repeat still revalidates every source to compute its cache key; a short cache keyed by package and versions would fix it.
   - Not run: n08 and n09, which need a local run with a simulated outage.
   - First-time cost: at most one model call at 0.01 USDC per answer.
+
+  Status 9 Nov: gate accepted by the team with the judge-assisted SC-002 recall (82.1% after the hand check; 67.1% by word matching alone). Still open, not part of the acceptance: repeat latency p95 (above), and n08 and n09.
 
 ---
 
