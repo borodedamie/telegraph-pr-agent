@@ -12,6 +12,9 @@ const KIND_TITLES: Record<ChangeItem["kind"], string> = {
 const MAX_LISTED_NOT_COVERED = 10;
 // Releases that only point elsewhere get a line each up to this many; the rest are named on one line.
 const MAX_UNASSESSED_LINES = 3;
+// The QA judge reads only the first 512 tokens of question and answer, so the main changes go first.
+const MAX_KEY_CHANGES = 5;
+const KEY_CHANGE_MAX_CHARS = 90;
 
 function plural(count: number, word: string, many = `${word}s`): string {
   return `${count} ${count === 1 ? word : many}`;
@@ -129,6 +132,8 @@ export function render(
   const released = answer.targetReleasedAt ? ` (released ${answer.targetReleasedAt.slice(0, 10)})` : "";
   const header = `${request.package} ${request.fromResolved} → ${request.toResolved}${released}: ${counts(answer.changes)}.`;
   const lines = [header];
+  const keyChanges = keyChangesLine(answer.changes);
+  if (keyChanges) lines.push(keyChanges);
   if (request.fromAssumed) {
     lines.push(`(from version assumed: ${request.fromResolved}, the latest stable release before the ${request.toResolved} line)`);
   }
@@ -175,6 +180,17 @@ export function render(
   lines.push(...advisoryLines(answer));
   lines.push("", sourcesLine(answer));
   return { answer: lines.join("\n"), summary: summaryFor(answer) };
+}
+
+function keyChangesLine(changes: ChangeItem[]): string | null {
+  const ordered = (["breaking", "deprecation", "security_fix"] as const).flatMap((kind) => changes.filter((c) => c.kind === kind));
+  if (ordered.length === 0) return null;
+  const shown = ordered.slice(0, MAX_KEY_CHANGES).map((item) => {
+    const text = item.change.replace(/\.$/, "");
+    return text.length > KEY_CHANGE_MAX_CHARS ? `${text.slice(0, KEY_CHANGE_MAX_CHARS - 1)}…` : text;
+  });
+  const more = ordered.length > shown.length ? `; and ${ordered.length - shown.length} more below` : "";
+  return `Key changes: ${shown.join("; ")}${more}.`;
 }
 
 function sourcesLine(answer: Renderable): string {

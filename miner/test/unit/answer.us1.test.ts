@@ -62,6 +62,10 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
       expect(findSpan(text, item.excerpt!)).toBe(item.excerpt);
     }
     expect(answer.answer).toMatch(/^zod 3\.23\.8 → 4\.0\.0 \(released 2025-07-09\)/);
+    const keyLine = answer.answer.split("\n")[1];
+    expect(keyLine).toMatch(/^Key changes: .+; and \d+ more below\.$/);
+    const firstBreaking = answer.changes.find((c) => c.kind === "breaking")!.change.replace(/\.$/, "");
+    expect(keyLine).toContain(firstBreaking.slice(0, 40));
   });
 
   it("shows a model step the source does not state as not documented", async () => {
