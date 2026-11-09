@@ -81,6 +81,8 @@ export const applyAssessment = async (options: {
   dependencies: Dependency[];
   purchase: Purchase;
   onPublished?: (urls: string[]) => void;
+  /** Awaited after each PR opens, so the ledger records it before the next one. */
+  onProposal?: (url: string, finding: Finding) => Promise<void>;
 }): Promise<string[]> => {
   let findings: Finding[];
   try {
@@ -101,9 +103,11 @@ export const applyAssessment = async (options: {
   const { minerId, intent, receiptHash, signalHash, txHash, amountUsdc } = options.purchase;
   const purchase = { minerId, intent, receiptHash, signalHash, txHash, amountUsdc };
   for (const update of updates) {
-    urls.push(await createDependencyPr({ root: options.root, repository: options.repository,
-      baseBranch: options.baseBranch, baseSha: options.baseSha, token: options.token, update, purchase }));
+    const url = await createDependencyPr({ root: options.root, repository: options.repository,
+      baseBranch: options.baseBranch, baseSha: options.baseSha, token: options.token, update, purchase });
+    urls.push(url);
     options.onPublished?.([...urls]);
+    await options.onProposal?.(url, update.finding);
   }
   return urls;
 };

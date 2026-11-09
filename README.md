@@ -53,7 +53,7 @@ Known gaps in this slice, kept here so nobody mistakes them for features:
 
 - The intent id `QUESTION_ANSWERING_GENERAL` is hardcoded; it was checked against `GET /engine/v1/intents` on 3 Nov 2026 and must be rechecked if the catalogue changes.
 - Each payment try is recorded on the ledger branch at every stage (`reserved`, then `quote_refused` or `request_sent`, then `delivered`, `failed_and_credited`, `failed_not_charged` or `unknown_needs_reconciliation`; definitions in [SPEC §2.6](docs/SPEC.md)) before the bot moves on. If a run dies or its push fails after `request_sent`, the next run for that PR and commit stops instead of paying again, and a person checks the wallet, escrow balance and signal. Before recording `reserved` and `request_sent`, the run re-checks the freshly fetched ledger, and a push loses if another run pushed first, so two runs for the same PR and commit can't both pay; the second stops. Nothing yet marks a stuck attempt as reconciled; that is done by hand on the ledger branch.
-- A purchase is recorded once per `receipt_hash`; writing a receipt that is already on the ledger is refused. Each purchase row has a `resultStatus` for answer quality, kept apart from payment: new rows start `unchecked`, and `useful`, `unusable` or `not_found` can be recorded separately. The dependency action automatically appends `unusable` for invalid findings; the dashboard uses the latest quality update.
+- A purchase is recorded once per `receipt_hash`; writing a receipt that is already on the ledger is refused. Each purchase row has a `resultStatus` for answer quality, kept apart from payment: new rows start `unchecked`, and `useful`, `unusable` or `not_found` can be recorded separately. The dependency action automatically appends `useful` when an answer produces a published PR and `unusable` for invalid findings; the dashboard uses the latest quality update.
 - Each purchase row stores the network, chain id, USDC contract and explorer URL of the 402 option it paid, and transaction links are built from that. Rows written before 5 Nov 2026 lack these fields; their links use the date (before 1 Nov: Basescan, Base Sepolia; after: Etherscan, Ethereum Sepolia). The memo's summary line still names Ethereum Sepolia as fixed text.
 
 ## Repository layout
@@ -377,10 +377,10 @@ Each new assessment records provider, exact configured model, cutoff date/source
 assumed-or-documented status and configuration timestamp in its attempt and purchase
 rows. A settled answer with missing hashes is retained and can be reused without
 another purchase; the ledger/dashboard flags incomplete evidence for reconciliation.
-Merge accounting refuses receipts that are missing or do not match settled evidence.
+Each published dependency PR appends a `proposal` row (repo, PR number and URL, package and versions, and the attempt and receipt that paid for it), once per PR. Merge accounting refuses receipts that are missing or do not match settled evidence.
 
 Purchase rows include amount, receipt, selection policy, package/version context,
-and `resultStatus: "unchecked"`. Invalid findings append an `unusable` quality update;
+and `resultStatus: "unchecked"`. A published PR appends a `useful` quality update; invalid findings append `unusable`;
 the dashboard displays the latest quality without rewriting payment evidence.
 Publication failures do not mark answers unusable. Valid miner `not_found` answers
 append `not_found`, emit a notice and create no PR; invalid answers remain `unusable`.
