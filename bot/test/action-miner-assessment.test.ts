@@ -26,7 +26,7 @@ it("adapts quoted changes and fixed advisories into validated findings with cove
   expect(findings[0].reason).toContain("Migration: Use the new API.");
 });
 
-it.each(["needs_clarification", "not_found", "temporarily_unavailable"])("rejects %s without inventing findings", (outcome) => {
+it.each(["needs_clarification", "temporarily_unavailable"])("rejects %s without inventing findings", (outcome) => {
   expect(() => migrationFindings({ ...response(), outcome }, [dependency])).toThrow();
 });
 
@@ -49,6 +49,15 @@ it("does not turn inferred changes or an unresolved CVE into an upgrade finding"
 
 it("retains GHSA-only fixed evidence without inventing a CVE identifier", () => {
   const answer = response();
+  answer.changes = [];
   answer.security.advisories[0].aliases = [];
-  expect(migrationFindings(JSON.stringify(answer), [dependency])[0]).toMatchObject({ issue: "outdated", cves: [] });
+  const finding = migrationFindings(JSON.stringify(answer), [dependency])[0];
+  expect(finding).toMatchObject({ issue: "outdated", cves: [], sources: ["https://osv.dev/vulnerability/GHSA-example"] });
+  expect(finding.reason).toContain("GHSA-example: fixed_by_upgrade");
+});
+
+it("classifies valid not_found separately, including null request and coverage", () => {
+  expect(() => migrationFindings({ ...response(), outcome: "not_found", request: null, coverage: null,
+    changes: [], security: { status: "not_checked", advisories: [] }, sources: [] }, [dependency]))
+    .toThrow("Suitable release information was not found");
 });

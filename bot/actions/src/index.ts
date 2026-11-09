@@ -1,17 +1,18 @@
 import { readModelProvenance } from "../../src/config.js";
 import * as core from "@actions/core";
-import { recordMerge } from "./accounting";
+import { recordMerge, fetchMergedPr } from "./accounting";
 import { readFileSync, rmSync } from "node:fs";
 import { cutoffCandidates } from "./cutoff";
-import { openLedger, purchaseAssessment, markAssessmentUnusable } from "./purchase";
+import { openLedger, purchaseAssessment, markAssessmentResult } from "./purchase";
 import { execFileSync } from "node:child_process";
 import { scanRepository } from "./scan";
 import { IntelligenceClient } from "../../src/x402";
-import { applyAssessment, assessmentPrompt, InvalidAssessmentError } from "./assessment";
+import { applyAssessment, assessmentPrompt, InvalidAssessmentError, NotFoundAssessmentError } from "./assessment";
 import { assertPublicRepository, checkedOutBranch } from "./pull-request";
 
 const INTENT_ID = "QUESTION_ANSWERING_GENERAL";
 
+/** Execute merge accounting without wallet access, or assess eligible dependencies with durable payment evidence. */
 const run = async (): Promise<void> => {
   let ledger: Awaited<ReturnType<typeof openLedger>> | undefined;
   try {
@@ -20,11 +21,13 @@ const run = async (): Promise<void> => {
     if (!token) throw new Error("GITHUB_TOKEN is required");
     const repository = process.env.GITHUB_REPOSITORY ?? "";
     if (!/^[\w.-]+\/[\w.-]+$/.test(repository)) throw new Error("GITHUB_REPOSITORY must be owner/repo");
-    if (process.env.GITHUB_EVENT_NAME === "pull_request_target") {
-      const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH ?? "", "utf8"));
+    const mergePrNumber = core.getInput("merge-pr-number");
+    if (process.env.GITHUB_EVENT_NAME === "pull_request_target" || mergePrNumber) {
+      const number = mergePrNumber ? Number(mergePrNumber)
+        : JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH ?? "", "utf8")).pull_request.number;
       await assertPublicRepository(repository, token);
       ledger = await openLedger(repository, token);
-      await recordMerge(ledger, repository, event.pull_request);
+      await recordMerge(ledger, repository, await fetchMergedPr(repository, number, token));
       core.setOutput("status", "success");
       return;
     }
@@ -95,7 +98,11 @@ const run = async (): Promise<void> => {
               core.setOutput("pull-requests", JSON.stringify([...urls]));
             } });
         } catch (error) {
-          if (error instanceof InvalidAssessmentError) await markAssessmentUnusable(ledger, purchase.assessmentId, error.message);
+          if (error instanceof InvalidAssessmentError || error instanceof NotFoundAssessmentError) {
+            await markAssessmentResult(ledger, purchase.attemptId,
+              error instanceof NotFoundAssessmentError ? "not_found" : "unusable", error.message);
+            if (error instanceof NotFoundAssessmentError) { core.notice(`${dependency.package}: ${error.message}`); continue; }
+          }
           failures.push(`${dependency.package}: ${error instanceof Error ? error.message : String(error)}`);
         }
       }

@@ -5,6 +5,8 @@ branding:
   icon: "git-pull-request"
   color: "blue"
 inputs:
+  merge-pr-number:
+    description: "Merged PR number to recover accounting without making a purchase"
   node-url:
     description: "Telegraph node URL"
     default: "https://devnode.telegraphprotocol.com"

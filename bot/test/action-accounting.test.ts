@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
-import { recordMerge } from "../actions/src/accounting.js";
+import { recordMerge, fetchMergedPr } from "../actions/src/accounting.js";
 
 const directories: string[] = [];
 afterEach(() => { for (const d of directories.splice(0)) rmSync(d, { recursive: true, force: true }); });
@@ -71,4 +71,13 @@ it("reports missing purchase evidence instead of silently omitting merged costs"
   await expect(recordMerge(f.ledger, "team/repo", { ...f.pr, body: "Edited by maintainer" }))
     .rejects.toThrow(/restore the receipt link/);
   expect(f.ledger.runGit).not.toHaveBeenCalled();
+});
+
+it("fetches corrected evidence on rerun and rejects lookup failures", async () => {
+  const f = fixture();
+  const fetchImpl = vi.fn(async () => new Response(JSON.stringify(f.pr)));
+  await recordMerge(f.ledger, "team/repo", await fetchMergedPr("team/repo", 42, "token", fetchImpl));
+  expect(f.rows()[1]).toMatchObject({ kind: "merge", prNumber: 42 });
+  await expect(fetchMergedPr("team/repo", 42, "token", async () => new Response("", { status: 503 }))).rejects.toThrow(/HTTP 503/);
+  await expect(fetchMergedPr("team/repo", 43, "token", fetchImpl)).rejects.toThrow(/different PR/);
 });

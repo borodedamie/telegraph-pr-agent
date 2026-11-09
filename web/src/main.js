@@ -255,8 +255,8 @@ async function main() {
         `${rows.length - settled.length} failed`
       ),
       el("p", { class: "tally" }, costs.count
-        ? `${usdc(costs.average)} USDC recorded cost per merged PR · ${costs.count} merged PRs · ${usdc(costs.total)} USDC allocated`
-        : "No merged PR costs recorded yet."),
+        ? `${usdc(costs.costPerMergedPr)} USDC recorded net spend per merged PR · ${costs.count} merged PRs · ${usdc(costs.netSpend)} USDC total · ${usdc(costs.total)} USDC allocated to merges · ${usdc(costs.unmergedSpend)} USDC unmerged/unallocated`
+        : `Cost per merged PR: N/A · ${usdc(costs.netSpend)} USDC recorded spend · no merged PRs`),
       table(rows)
     );
   } catch (err) {

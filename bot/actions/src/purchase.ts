@@ -67,13 +67,14 @@ const savedPurchase = z.object({
   usdcContract: z.string().regex(/^0x[0-9a-fA-F]{40}$/), explorerBaseUrl: z.string(),
 });
 
+/** Reuse a paid answer or persist each payment stage before buying; legacy migrations retain uncertainty guards. */
 export const purchaseAssessment = async (options: {
   ledger: Ledger; repository: string; baseSha: string; dependency: Dependency;
   provenance: ModelProvenance; intent: string; query: string; client: Pick<IntelligenceClient, "buy">;
   onPurchase: (purchase: Purchase) => void;
-}): Promise<Purchase & { assessmentId: string }> => {
+}): Promise<Purchase & { assessmentId: string; attemptId: string }> => {
   const { ledger, repository, baseSha, dependency, intent, query, client } = options;
-  const assessmentId = createHash("sha256").update(JSON.stringify([
+  let assessmentId = createHash("sha256").update(JSON.stringify([
     repository, intent, dependency.ecosystem, dependency.source, dependency.package,
     dependency.currentVersion, dependency.targetVersion, query,
   ])).digest("hex");
@@ -84,12 +85,23 @@ export const purchaseAssessment = async (options: {
   const ledgerPath = join(ledger.directory, LEDGER_FILE);
   if (!lstatSync(ledgerPath).isFile()) throw new Error("Ledger must be a regular file");
   const existing = checkedLedger(readFileSync(ledgerPath, "utf8"));
+  const legacyId = assessmentId;
+  const legacy = existing.split("\n").filter((line) => line.trim()).map((line) => JSON.parse(line))
+    .find((row) => !row.kind && row.repo === repository && row.assessmentId === legacyId);
+  const legacyCheck = preflight(existing, key);
+  if (legacyCheck.action === "halt") throw new AttemptConflictError(legacyCheck.reason);
+  // The legacy instruction prompt and the migration question are different billable requests.
+  if (legacy?.minerId === MIGRATION_MINER_ID && !legacy.result && !legacy.answer.trim().startsWith("{")) {
+    assessmentId = createHash("sha256").update(JSON.stringify([legacyId, "migration-v1", migrationPrompt(dependency)])).digest("hex");
+    key.assessmentId = assessmentId;
+  }
   const check = preflight(existing, key);
   if (check.action !== "buy") {
     if (check.action === "skip") {
       const row = existing.split("\n").filter((line) => line.trim()).map((line) => JSON.parse(line))
         .find((row) => !row.kind && row.repo === repository && row.assessmentId === assessmentId);
-      const purchase = { ...savedPurchase.parse(row), assessmentId };
+      if (typeof row?.attemptId !== "string" || !row.attemptId) throw new Error("Saved assessment needs attempt reconciliation");
+      const purchase = { ...savedPurchase.parse(row), assessmentId, attemptId: row.attemptId };
       options.onPurchase(purchase);
       return purchase;
     }
@@ -106,6 +118,10 @@ export const purchaseAssessment = async (options: {
     }
     await commitLedgerRow(ledger.directory, (fresh) => {
       checkedLedger(fresh);
+      if (assessmentId !== legacyId) {
+        const prior = preflight(fresh, { ...key, assessmentId: legacyId });
+        if (prior.action === "halt") throw new AttemptConflictError(prior.reason);
+      }
       if (event.state === "reserved") {
         const now = preflight(fresh, key);
         if (now.action !== "buy") throw new AttemptConflictError(now.reason);
@@ -115,7 +131,7 @@ export const purchaseAssessment = async (options: {
       return attemptRow(event.state, event);
     }, ledger);
   });
-  const purchase = { ...paid, assessmentId };
+  const purchase = { ...paid, assessmentId, attemptId: attemptRow("delivered").attemptId };
   // Keep paid evidence available even if persisting it fails; request_sent then blocks another purchase.
   options.onPurchase(purchase);
   const row: LedgerRow = { ...purchase, model: options.provenance,
@@ -129,12 +145,13 @@ export const purchaseAssessment = async (options: {
   return purchase;
 };
 
-export const markAssessmentUnusable = async (ledger: Ledger, assessmentId: string, reason: string): Promise<void> => {
+/** Append answer quality to the exact delivered attempt without rewriting payment evidence. */
+export const markAssessmentResult = async (ledger: Ledger, attemptId: string, resultStatus: "unusable" | "not_found", reason: string): Promise<void> => {
   await commitLedgerRow(ledger.directory, (fresh) => {
     const delivered = checkedLedger(fresh).split("\n").filter((line) => line.trim()).map((line) => JSON.parse(line))
-      .reverse().find((row): row is AttemptRow => row.kind === "attempt" && row.assessmentId === assessmentId && row.state === "delivered");
+      .reverse().find((row): row is AttemptRow => row.kind === "attempt" && row.attemptId === attemptId && row.state === "delivered");
     if (!delivered) throw new Error("Missing delivered assessment; cannot record answer quality");
-    return delivered.resultStatus === "unusable" ? [] : { ...delivered, resultStatus: "unusable" as const,
+    return delivered.resultStatus === resultStatus ? [] : { ...delivered, resultStatus,
       reason, timestamp: new Date().toISOString() };
   }, ledger);
 };

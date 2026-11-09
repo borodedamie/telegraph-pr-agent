@@ -66,10 +66,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   };
 }
 
+/** Require an explicit model identity and sourced cutoff before the paid assessment path. */
 export function readModelProvenance(env: NodeJS.ProcessEnv, cutoff: Date): ModelProvenance {
   const configuration = z.object({
-    MODEL_PROVIDER: z.string().trim().min(1),
-    MODEL_ID: z.string().trim().min(1),
+    MODEL_PROVIDER: z.string().trim().min(1).refine((value) => value !== "assumed-provider", "Configure the actual model provider"),
+    MODEL_ID: z.string().trim().min(1).refine((value) => value !== "assumed-model", "Configure the actual model ID"),
     MODEL_CUTOFF_SOURCE_URL: z.string().url().refine((value) => {
       const url = new URL(value);
       return url.protocol === "https:" && !url.username && !url.password;

@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
-import { purchaseAssessment, markAssessmentUnusable } from "../actions/src/purchase.js";
+import { purchaseAssessment, markAssessmentResult } from "../actions/src/purchase.js";
 import { LEDGER_FILE, type AttemptRow } from "../src/ledger.js";
 import { AskFailedError, type OnAttempt, type Purchase } from "../src/x402.js";
 
@@ -154,8 +154,8 @@ it("skips the npm-only miner for Python before reserving or paying, allowing fal
 it("appends unusable quality once without changing payment evidence or buying again", async () => {
   const f = fixture();
   const purchase = await purchaseAssessment(f.options);
-  await markAssessmentUnusable(f.options.ledger, purchase.assessmentId, "Invalid JSON");
-  await markAssessmentUnusable(f.options.ledger, purchase.assessmentId, "Invalid JSON");
+  await markAssessmentResult(f.options.ledger, purchase.attemptId, "unusable", "Invalid JSON");
+  await markAssessmentResult(f.options.ledger, purchase.attemptId, "unusable", "Invalid JSON");
   expect(f.rows()).toHaveLength(5);
   expect(f.rows()[4]).toMatchObject({ kind: "attempt", state: "delivered", resultStatus: "unusable", reason: "Invalid JSON" });
   expect(f.rows()[2]).toMatchObject({ resultStatus: "unchecked", receiptHash: purchase.receiptHash });
@@ -176,5 +176,34 @@ it("sends the miner-specific migration question and retains structured answers o
   });
   expect(await purchaseAssessment(f.options)).toMatchObject({ result });
   expect(await purchaseAssessment(f.options)).toMatchObject({ result });
+  expect(f.payments()).toBe(1);
+});
+
+it("uses a distinct migration request after a settled legacy prose answer and reuses the new answer", async () => {
+  const f = fixture();
+  const originalBuy = f.buy.getMockImplementation()!;
+  f.buy.mockImplementationOnce(async (...args) => ({ ...await originalBuy(...args), minerId: "7314", answer: "Legacy prose" }));
+  const legacy = await purchaseAssessment(f.options);
+  const migrated = await purchaseAssessment(f.options);
+  expect(migrated.assessmentId).not.toBe(legacy.assessmentId);
+  expect(await purchaseAssessment(f.options)).toMatchObject({ assessmentId: migrated.assessmentId });
+  expect(f.payments()).toBe(2);
+});
+
+it("halts migration when a legacy payment becomes uncertain during reservation", async () => {
+  const f = fixture();
+  const originalBuy = f.buy.getMockImplementation()!;
+  f.buy.mockImplementationOnce(async (...args) => ({ ...await originalBuy(...args), minerId: "7314", answer: "Legacy prose" }));
+  await purchaseAssessment(f.options);
+  const originalGit = f.runGit.getMockImplementation()!;
+  let checkouts = 0;
+  f.runGit.mockImplementation(async (args) => {
+    if (args[0] === "checkout" && ++checkouts === 2) {
+      const reserved = f.rows()[0];
+      f.setRemote(readFileSync(f.path, "utf8") + JSON.stringify({ ...reserved, attemptId: "unsettled-legacy", attempt: 2, state: "request_sent" }) + "\n");
+    }
+    await originalGit(args);
+  });
+  await expect(purchaseAssessment(f.options)).rejects.toThrow(/outcome unknown/);
   expect(f.payments()).toBe(1);
 });

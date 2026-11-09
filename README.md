@@ -59,7 +59,7 @@ Known gaps in this slice, kept here so nobody mistakes them for features:
 ## Repository layout
 
 ```
-bot/                TypeScript agent, Node 20, vitest
+bot/                TypeScript agent, Node 22.20+, vitest
   src/config.ts       env validation
   src/trigger.ts      post-cutoff detection from two package.json files
   src/x402.ts         Telegraph client: provider list, x402 payment, receipt capture
@@ -77,7 +77,7 @@ No workflow YAML, fixtures or sample ledger export exist yet; the `examples/` fi
 
 ## Run the current slice
 
-Prerequisites: Node 20.x, pnpm 9 or later, macOS or Linux shell, a dedicated testnet wallet holding a few cents of test USDC on the network the devnode quotes (Ethereum Sepolia as of 2 Nov 2026; the 402 challenge is authoritative), and a fine-grained GitHub token limited to a public repository you control (`DEMO_REPO`) with `contents: read/write`, so the run can push its ledger branch. Gas is handled by the x402 facilitator; the wallet needs test USDC only.
+Prerequisites: Node 22.20 or later, pnpm 9 or later, macOS or Linux shell, a dedicated testnet wallet holding a few cents of test USDC on the network the devnode quotes (Ethereum Sepolia as of 2 Nov 2026; the 402 challenge is authoritative), and a fine-grained GitHub token limited to a public repository you control (`DEMO_REPO`) with `contents: read/write`, so the run can push its ledger branch. Gas is handled by the x402 facilitator; the wallet needs test USDC only.
 
 All commands run from the repository root, in one shell.
 
@@ -226,12 +226,12 @@ jobs:
         env:
           TELEGRAPH_EVM_PRIVATE_KEY: ${{ secrets.TELEGRAPH_EVM_PRIVATE_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
-          MODEL_CUTOFF: ${{ vars.MODEL_CUTOFF || '2025-01-01' }}
+          MODEL_CUTOFF: ${{ vars.MODEL_CUTOFF }}
           PREFERRED_MINER_ID: ${{ vars.PREFERRED_MINER_ID || '7314' }}
-          MODEL_PROVIDER: ${{ vars.MODEL_PROVIDER || 'assumed-provider' }}
-          MODEL_ID: ${{ vars.MODEL_ID || 'assumed-model' }}
-          MODEL_CUTOFF_SOURCE_URL: ${{ vars.MODEL_CUTOFF_SOURCE_URL || 'https://github.com/borodedamie/telegraph-pr-agent/blob/main/docs/SPEC.md' }}
-          MODEL_CUTOFF_STATUS: ${{ vars.MODEL_CUTOFF_STATUS || 'team-assumed' }}
+          MODEL_PROVIDER: ${{ vars.MODEL_PROVIDER }}
+          MODEL_ID: ${{ vars.MODEL_ID }}
+          MODEL_CUTOFF_SOURCE_URL: ${{ vars.MODEL_CUTOFF_SOURCE_URL }}
+          MODEL_CUTOFF_STATUS: ${{ vars.MODEL_CUTOFF_STATUS }}
           MODEL_CONFIGURED_AT: ${{ vars.MODEL_CONFIGURED_AT }}
 ```
 
@@ -289,10 +289,10 @@ proving what is installed in a running interpreter. Unresolved versions are repo
 - Configure `MODEL_PROVIDER`, `MODEL_ID`, `MODEL_CUTOFF_SOURCE_URL` (HTTPS), and
   `MODEL_CUTOFF_STATUS` (`provider-documented` or `team-assumed`) for provenance.
   `MODEL_CONFIGURED_AT` is optional; otherwise the configuration-load time is recorded.
-  The bundled workflow currently assumes provider `assumed-provider`, model
-  `assumed-model` and cutoff `2025-01-01`, with the assumption documented
-  in SPEC. It defaults to the required npm miner `7314`; an explicit miner `0` skips
-  with a notice before payment.
+  The workflow requires explicit cutoff and model provenance repository variables.
+  Placeholder provider/model names are rejected before payment. A team-assumed
+  cutoff is supported when the actual provider and model are named and its source
+  records the assumption. The preferred miner defaults to `7314`.
 - Inputs `chain-id` and `usdc-address` default the payment allowlist to Sepolia (`11155111`) and USDC
   `0xcc194e1a843B658526D0D5C431f670028582Ae17`. No chain or token variables
   are required; inputs can override the allowlist. These defaults were verified with an unsigned, unpaid devnode
@@ -382,7 +382,9 @@ Merge accounting refuses receipts that are missing or do not match settled evide
 Purchase rows include amount, receipt, selection policy, package/version context,
 and `resultStatus: "unchecked"`. Invalid findings append an `unusable` quality update;
 the dashboard displays the latest quality without rewriting payment evidence.
-Publication failures do not mark answers unusable. Set `PREFERRED_MINER_ID=7314`
+Publication failures do not mark answers unusable. Valid miner `not_found` answers
+append `not_found`, emit a notice and create no PR; invalid answers remain `unusable`.
+A missing receipt blocks publication until the saved evidence is reconciled. Set `PREFERRED_MINER_ID=7314`
 to use the team's npm migration miner. It receives an exact two-version migration
 question; its structured response is retained in the purchase and ledger. The
 adapter validates package/version identity and source evidence, includes coverage
@@ -393,12 +395,22 @@ The existing dashboard displays purchases as assessments
 when no PR exists yet. `.github/workflows/merge-accounting.yml` records closed-and-merged generated PRs
 from this repository on any supported target branch, including release branches.
 Missing or reformatted evidence fails with a recovery message rather than silently
-omitting a merged cost. It checks out the immutable trusted base commit, receives
+omitting a merged cost. It checks out the trusted default branch, receives
 no wallet key, and verifies the PR evidence and branch identity against an existing
 settled receipt before appending an idempotent merge row. The dashboard derives
-recorded cost per merged PR from these receipt links, excluding unmatched receipts
-and duplicate events. No merged costs are claimed until actual merge rows exist.
+recorded net spend per merged PR from all settled spending, including unmerged
+and `not_found` assessments. Receipt-linked allocation and unmerged/unallocated
+spend are displayed separately; duplicate receipts and merge events are not counted twice. No merged costs are claimed until actual merge rows exist.
 
 Live intent/provider compatibility and answer quality must be verified before
 enabling payments. No live payment or hosted ledger write was exercised by these
 changes. The intent remains `QUESTION_ANSWERING_GENERAL`.
+
+Merge-accounting recovery: restore the evidence in the merged PR body, then rerun
+its accounting job or manually dispatch **Record merged dependency PR costs** from
+the default branch with `pr-number`. Both paths fetch the current PR body and
+validate the receipt against the hosted ledger. No payment wallet is used.
+Legacy prose-only miner 7314 purchases remain recorded. Their replacement migration
+question has a distinct versioned request identity; outstanding legacy payments
+must be reconciled before that request can be bought. New structured answers and
+other miners' saved answers continue to be reused.

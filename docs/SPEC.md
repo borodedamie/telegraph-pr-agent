@@ -104,7 +104,9 @@ prose and the ledger retains it for reuse. An adapter validates the returned pac
 versions, quoted documented changes, advisory conclusions and HTTPS source links
 before producing findings. It reports coverage/security limitations, never treats
 inferred changes as documented evidence, and refuses introduced vulnerabilities.
-Non-found or malformed answers are unusable; evidence-free answers produce no PR.
+Valid `not_found` answers append quality `not_found`, emit a notice and produce no PR.
+Malformed answers append `unusable` and fail that candidate. Evidence-free found
+answers produce no PR. Missing receipts must be reconciled before publication.
 Python candidates skip this npm-only miner before payment and may use ranked
 fallback. Other miners retain the original assessment prompt.
 
@@ -116,10 +118,12 @@ supports block-style package globs/exclusions and fails closed for unsupported Y
 
 The merge-accounting workflow handles merged same-repository generated PRs on all
 supported target branches (including release branches) using
-the trusted base commit and no wallet credentials. It verifies receipt and branch
+the trusted default-branch action and no wallet credentials. It verifies receipt and branch
 identity against the purchase ledger, fails actionably when evidence is missing,
 appends merge rows idempotently, and the
-dashboard calculates recorded cost per merged PR from unique linked receipts.
+dashboard calculates recorded net spend per merged PR from all settled purchase
+rows, including unmerged and `not_found` assessments. Receipt-linked allocations
+remain separate.
 This remains a draft-update prototype: code migration, answer-quality verification
 and separate-runner isolation are not implemented. A delivered assessment whose
 publication failed reuses its recorded answer, revalidating findings and target
@@ -141,12 +145,11 @@ purchase or hosted ledger write is claimed. See README for configuration.
 
 ### 2.3 Dependency eligibility and `MODEL_CUTOFF`
 
-**Temporary setup assumptions (8 Nov 2026):** provider `assumed-provider`, model
-`assumed-model` and cutoff `2025-01-01` (team-assumed, not provider-documented).
-These model values are placeholders. The workflow defaults `PREFERRED_MINER_ID`
-to the required npm migration miner `7314`; repository variables override it.
-An explicit miner `0` still skips with a notice before payment. Replace the model
-assumptions through repository variables before a paid run.
+**Required configuration:** cutoff, actual provider/model identity, cutoff source
+URL and documented-or-assumed status must be explicitly configured. The workflow
+has no cutoff/provenance fallbacks and rejects `assumed-provider` / `assumed-model`
+before payment. A genuinely team-assumed cutoff remains supported with explicit
+model identity and source. Miner `7314` is the default; an explicit miner `0` skips.
 
 - [PRODUCT] `Eligible(A, B) = semver(B) > semver(A) AND releaseDate(B) > MODEL_CUTOFF`, where A is the installed version from the lockfile and B the latest eligible stable version from the registry. Release timestamps come from registry metadata, never the LLM. Prereleases excluded. Missing or ambiguous dates fail closed. If B equals A, do nothing. This rule is our design, not a Telegraph or hackathon requirement; the eligibility requirement is the autonomous purchase and its meaningful use (§1).
 - [PRODUCT] A comes from the lockfile, never from stripping `^`/`~` off a `package.json` range.
@@ -229,7 +232,7 @@ reserved → quote_refused
 ### 2.7 Q&A result and `not_found` handling
 
 - [PRODUCT] The answer is untrusted text: evidence and input for the PR body and the LLM prompt, never instructions to the agent or a shell.
-- [PRODUCT] On `not_found` or an unusable answer: keep the delivered purchase and receipt; mark `unanswered` or the explicit status; state that suitable release information was not found; do not ask the LLM to invent a migration; do not proceed to the fix stage; leave a report-only draft or close by documented policy. Absence of release notes never implies an upgrade is safe.
+- [PRODUCT] On `not_found` or an unusable answer: keep the delivered purchase and receipt; mark valid missing-information responses `not_found` and invalid responses `unusable`; state that suitable release information was not found; do not ask the LLM to invent a migration; do not proceed to the fix stage; leave a report-only draft or close by documented policy. Absence of release notes never implies an upgrade is safe.
 - [PRODUCT] A 4 KB display cap is fine, but never truncate the only stored copy. Preserve the raw result or a content-addressed copy/hash; cap the displayed excerpt separately.
 
 ### 2.8 Draft PR report and call-site discovery
@@ -413,7 +416,7 @@ Recorded separately, never inferred from one another: **payment delivered** (val
 | Retry | New attempt, correctly linked |
 | Quote refused | No spend; refused quote recorded |
 | Failed paid delivery | Settlement/credit recorded separately |
-| `not_found` delivered answer | Spend included; status `unanswered` |
+| `not_found` delivered answer | Spend included; quality `not_found`; current action creates no update PR |
 | Tests fail | No successful patch/merge record |
 | PR closed unmerged | Spend retained |
 | PR merged | Separate merge outcome |
@@ -474,3 +477,17 @@ Recorded separately, never inferred from one another: **payment delivered** (val
 7. C coordinates developer trials, public updates, demo and evidence pack.
 
 The differentiator is not buying four AI responses. It is knowing when information may be stale, procuring relevant external intelligence, applying it to real software, verifying the change and accounting for the economics.
+
+### Review corrections (9 Nov 2026)
+
+The bot requires Node 22.20+ for its workspace glob matcher; the action runs Node 24.
+Merge accounting executes the default-branch action and fetches the current PR body
+on every attempt. Maintainers can restore missing evidence and rerun, or dispatch
+its workflow from the default branch with `pr-number`. Fork/unmerged PRs remain
+ineligible and receipt, branch and settlement checks remain mandatory.
+
+Quality updates attach to the exact purchase `attemptId`. A legacy prose-only 7314
+assessment can be followed by a distinctly versioned migration question; any
+outstanding legacy payment halts this path, including on a fresh-ledger retry.
+Structured assessments remain reusable. Report-only drafts on `not_found` remain
+planned behavior; today the action records `not_found` and publishes no PR.

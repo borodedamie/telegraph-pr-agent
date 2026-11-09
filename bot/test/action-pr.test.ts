@@ -434,6 +434,14 @@ describe("one-invocation dependency updates", () => {
       targetVersion: finding.targetVersion, reason: expect.stringContaining("security check: unavailable") }));
   });
 
+  it("keeps receipt-less paid evidence from reaching update preparation or publication", async () => {
+    const prepare = vi.spyOn(updateModule, "prepareUpdate");
+    const publish = vi.spyOn(prModule, "createDependencyPr");
+    const input = options(); input.purchase.receiptHash = "";
+    await expect(applyAssessment(input)).rejects.toThrow(/missing purchase receipt/);
+    expect(prepare).not.toHaveBeenCalled(); expect(publish).not.toHaveBeenCalled();
+  });
+
   it("rejects malformed findings before attempting any updates", async () => {
     const prepare = vi.spyOn(updateModule, "prepareUpdate");
     const publish = vi.spyOn(prModule, "createDependencyPr");

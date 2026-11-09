@@ -44,3 +44,16 @@ export const recordMerge = async (ledger: Ledger, repository: string, pr: Merged
     return row;
   }, ledger);
 };
+
+/** Fetch current evidence so an edited PR body is recoverable on a workflow rerun. */
+export const fetchMergedPr = async (repository: string, number: number, token: string, fetchImpl = fetch): Promise<MergedPr> => {
+  if (!Number.isSafeInteger(number) || number <= 0) throw new Error("Invalid merge PR number");
+  const response = await fetchImpl(`https://api.github.com/repos/${repository}/pulls/${number}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+    redirect: "error", signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) throw new Error(`Merge PR lookup failed: HTTP ${response.status}`);
+  const pr = await response.json() as MergedPr;
+  if (pr.number !== number) throw new Error("Merge PR lookup returned a different PR");
+  return pr;
+};

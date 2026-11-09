@@ -176,8 +176,6 @@ export function preflight(existing: string, key: AttemptKey): Preflight {
     return { action: "skip", reason: `PR #${key.prNumber} @ ${key.headSha} already has a purchase` };
   }
   const attempts = latestAttempts(existing, key);
-  const delivered = attempts.find((a) => a.state === "delivered");
-  if (delivered) return { action: "skip", reason: `attempt ${delivered.attemptId} already delivered` };
   const open = attempts.filter(isOpen);
   if (open.length > 0) {
     return {
@@ -187,6 +185,8 @@ export function preflight(existing: string, key: AttemptKey): Preflight {
         "check the wallet, escrow balance and signal before retrying",
     };
   }
+  const delivered = attempts.find((a) => a.state === "delivered");
+  if (delivered) return { action: "skip", reason: `attempt ${delivered.attemptId} already delivered` };
   return { action: "buy", nextAttempt: Math.max(0, ...attempts.map((a) => a.attempt)) + 1 };
 }
 

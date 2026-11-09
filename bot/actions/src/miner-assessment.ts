@@ -2,14 +2,16 @@ import semver from "semver";
 import { z } from "zod";
 import type { Dependency } from "./scan";
 
+export class NotFoundAssessmentError extends Error {}
+
 export const MIGRATION_MINER_ID = "7314";
 export const migrationPrompt = (dependency: Dependency): string =>
   `What changed in ${dependency.package} from ${dependency.currentVersion} to ${dependency.targetVersion}?`;
 
 // Validate the fields the adapter consumes; the miner owns its full response schema.
 const migrationAnswer = z.object({
-  outcome: z.literal("found"),
-  request: z.object({ ecosystem: z.literal("npm"), package: z.string(), fromResolved: z.string(), toResolved: z.string() }),
+  outcome: z.enum(["found", "not_found"]),
+  request: z.object({ ecosystem: z.literal("npm"), package: z.string(), fromResolved: z.string().nullable(), toResolved: z.string().nullable() }).nullable(),
   changes: z.array(z.object({
     kind: z.enum(["breaking", "deprecation", "security_fix"]), version: z.string(),
     evidenceType: z.enum(["documented", "repository_evidence", "inferred"]),
@@ -24,15 +26,19 @@ const migrationAnswer = z.object({
       conclusion: z.enum(["fixed_by_upgrade", "still_affected", "introduced_by_upgrade", "not_applicable", "unknown"]),
     })),
   }),
-  coverage: z.object({ complete: z.boolean() }),
+  coverage: z.object({ complete: z.boolean() }).nullable(),
   sources: z.array(z.object({ id: z.string(), url: z.string().url() })),
 });
 
+/** Convert evidence for the verified npm version pair; not_found is a distinct report-only outcome. */
 export const migrationFindings = (response: unknown, dependencies: Dependency[]) => {
   const answer = migrationAnswer.parse(typeof response === "string" ? JSON.parse(response) : response);
-  const dependency = dependencies.find((entry) => entry.ecosystem === answer.request.ecosystem
-    && entry.package === answer.request.package && entry.currentVersion === answer.request.fromResolved
-    && entry.targetVersion === answer.request.toResolved);
+  if (answer.outcome === "not_found") throw new NotFoundAssessmentError("Suitable release information was not found; no update prepared");
+  const request = answer.request;
+  if (!request || !answer.coverage) throw new Error("Found migration requires resolved versions and coverage");
+  const dependency = dependencies.find((entry) => entry.ecosystem === request.ecosystem
+    && entry.package === request.package && entry.currentVersion === request.fromResolved
+    && entry.targetVersion === request.toResolved);
   if (!dependency) throw new Error("Miner migration does not match the verified dependency and versions");
   if (answer.security.advisories.some((advisory) => advisory.conclusion === "introduced_by_upgrade")) {
     throw new Error("Miner reports a vulnerability introduced by the target version; manual review required");
