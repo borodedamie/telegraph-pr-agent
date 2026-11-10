@@ -1,0 +1,58 @@
+{
+  "askedAt": "2026-11-10T03:58:40.876Z",
+  "query": "What changed in zod from 3.23.8 to 4.9.99?",
+  "ms": 12611,
+  "intent": "QUESTION_ANSWERING_GENERAL",
+  "minerId": "7314",
+  "minerName": "Package Release Intelligence",
+  "minerRank": 0,
+  "minerScore": 0,
+  "amountUsdc": 0.02,
+  "txHash": "0xc3ce61964297f4e26d7f5f99b81447bbb393546751ad93d9d276b0646dde3a74",
+  "receiptHash": "0xf47ed9370b2cfe0609ba579d1f96a93ee7c6e7c6615649b1883b6eeebf304189",
+  "signalHash": "0x681d0ae4508c1746bf68f40e938c8a434d4a21e0b40c0db53f79caf72799f213",
+  "result": {
+    "answer": "Not found: zod has no published version 4.9.99; the closest published version is 4.6.7.\nChecked: https://registry.npmjs.org/zod.\nThis is not a sign that the upgrade is safe: no change list could be built, so review it before upgrading.\n\nSources: [s1] https://registry.npmjs.org/zod",
+    "changes": [],
+    "clarification": null,
+    "confidence": 0.8,
+    "coverage": null,
+    "outcome": "not_found",
+    "processingVersion": "p8-miners_302_7413-none",
+    "request": {
+      "ecosystem": "npm",
+      "fromAssumed": false,
+      "fromRequested": "3.23.8",
+      "fromResolved": null,
+      "package": "zod",
+      "toRequested": "4.9.99",
+      "toResolved": null
+    },
+    "security": {
+      "advisories": [],
+      "checkedAt": null,
+      "documentedFixes": 0,
+      "status": "not_checked"
+    },
+    "sources": [
+      {
+        "contentHash": "2aca63ceb116bd707cd62fdcff0abda2b018b2f15f2261e3652f93536f77c2e2",
+        "id": "s1",
+        "retrievedAt": "2026-11-10T03:58:53.168Z",
+        "snapshotKey": "snap:2aca63ceb116bd707cd62fdcff0abda2b018b2f15f2261e3652f93536f77c2e2",
+        "trust": "official",
+        "type": "registry",
+        "url": "https://registry.npmjs.org/zod",
+        "versionFrom": null,
+        "versionTo": null
+      }
+    ],
+    "summary": "Not found: zod has no published version 4.9.99; the closest published version is 4.6.7.",
+    "targetReleasedAt": null
+  },
+  "status": "settled",
+  "network": "eip155:11155111",
+  "chainId": 11155111,
+  "usdcContract": "0xcc194e1a843B658526D0D5C431f670028582Ae17",
+  "explorerBaseUrl": "https://sepolia.etherscan.io"
+}

@@ -1,0 +1,226 @@
+{
+  "askedAt": "2026-11-10T03:58:32.706Z",
+  "query": "Is upgrading lodash from 4.17.20 to 4.17.21 enough to fix its known advisories?",
+  "ms": 8170,
+  "intent": "QUESTION_ANSWERING_GENERAL",
+  "minerId": "7314",
+  "minerName": "Package Release Intelligence",
+  "minerRank": 0,
+  "minerScore": 0,
+  "amountUsdc": 0.02,
+  "txHash": "0xc7d31149646b40b1a806f2869eafc4ea2780507f7c0831b90197a1e4b7473cc0",
+  "receiptHash": "0xf454f2021c1b5a44748cae486584afe85a4b4a9f1c2357ba6447796a7cb87e4f",
+  "signalHash": "0x6a4c631c2bbf1a1d9bacdd9d5e96c4d7b6b62deefbfc6726a0262313ddc1e0dd",
+  "result": {
+    "answer": "No release material found for lodash 4.17.20 → 4.17.21.\nCoverage partial: 0 of 1 releases covered; not covered 4.17.21 (no material).\nChecked: https://registry.npmjs.org/lodash, https://api.github.com/repos/lodash/lodash/releases?per_page=100&page=1, https://raw.githubusercontent.com/lodash/lodash/HEAD/CHANGELOG.md, https://raw.githubusercontent.com/lodash/lodash/HEAD/History.md, https://raw.githubusercontent.com/lodash/lodash/HEAD/HISTORY.md, https://raw.githubusercontent.com/lodash/lodash/HEAD/CHANGES.md, https://api.github.com/repos/lodash/lodash/compare/v4.17.20...v4.17.21.\nThis is not a sign that the upgrade is safe: no change list could be built, so review it before upgrading.\nSecurity: OSV checked at 2026-11-10T03:58:40.169Z, 4 advisories.\n\nAdvisories (OSV):\n- GHSA-r5fr-rjxr-66jc (CVE-2026-4800, high) [s2]. lodash vulnerable to Code Injection via `_.template` imports key names. Warning: 4.17.21 is still affected; upgrading from 4.17.20 does not resolve it.\n- GHSA-xxjr-mmjv-4gpg (CVE-2025-13465, moderate) [s2]. Lodash has Prototype Pollution Vulnerability in `_.unset`, `_.omit`, and `_.pullAt` functions. Warning: 4.17.21 is still affected; upgrading from 4.17.20 does not resolve it.\n- GHSA-29mw-wpgm-hmr9 (CVE-2020-28500, moderate) [s2]. Regular Expression Denial of Service (ReDoS) in lodash. Fixed by this upgrade: 4.17.20 is affected, 4.17.21 is not.\n- GHSA-35jh-r3h4-6jhm (CVE-2021-23337, high) [s2]. Command Injection in lodash. Fixed by this upgrade: 4.17.20 is affected, 4.17.21 is not.\n\nSources: [s1] https://registry.npmjs.org/lodash [s2] https://api.osv.dev/v1/query [s3] https://api.osv.dev/v1/query",
+    "changes": [],
+    "clarification": null,
+    "confidence": 0.8,
+    "coverage": {
+      "complete": false,
+      "covered": [],
+      "notCovered": [
+        {
+          "reason": "no_material",
+          "version": "4.17.21"
+        }
+      ]
+    },
+    "outcome": "not_found",
+    "processingVersion": "p8-miners_302_7413-nollm-rules_and_model-s1",
+    "request": {
+      "ecosystem": "npm",
+      "fromAssumed": false,
+      "fromRequested": "4.17.20",
+      "fromResolved": "4.17.20",
+      "package": "lodash",
+      "toRequested": "4.17.21",
+      "toResolved": "4.17.21"
+    },
+    "security": {
+      "advisories": [
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2020-28500"
+          ],
+          "conclusion": "fixed_by_upgrade",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-29mw-wpgm-hmr9",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "4.0.0"
+                },
+                {
+                  "fixed": "4.17.21"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+              "type": "CVSS_V3"
+            }
+          ],
+          "sourceId": "s2",
+          "summary": "Regular Expression Denial of Service (ReDoS) in lodash",
+          "targetAffected": "no"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2021-23337"
+          ],
+          "conclusion": "fixed_by_upgrade",
+          "displaySeverity": "high",
+          "fromAffected": "yes",
+          "id": "GHSA-35jh-r3h4-6jhm",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "4.17.21"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "type": "CVSS_V3"
+            }
+          ],
+          "sourceId": "s2",
+          "summary": "Command Injection in lodash",
+          "targetAffected": "no"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2026-4800"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "high",
+          "fromAffected": "yes",
+          "id": "GHSA-r5fr-rjxr-66jc",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "4.0.0"
+                },
+                {
+                  "fixed": "4.18.0"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "type": "CVSS_V3"
+            }
+          ],
+          "sourceId": "s2",
+          "summary": "lodash vulnerable to Code Injection via `_.template` imports key names",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2025-13465"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-xxjr-mmjv-4gpg",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "4.0.0"
+                },
+                {
+                  "fixed": "4.17.23"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L",
+              "type": "CVSS_V3"
+            },
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:L/VA:L/SC:H/SI:H/SA:H/E:P",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s2",
+          "summary": "Lodash has Prototype Pollution Vulnerability in `_.unset`, `_.omit`, and `_.pullAt` functions",
+          "targetAffected": "yes"
+        }
+      ],
+      "checkedAt": "2026-11-10T03:58:40.169Z",
+      "documentedFixes": 0,
+      "status": "complete"
+    },
+    "sources": [
+      {
+        "contentHash": "4b7f6da8e9cf8e1b7d9fe37e02e9ba1d81ab83b3b34445b5c64675ed31c79cd0",
+        "id": "s1",
+        "retrievedAt": "2026-11-10T03:58:39.888Z",
+        "snapshotKey": "snap:4b7f6da8e9cf8e1b7d9fe37e02e9ba1d81ab83b3b34445b5c64675ed31c79cd0",
+        "trust": "official",
+        "type": "registry",
+        "url": "https://registry.npmjs.org/lodash",
+        "versionFrom": null,
+        "versionTo": "4.17.21"
+      },
+      {
+        "contentHash": "ca0bdc103bdee1b266bb56824a653d486f12e29c435dd2e13fdad45e88ccce66",
+        "id": "s2",
+        "retrievedAt": "2026-11-10T03:58:40.034Z",
+        "snapshotKey": "snap:ca0bdc103bdee1b266bb56824a653d486f12e29c435dd2e13fdad45e88ccce66",
+        "trust": "advisory_db",
+        "type": "advisory",
+        "url": "https://api.osv.dev/v1/query",
+        "versionFrom": null,
+        "versionTo": null
+      },
+      {
+        "contentHash": "77b9d79bc062e4687ad7ca25a40a0bdcc918d0fa29d29a3f6de30092f6ef1ab5",
+        "id": "s3",
+        "retrievedAt": "2026-11-10T03:58:40.162Z",
+        "snapshotKey": "snap:77b9d79bc062e4687ad7ca25a40a0bdcc918d0fa29d29a3f6de30092f6ef1ab5",
+        "trust": "advisory_db",
+        "type": "advisory",
+        "url": "https://api.osv.dev/v1/query",
+        "versionFrom": null,
+        "versionTo": null
+      }
+    ],
+    "summary": "No release material found for lodash 4.17.20 → 4.17.21.",
+    "targetReleasedAt": "2021-02-20T15:42:16.891Z"
+  },
+  "status": "settled",
+  "network": "eip155:11155111",
+  "chainId": 11155111,
+  "usdcContract": "0xcc194e1a843B658526D0D5C431f670028582Ae17",
+  "explorerBaseUrl": "https://sepolia.etherscan.io"
+}

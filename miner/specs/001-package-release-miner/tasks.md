@@ -445,7 +445,7 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 - [x] T073 Add a pointer to this spec in `docs/SPEC.md` §3, so the miner has one source of truth (plan Constitution Check)
 - [ ] T074 ⚠ PR-bot integration (plan phase 12): the bot buys from the miner, and one migration whose patch uses the answer passes the repository's tests (SC-010). Coordinate with the bot work in `bot/`
 - [ ] T075 ⚠ External adoption (plan phase 13): invite other hackathon teams or developers, publicly, to buy from the miner. Record any independent purchase with receipt, signal and settlement in `miner/bench/network.md` (SC-009)
-- [ ] T076 Package the Miners-track evidence (FR-028) in `miner/bench/evidence.md`: registration record, payout wallet, five sample requests and answers, network test results, benchmark report, latency, cost and payout
+- [x] T076 Package the Miners-track evidence (FR-028) in `miner/bench/evidence.md`: registration record, payout wallet, five sample requests and answers, network test results, benchmark report, latency, cost and payout
 
 ---
 
