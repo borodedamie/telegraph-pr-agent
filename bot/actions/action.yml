@@ -5,6 +5,16 @@ branding:
   icon: "git-pull-request"
   color: "blue"
 inputs:
+  reconcile-attempt-id:
+    description: "Attempt to close by hand (stuck at request_sent or unknown_needs_reconciliation); no purchase is made"
+  reconcile-outcome:
+    description: "failed_and_credited, failed_not_charged or failed_and_charged"
+  reconcile-note:
+    description: "What was checked (wallet, escrow balance, signal) and found"
+  reconcile-tx-hash:
+    description: "On-chain payment transaction; required for failed_and_charged"
+  reconcile-amount-usdc:
+    description: "Amount charged, for failed_and_charged; defaults to the attempt's quote"
   merge-pr-number:
     description: "Merged PR number to recover accounting without making a purchase"
   node-url:

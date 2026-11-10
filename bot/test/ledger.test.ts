@@ -344,4 +344,12 @@ describe("monthToDateSpendUsdc", () => {
   it("is zero for an empty ledger", () => {
     expect(monthToDateSpendUsdc("", now, 0.1)).toBe(0);
   });
+
+  it("counts a reconciled failed_and_charged attempt at its charged amount", () => {
+    const rows = ledger(
+      attempt("f:1", "request_sent", "2026-11-06T00:00:00.000Z"),
+      { ...attempt("f:1", "failed_and_charged", "2026-11-06T01:00:00.000Z"), chargedAmountUsdc: 0.5, reconciledBy: "dev" }
+    );
+    expect(monthToDateSpendUsdc(rows, now, 0.1)).toBe(0.5);
+  });
 });

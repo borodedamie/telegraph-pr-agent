@@ -9,6 +9,7 @@ import { scanRepository } from "./scan";
 import { IntelligenceClient } from "../../src/x402";
 import { applyAssessment, assessmentPrompt, InvalidAssessmentError, NotFoundAssessmentError } from "./assessment";
 import { assertPublicRepository, checkedOutBranch } from "./pull-request";
+import { checkReconciliation, reconcileAttempt, type ReconcileOutcome } from "./reconcile";
 
 const INTENT_ID = "QUESTION_ANSWERING_GENERAL";
 
@@ -21,6 +22,21 @@ const run = async (): Promise<void> => {
     if (!token) throw new Error("GITHUB_TOKEN is required");
     const repository = process.env.GITHUB_REPOSITORY ?? "";
     if (!/^[\w.-]+\/[\w.-]+$/.test(repository)) throw new Error("GITHUB_REPOSITORY must be owner/repo");
+    const reconcileId = core.getInput("reconcile-attempt-id");
+    if (reconcileId) {
+      // Manual reconciliation: no wallet, no purchase; one row on the ledger.
+      const txHash = core.getInput("reconcile-tx-hash");
+      const amount = core.getInput("reconcile-amount-usdc");
+      const reconciliation = { attemptId: reconcileId, outcome: core.getInput("reconcile-outcome") as ReconcileOutcome,
+        note: core.getInput("reconcile-note"), actor: process.env.GITHUB_ACTOR ?? "",
+        txHash: txHash || undefined, amountUsdc: amount ? Number(amount) : undefined };
+      checkReconciliation(reconciliation);
+      await assertPublicRepository(repository, token);
+      ledger = await openLedger(repository, token);
+      await reconcileAttempt(ledger, reconciliation);
+      core.setOutput("status", "success");
+      return;
+    }
     const mergePrNumber = core.getInput("merge-pr-number");
     if (process.env.GITHUB_EVENT_NAME === "pull_request_target" || mergePrNumber) {
       const number = mergePrNumber ? Number(mergePrNumber)

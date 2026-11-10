@@ -214,7 +214,9 @@ function outcomesLine(o) {
     : `${usdc(o.costPerUsefulAnswer)} USDC per useful answer (${o.useful} useful)`;
   return `${o.proposed} PRs proposed · ${o.merged} merged · ${o.closed} closed unmerged (${usdc(o.closedSpend)} USDC) · ${o.open} open · ${rate} · ${useful}`
     + ` · escrow credits ${usdc(o.escrowCredits.amountUsdc)} USDC (${o.escrowCredits.count}, not spend)`
-    + ` · refused quotes ${usdc(o.refusedQuotes.amountUsdc)} USDC (${o.refusedQuotes.count}, not spend)`;
+    + ` · refused quotes ${usdc(o.refusedQuotes.amountUsdc)} USDC (${o.refusedQuotes.count}, not spend)`
+    + (o.chargedWithoutAnswer.count
+      ? ` · charged with no answer ${usdc(o.chargedWithoutAnswer.amountUsdc)} USDC (${o.chargedWithoutAnswer.count}, included in spend)` : "");
 }
 
 async function main() {
