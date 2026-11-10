@@ -97,7 +97,9 @@ export function telegraphCaller(env: NodeJS.ProcessEnv, maxCostMicroUsdc: number
     const init: RequestInit = {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ method: miner.method, endpoint: miner.path, payload }),
+      // The node's pre-check reads a GET payload's `prompt` as empty (10 Nov) and refuses with 422 "predicted to
+      // fail"; our own input limits already keep the request within the miner's declared limits.
+      body: JSON.stringify({ method: miner.method, endpoint: miner.path, payload, acknowledge_warnings: true }),
       signal,
     };
     let quote: Response;
@@ -146,7 +148,11 @@ export function telegraphCaller(env: NodeJS.ProcessEnv, maxCostMicroUsdc: number
         const refusal = (await response.json().catch(() => ({}))) as { reason?: unknown };
         throw new ModelFailure("payment", `miner ${miner.id}: escrow refused: ${String(refusal.reason ?? "no reason")}`, null, false);
       }
-      if (!response.ok) throw new ModelFailure("invalid_reply", `miner ${miner.id}: HTTP ${response.status}`, amount);
+      if (!response.ok) {
+        // The node's or miner's reason, cut short: untrusted text, logged only.
+        const reason = (await response.text().catch(() => "")).slice(0, 200);
+        throw new ModelFailure("invalid_reply", `miner ${miner.id}: HTTP ${response.status} ${reason}`.trim(), amount);
+      }
       const body = (await response.json()) as { result?: unknown };
       return { text: replyText(body.result), costMicroUsdc: amount };
     } catch (err) {
@@ -301,6 +307,8 @@ export interface ModelResult {
   skipped: number[];
   /** Sections whose call failed: a later run may read them, so the answer is not final. */
   failed: number[];
+  /** Sections longer than one call takes: only their start was sent, so the model did not read them whole. */
+  cut: number[];
 }
 
 /**
@@ -313,6 +321,13 @@ const BREAK_SEC = [60, 180, 540, 900];
 const FAILURE_STREAK_SEC = 60 * 60;
 // Prompt instructions and section tags on top of the section text.
 const PROMPT_OVERHEAD_CHARS = 1_500;
+// Section tag and separators around each section's text.
+const SECTION_OVERHEAD_CHARS = 40;
+
+/** The part of a section one call can take: its start, where release notes put breaking changes first. */
+function sectionText(section: Section, budget: Budget): string {
+  return section.text.slice(0, Math.max(0, budget.limits.maxModelInputChars - PROMPT_OVERHEAD_CHARS - SECTION_OVERHEAD_CHARS));
+}
 
 /** Target release, then x.y.0 releases, then newest first. */
 function modelOrder(sections: Section[], indexes: number[], target: string): number[] {
@@ -381,7 +396,7 @@ async function callBatch(
     if ((await store.get(`llm:breaker:${miner.id}`)) !== null) continue;
     const lineFormat = miner.method === "GET";
     const ids = new Map(batch.map((index, i) => [`x${i + 1}`, index]));
-    const prompt = buildPrompt([...ids].map(([id, index]) => ({ id, text: sections[index].text })), lineFormat);
+    const prompt = buildPrompt([...ids].map(([id, index]) => ({ id, text: sectionText(sections[index], budget) })), lineFormat);
     // Checked and recorded at the cap with no await between, so calls running side by side cannot overrun the budget.
     if (!budget.canCallModel(prompt.length, costCap, batch.length)) break;
     budget.recordModelCall(prompt.length, costCap, batch.length);
@@ -459,7 +474,7 @@ export async function extractModel(
   const needed = sections.map((_, i) => i).filter((i) => !handled.has(i) && sections[i].text.trim() !== "");
   const result: ModelResult = {
     candidates: [], complete: needed.length === 0, answered: false, minerId: null, failure: null,
-    inputChars: 0, costMicroUsdc: 0, msModel: 0, skipped: [], failed: [],
+    inputChars: 0, costMicroUsdc: 0, msModel: 0, skipped: [], failed: [], cut: [],
   };
   if (needed.length === 0) return result;
 
@@ -468,7 +483,7 @@ export async function extractModel(
   const batches: { indexes: number[]; chars: number }[] = [];
   let releases = 0;
   for (const index of modelOrder(sections, needed, target)) {
-    const size = sections[index].text.length + 40;
+    const size = sectionText(sections[index], budget).length + SECTION_OVERHEAD_CHARS;
     if (releases >= budget.limits.maxModelReleases) {
       result.skipped.push(index);
       continue;
@@ -514,11 +529,15 @@ export async function extractModel(
     return result;
   }
   calls.forEach((c, i) => {
-    if (c.answered) result.candidates.push(...c.candidates);
-    else result.failed.push(...batches[i].indexes);
+    if (!c.answered) {
+      result.failed.push(...batches[i].indexes);
+      return;
+    }
+    result.candidates.push(...c.candidates);
+    result.cut.push(...batches[i].indexes.filter((index) => sectionText(sections[index], budget).length < sections[index].text.length));
   });
   // A cut-off reply may have dropped items, so the model pass is not complete. The answer is still kept: asking
   // again would pay for the same cut. Breaking changes come first in the prompt, so the cut drops the least.
-  result.complete = result.skipped.length === 0 && result.failed.length === 0 && calls.every((c) => !c.truncated);
+  result.complete = result.skipped.length === 0 && result.failed.length === 0 && result.cut.length === 0 && calls.every((c) => !c.truncated);
   return result;
 }

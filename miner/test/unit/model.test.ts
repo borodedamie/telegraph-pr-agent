@@ -254,6 +254,17 @@ describe("extractModel", () => {
     expect(finished).toBe(1);
   });
 
+  it("sends the start of a section longer than one call takes and reports it as cut", async () => {
+    const long: Section[] = [{ version: "4.0.0", consulted: 0, text: `The \`message\` parameter is replaced by \`error\`.\n${"Other notes. ".repeat(500)}` }];
+    const caller = stub(goodReply);
+    const budget = new Budget(limitsFromEnv({ MAX_MODEL_INPUT_CHARS: "3000" }));
+    const result = await extractModel(long, new Set(), "4.0.0", budget, new MemoryStore(), miners, caller);
+    expect(caller.prompts).toHaveLength(1);
+    expect(caller.prompts[0].length).toBeLessThanOrEqual(3000);
+    expect(caller.prompts[0]).toContain("The `message` parameter is replaced by `error`.");
+    expect(result).toMatchObject({ answered: true, cut: [0], complete: false });
+  });
+
   it("leaves sections out when the input budget is too small and reports them", async () => {
     const budget = new Budget(limitsFromEnv({ MAX_MODEL_INPUT_CHARS: "1650" }));
     const result = await extractModel(sections, new Set(), "4.0.0", budget, new MemoryStore(), miners, stub(goodReply));

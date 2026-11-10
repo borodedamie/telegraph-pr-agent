@@ -352,6 +352,8 @@ async function compute(
   if (modelRan) for (const index of model.skipped) tracker.uncover(material.sections[index].version, "budget");
   // Sections whose call failed while another call answered: the LLM miner is a source that was down for them.
   for (const index of model.failed) tracker.uncover(material.sections[index].version, "upstream_unavailable");
+  // Sections the model read only the start of: the rest of those notes may hold changes this answer misses.
+  for (const index of model.cut) tracker.uncover(material.sections[index].version, "truncated");
 
   const candidates: Candidate[] = [...rules.candidates, ...model.candidates];
   const { items } = verify(candidates, material.sections, verifySources);
