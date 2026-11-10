@@ -1,0 +1,802 @@
+[
+ {
+  "tag_name": "v16.2.0",
+  "name": "",
+  "body": "- Add Standard Schema support to `.json()` (#2477)  d6fb3bda\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v16.1.0...v16.2.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v16.2.0",
+  "draft": false,
+  "published_at": "2026-10-30T08:46:08Z"
+ },
+ {
+  "tag_name": "v16.1.0",
+  "name": "",
+  "body": "This release is the result of a large bug hunt. Many of the fixes make Got match its documented behavior, so you may notice some of them:\r\n\r\n- Invalid options now throw: an empty `method`, a negative or fractional `maxRedirects` or `retry.limit`, a `prefixUrl` with a query string or fragment, and a `handlers` entry that is not a function.\r\n- A stream with a `body`, `json`, or `form` option now rejects writes, as documented.\r\n- The promise `response` event now only fires for the final response, not for every retry attempt.\r\n- `got.extend({body})` (and `json`, `form`) no longer sends the payload with every request of the instance. Payloads are never merged with defaults.\r\n- `instance.extend()` now inherits the parent's `mutableDefaults`, like `got.extend(instance)`.\r\n- A `HEAD` request is no longer changed to `GET` on a `301`, `302`, or `303` redirect.\r\n- `response.body` no longer keeps a leading UTF-8 byte order mark, and JSON with a byte order mark now parses.\r\n\r\n## Improvements\r\n\r\n- Accept number values in `headers`  6fffc9e\r\n- Export the `Timings`, `DnsCacheLookup`, and `DnsCacheOptions` types  d012d1d eccaaca\r\n- Retry `FormData` bodies by re-serializing them instead of failing  90c6ec1\r\n- Support the `x-gzip` content coding and stacked content codings  5550a79\r\n\r\n## Fixes\r\n\r\n- Fix many HTTP/2 edge cases, including requests that could hang forever when the response or request was destroyed  d3c549c 78bf394 6bbc7f4 602b179 687b5c8 4ea02b8 b6522f3 9348ad6 c686386 3bbc37b 91dc486 11621cd\r\n- Fix `timeout.request` restarting on each redirect, and several timeout phase edge cases  9cd2ee6 df33cdb 4e4c583 795234f 0f1263d\r\n- Fix redirects: keep the URL fragment, evaluate `followRedirect` once per response, and keep `Content-Length` correct when a hook replaces the body  1febf3c a2b3d90 1d64f7c 60b48af\r\n- Fix `Infinity` timeouts firing at once or throwing  724ebc2\r\n- Fix retry delay edge cases, including invalid `Retry-After` values and `calculateDelay` for `afterResponse` retries  fe58b8c 0193605\r\n- Fix retries with replaced or non-replayable bodies  ae5521f 7c1cda3 8bbc79f 1a56d36 d012d1d\r\n- Fix the default `paginate` on real-world `Link` headers, and several pagination option and limit edge cases  bd2dee0 1e61807 602b179 f98d0e1 c8419e4 526a988 557e61f 4712e5b a4a50ad b65e533\r\n- Fix `afterResponse`, `beforeRequest`, and `beforeCache` hook edge cases  45c201c c1cf0f8 850e49b a4a50ad 863cf30 494279b\r\n- Fix response body decoding and parsing edge cases  c36ad51 c409a84 3c6eaf1 f658d3e dbd83df\r\n- Fix stream edge cases: respect backpressure, stop forwarding after unpipe, and do not copy hop-by-hop headers to a piped `ServerResponse`  348e114 dc929bd dc56e4b c930cd9 a9a754f\r\n- Fix uploads: `DataView` byte ranges, upload error classification, progress `total` for `Content-Length: 0`, and cancelling Web `ReadableStream` bodies  2a66686 d1cb051 0238069 b57120c 200bc85\r\n- Fix option normalization, cloning, and immutable defaults  8f44d81 687eb7d 30023f7 5548b00 bec5da6 bcc0b01 9348ad6 a9a754f 7b13369 3bd0486 d272656 0e537c7 60b62a0 129d88d\r\n- Fix error stacks reporting `RequestError` instead of the real error class, and other error cause edge cases  c8419e4 9d61a37 5ccac58 71f4e0e\r\n- Fix custom DNS cache lookups and DNS records without a valid TTL  b3dc5c6 4ea02b8 d012d1d\r\n- Fix cookie edge cases with retries, redirects, and async cookie jars  784bbd2 d5cd5e4\r\n- Fix diagnostics channel coverage across retries and terminal errors  cfce7b6\r\n- Fix TypeScript types to match the runtime values  7c833b8 c59692b 88eeb13 0c17a8b c788ac9 a4176b6\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v16.0.0...v16.1.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v16.1.0",
+  "draft": false,
+  "published_at": "2026-10-13T06:35:29Z"
+ },
+ {
+  "tag_name": "v16.0.0",
+  "name": "",
+  "body": "## Breaking changes\r\n\r\n- Rewrite HTTP/2 support and drop the `http2-wrapper` dependency (#2464)  1e157c4\r\n\t- Got now has a built-in HTTP/2 client: ALPN negotiation, a pooled session cache with multiplexing, `GOAWAY` retirement, request and response trailers, informational (1xx) responses, abort signals, response caching, IPv6 authorities, and `h2c` through `h2session`.\r\n\t- `agent.http2` is no longer an agent slot. It is only an opt-out flag now: pass `false` to skip session pooling. Passing an agent instance throws.\r\n\t- Response headers no longer contain HTTP/2 pseudo-headers. Use `response.statusCode` instead of `response.headers[':status']`.\r\n\t- A custom `agent.https` combined with `http2: true` makes Got use the native HTTP/1.1 path, because the built-in session pool does not support custom HTTPS agents.\r\n\t- HTTP/2 proxy support is gone. It came from `http2-wrapper`. It was very buggy anyway.\r\n\t- If `options.request` returns a request or response, it controls the transport and the HTTP/2 client is bypassed. Return `undefined` to fall back to Got's own transport.\r\n- Rewrite DNS cache and drop the `cacheable-lookup` dependency (#2463)  bfc400b\r\n\t- `dnsCache: true` now uses Got's own cache. The option accepts any object with a `lookup` function and an optional `clear(hostname?)` function, so an existing `CacheableLookup` instance still works if you keep the dependency yourself.\r\n\t- The built-in cache resolves A and AAAA records separately, so it cannot preserve OS-specific `verbatim` address ordering from `dns.lookup()`.\r\n- A `beforeRequest` hook, an `afterResponse` retry, or a pagination step that moves the request to a different origin now strips credentials and drops the body (#2465)  dd3b295\r\n\t- `authorization`, `cookie`, `cookie2`, `host`, and `proxy-authorization` are removed, URL credentials are dropped, and an unchanged body is cleared. Set the headers or body explicitly inside the hook if you want them to cross the origin boundary.\r\n\t- This applies whether the origin changes through `url` or through `prefixUrl`.\r\n- `copyPipedHeaders` no longer copies credentials  1d233ba\r\n\t- `authorization`, `cookie`, `cookie2`, `set-cookie`, and `set-cookie2` are now omitted along with `host`, the hop-by-hop headers, and anything nominated by `Connection` / `Proxy-Connection`. Pass credentials explicitly in `headers` when the upstream is trusted.\r\n- Remove the deprecated `searchParameters`, `followRedirects`, and `auth` option stubs  1d233ba\r\n\t- They only existed to throw a guidance message. Passing them now throws `Unexpected option: …`.\r\n- Remove the `OptionsOfUnknownResponseBody` type  1d233ba\r\n\t- It was a pure alias for `StrictOptions`.\r\n\r\n## Improvements\r\n\r\n- Add support for the [`QUERY`](https://www.rfc-editor.org/rfc/rfc10008.html) HTTP method (#2466)  e3924aa\r\n\t- Adds `got.query()` and `got.stream.query()`. `QUERY` is safe and idempotent, so it is retried by default and keeps a replayable body across `301` and `302` redirects as well as `307` and `308`. It is not stored by the built-in cache, because correct `QUERY` caching needs cache keys that include the request content.\r\n- `allowGetBody` now also works over HTTP/2  1e157c4\r\n- `timeout.socket` now applies during HTTP/2 TLS negotiation and session setup  c6bbb8a\r\n\t- It was previously folded into the connection setup timeout and reported as a `request` timeout. It now produces a real `socket` timeout and no longer counts DNS lookup time.\r\n- Two fewer dependencies: `cacheable-lookup` and `http2-wrapper`  bfc400b 1e157c4\r\n\r\n## Fixes\r\n\r\n- Retry on connection errors reported by `request.end()` instead of failing the request (#2470)  67919b2\r\n- Retry immediately when the server answers with `Retry-After: 0` instead of falling back to the backoff delay (#2471)  d35ce87\r\n- Preserve the response body when a cookie jar write throws  c6bbb8a\r\n\t- `error.response.body` is now complete, decompressed, and decoded with the configured `encoding`, and a decoding failure no longer masks the original error.\r\n- Wait for async cookie jar writes on terminal redirect responses, for example with `followRedirect: false`  c6bbb8a\r\n- Only buffer the response body for cookie handling when the response actually sends `set-cookie`  c6bbb8a\r\n- Fix `got.stream` finalizing the response before the `response` event and before piped server response headers are set  c6bbb8a\r\n- Fix `strictContentLength` counting bytes from responses that were not actually decompressed  c6bbb8a\r\n- Freeze `hooks.beforeCache` along with the other hook arrays on non-mutable defaults  1d233ba\r\n- Keep URL credentials when `prefixUrl` is changed to a same-origin value, and treat credentials in `prefixUrl` as explicit  dd3b295\r\n\r\n## Migration guide\r\n\r\n### HTTP/2\r\n\r\nRemove `http2-wrapper` from your code. Got's HTTP/2 client is built in.\r\n\r\n**Before:**\r\n\r\n```js\r\nimport http2wrapper from 'http2-wrapper';\r\n\r\nconst {headers} = await got(url, {\r\n\thttp2: true,\r\n\trequest: http2wrapper.auto,\r\n\tagent: {\r\n\t\thttp2: new http2wrapper.Agent()\r\n\t}\r\n});\r\n\r\nconsole.log(headers[':status']);\r\n```\r\n\r\n**After:**\r\n\r\n```js\r\nconst {statusCode} = await got(url, {http2: true});\r\n\r\nconsole.log(statusCode);\r\n```\r\n\r\nTo opt out of HTTP/2 session pooling for a request, set `agent.http2` to `false`.\r\n\r\nIf you need an HTTP/2 proxy, keep using `http2-wrapper` through the `request` option. Returning a request from `request` bypasses Got's HTTP/2 client.\r\n\r\n### `h2c`\r\n\r\nThe `h2session` hook example no longer needs `request` or `http2`.\r\n\r\n**Before:**\r\n\r\n```js\r\nimport http2 from 'http2-wrapper';\r\n\r\ngot.extend({\r\n\thooks: {\r\n\t\tbeforeRequest: [\r\n\t\t\toptions => {\r\n\t\t\t\toptions.h2session = getSession(options.url);\r\n\t\t\t\toptions.http2 = true;\r\n\t\t\t\toptions.request = http2.request;\r\n\t\t\t}\r\n\t\t]\r\n\t}\r\n});\r\n```\r\n\r\n**After:**\r\n\r\n```js\r\ngot.extend({\r\n\thooks: {\r\n\t\tbeforeRequest: [\r\n\t\t\toptions => {\r\n\t\t\t\toptions.h2session = getSession(options.url);\r\n\t\t\t}\r\n\t\t]\r\n\t}\r\n});\r\n```\r\n\r\n### `dnsCache`\r\n\r\n`dnsCache: true` keeps working and now uses Got's built-in cache. If you depend on `cacheable-lookup` specific options, install it yourself and pass the instance:\r\n\r\n```js\r\nimport CacheableLookup from 'cacheable-lookup';\r\n\r\nconst dnsCache = new CacheableLookup({maxTtl: 60});\r\n\r\nawait got(url, {dnsCache});\r\n```\r\n\r\n### Cross-origin hooks\r\n\r\nIf a `beforeRequest` hook, an `afterResponse` retry, or a pagination step sends the request to a different origin, set the headers and body you want to keep explicitly:\r\n\r\n```js\r\ngot.extend({\r\n\thooks: {\r\n\t\tbeforeRequest: [\r\n\t\t\toptions => {\r\n\t\t\t\toptions.url = new URL('https://other.example.com/path');\r\n\t\t\t\toptions.headers.authorization = 'Bearer …';\r\n\t\t\t}\r\n\t\t]\r\n\t}\r\n});\r\n```\r\n\r\n### `copyPipedHeaders`\r\n\r\nCredentials are no longer forwarded from a piped request. Pass them explicitly when the upstream is trusted:\r\n\r\n```js\r\ngot.stream(url, {\r\n\tcopyPipedHeaders: true,\r\n\theaders: {\r\n\t\tauthorization: request.headers.authorization\r\n\t}\r\n});\r\n```\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v15.1.0...v16.0.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v16.0.0",
+  "draft": false,
+  "published_at": "2026-08-30T23:03:47Z"
+ },
+ {
+  "tag_name": "v15.1.0",
+  "name": "",
+  "body": "- Add [`allowAbsoluteUrls`](https://github.com/sindresorhus/got/blob/main/documentation/2-options.md#allowabsoluteurls) option (#2462)  1c88e88\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v15.0.7...v15.1.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v15.1.0",
+  "draft": false,
+  "published_at": "2026-07-02T12:53:34Z"
+ },
+ {
+  "tag_name": "v15.0.7",
+  "name": "",
+  "body": "- Fix: Preserve request body on cross-origin 307 and 308 redirects (#2460)  aee9249\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v15.0.6...v15.0.7",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v15.0.7",
+  "draft": false,
+  "published_at": "2026-06-28T09:47:52Z"
+ },
+ {
+  "tag_name": "v15.0.6",
+  "name": "",
+  "body": "- Fix `searchParams` setter dropping the value when a URL is set (#2454)  5772bf2\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v15.0.5...v15.0.6",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v15.0.6",
+  "draft": false,
+  "published_at": "2026-06-21T17:13:49Z"
+ },
+ {
+  "tag_name": "v15.0.5",
+  "name": "",
+  "body": "- Fix: Handle abort signals added by handlers  74e3167\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v15.0.4...v15.0.5",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v15.0.5",
+  "draft": false,
+  "published_at": "2026-05-06T16:41:59Z"
+ },
+ {
+  "tag_name": "v15.0.4",
+  "name": "",
+  "body": "- Fix aborting during download progress  11a2202\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v15.0.3...v15.0.4",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v15.0.4",
+  "draft": false,
+  "published_at": "2026-05-06T13:26:37Z"
+ },
+ {
+  "tag_name": "v15.0.3",
+  "name": "",
+  "body": "- Fix false `ReadError` on responses without `Content-Length`  071ea07\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v15.0.2...v15.0.3",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v15.0.3",
+  "draft": false,
+  "published_at": "2026-04-21T07:54:15Z"
+ },
+ {
+  "tag_name": "v15.0.2",
+  "name": "",
+  "body": "- Fix stream cookie jar completion race  b170125\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v15.0.1...v15.0.2",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v15.0.2",
+  "draft": false,
+  "published_at": "2026-04-13T14:59:27Z"
+ },
+ {
+  "tag_name": "v15.0.1",
+  "name": "",
+  "body": "- Fix init types  20633bc\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v15.0.0...v15.0.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v15.0.1",
+  "draft": false,
+  "published_at": "2026-04-08T16:15:52Z"
+ },
+ {
+  "tag_name": "v15.0.0",
+  "name": "",
+  "body": "## Breaking changes\r\n\r\n- Require Node.js 22  b933476\r\n- Remove promise cancel API  a06ac6c\r\n  - `promise.cancel()` is gone. Use the [`signal` option](https://github.com/sindresorhus/got/blob/main/documentation/2-options.md#signal) with [`AbortController`](https://developer.mozilla.org/docs/Web/API/AbortController) instead.\r\n- Remove `isStream` option  c241c6c\r\n  - Use `got.stream()` directly.\r\n- Use native `FormData` global  670b228\r\n\t- Use the [Web API `FormData`](https://developer.mozilla.org/docs/Web/API/FormData) global directly (available in Node.js 18+).\r\n- `responseType: 'buffer'` returns `Uint8Array` instead of `Buffer`  309e36d\r\n\t- `response.rawBody` and `promise.buffer()` now return a `Uint8Array`. `Buffer` is a subclass of `Uint8Array`, so most code will continue to work, but strict type checks will need updating.\r\n- `strictContentLength` defaults to `true`  08e9dff\r\n\t- Got now throws a `ContentLengthMismatchError` by default if `Content-Length` doesn't match the actual body size. Set `{strictContentLength: false}` to restore the old behavior.\r\n- `retry.enforceRetryRules` defaults to `true`  9bc8dfb\r\n\t- Custom `calculateDelay` functions are now only called when a retry is actually allowed by `limit`, `methods`, `statusCodes`, and `errorCodes`. If your `calculateDelay` was previously used to override retry eligibility unconditionally, set `{retry: {enforceRetryRules: false}}`.\r\n- Piped header copying is now opt-in  8e392f3\r\n\t- Got no longer automatically copies headers from a piped stream. Set `{copyPipedHeaders: true}` to re-enable. Hop-by-hop headers are never copied even when enabled (RFC 9110 §7.6.1).\r\n- `url` removed from public options objects  87de8d6\r\n\t- The `url` property is no longer present on the options object passed to hooks. Use `response.url` or `request.requestUrl` instead.\r\n- 300 and 304 responses are no longer auto-followed  5fccaab\r\n\t- Per RFC 9110, 304 is a conditional-GET hint, not a redirect, and 300 is only a SHOULD for user agents. Got now returns these responses as-is. Handle them manually if needed.\r\n- Removed the undocumented named export for Got.\r\n  - Got has always been a default export. The named export was there only for buggy build tools during the ESM migration times.\r\n\r\n## Improvements\r\n\r\n- Stream decode large `text`/`json` bodies incrementally for lower peak memory usage  c9a95b1\r\n- `uploadProgress` now emits granular per-chunk events for `json` and `form` request bodies  13c889d\r\n\r\n---\r\n\r\n## Migration guide\r\n\r\n### Replace `promise.cancel()` with `AbortController`\r\n\r\n**Before:**\r\n\r\n```js\r\nconst promise = got(url);\r\npromise.cancel();\r\n```\r\n\r\n**After:**\r\n\r\n```js\r\nconst controller = new AbortController();\r\nconst promise = got(url, {signal: controller.signal});\r\ncontroller.abort();\r\n```\r\n\r\n### Replace `isStream: true` with `got.stream()`\r\n\r\n**Before:**\r\n\r\n```js\r\ngot(url, {isStream: true});\r\n```\r\n\r\n**After:**\r\n\r\n```js\r\ngot.stream(url);\r\n```\r\n\r\n### Replace `form-data` / `form-data-encoder` with native `FormData`\r\n\r\n**Before:**\r\n\r\n```js\r\nimport {FormData} from 'formdata-node';\r\n// or: import {FormData} from 'formdata-polyfill/esm.min.js';\r\n\r\nconst form = new FormData();\r\nform.set('name', 'value');\r\nawait got.post(url, {body: form});\r\n```\r\n\r\n**After:**\r\n\r\n```js\r\nconst form = new FormData();\r\nform.set('name', 'value');\r\nawait got.post(url, {body: form});\r\n```\r\n\r\n### Update `Buffer` usage to `Uint8Array`\r\n\r\n`response.rawBody` and `promise.buffer()` now return `Uint8Array` instead of `Buffer`.\r\n\r\n**Before:**\r\n\r\n```js\r\nconst data = await got(url).buffer();\r\nconst copy = Buffer.from(data);\r\n```\r\n\r\n**After:**\r\n\r\n```js\r\nconst data = await got(url).buffer();\r\nconst copy = new Uint8Array(data);\r\n```\r\n\r\nIf you need `Buffer`-specific APIs, wrap with `Buffer.from(data.buffer, data.byteOffset, data.byteLength)`.\r\n\r\n### `strictContentLength` is now on by default\r\n\r\nIf you send requests where the `Content-Length` header might not match the actual body size, opt out:\r\n\r\n```js\r\ngot.extend({strictContentLength: false});\r\n```\r\n\r\n### `retry.enforceRetryRules` is now on by default\r\n\r\nIf your `calculateDelay` function was overriding retry eligibility (e.g. retrying on methods or status codes outside the defaults), opt out:\r\n\r\n```js\r\ngot.extend({\r\n\tretry: {\r\n\t\tenforceRetryRules: false,\r\n\t\tcalculateDelay: ({computedValue}) => {\r\n\t\t\t// computedValue is 0 when retry is not allowed\r\n\t\t\tif (computedValue === 0) {\r\n\t\t\t\treturn 0;\r\n\t\t\t}\r\n\r\n\t\t\treturn computedValue;\r\n\t\t},\r\n\t},\r\n});\r\n```\r\n\r\n### Piped header copying is now opt-in\r\n\r\nIf you pipe streams into Got and rely on automatic header forwarding (e.g. `Content-Type`), re-enable it:\r\n\r\n```js\r\ngot.extend({copyPipedHeaders: true});\r\n```\r\n\r\n### 300 and 304 responses are no longer followed\r\n\r\nIf your code depended on Got auto-following 300 Multi-Choice or handling 304 Not Modified as a redirect, you now need to handle them yourself in an `afterResponse` hook or check `response.statusCode` manually.\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.6.6...v15.0.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v15.0.0",
+  "draft": false,
+  "published_at": "2026-04-01T17:26:23Z"
+ },
+ {
+  "tag_name": "v14.6.6",
+  "name": "",
+  "body": "- Fix stream auto-end for empty PATCH/DELETE/OPTIONS  4d5168c\r\n  - The bug was introduced in https://github.com/sindresorhus/got/commit/b65b0e1c300d745eb6956a4fb0bd19f3b177e144, where it incorrectly auto-closed streams for empty PATCH/DELETE/OPTIONS when using streams. This broke the documented use case of piping data *to* a got stream for these methods.\r\n  - Docs:\r\n    > `got.stream` does not auto-end for `OPTIONS`, `DELETE`, or `PATCH` so you can pipe or write a body without getting `write after end`. Call `stream.end()` when you are not piping a body.\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.6.5...v14.6.6",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.6.6",
+  "draft": false,
+  "published_at": "2025-12-30T12:05:19Z"
+ },
+ {
+  "tag_name": "v14.6.5",
+  "name": "",
+  "body": "- Fix TypeScript type inference for `got.extend()` with `responseType` option  f7ab6e9\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.6.4...v14.6.5",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.6.5",
+  "draft": false,
+  "published_at": "2025-11-22T12:53:54Z"
+ },
+ {
+  "tag_name": "v14.6.4",
+  "name": "",
+  "body": "- Fix `dnsLookup` option type to accept Node.js `dns.lookup`  47c3155\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.6.3...v14.6.4",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.6.4",
+  "draft": false,
+  "published_at": "2025-11-14T08:07:27Z"
+ },
+ {
+  "tag_name": "v14.6.3",
+  "name": "",
+  "body": "- Fix socket reuse timing and DNS timing  fb03d84 61d5e3b\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.6.2...v14.6.3",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.6.3",
+  "draft": false,
+  "published_at": "2025-11-07T18:51:36Z"
+ },
+ {
+  "tag_name": "v14.6.2",
+  "name": "",
+  "body": "- Fix path segments containing colons being misidentified as absolute URLs  0a16a9c\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.6.1...v14.6.2",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.6.2",
+  "draft": false,
+  "published_at": "2025-11-02T10:43:34Z"
+ },
+ {
+  "tag_name": "v14.6.1",
+  "name": "",
+  "body": "- Fix the TS code not being built in 14.6.0.\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.6.0...v14.6.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.6.1",
+  "draft": false,
+  "published_at": "2025-10-25T10:29:04Z"
+ },
+ {
+  "tag_name": "v14.6.0",
+  "name": "",
+  "body": "### Improvements\r\n\r\n- Add [`beforeCache`](https://github.com/sindresorhus/got/blob/599ae74e9f2a002eade81a0ec1722cf7dc28a9cd/documentation/9-hooks.md?plain=1#L237) hook  1c3a041\r\n- Add `retryCount` to `beforeRequest` hook context  91cdc48\r\n- Improve `HTTPError` message to include method and URL  6dd7574\r\n- Add support for typed arrays as request body  ecf5633\r\n- Add Node.js [diagnostic channel support](https://github.com/sindresorhus/got/blob/599ae74e9f2a002eade81a0ec1722cf7dc28a9cd/documentation/diagnostics-channel.md)  3e2a781\r\n- Allow custom Error classes in `beforeError` hook  1c71194\r\n- Add zstd (Zstandard) compression support  449833a\r\n- Improve validation error messages by including option names  f5c54a3\r\n- Add [`strictContentLength`](https://github.com/sindresorhus/got/blob/599ae74e9f2a002eade81a0ec1722cf7dc28a9cd/documentation/2-options.md?plain=1#L854) option  4206f0e\r\n- Add support for [`https.secureOptions`](https://github.com/sindresorhus/got/blob/599ae74e9f2a002eade81a0ec1722cf7dc28a9cd/documentation/5-https.md?plain=1#L136) option  7ec1714\r\n- Add [`copyPipedHeaders`](https://github.com/sindresorhus/got/blob/599ae74e9f2a002eade81a0ec1722cf7dc28a9cd/documentation/2-options.md?plain=1#L526) option to control automatic header copying from piped streams  d83dadd\r\n- Add [`stream.isReadonly`](https://github.com/sindresorhus/got/blob/599ae74e9f2a002eade81a0ec1722cf7dc28a9cd/documentation/3-streams.md?plain=1#L172) property to detect read-only streams  030dfbb\r\n\r\n### Fixes\r\n\r\n- Fix HTTP/2 timings NaN issue  398c11a\r\n- Fix shortcut methods ignoring handler errors  f004564\r\n- Fix body reassignment in `beforeRetry` hooks  bf84d36\r\n- Fix `beforeError` hook not being called for `ERR_UNSUPPORTED_PROTOCOL` error  fb86418\r\n- FIx preserving `prefixUrl` in hooks  9725fbd\r\n- Fix race condition causing retry after promise settles  1e49781\r\n- Fix stream validation errors causing unhandled rejections  2527bf6\r\n- Fix incorrect `content-length` when piping decompressed responses  30b3b79\r\n- Fix EPIPE errors bypassing retry logic in Promise API  6ae3e7f\r\n- Fix silent hang when returning cached response with FormData body from beforeRequest hook  e09a9bd\r\n- Fix hook type definitions to reflect normalized runtime state  6a544a3\r\n- Fix `afterResponse` hook validation to allow `null` body values  60a4419\r\n- Fix DNS timing being non-zero when connecting to IP addresses  3d66aec\r\n- Fix `timings.end` being undefined when stream is destroyed before completion  4e75679\r\n- Fix properly treating different UNIX socket paths as different origins  e5659d4\r\n\r\n### Meta\r\n\r\nI managed to get it almost down to zero issues! 🎉\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.5.0...v14.6.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.6.0",
+  "draft": false,
+  "published_at": "2025-10-16T16:33:27Z"
+ },
+ {
+  "tag_name": "v14.5.0",
+  "name": "",
+  "body": "- Add `retry.enforceRetryRules` option to fix statusCodes/limit bypassing  7c0aee6\r\n- Add support for `serverName` HTTPS option  cdaab63\r\n- Add `preserveHooks` option for `retryWithMergedOptions`  1abeba4\r\n- Support `Iterable` and `AsyncIterable` as request body  b65b0e1\r\n- Fix hang on revalidated cached responses  2ab94fd\r\n- Fix handling of FormData getLength errors  a2812de\r\n- Fix `downloadProgress` firing for redirect responses  9ec6ff0\r\n- Fix TypeScript type definition for retry event&#39;s createRetryStream parameter  e899c07\r\n- Fix validation to accept `false` as agent value  6961284\r\n- Fix HTTP/2 memory leak from timeout listeners with connection reuse  d1d4ed2\r\n- Fix QuickLRU v7+ compatibility  23d0b6b\r\n- Fix it not using HTTP/2 connection reuse by default  724d592\r\n- Fix hang with stream requests without body for methods like OPTIONS  dc4f1e3\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.4.9...v14.5.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.5.0",
+  "draft": false,
+  "published_at": "2025-10-10T08:21:23Z"
+ },
+ {
+  "tag_name": "v14.4.9",
+  "name": "",
+  "body": "- Fix hang with responses containing `content-encoding` headers but no body  cc434bc\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.4.8...v14.4.9",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.4.9",
+  "draft": false,
+  "published_at": "2025-09-17T09:31:38Z"
+ },
+ {
+  "tag_name": "v14.4.8",
+  "name": "",
+  "body": "- Fix infinite loop when retrying with `request.options` in `afterResponse` hook  dad6a91\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.4.7...v14.4.8",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.4.8",
+  "draft": false,
+  "published_at": "2025-08-30T14:25:59Z"
+ },
+ {
+  "tag_name": "v14.4.7",
+  "name": "",
+  "body": "- Fix: Gracefully handle undefined request (#2404)  06029e0\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.4.6...v14.4.7",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.4.7",
+  "draft": false,
+  "published_at": "2025-03-31T14:47:41Z"
+ },
+ {
+  "tag_name": "v14.4.6",
+  "name": "",
+  "body": "- Fix timeout error firing even though it&#39;s cancelled (#2399)  7a92064\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.4.5...v14.4.6",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.4.6",
+  "draft": false,
+  "published_at": "2025-02-10T07:54:36Z"
+ },
+ {
+  "tag_name": "v14.4.5",
+  "name": "",
+  "body": "- Fix a crash with Got accessing a non-existent request (#2391)  c079b93\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.4.4...v14.4.5",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.4.5",
+  "draft": false,
+  "published_at": "2024-11-23T16:00:13Z"
+ },
+ {
+  "tag_name": "v14.4.4",
+  "name": "",
+  "body": "- Fix support for `AbortSignal#timeout()` (#2388)  92b378e\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.4.3...v14.4.4",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.4.4",
+  "draft": false,
+  "published_at": "2024-11-04T11:03:21Z"
+ },
+ {
+  "tag_name": "v14.4.3",
+  "name": "",
+  "body": "- Fix cache with HTTP2 (#2380)  f2f8cb2\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.4.2...v14.4.3",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.4.3",
+  "draft": false,
+  "published_at": "2024-10-09T07:16:37Z"
+ },
+ {
+  "tag_name": "v14.4.2",
+  "name": "",
+  "body": "- Fix handling of invalid arguments (#2367)  f44ef43\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.4.1...v14.4.2",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.4.2",
+  "draft": false,
+  "published_at": "2024-07-24T11:28:49Z"
+ },
+ {
+  "tag_name": "v14.4.1",
+  "name": "",
+  "body": "- Fix missing dependency  dfc54d9\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.4.0...v14.4.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.4.1",
+  "draft": false,
+  "published_at": "2024-06-06T12:28:58Z"
+ },
+ {
+  "tag_name": "v14.4.0",
+  "name": "",
+  "body": "- Improve TypeScript types with generic extend (#2353)  15ca4a0\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.3.0...v14.4.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.4.0",
+  "draft": false,
+  "published_at": "2024-06-04T11:49:34Z"
+ },
+ {
+  "tag_name": "v14.3.0",
+  "name": "",
+  "body": "- Update dependencies  dbab6c3\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.2.1...v14.3.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.3.0",
+  "draft": false,
+  "published_at": "2024-05-18T13:14:05Z"
+ },
+ {
+  "tag_name": "v14.2.1",
+  "name": "",
+  "body": "- Fix error handling when UTF-8 decoding fails (#2336)  c81a611\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.2.0...v14.2.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.2.1",
+  "draft": false,
+  "published_at": "2024-03-07T08:25:06Z"
+ },
+ {
+  "tag_name": "v14.2.0",
+  "name": "",
+  "body": "- Add `cause` property with the original error to `RequestError` (#2327)  4cbd01d\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.1.0...v14.2.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.2.0",
+  "draft": false,
+  "published_at": "2024-02-03T11:21:32Z"
+ },
+ {
+  "tag_name": "v14.1.0",
+  "name": "",
+  "body": "- Allow typing the body of a `RequestError` response (#2325)  5e4f6ff\r\n\r\nhttps://github.com/sindresorhus/got/compare/v14.0.0...v14.1.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.1.0",
+  "draft": false,
+  "published_at": "2024-01-29T13:17:28Z"
+ },
+ {
+  "tag_name": "v14.0.0",
+  "name": "",
+  "body": "### Breaking\r\n\r\n- Require Node.js 20 (#2313)  a004263\r\n  - Why not target the oldest active Node.js LTS, which is Node.js 18? I usually strictly follow this convention in my packages. However, this package is the exception because the HTTP part of Node.js is consistently buggy, and I don't have time to work around issues in older Node.js releases. I you need to still support Node.js 18, I suggest staying on Got v13, which is quite stable. Node.js 18 will be out of active LTS in 5 months.\r\n\r\n### Improvements\r\n\r\n- Make `followRedirect` option accept a function (#2306)  7c3f147\r\n\r\nhttps://github.com/sindresorhus/got/compare/v13.0.0...v14.0.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v14.0.0",
+  "draft": false,
+  "published_at": "2023-11-29T20:20:40Z"
+ },
+ {
+  "tag_name": "v13.0.0",
+  "name": "",
+  "body": "As a reminder, Got continues to require ESM. For TypeScript users, this includes having [`\"module\": \"node16\", \"moduleResolution\": \"node16\"` in your tsconfig](https://gist.github.com/sindresorhus/a39789f98801d908bbc7ff3ecc99d99c#how-can-i-make-my-typescript-project-output-esm).\r\n\r\n### Breaking\r\n\r\n- Require Node.js 16  52a1063\r\n- Change the [`enableUnixSockets`](https://github.com/sindresorhus/got/blob/main/documentation/2-options.md#enableunixsockets) option to be `false` by default  852c312\r\n  - Most users don't need it.\r\n\r\n### Improvements\r\n\r\n- Allow specifying `undefined` for options (#2258)  1cefe8b\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.6.1...v13.0.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v13.0.0",
+  "draft": false,
+  "published_at": "2023-05-27T15:26:17Z"
+ },
+ {
+  "tag_name": "v12.6.1",
+  "name": "",
+  "body": "- Fix `get-stream` import statement (#2266)  67d5039\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.6.0...v12.6.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.6.1",
+  "draft": false,
+  "published_at": "2023-05-27T07:12:49Z"
+ },
+ {
+  "tag_name": "v12.6.0",
+  "name": "",
+  "body": "- Update dependencies  88c88fb 979272e\r\n- Loosen URL validation strictness (#2200)  0ca0b7f\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.5.3...v12.6.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.6.0",
+  "draft": false,
+  "published_at": "2023-03-03T17:40:39Z"
+ },
+ {
+  "tag_name": "v11.8.6",
+  "name": "",
+  "body": "- Destroy request object after successful response\r\n\r\nhttps://github.com/sindresorhus/got/compare/v11.8.5...v11.8.6",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.8.6",
+  "draft": false,
+  "published_at": "2022-12-08T23:25:24Z"
+ },
+ {
+  "tag_name": "v12.5.3",
+  "name": "",
+  "body": "- Fix abort event listeners not always being cleaned up (#2162)  3cc40b5\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.5.2...v12.5.3",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.5.3",
+  "draft": false,
+  "published_at": "2022-11-16T09:21:26Z"
+ },
+ {
+  "tag_name": "v12.5.2",
+  "name": "",
+  "body": "- Improve TypeScript 4.9 compatibility (#2163)  39f83b6\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.5.1...v12.5.2",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.5.2",
+  "draft": false,
+  "published_at": "2022-10-12T03:44:01Z"
+ },
+ {
+  "tag_name": "v12.5.1",
+  "name": "",
+  "body": "- Fix compatibility with TypeScript and ESM  3b3ea67\r\n- Fix request body not being properly cached (#2150)  3e9d3af\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.5.0...v12.5.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.5.1",
+  "draft": false,
+  "published_at": "2022-09-27T07:19:30Z"
+ },
+ {
+  "tag_name": "v12.5.0",
+  "name": "",
+  "body": "- Disable method rewriting on 307 and 308 status codes (#2145)  e049e94\r\n- Upgrade dependencies  8630815 f0ac0b3 4c3762a\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.4.1...v12.5.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.5.0",
+  "draft": false,
+  "published_at": "2022-09-19T04:46:01Z"
+ },
+ {
+  "tag_name": "v12.4.1",
+  "name": "",
+  "body": "### Fixes\r\n\r\n- Fix `options.context` being not extensible b671480715dbbff908e9a385f5e714570c663cd7\r\n- Don't emit `uploadProgress` after promise cancelation 693de217b030816f574d6e4cb505ee2e77b21c29\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.4.0...v12.4.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.4.1",
+  "draft": false,
+  "published_at": "2022-09-02T18:18:17Z"
+ },
+ {
+  "tag_name": "v12.4.0",
+  "name": "",
+  "body": "### Improvements\r\n\r\n- Support FormData without known length (#2120)  850773c\r\n\r\n### Fixes\r\n\r\n- Don&#39;t call `beforeError` hooks with `HTTPError` if the `throwHttpErrors` option is `false` (#2104)  3927348\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.3.1...v12.4.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.4.0",
+  "draft": false,
+  "published_at": "2022-09-02T16:47:51Z"
+ },
+ {
+  "tag_name": "v12.3.1",
+  "name": "",
+  "body": "- Don&#39;t freeze signal when freezing Options (#2100)  43b1467\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.3.0...v12.3.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.3.1",
+  "draft": false,
+  "published_at": "2022-08-06T11:17:28Z"
+ },
+ {
+  "tag_name": "v12.3.0",
+  "name": "",
+  "body": "- Add `.off()` method for events (#2092)  88056be\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.2.0...v12.3.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.3.0",
+  "draft": false,
+  "published_at": "2022-07-28T10:23:55Z"
+ },
+ {
+  "tag_name": "v12.2.0",
+  "name": "",
+  "body": "- [Support `AbortController`](https://github.com/sindresorhus/got/blob/main/documentation/2-options.md#signal) (#2020)  6a6d2a9\r\n- Add [`enableUnixSockets`](https://github.com/sindresorhus/got/blob/main/documentation/2-options.md#enableunixsockets) option (#2062)  461b3d4\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.1.0...v12.2.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.2.0",
+  "draft": false,
+  "published_at": "2022-07-24T15:31:47Z"
+ },
+ {
+  "tag_name": "v12.1.0",
+  "name": "",
+  "body": "### Improvements\r\n\r\n- Add `response.ok` (#2043)  22d58fb\r\n  - This is only useful if you have [`{throwHttpErrors: false}`](https://github.com/sindresorhus/got/blob/main/documentation/2-options.md#throwhttperrors)\r\n\r\n### Fixes\r\n\r\n- Do not redirect to UNIX sockets (#2047)  861ccd9\r\n  - [CVE-2022-33987](https://nvd.nist.gov/vuln/detail/CVE-2022-33987)\r\n  - [Also back ported to v11](https://github.com/sindresorhus/got/releases/tag/v11.8.5)\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.0.4...v12.1.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.1.0",
+  "draft": false,
+  "published_at": "2022-05-25T18:44:41Z"
+ },
+ {
+  "tag_name": "v11.8.5",
+  "name": "",
+  "body": "- Backport security fix https://github.com/sindresorhus/got/commit/861ccd9ac2237df762a9e2beed7edd88c60782dc\r\n  - [CVE-2022-33987](https://nvd.nist.gov/vuln/detail/CVE-2022-33987)\r\n\r\nhttps://github.com/sindresorhus/got/compare/v11.8.4...v11.8.5",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.8.5",
+  "draft": false,
+  "published_at": "2022-05-25T18:38:33Z"
+ },
+ {
+  "tag_name": "v12.0.4",
+  "name": "",
+  "body": "- Remove stream lock - unreliable since Node 17.3.0 bb8eca924c338ca12d5b90d6a26aa28dbddb42ee",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.0.4",
+  "draft": false,
+  "published_at": "2022-04-24T20:17:22Z"
+ },
+ {
+  "tag_name": "v12.0.3",
+  "name": "",
+  "body": "- Allow more types in the `json` option (#2015)  eb045bf\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.0.2...v12.0.3",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.0.3",
+  "draft": false,
+  "published_at": "2022-03-26T15:55:53Z"
+ },
+ {
+  "tag_name": "v12.0.2",
+  "name": "",
+  "body": "- Fix `encoding` option with `{responseType: 'json'}` (#1996)  0703318\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.0.1...v12.0.2",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.0.2",
+  "draft": false,
+  "published_at": "2022-03-16T06:49:19Z"
+ },
+ {
+  "tag_name": "v12.0.1",
+  "name": "",
+  "body": "- Fix `nock` compatibility (#1959)  bf39d2c\r\n- Fix missing export of `Request` TypeScript type (#1940)  0f9f2b8\r\n\r\nhttps://github.com/sindresorhus/got/compare/v12.0.0...v12.0.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.0.1",
+  "draft": false,
+  "published_at": "2022-01-09T14:57:19Z"
+ },
+ {
+  "tag_name": "v12.0.0",
+  "name": "v12.0.0",
+  "body": "### Introducing Got v12.0.0 :tada:\r\n\r\nLong time no see! The latest Got version (v11.8.2) was released just in February ❄️ \r\nWe have been working hard on squashing bugs and improving overall experience.\r\n\r\nIf you find Got useful, you might want to [sponsor the Got maintainers](https://github.com/sindresorhus/got?sponsor=1).\r\n\r\n### This package is now pure ESM\r\n\r\n**Please [read this](https://gist.github.com/sindresorhus/a39789f98801d908bbc7ff3ecc99d99c).** Also see https://github.com/sindresorhus/got/issues/1789.\r\n\r\n- **Please don't open issues about `[ERR_REQUIRE_ESM]` and `Must use import to load ES Module` errors.** This is a problem with your setup, not Got.\r\n- Please don't open issues about using Got with Jest. Jest does not fully support ESM.\r\n- Pretty much any problem with loading this package is a problem with your bundler, test framework, etc, not Got.\r\n- If you use TypeScript, you will want to stay on Got v11 until TypeScript 4.6 is out. [Why.](https://github.com/microsoft/TypeScript/issues/46452)\r\n- If you use a bundler, make sure it supports ESM and that you have correctly configured it for ESM.\r\n- The Got issue tracker is not a support channel for your favorite build/bundler tool.\r\n\r\n### Required Node.js >=14\r\n\r\nWhile working with streams, we encountered more Node.js bugs that needed workarounds.\r\nIn order to keep our code clean, we had to drop Node.js v12 as the code would get more messy.\r\nWe strongly recommend that you update Node.js to **v14 LTS**.\r\n\r\n### HTTP/2 support\r\n\r\nEvery Node.js release, the native `http2` module gets more stable.\r\nUnfortunately there are still some issues on the Node.js side, so we decided to keep HTTP/2 disabled for now.\r\nWe may enable it by default in Got v13. It is still possible to turn it on via the `http2` option.\r\n\r\nTo run HTTP/2 requests, it is required to use Node.js **v15.10** or above.\r\n\r\n### Bug fixes\r\n\r\nWoah, we possibly couldn't make a release if we didn't fix some bugs!\r\n\r\n- Do not throw on custom stack traces (#1491) 49c16ee54fb19ea7aa77e24ac8c2b602f0aad265\r\n- Remove automatic `content-length` on ReadStream (#1510) 472b8ef9d9fc7713b740981a8b1103a7a9111b26\r\n- Fix promise shortcuts in case of error status code (#1543) ff918fb6dedb6d8b23421497ec890d43f45121b7 1107cc625e4cc469276483316c48896a21f6251a\r\n- Invert the `methodRewriting` option 51d88a0efed56760d116c5b911cea71e3265c787\r\n- Fix `url` not being reused on retry in rare case (#1487) 462bc630015064fa4ad4358cf28d24f95e1c958b\r\n- Fix hanging promise on HTTP/2 timeout (#1492) a59fac415ac013a48b1d514837628a5cf81d6878\r\n- Prevent uncaught ParseErrors on initial successful response (#1527) 77df9c33db5ba3126f54317171e1cfcfceefc3d5\r\n- Throw an error when retrying with consumed body (#1507) 62305d77d3428b5c714d21b4bbee68cc75b5f787\r\n- Fix a Node.js 16 bug that hangs Got streams 06a2d3d7d8d4fcc6898b6364d1a18ca1d407092b\r\n- Fix default pagination handling for empty Link header (#1768) 1e1e50647e93d038a4cc6a9bbbfbf61165d8fd39\r\n- Fix incorrect `response.complete` when using cache 9e15d887da3b065940bbc8ca38f9c748a0bbc75e\r\n- Fix `Cannot call end` error when `request` returns a `Writable` 226cc3995f6e16938163ebde24d8762e7dcd15e2\r\n- Fix Request options not being reused on retry 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n- Fix types being not compatible with CommonJS 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n- Fix `got.paginate does not call init hooks` (#1574) 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n- Generate a new object when passing options to the native `https` module (#1567) 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n- Remove stream reuse check (#1803) 9ecc5ee76f77aafd5100520d9d8789c491c8fb24\r\n- Fix merging `searchParams` (#1814) 1018c2029eea1f5b75b5120265996f1c0b3c12ae 732e9bd9406ba1c3dd64b445264e891f33fc0254\r\n- Fix unhandled exception when lookup returns invalid IP early (#1737) 2453e5e4213fe036a0108de3e4db414dcf2b4c30\r\n- Fix relative URLs when paginating 439fb82d2a07cece417a18c47e37cfdeaaf38db7\r\n- Require url to be an instance of URL when paginating (#1818) eda69ff924a621e499d31cbc590993a32ddb48d3\r\n- Fix `username` and `password` encoding in URL (#1169 #1317) d65d0caf627e8d1f5367db34d7d9b55d332c1efb\r\n- Clone raw options 1c4cefc9b49f891712c3758f853d8c6214a1c904\r\n- Fix invalid `afterResponse` return check  cbc8902\r\n- Fix `https.alpnProtocols` not having an effect  e1099fb\r\n\r\n### Improvements\r\n\r\n- Make the `context` option mergeable (#1459) 2b8ed1f5a185f30603d24e2ceb8181782de3bc5a\r\n- Add generic argument to AfterResponseHook TypeScript type (#1589) 6fc04a9b92f07b07b9fba010f2231a90082a039b\r\n- Add read timeout (#1518) e9436720fcb32b77d39d5477b420b18083e41c02 *(blocked by https://github.com/nodejs/node/issues/35923)*\r\n- Improve the pagination API (#1644) 2675046a83c7f03613f553a8da2912d491be900d\r\n- Change the stackAllItems option to be false by default (#1645) 1120370e05fd8d9e768677d8474d0c82cf91a6a6\r\n- Throw when afterResponse hook returns an invalid value 4f21eb3db705c90797ef8ee1503704f78fea3c1b\r\n- Add `retry.backoffLimit` option 41c4136632b9391adb3ac53332b312089bc4dc16\r\n- Add `noise` retry option e83007704670b5f567ca338c156441f6c569ecb5\r\n- Enable more HTTPS options 83575d590a119027d319bd9208681973087564a9 fe723a0477dc02785a0b477e3d5f85d0233e5b84 (thanks @Giotino)\r\n- Define `error.code` f27e8d331627074e76e4a9ec85a2c8d0a0625e5f\r\n- Set `options.url` even if some options are invalid 8d6a6807883323a83ea5f126ca56b55d9ce5f299\r\n- Improve memory usage when merging options 2db5ec5d366efbbf9e0838eabfa6be774a0518a0\r\n- Support async generators as body 854430f01350811fe8a0ccf20cd820aabfbd3926 3df52f38edbadb45158c37d499817bc5486989c6\r\n-  Add missing `once` types for Stream API 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n-  New error type: `RetryError` which always triggers a new retry when thrown 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n-  `error.options` is now enumerable 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n- `defaults.handlers` don't need a default handler now 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n- Add a parser for the `Link` header 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n- General code improvements a5dd9aa37e7891b2620798560799c7f8bd380877\r\n\r\n### Breaking changes\r\n\r\n#### Improved option normalization\r\n \r\n- Got exports an `Option` class that is specifically designed to parse and validate Got options.\r\nIt is made of setters and getters that provide fast normalization and more consistent behavior.\r\n\r\nWhen passing an option does not exist, Got will throw an error. In order to retrieve the options before the error, use `error.options`.\r\n\r\n```js\r\nimport got from 'got';\r\n\r\ntry {\r\n    await got('https://httpbin.org/anything', {\r\n        thisOptionDoesNotExist: true\r\n    });\r\n} catch (error) {\r\n    console.error(error);\r\n    console.error(error.options.url.href);\r\n    // Unexpected option: thisOptionDoesNotExist\r\n    // https://httpbin.org/anything\r\n}\r\n```\r\n\r\n-  The `init` hook now accepts a second argument: `self`, which points to an `Options` instance.\r\n\r\nIn order to define your own options, you have to move them to `options.context` in an [`init` hook](https://github.com/sindresorhus/got/blob/main/documentation/lets-make-a-plugin.md#authorization) or store them in `options.context` directly.\r\n\r\n- The `init` hooks are ran only when passing an options object explicitly.\r\n\r\n```diff\r\n- await got('https://example.com'); // this will *not* trigger the init hooks\r\n+ await got('https://example.com', {}); // this *will** trigger init hooks\r\n```\r\n\r\n- [`options.merge()`](2-options.md) replaced `got.mergeOptions` and `Request.normalizeArguments`\r\n\r\n```diff\r\n- got.defaults.options = got.mergeOptions(got.defaults.options, {…});\r\n+ got.defaults.options.merge(…);\r\n```\r\n\r\nThis fixes issues like #1450\r\n\r\n- Legacy `Url` instances are not supported anymore. You need to use WHATWG URL instead.\r\n\r\n```diff\r\n- await got(string, {port: 8443});\r\n+ const url = new URL(string);\r\n+ url.port = 8443;\r\n+ await got(url);\r\n```\r\n\r\n-  No implicit timeout declaration.\r\n\r\n```diff\r\n- await got('https://example.com', {timeout: 5000})\r\n+ await got('https://example.com', {timeout: {request: 5000})\r\n```\r\n\r\n-  No implicit retry declaration.\r\n\r\n```diff\r\n- await got('https://example.com', {retry: 5})\r\n+ await got('https://example.com', {retry: {limit: 5})\r\n```\r\n\r\n-  `dnsLookupIpVersion` is now a number (4 or 6) or undefined\r\n\r\n```diff\r\n- await got('https://example.com', {dnsLookupIpVersion: 'ipv4'})\r\n+ await got('https://example.com', {dnsLookupIpVersion: 4})\r\n```\r\n\r\n-  `redirectUrls` and `requestUrl` now give URL instances\r\n\r\n```diff\r\n- request.requestUrl\r\n+ request.requestUrl.origin\r\n+ request.requestUrl.href\r\n+ request.requestUrl.toString()\r\n```\r\n\r\n```diff\r\n- request.redirectUrls[0]\r\n+ request.redirectUrls[0].origin\r\n+ request.redirectUrls[0].href\r\n+ request.redirectUrls[0].toString()\r\n```\r\n\r\n-  Renamed `request.aborted` to `request.isAborted`\r\n\r\n```diff\r\n- request.aborted\r\n+ request.isAborted\r\n```\r\n\r\nReason: consistency with `options.isStream`.\r\n\r\n-  Renamed the `lookup` option to `dnsLookup`\r\n\r\n```diff\r\n- await got('https://example.com', {lookup: cacheable.lookup})\r\n+ await got('https://example.com', {dnsLookup: cacheable.lookup})\r\n```\r\n\r\n- The `beforeRetry` hook now accepts only two arguments: `error` and `retryCount`\r\n\r\n```diff\r\nawait got('https://example.com', {\r\n    hooks: {\r\n        beforeRetry: [\r\n-            (options, error, retryCount) => {\r\n-                console.log(options, error, retryCount);\r\n-            }\r\n+            (error, retryCount) => {\r\n+                console.log(error.options, error, retryCount);\r\n+            }\r\n        ]\r\n    }\r\n})\r\n```\r\n\r\nThe `options` argument has been removed, however it's still accessible via `error.options`. All modifications on `error.options` will be reflected in the next requests (no behavior change, same as with Got 11).\r\n\r\n- The `beforeRedirect` hook's first argument (options) is now a cloned instance of the Request options.\r\n\r\nThis was done to make retrieving the original options possible: `plainResponse.request.options`.\r\n\r\n```diff\r\nawait got('http://szmarczak.com', {\r\n    hooks: {\r\n        beforeRedirect: [\r\n            (options, response) => {\r\n-                console.log(options === response.request.options); //=> true [invalid! our original options were overriden]\r\n+                console.log(options === response.request.options); //=> false [we can access the original options now]\r\n            }\r\n        ]\r\n    }\r\n})\r\n```\r\n\r\n-  The `redirect` event now takes two arguments in this order: `updatedOptions` and `plainResponse`.\r\n\r\n```diff\r\n- stream.on('redirect', (response, options) => …)\r\n+ stream.on('redirect', (options, response) => …)\r\n```\r\n\r\nReason: consistency with the `beforeRedirect` hook.\r\n\r\n-  The `socketPath` option has been removed. Use the `unix:` protocol instead.\r\n\r\n```diff\r\n- got('/containers/json', {socketPath: '/var/run/docker.sock'})\r\n+ got('unix:/var/run/docker.sock:/containers/json')\r\n+ got('http://unix:/var/run/docker.sock:/containers/json')\r\n```\r\n\r\n- The `retryWithMergedOptions` function in an `afterResponse` hook no longer returns a `Promise`.\r\n\r\nIt now throws `RetryError`, so this should this should be the last function being executed.\r\nThis was done to allow `beforeRetry` hooks getting called.\r\n\r\n- You can no longer set `options.agent` to `false`.\r\n   To do so, you need to define all the `options.agent` properties: `http`, `https` and `http2`.\r\n\r\n```diff\r\nawait got('https://example.com', {\r\n-    agent: false\r\n+    agent: {\r\n+        http: false,\r\n+        https: false,\r\n+        http2: false\r\n+    }\r\n})\r\n```\r\n\r\n-  When passing a `url` option when paginating, it now needs to be an absolute URL - the `prefixUrl` option is always reset from now on. The same when retrying in an `afterResponse` hook.\r\n\r\n```diff\r\n- return {url: '/location'};\r\n+ return {url: new URL('/location', response.request.options.url)};\r\n```\r\n\r\nThere was confusion around the `prefixUrl` option. It was counterintuitive if used with the Pagination API. For example, it worked fine if the server replied with a relative URL, but if it was an absolute URL then the `prefixUrl` would end up duplicated. In order to fix this, Got now requires an absolute URL - no `prefixUrl` will be applied.\r\n\r\n-  `got.extend(…)` will throw when passing some options that don't accept undefined - undefined no longer retains the old value, as setting undefined explicitly may reset the option\r\n\r\n### Documentation\r\n\r\nWe have redesigned the documentation so it's easier to navigate and find exactly what you are looking for. We hope you like it :heart:\r\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.0.0",
+  "draft": false,
+  "published_at": "2021-12-10T14:49:23Z"
+ },
+ {
+  "tag_name": "v11.8.3",
+  "name": "",
+  "body": "- Bump cacheable-request dependency (#1921)  9463bb6\r\n- Fix `HTTPError` missing `.code` property (#1739)  0e167b8\r\n\r\nhttps://github.com/sindresorhus/got/compare/v11.8.2...v11.8.3",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.8.3",
+  "draft": false,
+  "published_at": "2021-11-18T05:02:49Z"
+ },
+ {
+  "tag_name": "v12.0.0-beta.4",
+  "name": "",
+  "body": "- Fix invalid `afterResponse` return check  cbc8902\r\n- Clarify `retryWithMergedOptions` valid hooks (#1832)  15c30ee\r\n- Add Apify to Showcase (#1828)  3386bf1\r\n- Add `got-scraping` to Got plugins in readme (#1823)  7805501\r\n- Fix `https.alpnProtocols` not having an effect  e1099fb\r\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.0.0-beta.4",
+  "draft": false,
+  "published_at": "2021-08-12T07:13:43Z"
+ },
+ {
+  "tag_name": "v12.0.0-beta.3",
+  "name": "",
+  "body": "### Bug fixes\r\n\r\n- Clone raw options 1c4cefc9b49f891712c3758f853d8c6214a1c904\r\n\r\nPreviously Got 12 was freezing the options instead of cloning, but it seems this is too breaking. \r\nReverted option freezing so the behavior matches Got 11.",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.0.0-beta.3",
+  "draft": false,
+  "published_at": "2021-08-06T09:06:09Z"
+ },
+ {
+  "tag_name": "v12.0.0-beta.2",
+  "name": "",
+  "body": "`v12.0.0-beta.2`  introduces more stability fixes! Yay!\r\n\r\n### Bug fixes\r\n\r\n- Remove stream reuse check (#1803) 9ecc5ee76f77aafd5100520d9d8789c491c8fb24\r\n- Fix merging `searchParams` (#1814) 1018c2029eea1f5b75b5120265996f1c0b3c12ae 732e9bd9406ba1c3dd64b445264e891f33fc0254\r\n- Fix unhandled exception when lookup returns invalid IP early (#1737) 2453e5e4213fe036a0108de3e4db414dcf2b4c30\r\n- Fix relative URLs when paginating 439fb82d2a07cece417a18c47e37cfdeaaf38db7\r\n- Require url to be an instance of URL when paginating (#1818) eda69ff924a621e499d31cbc590993a32ddb48d3\r\n- Fix `username` and `password` encoding in URL (#1169 #1317) d65d0caf627e8d1f5367db34d7d9b55d332c1efb\r\n\r\n### Improvements\r\n\r\n- General code improvements a5dd9aa37e7891b2620798560799c7f8bd380877\r\n\r\n### Documentation\r\n\r\n- Add an example of uppercase headers 3dc2ad9bf5d101b4b74c00e4ce9237c8218ce24d\r\n- Add docs for custom options (#1794) 6a44a8158a0f62ded055625f9aeec028abc880f3\r\n\r\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.0.0-beta.2",
+  "draft": false,
+  "published_at": "2021-08-04T21:43:03Z"
+ },
+ {
+  "tag_name": "v12.0.0-beta.1",
+  "name": "",
+  "body": "We are pleased to announce Got v12.0.0 beta 1! :tada:\r\nIt's been a year and three months since Got 11 was released, and the latest Got version (v11.8.2) was released just in February ❄️ \r\nDuring that time, we have been working hard on squashing bugs and improving overall experience.\r\n\r\nIf you find Got useful, you might want to [sponsor the Got maintainers](https://github.com/sindresorhus/got?sponsor=1).\r\n\r\n### This package is now pure ESM\r\n\r\nPlease [read this](https://gist.github.com/sindresorhus/a39789f98801d908bbc7ff3ecc99d99c). Also see https://github.com/sindresorhus/got/issues/1789.\r\n\r\n### Required Node.js >=14\r\n\r\nWhile working with streams, we encountered more Node.js bugs that needed workarounds.\r\nIn order to keep our code clean, we had to drop Node.js v12 as the code would get more messy.\r\nWe strongly recommend that you update Node.js to **v14 LTS**.\r\n\r\n### HTTP/2 support\r\n\r\nEvery Node.js release, the native `http2` module gets more stable.\r\nUnfortunately there are still some issues on the Node.js side, so we decided to keep HTTP/2 disabled for now.\r\nWe may enable it by default in Got v13. It is still possible to turn it on via the `http2` option.\r\n\r\nTo run HTTP/2 requests, it is required to use Node.js **v15.10** or above.\r\n\r\n### Bug fixes\r\n\r\nWoah, we possibly couldn't make a release if we didn't fix some bugs!\r\n\r\n- Do not throw on custom stack traces (#1491) 49c16ee54fb19ea7aa77e24ac8c2b602f0aad265\r\n- Remove automatic `content-length` on ReadStream (#1510) 472b8ef9d9fc7713b740981a8b1103a7a9111b26\r\n- Fix promise shortcuts in case of error status code (#1543) ff918fb6dedb6d8b23421497ec890d43f45121b7 1107cc625e4cc469276483316c48896a21f6251a\r\n- Invert the `methodRewriting` option 51d88a0efed56760d116c5b911cea71e3265c787\r\n- Fix `url` not being reused on retry in rare case (#1487) 462bc630015064fa4ad4358cf28d24f95e1c958b\r\n- Fix hanging promise on HTTP/2 timeout (#1492) a59fac415ac013a48b1d514837628a5cf81d6878\r\n- Prevent uncaught ParseErrors on initial successful response (#1527) 77df9c33db5ba3126f54317171e1cfcfceefc3d5\r\n- Throw an error when retrying with consumed body (#1507) 62305d77d3428b5c714d21b4bbee68cc75b5f787\r\n- Fix a Node.js 16 bug that hangs Got streams 06a2d3d7d8d4fcc6898b6364d1a18ca1d407092b\r\n- Fix default pagination handling for empty Link header (#1768) 1e1e50647e93d038a4cc6a9bbbfbf61165d8fd39\r\n- Fix incorrect `response.complete` when using cache 9e15d887da3b065940bbc8ca38f9c748a0bbc75e\r\n- Fix `Cannot call end` error when `request` returns a `Writable` 226cc3995f6e16938163ebde24d8762e7dcd15e2\r\n- Fix Request options not being reused on retry 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n- Fix types being not compatible with CommonJS 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n- Fix `got.paginate does not call init hooks` (#1574) 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n- Generate a new object when passing options to the native `https` module (#1567) 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n\r\n### Improvements\r\n\r\n- Make the `context` option mergeable (#1459) 2b8ed1f5a185f30603d24e2ceb8181782de3bc5a\r\n- Add generic argument to AfterResponseHook TypeScript type (#1589) 6fc04a9b92f07b07b9fba010f2231a90082a039b\r\n- Add read timeout (#1518) e9436720fcb32b77d39d5477b420b18083e41c02 *(blocked by https://github.com/nodejs/node/issues/35923)*\r\n- Improve the pagination API (#1644) 2675046a83c7f03613f553a8da2912d491be900d\r\n- Change the stackAllItems option to be false by default (#1645) 1120370e05fd8d9e768677d8474d0c82cf91a6a6\r\n- Throw when afterResponse hook returns an invalid value 4f21eb3db705c90797ef8ee1503704f78fea3c1b\r\n- Add `retry.backoffLimit` option 41c4136632b9391adb3ac53332b312089bc4dc16\r\n- Add `noise` retry option e83007704670b5f567ca338c156441f6c569ecb5\r\n- Enable more HTTPS options 83575d590a119027d319bd9208681973087564a9 fe723a0477dc02785a0b477e3d5f85d0233e5b84 (thanks @Giotino)\r\n- Define `error.code` f27e8d331627074e76e4a9ec85a2c8d0a0625e5f\r\n- Set `options.url` even if some options are invalid 8d6a6807883323a83ea5f126ca56b55d9ce5f299\r\n- Improve memory usage when merging options 2db5ec5d366efbbf9e0838eabfa6be774a0518a0\r\n- Support async generators as body 854430f01350811fe8a0ccf20cd820aabfbd3926 3df52f38edbadb45158c37d499817bc5486989c6\r\n-  Add missing `once` types for Stream API 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n-  New error type: `RetryError` which always triggers a new retry when thrown 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n-  `error.options` is now enumerable 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n- `defaults.handlers` don't need a default handler now 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n- Add a parser for the `Link` header 3c23eea5a096f6f8ea0edf3e2a27e1caca88acf9\r\n\r\n### Breaking changes\r\n\r\n#### Improved option normalization\r\n \r\n- Got exports an `Option` class that is specifically designed to parse and validate Got options.\r\nIt is made of setters and getters that provide fast normalization and more consistent behavior.\r\n\r\nWhen passing an option does not exist, Got will throw an error. In order to retrieve the options before the error, use `error.options`.\r\n\r\n```js\r\nimport got from 'got';\r\n\r\ntry {\r\n    await got('https://httpbin.org/anything', {\r\n        thisOptionDoesNotExist: true\r\n    });\r\n} catch (error) {\r\n    console.error(error);\r\n    console.error(error.options.url.href);\r\n    // Unexpected option: thisOptionDoesNotExist\r\n    // https://httpbin.org/anything\r\n}\r\n```\r\n\r\n-  The `init` hook now accepts a second argument: `self`, which points to an `Options` instance.\r\n\r\nIn order to define your own options, you have to move them to `options.context` in an [`init` hook](https://github.com/sindresorhus/got/blob/main/documentation/lets-make-a-plugin.md#authorization) or store them in `options.context` directly.\r\n\r\n- The `init` hooks are ran only when passing an options object explicitly.\r\n\r\n```diff\r\n- await got('https://example.com'); // this will *not* trigger the init hooks\r\n+ await got('https://example.com', {}); // this *will** trigger init hooks\r\n```\r\n\r\n- [`options.merge()`](2-options.md) replaced `got.mergeOptions` and `Request.normalizeArguments`\r\n\r\n```diff\r\n- got.defaults.options = got.mergeOptions(got.defaults.options, {…});\r\n+ got.defaults.options.merge(…);\r\n```\r\n\r\nThis fixes issues like #1450\r\n\r\n- Legacy `Url` instances are not supported anymore. You need to use WHATWG URL instead.\r\n\r\n```diff\r\n- await got(string, {port: 8443});\r\n+ const url = new URL(string);\r\n+ url.port = 8443;\r\n+ await got(url);\r\n```\r\n\r\n-  No implicit timeout declaration.\r\n\r\n```diff\r\n- await got('https://example.com', {timeout: 5000})\r\n+ await got('https://example.com', {timeout: {request: 5000})\r\n```\r\n\r\n-  No implicit retry declaration.\r\n\r\n```diff\r\n- await got('https://example.com', {retry: 5})\r\n+ await got('https://example.com', {retry: {limit: 5})\r\n```\r\n\r\n-  `dnsLookupIpVersion` is now a number (4 or 6) or undefined\r\n\r\n```diff\r\n- await got('https://example.com', {dnsLookupIpVersion: 'ipv4'})\r\n+ await got('https://example.com', {dnsLookupIpVersion: 4})\r\n```\r\n\r\n-  `redirectUrls` and `requestUrl` now give URL instances\r\n\r\n```diff\r\n- request.requestUrl\r\n+ request.requestUrl.origin\r\n+ request.requestUrl.href\r\n+ request.requestUrl.toString()\r\n```\r\n\r\n```diff\r\n- request.redirectUrls[0]\r\n+ request.redirectUrls[0].origin\r\n+ request.redirectUrls[0].href\r\n+ request.redirectUrls[0].toString()\r\n```\r\n\r\n-  Renamed `request.aborted` to `request.isAborted`\r\n\r\n```diff\r\n- request.aborted\r\n+ request.isAborted\r\n```\r\n\r\nReason: consistency with `options.isStream`.\r\n\r\n-  Renamed the `lookup` option to `dnsLookup`\r\n\r\n```diff\r\n- await got('https://example.com', {lookup: cacheable.lookup})\r\n+ await got('https://example.com', {dnsLookup: cacheable.lookup})\r\n```\r\n\r\n- The `beforeRetry` hook now accepts only two arguments: `error` and `retryCount`\r\n\r\n```diff\r\nawait got('https://example.com', {\r\n    hooks: {\r\n        beforeRetry: [\r\n-            (options, error, retryCount) => {\r\n-                console.log(options, error, retryCount);\r\n-            }\r\n+            (error, retryCount) => {\r\n+                console.log(error.options, error, retryCount);\r\n+            }\r\n        ]\r\n    }\r\n})\r\n```\r\n\r\nThe `options` argument has been removed, however it's still accessible via `error.options`. All modifications on `error.options` will be reflected in the next requests (no behavior change, same as with Got 11).\r\n\r\n- The `beforeRedirect` hook's first argument (options) is now a cloned instance of the Request options.\r\n\r\nThis was done to make retrieving the original options possible: `plainResponse.request.options`.\r\n\r\n```diff\r\nawait got('http://szmarczak.com', {\r\n    hooks: {\r\n        beforeRedirect: [\r\n            (options, response) => {\r\n-                console.log(options === response.request.options); //=> true [invalid! our original options were overriden]\r\n+                console.log(options === response.request.options); //=> false [we can access the original options now]\r\n            }\r\n        ]\r\n    }\r\n})\r\n```\r\n\r\n-  The `redirect` event now takes two arguments in this order: `updatedOptions` and `plainResponse`.\r\n\r\n```diff\r\n- stream.on('redirect', (response, options) => …)\r\n+ stream.on('redirect', (options, response) => …)\r\n```\r\n\r\nReason: consistency with the `beforeRedirect` hook.\r\n\r\n-  The `socketPath` option has been removed. Use the `unix:` protocol instead.\r\n\r\n```diff\r\n- got('/containers/json', {socketPath: '/var/run/docker.sock'})\r\n+ got('unix:/var/run/docker.sock:/containers/json')\r\n+ got('http://unix:/var/run/docker.sock:/containers/json')\r\n```\r\n\r\n- The `retryWithMergedOptions` function in an `afterResponse` hook no longer returns a `Promise`.\r\n\r\nIt now throws `RetryError`, so this should this should be the last function being executed.\r\nThis was done to allow `beforeRetry` hooks getting called.\r\n\r\n- You can no longer set `options.agent` to `false`.\r\n   To do so, you need to define all the `options.agent` properties: `http`, `https` and `http2`.\r\n\r\n```diff\r\nawait got('https://example.com', {\r\n-    agent: false\r\n+    agent: {\r\n+        http: false,\r\n+        https: false,\r\n+        http2: false\r\n+    }\r\n})\r\n```\r\n\r\n-  When passing a `url` option when paginating, it now needs to be an absolute URL - the `prefixUrl` option is always reset from now on. The same when retrying in an `afterResponse` hook.\r\n\r\n```diff\r\n- return {url: '/location'};\r\n+ return {url: new URL('/location', response.request.options.url)};\r\n```\r\n\r\nThere was confusion around the `prefixUrl` option. It was counterintuitive if used with the Pagination API. For example, it worked fine if the server replied with a relative URL, but if it was an absolute URL then the `prefixUrl` would end up duplicated. In order to fix this, Got now requires an absolute URL - no `prefixUrl` will be applied.\r\n\r\n-  `got.extend(…)` will throw when passing some options that don't accept undefined - undefined no longer retains the old value, as setting undefined explicitly may reset the option\r\n\r\n### Documentation\r\n\r\nWe have redesigned the documentation so it's easier to navigate and find exactly what you are looking for. We hope you like it :heart:\r\n\r\n**Note:**\r\n> - The TypeScript documentation hasn't been updated yet. It will be updated on a stable release.",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v12.0.0-beta.1",
+  "draft": false,
+  "published_at": "2021-07-22T13:20:01Z"
+ },
+ {
+  "tag_name": "v11.8.2",
+  "name": "",
+  "body": "- Make the `dnsCache` option lazy (#1529)  3bd245f\r\n  This slightly improves Got startup performance and fixes an issue with Jest.\r\n\r\nhttps://github.com/sindresorhus/got/compare/v11.8.1...v11.8.2",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.8.2",
+  "draft": false,
+  "published_at": "2021-02-26T09:43:47Z"
+ },
+ {
+  "tag_name": "v11.8.1",
+  "name": "",
+  "body": "* Do not throw on custom stack traces (#1491) 4c815c3a609eb74d0eb139414d9996b4f65dc3c0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.8.1",
+  "draft": false,
+  "published_at": "2020-12-10T11:47:16Z"
+ },
+ {
+  "tag_name": "v11.8.0",
+  "name": "",
+  "body": "- Fix for sending files with size `0` on `stat` (#1488)  7acd380\r\n- `beforeRetry` allows stream body if different from original (#1501)  3dd2273\r\n- Set default value for an options object (#1495)  390b145\r\n\r\nhttps://github.com/sindresorhus/got/compare/v11.7.0...v11.8.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.8.0",
+  "draft": false,
+  "published_at": "2020-10-20T17:14:40Z"
+ },
+ {
+  "tag_name": "v11.7.0",
+  "name": "",
+  "body": "### Improvements\r\n\r\n- Add [`pfx`](https://github.com/sindresorhus/got#httpspfx) HTTPS option (#1364)  c33df7f\r\n- Update `body` after `beforeRequest` (#1453)  e1c1844\r\n- Don&#39;t allocate buffer twice (#1403)  7bc69d9\r\n\r\n### Fixes\r\n\r\n- Fix a regression where body was sent after redirect  88b32ea\r\n- Fix destructure error on `promise.json()`  c97ce7c\r\n- Do not ignore userinfo on a redirect to the same origin  52de13b\r\n\r\nhttps://github.com/sindresorhus/got/compare/v11.6.2...v11.7.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.7.0",
+  "draft": false,
+  "published_at": "2020-09-18T21:33:54Z"
+ },
+ {
+  "tag_name": "v11.6.2",
+  "name": "",
+  "body": "### Bug fixes\r\n\r\n* Inherit the `prefixUrl` option from parent if it's `undefined` (#1448) a3da70a78aeb7f44dd3e0d0fa47cebe9541eb91e\r\n* Prepare a fix for hanging promise on Node.js 14.10.x 29d4e325b110ccf7571d4265d40760be4175f7ff\r\n* Prepare for Node.js 15.0.0 c126ff19c4e893975cbf6c2c8bebce6ed7631276\r\n\r\n### Docs\r\n\r\n* Point travis-ci.org badge to travis-ci.com (#1442) 2b352d3f9e216e116efc0249a3a78b8d4492f97c\r\n* Clarify the retry mechanism f2486180207dba30624901761a457694096441c1\r\n* Fix `RequestError` links 3ed4af605ca6493c080cc8003a55c3b37988efee\r\n\r\n### Tests\r\n\r\n* Downgrade Travis CI Node.js version to 14.9.0 (#1454) 27470b53e1bcd6f435fc77006c9e3e864961dbec",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.6.2",
+  "draft": false,
+  "published_at": "2020-09-10T14:05:52Z"
+ },
+ {
+  "tag_name": "v11.6.1",
+  "name": "",
+  "body": "### Fixes\r\n\r\n- Fix `options.port` on redirect (#1439)  408e22a\r\n\r\n### Meta\r\n\r\n- Welcome @Giotino as a maintainer 🎉  5031843\r\n- Showcase companies using Got (#1432)  d12d6af\r\n\r\nhttps://github.com/sindresorhus/got/compare/v11.6.0...v11.6.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.6.1",
+  "draft": false,
+  "published_at": "2020-09-08T17:35:43Z"
+ },
+ {
+  "tag_name": "v11.6.0",
+  "name": "v11.6.0",
+  "body": "### Improvements\r\n\r\n* Add `retry` stream event (#1384) 707219825b2f8ff3df597230a53244636df21642\r\n* Add types for `http-cache-semantics` options 2e2295fba63c260d347fef2081cdbcae45fa6116\r\n* Make `CancelError` inherit `RequestError` 1f132e88b4e9b295631637757d64307032a4e56e\r\n* Add `retryAfter` to `RetryObject` 643a305b4d710042d2a958a21e7637183713505c\r\n* Add documentation comments to exported TypeScript types (#1278) eaf1e02b21e4b8c08197c6400844d4098828ecf4\r\n* Move cache options into a `cacheOptions` property 9c16d9083019fcb28f566659106036faa4839447\r\n\r\n### Bug fixes\r\n\r\n* Got promise shouldn't retry when the body is a stream 6e1aeaedb5dfe4f4b15eecf72a80303c30df22af\r\n\r\n### Docs\r\n\r\n* Add an example of nock integration with retrying f7bbc3753779e14b22d7aa337764c7048aebb915\r\n* Fix `CancelError` docs 28c400f4df5f45990f80641a794a2d09439bef93\r\n* Fix retry delay function in the `README` (#1425) 38bbb04ea24f01eed6f01e394bc3e9405df8cfc5\r\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.6.0",
+  "draft": false,
+  "published_at": "2020-09-02T13:49:43Z"
+ },
+ {
+  "tag_name": "v11.5.2",
+  "name": "",
+  "body": "### Docs\r\n\r\n* Add hpagent to proxy section (#1363) a3e171c4d43c8bbb236ef3a04feb25ba6fdf6c49\r\n* Mention header lowercasing in`request` migration guide (#1387) a748343363ecb0347897264fb49df4a8f4793997\r\n* Fixed deprecationWarning on https options (#1391) 9a309bdbe7e2552c5bffbea253d58c39d6e6c3e3\r\n\r\n### Bug fixes\r\n\r\n* Fix duplicated hooks when paginating e02845f1aa737d55dce23381d0f4f2a61b1eb5e1\r\n* Fix `dnsCache: true` having no effect 043c9501b85172e09819d44ac8eb49c574b27bda",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.5.2",
+  "draft": false,
+  "published_at": "2020-08-06T19:03:48Z"
+ },
+ {
+  "tag_name": "v11.5.1",
+  "name": "",
+  "body": "### Enhancements\r\n\r\n* Upgrade `http2-wrapper` to `1.0.0-beta.5.0` 16e7f031bb371571e1948091b88385be3485d83f\r\n* Compatibility fix to ignore incorrect Node.js 12 typings f7a1379e417641613bf1b654e37f37a7e6447e0c 61d6f610ffa6b760d466ff910a8e959778ee36e0\r\n\r\n### Bug fixes\r\n\r\n* Prevent uncaught errors on HTTP errors 2d96679c0a007be657835e83c6afb20b4510e9c5 1ef053d2af7f9b050ce0a3d1884f45b285f2e775\r\n\r\n### Docs\r\n\r\n* Mention HTTP/2 proxying in `readme.md` 4ebd26a4b8eef704fe216d333e2614b39dedf695\r\n* Update the comparison table bd2d53269882e48af88ff736a2e82aecd9e1fbee c83393933c2b308a312ed4dc85d852c79445e400\r\n* Document the hierarchy of error classes (#1359) 559526ee273fb60d152759d288bc76971abb99e2\r\n* Fix example code for HTTPS proxy (#1360) 408334756ace0570ca4a0aded5a8aeac437eac33",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.5.1",
+  "draft": false,
+  "published_at": "2020-07-16T12:16:35Z"
+ },
+ {
+  "tag_name": "v11.5.0",
+  "name": "",
+  "body": "### Improvements\r\n\r\n- Add `backoff` option to pagination (#1182)  4be7446\r\n- Upgrade dependencies (#1345)  b9a855d 476c026 8d697bc\r\n- Upgrade to TypeScript 3.9 (#1267)  b51d836\r\n\r\n### Fixes\r\n\r\n- Fix TypeScript types for Promise API (#1344)  676be6d\r\n- Fix cache not working with HTTP2  ac5f67d\r\n- Fix `response` event not being emitted on cache verify request (#1305)  da4769e\r\n- Work around a bug in Node.js <=12.18.2  f33e8bc\r\n- Remove request error handler after response is downloaded  e1afe82\r\n- Revert &quot;Remove request error handler after response is downloaded&quot;  aeb2e07\r\n\r\n### Docs\r\n\r\n- Mention advanced usage of a `beforeRequest` hook  779062a\r\n- Mention to end the stream if there&#39;s no body  044767e\r\n\r\nhttps://github.com/sindresorhus/got/compare/v11.4.0...v11.5.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.5.0",
+  "draft": false,
+  "published_at": "2020-07-07T19:02:45Z"
+ },
+ {
+  "tag_name": "v11.4.0",
+  "name": "",
+  "body": "* Fix hanging promise on timeout on HTTP error 934211f951bfd56751e90ec4eabe6379d8541a05\r\n* Use async iterators to get response body (#1256) 7dcd1456a68a2603d30cbb1a4e453c4560bd51b2\r\n* Fix promise not returning Buffer on compressed response 5028c11abd21c9d13bb3b12abb02961ec0465a8a\r\n* Clarify options.encoding docs 04f3ea4b7995e1609555dd13f00641b8f470de4c\r\n* Fix unhandled `The server aborted pending request` rejection 728aef989c1a6650d2b42a7f69b603075b5d35bf\r\n* Add missing `ECONNRESET` code to an abort error d325d353a28e6038140aa5b18f2b6f9f796f10b6\r\n* Fix `prefixUrl` not working when the `url` argument is empty 8d3412abb8aae3cefc75dd6f9e698988ed463dd6\r\n* Improve the `searchParams` option 4dbada94e261ad890d2478c313ec3d74761b659e\r\n* Fix non-enumerable options [such as body] not being used 8f775c71c41a377186c6b38c6789542bfd523039",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.4.0",
+  "draft": false,
+  "published_at": "2020-07-04T11:53:59Z"
+ },
+ {
+  "tag_name": "v11.3.0",
+  "name": "",
+  "body": "- Deep merge `https` options (#1304)  c98f0d7\r\n- Add options to customize [parsing/stringifying JSON](https://github.com/sindresorhus/got#parsejson) (#1298)  cb4da8d\r\n- Add [`dnsLookupIpVersion`](https://github.com/sindresorhus/got#dnslookupipversion) option (#1264)  7f643bb\r\n\r\nhttps://github.com/sindresorhus/got/compare/v11.2.0...v11.3.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.3.0",
+  "draft": false,
+  "published_at": "2020-06-05T16:32:11Z"
+ },
+ {
+  "tag_name": "v11.2.0",
+  "name": "",
+  "body": "- Provide an overload for unknown `responseType` (#1276)  b9ba18a\r\n- Fix overriding some options in a `beforeRequest` hook (#1293)  d8c00cf\r\n- Fix hanging promise on aborted requests on Node v14.3.0 (#1296)  2ccc4c2\r\n- Do not wait for `ready` event if the file descriptor is already opened (#1289)  2c8fe19\r\n- General improvements to HTTPS API (#1255)  697de37\r\n\r\nhttps://github.com/sindresorhus/got/compare/v11.1.4...v11.2.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.2.0",
+  "draft": false,
+  "published_at": "2020-06-01T07:36:36Z"
+ },
+ {
+  "tag_name": "v11.1.4",
+  "name": "",
+  "body": "* Clarify docs for got.HTTPError (#1244) 3f125f105e3b328942c04ef73579b1573fc39b5a\r\n* Upgrade `cacheable-lookup` to 5.0.3 9770e540d088c35ec0b467fa3d2fafb60ed6797d\r\n* Add a Runkit example (#1253) 48bbb369d715b8ec3c36e0af1ec88f47e2299172\r\n* Mention `options.rejectUnauthorized` in the documentation  9b049635570ebbdd9d534ad1860f01d34771a5ee\r\n* Test `responseType` set to `undefined` 0e8582f24e6903d9079a7d92e9b4d831cb5b5f17\r\n* Slightly improve RunKit example 6f8405102517a1e61393ee7bdb5a4fcff08e64c5\r\n* Make `got.paginate()` an alias for `got.paginate.each()`  5480b3134cfd35497f618f08f574927c2bd7624b\r\n* Don't force query string normalization (#1246) 761b8e01f7d194dd3b9aa6578c26966ebae6172c\r\n* Upgrade `decompress-response` to `6.0.0` c2bc014abc8818ad93dd69a0e8cc9d36d0dccb9c\r\n* Migrate from `lolex` to `@sinonjs/fake-timers` (#1270) df333ddbc163e35537a9f49818e722c7aa6803c0\r\n* Make `calculateDelay` promisable (#1266) 3745efc9d9d03c78c898f357a34524524cce514d",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.1.4",
+  "draft": false,
+  "published_at": "2020-05-16T16:30:16Z"
+ },
+ {
+  "tag_name": "v11.1.3",
+  "name": "",
+  "body": "* Do not use deprecated `request.abort()` (#1242) ab338a70dd9547a6c48af18ab5e2306639e5cbad\r\n* Remove the `host` header on redirect (#1241) 8ff71d972ae55700887b45d50a265e3659ac8cce\r\n* Prevent URL pollution (#1243) 7dbb9ee2bd58e8ee67ebfe734e0c62e765759593\r\n* Fix duplicated searchParams for pagination API (#1229) 91aa0ac9e676130cd4cfc1183d16208c6167b31d\r\n* Add a test for stringified `searchParams` in merge (#1208) 7d7361cc3845421f24288fc39464a8b38bd75d56\r\n* Fix reusing options when paginating 88622701c70434ddc1040c46ad16de0c0acd9143\r\n* Fix an invalid pagination test 47c1afedc77b27a2eb3edd85064d8532da835045 5131dc2778a9b584acda062635a9458d5b22df0c",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.1.3",
+  "draft": false,
+  "published_at": "2020-05-10T13:02:04Z"
+ },
+ {
+  "tag_name": "v11.1.2",
+  "name": "",
+  "body": "### Bug fixes\r\n\r\n* Disable `options.dnsCache` by default 79507c2cdec137e65d715f36d13a5a0e577ddc01\r\n\r\n> This should stay disabled when making requests to internal hostnames such as localhost, database.local etc.\r\nCacheableLookup uses dns.resolver4(..) and dns.resolver6(...) under the hood and fall backs to dns.lookup(...) when the first two fail, which may lead to additional delay.\r\n\r\n### Enhancements\r\n\r\n* Add test cases for issues #1221 and #1223 (#1231) 822bfa770306737a3ad06196101975b669b5d738\r\n* Update dependencies 05ff8780768d48fb58c782ba0b9c141af44a7c15",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.1.2",
+  "draft": false,
+  "published_at": "2020-05-08T11:10:24Z"
+ },
+ {
+  "tag_name": "v11.1.1",
+  "name": "",
+  "body": "- Improve Node.js 14 compatibility  50ef99a\r\n- Fix `got.mergeOptions()` regression  157e02b\r\n- Fix hanging promise when using cache  7b19e8f\r\n- Make `options.responseType` optional when using a template  9ed0a39\r\n\r\nhttps://github.com/sindresorhus/got/compare/v11.1.0...v11.1.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.1.1",
+  "draft": false,
+  "published_at": "2020-05-06T09:44:32Z"
+ },
+ {
+  "tag_name": "v11.1.0",
+  "name": "",
+  "body": "- Add [`pagination.stackAllItems`](https://github.com/sindresorhus/got#paginationstackallitems) option (#1214)  c1208d1\r\n- Allow response body to be typed for pagination API (#1212)  c127f5b\r\n- Fix some options not working with the pagination API  278c421\r\n\r\nhttps://github.com/sindresorhus/got/compare/v11.0.3...v11.1.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.1.0",
+  "draft": false,
+  "published_at": "2020-05-02T11:49:38Z"
+ },
+ {
+  "tag_name": "v11.0.3",
+  "name": "",
+  "body": "### Fixes\r\n\r\n- Limit number of requests in pagination to prevent accidental overflows (#1181)  4344c3a\r\n- Fix promise rejecting before retry b927e2d\r\n- Fix `options.searchParams` duplicates  429db40\r\n- Prevent calling `.abort()` on a destroyed request  63c1b72\r\n\r\n### Docs\r\n\r\n- Fix incorrect usage in the readme examples (#1203)  16ff82f\r\n- Note that `cache` and `dnsCache` can be `false`  7c5290d\r\n\r\nhttps://github.com/sindresorhus/got/compare/v11.0.2...v11.0.3",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.0.3",
+  "draft": false,
+  "published_at": "2020-04-30T14:41:47Z"
+ },
+ {
+  "tag_name": "v11.0.2",
+  "name": "",
+  "body": "* Fix `response.statusMessage` being null 965bd03ad463afb9fdbe098a48b16269b54de9bd\r\n* Update the `http2-wrapper` dependency to `1.0.0-beta.4.4` 4e8de8e32cccaafddf0c6ef4f31716810ab4a14b\r\n* Use `Merge` as it's stricter than the intersection operator d3b972efaca28d8033468c7232a469e8cb034677\r\n* Prevent silent rejections in rare cases 8501c6901af4f7c74cd0ae3700b499bb42ce5928\r\n* Do not alter `options.body` 835c70bd6fdc5b1ba7e7ffd322490b6d66fb407e",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.0.2",
+  "draft": false,
+  "published_at": "2020-04-22T09:22:41Z"
+ },
+ {
+  "tag_name": "v11.0.1",
+  "name": "",
+  "body": "Fixed two regressions:\r\n- `HTTPError`s have unspecified response body (#1162)\r\n- Options are duplicated while merging (#1163)\r\n\r\n[Improved TypeScript types for errors inherited from `RequestError`](https://github.com/sindresorhus/got/commit/d914a7e7a0d97b03745b9b47623e4ac3532b4dae#diff-8eef38c70c64f535c3b8046b5ce40d9e)",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.0.1",
+  "draft": false,
+  "published_at": "2020-04-20T17:44:26Z"
+ },
+ {
+  "tag_name": "v11.0.0",
+  "name": "",
+  "body": "Introducing Got 11! :tada: The last major version was in December last year. :snowflake: Since then, a huge amount of bugs has been fixed. There are also many new features, for example, **HTTP2 support** is finally live! :globe_with_meridians:\r\n\r\n*If you find Got useful, you might want to [sponsor the Got maintainers](https://github.com/sindresorhus/got?sponsor=1).*\r\n\r\n---\r\n\r\n## Breaking changes\r\n\r\n### Removed support for `electron.net`\r\n\r\nDue to the inconsistencies between the Electron's `net` module and the Node.js `http` module, we have decided to officially drop support for it. Therefore, the `useElectronNet` option has been removed.\r\n\r\nYou'll still be able to use Got in the Electron main process and in the renderer process through the `electron.remote` module or if you use Node.js shims.\r\n\r\n### The Pagination API is now stable\r\n\r\nWe haven't seen any bugs yet, so please give it a try!\r\nIf you want to leave some feedback, you can do it [here](https://github.com/sindresorhus/got/issues/1052). Any suggestion is greatly appreciated!\r\n\r\n```diff\r\n {\r\n-    _pagination: {...}\r\n+    pagination: {...}\r\n }\r\n```\r\n\r\n### API\r\n\r\n- The `options.encoding` behavior has been reverted back to the Got 9 behavior.\r\n  In other words, the options is only meant for the Got promise API.\r\n  To set the encoding for streams, simply call `stream.setEncoding(encoding)`.\r\n\r\n```diff\r\n-got.stream('https://sindresorhus.com', {encoding: 'base64'});\r\n+got.stream('https://sindresorhus.com').setEncoding('base64');\r\n\r\n// Promises stay untouched\r\nawait got('https://sindresorhus.com', {encoding: 'base64'});\r\n```\r\n\r\n- The error name `GotError` has been renamed to `RequestError` for better readability and to comply with the documentation.\r\n\r\n```diff\r\n-const {GotError} = require('got');\r\n+const {RequestError} = require('got');\r\n```\r\n\r\n- The `agent` option now accepts **only an object** with `http`, `https` and `http2` properties.\r\n  While the `http` and `https` properties accept native `http(s).Agent` instances, the `http2` property must be an instance of [`http2wrapper.Agent`](https://github.com/szmarczak/http2-wrapper#new-http2agentoptions) or be undefined.\r\n\r\n```diff\r\n{\r\n-    agent: new https.Agent({keepAlive: true})\r\n}\r\n\r\n{\r\n+    agent: {\r\n+        http: new http.Agent({keepAlive: true}),\r\n+        https: new https.Agent({keepAlive: true}),\r\n+        http2: new http2wrapper.Agent()\r\n+    }\r\n}\r\n```\r\n\r\n- The `dnsCache` option is now set to a default instance of [`CacheableLookup`](https://github.com/szmarczak/cacheable-lookup). It cannot be a `Map`-like instance anymore. The underlying [`cacheable-lookup`](https://github.com/szmarczak/cacheable-lookup) package has received many improvements, for example, it has received `hosts` file support! Additionally, the `cacheAdapter` option has been renamed to `cache`. Note that it's no longer passed to [Keyv](https://github.com/lukechilds/keyv), so you need to pass a Keyv instance it if you want to save the data for later.\r\n\r\n```diff\r\n{\r\n-    dnsCache: new CacheableLookup({\r\n-        cacheAdapter: new Map()\r\n-    })\r\n}\r\n\r\n{\r\n+    dnsCache: new CacheableLookup({\r\n+        cache: new Keyv({\r\n+            cacheAdapter: new Map()\r\n+        })\r\n+    })\r\n}\r\n\r\n// Default:\r\n\r\n{\r\n    dnsCache: new CacheableLookup()\r\n}\r\n```\r\n\r\n- Errors thrown in `init` hooks will be converted to instances of `RequestError`. `RequestError`s provide much more useful information, for example, you can access the Got options (through `error.options`), which is very useful when debugging.\r\n\r\n```js\r\nconst got = require('got');\r\n\r\n(async () => {\r\n    try {\r\n        await got('https://sindresorhus.com', {\r\n            hooks: {\r\n                init: [\r\n                    options => {\r\n                        if (!options.context) {\r\n                            throw new Error('You need to pass a `context` option');\r\n                        }\r\n                    }\r\n                ]\r\n            }\r\n        });\r\n    } catch (error) {\r\n        console.log(`Request failed: ${error.message}`);\r\n        console.log('Here are the options:', error.options);\r\n    }\r\n})();\r\n```\r\n\r\n- The options passed in an `init` hook may not have a `url` property. To modify the request URL you should use a `beforeRequest` hook instead.\r\n\r\n```diff\r\n{\r\n    hooks: {\r\n-        init: [\r\n+        beforeRequest: [\r\n            options => {\r\n                options.url = 'https://sindresorhus.com';\r\n            }\r\n        ]\r\n    }\r\n}\r\n```\r\n\r\nNote that this example shows a simple use case. In more complicated algorithms, you need to split the `init` hook into another `init` hook and a `beforeRequest` hook.\r\n\r\n- The `error.request` property is no longer a `ClientRequest` instance. Instead, it gives a Got stream, which provides a set of useful properties.\r\n\r\n```js\r\nconst got = require('got');\r\n\r\n(async () => {\r\n    try {\r\n        await got('https://sindresorhus.com/notfound');\r\n    } catch (error) {\r\n        console.log(`Request failed: ${error.message}`);\r\n        console.log('Download progress:', error.request.downloadProgress);\r\n    }\r\n})();\r\n```\r\n\r\n### Renamed TypeScript types\r\n\r\nSome of the TypeScript types have been renamed to improve the readability:\r\n\r\n<table>\r\n<tr>\r\n    <td>Old type</td>\r\n    <td>New type</td>\r\n</tr>\r\n<tr>\r\n    <td><code>ResponseObject</code></td>\r\n    <td><code>Response</code></td>\r\n</tr>\r\n<tr>\r\n    <td><code>Defaults</code></td>\r\n    <td><code>InstanceDefaults</code></td>\r\n</tr>\r\n<tr>\r\n    <td><code>DefaultOptions</code></td>\r\n    <td><code>Defaults</code></td>\r\n</tr>\r\n<tr>\r\n    <td><code>DefaultRetryOptions</code></td>\r\n    <td><code>RequiredRetryOptions</code></td>\r\n</tr>\r\n<tr>\r\n    <td><code>GotOptions</code></td>\r\n    <td><code>Options</code></td>\r\n</tr>\r\n<tr>\r\n    <td><code>GotRequestMethod</code></td>\r\n    <td><code>GotRequestFunction</code></td>\r\n</tr>\r\n</table>\r\n\r\n### Other\r\n\r\n- Now requires Node.js 10.19 or later.\r\n\r\n## Enhancements\r\n\r\nHTTP2 support is here! Excited? Yay! Unfortunately, it's off by default to make the migration smoother. Many Got users have set up their own Agents and we didn't want to break them. But fear no more, it will come enabled by default in Got 12.\r\n\r\n```js\r\nconst got = require('got');\r\n\r\n(async () => {\r\n    const response = await got('https://nghttp2.org/httpbin/anything', {http2: true});\r\n    console.log(response.socket.alpnProtocol);\r\n    //=> 'h2'\r\n})();\r\n```\r\n\r\n1. The `merge` function is slow (#1016)\r\n2. Use `error.code` instead of `error.message` to compare errors (#981)\r\n4. Pass error thrown in the `init` hook to `beforeError` hook (#929)\r\n7. Errors have undefined body when using streams (#1138)\r\n8. Spaces should be normalized as `+` in query strings (#1113)\r\n9. Modify response headers while using `got.stream(...)` (#1129)\r\n10. Make `error.request` a Got stream (af0b1472abf48a6c5491dcb36a1d8863c5227fb3).\r\n\r\n## Known bugs\r\n\r\n1. When some errors occur, the `timings` may indicate that the request was successful although it failed.\r\n2. When some errors occur, the `downloadProgress` object may show incorrect data.\r\n\r\n## Bug fixes\r\n\r\n1. Requests to UNIX sockets are missing query strings (#1036)\r\n2. `beforeRequest` hooks aren't called on redirects (#994)\r\n3. Errors are swallowed when using `stream.pipeline(got.stream(...), ...)` (#1026)\r\n4. Cannot use the `cache` along with the `body` option (#1021)\r\n5. Got doesn't throw on leading slashes (#1057)\r\n6. Got throws when passing already frozen options (#1050)\r\n7. Cannot type Got options properly due to missing types (#954)\r\n8. `got.mergeOptions(...)` doesn't merge `URLSearchParams` instances (#1011)\r\n9. The `authorization` header is leaking (#1090)\r\n10. Pagination should ignore the `resolveBodyOnly` option (#1140)\r\n11. Cannot reuse user-provided options (#1118)\r\n12. Broken with Node.js ≥ 13.10.0 (#1107)\r\n13. Cache is not decompressed (#1158)\r\n14. `beforeRetry` hooks are missing `options.context` (#1141)\r\n15. `promise.json()` doesn't throw `ParseError` (#1069)\r\n16. Not compatible with `tough-cookie@4.0.0` (#1131)\r\n17. Shortcuts give body from the failed request on token renewal (#1120)\r\n18. No effect when replacing the `cache` option in a Got instance (#1098)\r\n19. Memory leak when using `cache` (#1128)\r\n20. Got doesn't throw on aborted requests by the server (#1096)\r\n\r\n## All changes\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.7.0...v11.0.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.0.0",
+  "draft": false,
+  "published_at": "2020-04-20T11:54:42Z"
+ },
+ {
+  "tag_name": "v11.0.0-beta.1",
+  "name": "",
+  "body": "```\r\n$ npm install got@11.0.0-beta.1\r\n```\r\n\r\n*The release notes will be improved in the final v11 release.*\r\n\r\nChanges in beta 1:\r\n\r\n### Breaking\r\n\r\n##### API\r\n\r\n- `options.encoding` will no longer affect streams (reverting back to the Got 9 behavior), use `got.stream(…).setEncoding(encoding)` instead (to prevent confusion).\r\n- Renamed `GotError` to `RequestError`.\r\n- `options.agent` can no longer be an instance of `http.Agent`. Instead you need to pass:\r\n```js\r\n{\r\n\thttp: new http.Agent(…),\r\n\thttps: new https.Agent(…),\r\n\thttp2: new http2wrapper.Agent(…)\r\n}\r\n```\r\n- The deprecated `useElectronNet` option has been removed.\r\n- `dnsCache` is now enabled by default.\r\n- `dnsCache` no longer can be a Map or a Keyv instance, instead you need to pass a [CacheableLookup](https://github.com/szmarczak/cacheable-lookup) instance.\r\n- Errors thrown in `init` hooks will be converted to `RequestError`s (why: `RequestError` provides much more useful information (e.g. Got options) than the usual TypeError etc.).\r\n- `options._pagination` has been renamed to `options.pagination`.\r\n- The `options.url` property will no longer be visible in `init` hooks (design limitation).\r\n- The `error.request` property is no longer a `ClientRequest` instance. Instead, it gives a Got stream.\r\n\r\n##### Types\r\n\r\n- The `ResponseObject` type has been merged into the `Response` type.\r\n- Renamed the `Defaults` type to `InstanceDefaults`.\r\n- Renamed the `DefaultOptions` type to `Defaults`.\r\n- Renamed the `DefaultRetryOptions` type to `RequiredRetryOptions`.\r\n- Renamed the `GotOptions` type to `Options`.\r\n- Renamed the `GotRequestMethod` type to `GotRequestFunction`.\r\n\r\n### Enhancements\r\n\r\n1. Fixes #1016\r\n2. Fixes #981 \r\n3. Fixes #932 \r\n4. Fixes #929 \r\n5. Fixes #1058 \r\n6. Fixes #167 \r\n7. Fixes #1138 \r\n8. Fixes #1113 \r\n9. Fixes #1129 \r\n10. Errors now have a `request` property (it's a Got stream).\r\n\r\n### Known bugs\r\n\r\n1. The `timings` indicate that the request was successful (even though it errored).\r\n2. The `downloadProgress` object may show incorrect data if the request has errored.\r\n\r\n### Bug fixes\r\n\r\n1. Fixes #1036\r\n2. Fixes #994 \r\n3. Fixes #1026 \r\n4. Fixes #1021\r\n5. Fixes #1057 \r\n6. Fixes #1050\r\n7. Fixes #954 \r\n8. Fixes #1011\r\n9. Fixes #1090 \r\n10. Fixes #1140 \r\n11. Fixes #1118 \r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.7.0...v11.0.0-beta.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v11.0.0-beta.1",
+  "draft": false,
+  "published_at": "2020-04-12T12:58:43Z"
+ },
+ {
+  "tag_name": "v10.7.0",
+  "name": "",
+  "body": "- Fix `got.paginate(…)` TypeScript typings (#1099)  0b798ea\r\n- Pass `allItems` and `currentItems` to `_pagination.paginate()` (#1100)  1cddd52\r\n- Do not ignore `decompress-response` when bundling (#1105)  88f973f\r\n- Avoid parsing JSON twice in `_pagination.transform` (#1102)  cf4fdad\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.6.0...v10.7.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.7.0",
+  "draft": false,
+  "published_at": "2020-03-24T18:40:03Z"
+ },
+ {
+  "tag_name": "v10.6.0",
+  "name": "",
+  "body": "- Add [`allowGetBody`](https://github.com/sindresorhus/got#allowgetbody) option to allow GET requests with payload (#1081)  526b4bb\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.5.7...v10.6.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.6.0",
+  "draft": false,
+  "published_at": "2020-02-20T07:40:34Z"
+ },
+ {
+  "tag_name": "v10.5.7",
+  "name": "",
+  "body": "* Fix Init hooks not being called if extended acefaa4c2a0cb3c33b3f952be29ac0a9cb316e87",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.5.7",
+  "draft": false,
+  "published_at": "2020-02-16T20:10:38Z"
+ },
+ {
+  "tag_name": "v10.5.6",
+  "name": "",
+  "body": "- Fix Init hook logic 64aeb40d824008db48c956a3e03807383be62090\r\n- Update dependencies 32e609f3bb4c4021cf8b98886efa9bc23e99cc9d",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.5.6",
+  "draft": false,
+  "published_at": "2020-02-16T19:55:14Z"
+ },
+ {
+  "tag_name": "v10.5.5",
+  "name": "",
+  "body": "* Fix merging pagination options 1f363b976cd23626462314c7cd5670cddd951c73",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.5.5",
+  "draft": false,
+  "published_at": "2020-02-08T20:07:24Z"
+ },
+ {
+  "tag_name": "v10.5.4",
+  "name": "",
+  "body": "* Fix `_pagination` not falling back to defaults ff1dba1e0c6f190da55d2799ebaa7a167f49ae9a",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.5.4",
+  "draft": false,
+  "published_at": "2020-02-08T17:51:08Z"
+ },
+ {
+  "tag_name": "v10.5.3",
+  "name": "",
+  "body": "* Fix unhandled errors if throwing in an async handler 518d95aba5fde83d6708ee1289561fa445870436",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.5.3",
+  "draft": false,
+  "published_at": "2020-02-08T16:15:49Z"
+ },
+ {
+  "tag_name": "v10.5.2",
+  "name": "",
+  "body": "- Forgot to include required `p-event` dependency  8373112\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.5.1...v10.5.2",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.5.2",
+  "draft": false,
+  "published_at": "2020-02-07T06:54:38Z"
+ },
+ {
+  "tag_name": "v10.5.1",
+  "name": "",
+  "body": "- Wait until body file descriptor is open (#1054)  453a3a3\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.5.0...v10.5.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.5.1",
+  "draft": false,
+  "published_at": "2020-02-07T06:32:37Z"
+ },
+ {
+  "tag_name": "v10.5.0",
+  "name": "",
+  "body": "- Add experimental [pagination](https://github.com/sindresorhus/got#pagination) feature (#833)  761c7c6\r\n\tWe're looking for [feedback](https://github.com/sindresorhus/got/issues/1052) on how it works.\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.4.0...v10.5.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.5.0",
+  "draft": false,
+  "published_at": "2020-02-06T20:08:45Z"
+ },
+ {
+  "tag_name": "v10.4.0",
+  "name": "",
+  "body": "- Update `@szmarczak/cacheable-lookup` dependency  d527dae\r\n- Include invalid JSON body in `ParseError`s (#1044)  2813b73\r\n- Fix `got.stream(...)` not throwing `ReadError`s  1f6ca6b\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.3.0...v10.4.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.4.0",
+  "draft": false,
+  "published_at": "2020-01-31T07:37:30Z"
+ },
+ {
+  "tag_name": "v10.3.0",
+  "name": "",
+  "body": "- Allow request body to be sent with a DELETE request (#1037)  17d629a\r\n- Reject normalization errors with CancelableRequest (#1035)  fddecab\r\n- Export `GotRequestMethod` TypeScript type (#1017)  f02694e\r\n- Export `ReadError` TypeScript type (#1027)  d222164\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.2.2...v10.3.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.3.0",
+  "draft": false,
+  "published_at": "2020-01-24T14:54:51Z"
+ },
+ {
+  "tag_name": "v10.2.2",
+  "name": "",
+  "body": "- Do not include a `request` option in normalized `http` options  61009b3",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.2.2",
+  "draft": false,
+  "published_at": "2020-01-11T15:37:16Z"
+ },
+ {
+  "tag_name": "v10.2.1",
+  "name": "",
+  "body": "- Ensure `got.mergeOptions(...)` can be assigned to defaults (#1008)  1360a1b\r\n- The `url` option is mutually exclusive with the `url` input argument  e0f8aab\r\n- Update `RetryObject['error']` TypeScript types  5008bf7\r\n- Upgrade `@szmarczak/http-timer` dependency  a1b8ffc\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.2.0...v10.2.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.2.1",
+  "draft": false,
+  "published_at": "2020-01-01T18:33:15Z"
+ },
+ {
+  "tag_name": "v10.2.0",
+  "name": "",
+  "body": "- Soft-deprecate `electron.net` support (#995)  b2f8ace\r\n\t- See https://github.com/sindresorhus/got/issues/899#issuecomment-565728281. When the support is removed, you'll still be able to use Got in the Electron main process and in the renderer process through the `electron.remote` module or if you use Node.js shims.\r\n- Do not throw if `hostname` is not present  dc53747\r\n- Fix unhandled `Premature close` errors  fa60b5f\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.1.0...v10.2.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.2.0",
+  "draft": false,
+  "published_at": "2019-12-23T21:07:06Z"
+ },
+ {
+  "tag_name": "v10.1.0",
+  "name": "",
+  "body": "### Enhancements\r\n\r\n- Retry after certain Cloudflare errors (#991)  0569d45\r\n\r\n### Fixes\r\n\r\n- Fix `content-length` header not being set when using custom `content-type`  3149340\r\n- Emit timeout errors as soon as possible  912c2e5 7bf92f4\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.0.4...v10.1.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.1.0",
+  "draft": false,
+  "published_at": "2019-12-19T12:31:15Z"
+ },
+ {
+  "tag_name": "v10.0.4",
+  "name": "",
+  "body": "- Fix type conflicts for `URL` and `URLSearchParams` types (#983)  cd4226d\r\n\tJust working around yet another TypeScript bug: https://github.com/DefinitelyTyped/DefinitelyTyped/issues/34960\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.0.3...v10.0.4",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.0.4",
+  "draft": false,
+  "published_at": "2019-12-12T13:15:01Z"
+ }
+]

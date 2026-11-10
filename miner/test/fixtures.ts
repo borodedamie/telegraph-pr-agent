@@ -36,3 +36,14 @@ export const ZOD_GITHUB = {
   "https://api.github.com/repos/colinhacks/zod/git/trees/HEAD?recursive=1": "github/zod.tree.json",
   "https://raw.githubusercontent.com/colinhacks/zod/HEAD/packages/docs/content/v4/changelog.mdx": "github/zod.v4-changelog.mdx",
 };
+
+/** got 8.0.2 → 11.0.0: 40 releases over three majors; 8.0.3 has no GitHub release, only its tag compare. */
+export const GOT_MULTI = {
+  "https://registry.npmjs.org/got": "multi/got.npm.json",
+  [`${OSV_QUERY_URL}#got@8.0.2`]: "multi/got.osv@8.0.2.json",
+  [`${OSV_QUERY_URL}#got@11.0.0`]: "multi/got.osv@11.0.0.json",
+  "https://api.github.com/repos/sindresorhus/got/releases?per_page=100&page=1": "multi/got.releases.1.json",
+  "https://api.github.com/repos/sindresorhus/got/releases?per_page=100&page=2": "multi/got.releases.2.json",
+  "https://api.github.com/repos/sindresorhus/got/git/trees/HEAD?recursive=1": "multi/got.tree.json",
+  "https://api.github.com/repos/sindresorhus/got/compare/v8.0.2...v8.0.3": "multi/got.compare.v8.0.2...v8.0.3.json",
+};
