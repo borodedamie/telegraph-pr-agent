@@ -51,8 +51,8 @@ export interface ModelReply {
   costMicroUsdc: number;
 }
 
-/** Buys one call from one LLM miner. Throws ModelFailure. */
-export type ModelCaller = (miner: LlmMiner, prompt: string, signal: AbortSignal) => Promise<ModelReply>;
+/** Buys one call from one LLM miner, refusing a quote above `maxCostMicroUsdc` when given. Throws ModelFailure. */
+export type ModelCaller = (miner: LlmMiner, prompt: string, signal: AbortSignal, maxCostMicroUsdc?: number) => Promise<ModelReply>;
 
 // Sepolia (docs/telegraph snapshot). The spend wallet pays only into the Telegraph Diamond's escrow.
 const SEPOLIA = "eip155:11155111";
@@ -90,7 +90,8 @@ export function telegraphCaller(env: NodeJS.ProcessEnv, maxCostMicroUsdc: number
   const account = privateKeyToAccount(key as `0x${string}`);
   const from = account.address.toLowerCase();
 
-  return async (miner, prompt, signal) => {
+  return async (miner, prompt, signal, callCapMicroUsdc) => {
+    const cap = Math.min(maxCostMicroUsdc, callCapMicroUsdc ?? maxCostMicroUsdc);
     const url = `${node}/engine/v1/ask/${encodeURIComponent(miner.id)}`;
     const payload = miner.method === "GET" ? { prompt } : { query: prompt };
     const init: RequestInit = {
@@ -113,8 +114,8 @@ export function telegraphCaller(env: NodeJS.ProcessEnv, maxCostMicroUsdc: number
     if (quote.status !== 402 || !Number.isInteger(amount) || !template) {
       throw new ModelFailure("payment", `miner ${miner.id}: no escrow quote (HTTP ${quote.status})`);
     }
-    if (amount > maxCostMicroUsdc) {
-      throw new ModelFailure("payment", `miner ${miner.id}: quote ${amount} exceeds ${maxCostMicroUsdc} micro-USDC`);
+    if (amount > cap) {
+      throw new ModelFailure("payment", `miner ${miner.id}: quote ${amount} exceeds ${cap} micro-USDC`);
     }
     // The signature covers the node's template as is, so check it names our payee, network and amount before signing.
     const expected = [`Pay To: ${DIAMOND}`, `Network: ${SEPOLIA}`, `Amount: ${amount} uUSDC`];
@@ -287,13 +288,19 @@ export interface ModelResult {
   candidates: Candidate[];
   /** True when every section that needed the model was read by it (or none needed it). */
   complete: boolean;
+  /** True when at least one call answered, so the model pass ran. */
+  answered: boolean;
+  /** The miner that answered first, or else the first one tried. */
   minerId: string | null;
+  /** The first call failure, also when another call answered. */
   failure: ModelFailure["reason"] | null;
   inputChars: number;
   costMicroUsdc: number;
   msModel: number;
   /** Sections that needed the model but did not fit the budget. */
   skipped: number[];
+  /** Sections whose call failed: a later run may read them, so the answer is not final. */
+  failed: number[];
 }
 
 /**
@@ -340,6 +347,105 @@ function withinSignal<T>(call: Promise<T>, signal: AbortSignal, minerId: string)
   });
 }
 
+/** One model call: its sections, and what came back. */
+interface BatchCall {
+  answered: boolean;
+  candidates: Candidate[];
+  truncated: boolean;
+  /** The last miner tried; null when every miner was behind its breaker or the budget refused the call. */
+  minerId: string | null;
+  failure: ModelFailure["reason"] | null;
+  inputChars: number;
+  costMicroUsdc: number;
+  msModel: number;
+  /** Miners that failed through their own fault; the breaker streak is updated once per answer from these. */
+  faulted: string[];
+}
+
+/** Calls the configured miners in order until one answers for this batch of sections. */
+async function callBatch(
+  batch: number[],
+  batchNumber: number,
+  costCap: number,
+  sections: Section[],
+  budget: Budget,
+  store: Store,
+  miners: LlmMiner[],
+  caller: ModelCaller,
+  now: () => number
+): Promise<BatchCall> {
+  const call: BatchCall = {
+    answered: false, candidates: [], truncated: false, minerId: null, failure: null, inputChars: 0, costMicroUsdc: 0, msModel: 0, faulted: [],
+  };
+  for (const miner of miners) {
+    if ((await store.get(`llm:breaker:${miner.id}`)) !== null) continue;
+    const lineFormat = miner.method === "GET";
+    const ids = new Map(batch.map((index, i) => [`x${i + 1}`, index]));
+    const prompt = buildPrompt([...ids].map(([id, index]) => ({ id, text: sections[index].text })), lineFormat);
+    // Checked and recorded at the cap with no await between, so calls running side by side cannot overrun the budget.
+    if (!budget.canCallModel(prompt.length, costCap, batch.length)) break;
+    budget.recordModelCall(prompt.length, costCap, batch.length);
+
+    const startedAt = now();
+    const signal = AbortSignal.any([budget.signal, AbortSignal.timeout(budget.limits.llmTimeoutMs)]);
+    call.minerId = miner.id;
+    try {
+      const reply = await withinSignal(caller(miner, prompt, signal, costCap), signal, miner.id);
+      let read: ReturnType<typeof parseReply>;
+      try {
+        read = parseReply(reply.text, ids, lineFormat, `m${miner.id}-b${batchNumber}-`);
+      } catch (err) {
+        // The call was paid: carry its cost into the one failure record below.
+        if (err instanceof ModelFailure) throw new ModelFailure(err.reason, err.message, reply.costMicroUsdc);
+        throw err;
+      }
+      budget.settleModelCost(costCap, reply.costMicroUsdc);
+      call.answered = true;
+      call.inputChars += prompt.length;
+      call.costMicroUsdc += reply.costMicroUsdc;
+      call.msModel += now() - startedAt;
+      call.candidates = read.candidates;
+      call.truncated = read.truncated;
+      // Reply text is untrusted and may be long: only its size and the item count are logged.
+      console.info(JSON.stringify({
+        kind: "llm_reply", minerId: miner.id, batch: batchNumber, chars: reply.text.length, items: read.candidates.length, truncated: read.truncated, ms: now() - startedAt,
+      }));
+      return call;
+    } catch (err) {
+      call.msModel += now() - startedAt;
+      if (!(err instanceof ModelFailure)) throw err;
+      call.failure ??= err.reason;
+      call.costMicroUsdc += err.costMicroUsdc ?? 0;
+      console.warn(JSON.stringify({ kind: "llm_failed", minerId: miner.id, batch: batchNumber, reason: err.reason, error: err.message }));
+      // Anything past the quote may have been paid (a non-2xx, an unreadable body, a timeout after signing):
+      // it stays counted at the quoted amount (the cap when unknown), so the budget check above limits further calls.
+      if (err.reason === "payment") budget.cancelModelCall(prompt.length, costCap, batch.length);
+      else budget.settleModelCost(costCap, err.costMicroUsdc ?? costCap);
+      // The miner is not at fault when the answer's own deadline aborted the call or our escrow refused it.
+      if (!budget.signal.aborted && err.minerAtFault) call.faulted.push(miner.id);
+    }
+  }
+  return call;
+}
+
+/**
+ * One streak step per miner per answer, however many calls it served: a miner that answered any call is reset,
+ * one that only failed counts one failure. From the third in a row it is skipped for a while.
+ */
+async function updateBreakers(calls: BatchCall[], store: Store): Promise<void> {
+  const answered = new Set(calls.filter((c) => c.answered).map((c) => c.minerId!));
+  const faulted = new Set(calls.flatMap((c) => c.faulted).filter((id) => !answered.has(id)));
+  for (const minerId of answered) await store.del(`llm:failures:${minerId}`);
+  for (const minerId of faulted) {
+    const streak = await store.incr(`llm:failures:${minerId}`, FAILURE_STREAK_SEC);
+    if (streak >= FAILURES_BEFORE_BREAK) {
+      const breakSec = BREAK_SEC[Math.min(streak - FAILURES_BEFORE_BREAK, BREAK_SEC.length - 1)];
+      await store.set(`llm:breaker:${minerId}`, "failures", breakSec);
+      console.warn(JSON.stringify({ kind: "llm_breaker", minerId, streak, breakSec }));
+    }
+  }
+}
+
 export async function extractModel(
   sections: Section[],
   handled: Set<number>,
@@ -352,86 +458,67 @@ export async function extractModel(
 ): Promise<ModelResult> {
   const needed = sections.map((_, i) => i).filter((i) => !handled.has(i) && sections[i].text.trim() !== "");
   const result: ModelResult = {
-    candidates: [], complete: needed.length === 0, minerId: null, failure: null,
-    inputChars: 0, costMicroUsdc: 0, msModel: 0, skipped: [],
+    candidates: [], complete: needed.length === 0, answered: false, minerId: null, failure: null,
+    inputChars: 0, costMicroUsdc: 0, msModel: 0, skipped: [], failed: [],
   };
   if (needed.length === 0) return result;
 
-  // Fill one call with as many sections as the input and release budgets allow.
-  const chosen: number[] = [];
-  let chars = PROMPT_OVERHEAD_CHARS;
+  // Fill up to MAX_MODEL_CALLS calls, each up to the input limit; the release limit counts across all of them.
+  // Sections go in priority order into the first call with room, so what does not fit is the least important.
+  const batches: { indexes: number[]; chars: number }[] = [];
+  let releases = 0;
   for (const index of modelOrder(sections, needed, target)) {
     const size = sections[index].text.length + 40;
-    if (chars + size > budget.limits.maxModelInputChars || chosen.length >= budget.limits.maxModelReleases) {
+    if (releases >= budget.limits.maxModelReleases) {
       result.skipped.push(index);
       continue;
     }
-    chosen.push(index);
-    chars += size;
+    let batch = batches.find((b) => b.chars + size <= budget.limits.maxModelInputChars);
+    if (!batch && batches.length < budget.limits.maxModelCalls && PROMPT_OVERHEAD_CHARS + size <= budget.limits.maxModelInputChars) {
+      batch = { indexes: [], chars: PROMPT_OVERHEAD_CHARS };
+      batches.push(batch);
+    }
+    if (!batch) {
+      result.skipped.push(index);
+      continue;
+    }
+    batch.indexes.push(index);
+    batch.chars += size;
+    releases++;
   }
-  if (caller === null || miners.length === 0 || chosen.length === 0) {
+  if (caller === null || miners.length === 0 || batches.length === 0) {
     result.skipped = needed;
     return result;
   }
 
-  for (const miner of miners) {
-    if ((await store.get(`llm:breaker:${miner.id}`)) !== null) continue;
-    const lineFormat = miner.method === "GET";
-    const ids = new Map(chosen.map((index, i) => [`x${i + 1}`, index]));
-    const prompt = buildPrompt([...ids].map(([id, index]) => ({ id, text: sections[index].text })), lineFormat);
-    if (!budget.canCallModel(prompt.length, budget.limits.maxModelCostMicroUsdc, chosen.length)) break;
+  // Side by side: a second call made after the first would not fit the time budget. The cost limit is shared by
+  // the calls actually made, so an answer that needs one call may spend all of it.
+  const costCap = Math.floor(budget.limits.maxModelCostMicroUsdc / batches.length);
+  // Settled, not all: when one call throws, the others still finish and are booked before the error goes on.
+  const settled = await Promise.allSettled(
+    batches.map((batch, i) => callBatch(batch.indexes, i + 1, costCap, sections, budget, store, miners, caller, now))
+  );
+  const thrown = settled.find((s) => s.status === "rejected");
+  if (thrown) throw thrown.reason;
+  const calls = settled.map((s) => (s as PromiseFulfilledResult<BatchCall>).value);
+  await updateBreakers(calls, store);
 
-    const startedAt = now();
-    const signal = AbortSignal.any([budget.signal, AbortSignal.timeout(budget.limits.llmTimeoutMs)]);
-    result.minerId = miner.id;
-    try {
-      const reply = await withinSignal(caller(miner, prompt, signal), signal, miner.id);
-      let read: ReturnType<typeof parseReply>;
-      try {
-        read = parseReply(reply.text, ids, lineFormat, `m${miner.id}-`);
-      } catch (err) {
-        // The call was paid: carry its cost into the one failure record below.
-        if (err instanceof ModelFailure) throw new ModelFailure(err.reason, err.message, reply.costMicroUsdc);
-        throw err;
-      }
-      budget.recordModelCall(prompt.length, reply.costMicroUsdc, chosen.length);
-      result.inputChars += prompt.length;
-      result.costMicroUsdc += reply.costMicroUsdc;
-      result.msModel += now() - startedAt;
-      result.candidates = read.candidates;
-      // Reply text is untrusted and may be long: only its size and the item count are logged.
-      console.info(JSON.stringify({
-        kind: "llm_reply", minerId: miner.id, chars: reply.text.length, items: read.candidates.length, truncated: read.truncated, ms: now() - startedAt,
-      }));
-      // A cut-off reply may have dropped items, so the model pass is not complete. The answer is still kept: asking
-      // again would pay for the same cut. Breaking changes come first in the prompt, so the cut drops the least.
-      result.complete = result.skipped.length === 0 && !read.truncated;
-      result.failure = null;
-      await store.del(`llm:failures:${miner.id}`);
-      return result;
-    } catch (err) {
-      result.msModel += now() - startedAt;
-      if (!(err instanceof ModelFailure)) throw err;
-      result.failure = err.reason;
-      result.costMicroUsdc += err.costMicroUsdc ?? 0;
-      console.warn(JSON.stringify({ kind: "llm_failed", minerId: miner.id, reason: err.reason, error: err.message }));
-      // Anything past the quote may have been paid (a non-2xx, an unreadable body, a timeout after signing):
-      // count it at the quoted amount (the cap when unknown), so the budget check above limits further calls.
-      if (err.reason !== "payment") {
-        budget.recordModelCall(prompt.length, err.costMicroUsdc ?? budget.limits.maxModelCostMicroUsdc, chosen.length);
-      }
-      // The miner is not at fault when the answer's own deadline aborted the call or our escrow refused it.
-      if (!budget.signal.aborted && err.minerAtFault) {
-        const streak = await store.incr(`llm:failures:${miner.id}`, FAILURE_STREAK_SEC);
-        if (streak >= FAILURES_BEFORE_BREAK) {
-          const breakSec = BREAK_SEC[Math.min(streak - FAILURES_BEFORE_BREAK, BREAK_SEC.length - 1)];
-          await store.set(`llm:breaker:${miner.id}`, err.reason, breakSec);
-          console.warn(JSON.stringify({ kind: "llm_breaker", minerId: miner.id, streak, breakSec }));
-        }
-      }
-    }
+  result.inputChars = calls.reduce((sum, c) => sum + c.inputChars, 0);
+  result.costMicroUsdc = calls.reduce((sum, c) => sum + c.costMicroUsdc, 0);
+  result.msModel = Math.max(...calls.map((c) => c.msModel));
+  result.failure = calls.find((c) => c.failure !== null)?.failure ?? null;
+  result.answered = calls.some((c) => c.answered);
+  result.minerId = (calls.find((c) => c.answered) ?? calls.find((c) => c.minerId !== null))?.minerId ?? null;
+  if (!result.answered) {
+    result.skipped = needed;
+    return result;
   }
-  result.skipped = needed;
-  result.candidates = [];
+  calls.forEach((c, i) => {
+    if (c.answered) result.candidates.push(...c.candidates);
+    else result.failed.push(...batches[i].indexes);
+  });
+  // A cut-off reply may have dropped items, so the model pass is not complete. The answer is still kept: asking
+  // again would pay for the same cut. Breaking changes come first in the prompt, so the cut drops the least.
+  result.complete = result.skipped.length === 0 && result.failed.length === 0 && calls.every((c) => !c.truncated);
   return result;
 }

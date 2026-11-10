@@ -188,6 +188,72 @@ describe("extractModel", () => {
     expect(result).toMatchObject({ complete: false, minerId: null, skipped: [0, 1] });
   });
 
+  it("splits sections over up to MAX_MODEL_CALLS calls made side by side, each capped at its share of the cost", async () => {
+    const caps: (number | undefined)[] = [];
+    const caller: ModelCaller = async (_miner, prompt, _signal, cap) => {
+      caps.push(cap);
+      return { text: JSON.stringify({ items: [{ id: "i1", sectionId: "x1", kind: "breaking", change: "c", excerpt: "e" }] }), costMicroUsdc: 10_000 };
+    };
+    // Room for one section per call.
+    const budget = new Budget(limitsFromEnv({ MAX_MODEL_CALLS: "2", MAX_MODEL_COST_USDC: "0.02", MAX_MODEL_INPUT_CHARS: "1650" }));
+    const result = await extractModel(sections, new Set(), "4.0.0", budget, new MemoryStore(), miners, caller);
+    expect(caps).toEqual([10_000, 10_000]);
+    expect(budget.modelCalls).toBe(2);
+    expect(budget.modelCostMicroUsdc).toBe(20_000);
+    expect(result).toMatchObject({ complete: true, skipped: [], costMicroUsdc: 20_000 });
+    // Both replies use item id i1 for their own section: neither is lost.
+    expect(result.candidates.map((c) => c.section).sort()).toEqual([0, 1]);
+    expect(new Set(result.candidates.map((c) => c.ref)).size).toBe(2);
+  });
+
+  it("reports the sections of a failed call as skipped and keeps the other call's items", async () => {
+    const caller: ModelCaller = async (_miner, prompt) => {
+      if (prompt.includes("Bump min TS")) throw new ModelFailure("invalid_reply", "miner 302: HTTP 500", 10_000);
+      return { text: JSON.stringify({ items: [{ id: "i1", sectionId: "x1", kind: "breaking", change: "c", excerpt: "e" }] }), costMicroUsdc: 10_000 };
+    };
+    const budget = new Budget(limitsFromEnv({ MAX_MODEL_CALLS: "2", MAX_MODEL_COST_USDC: "0.02", MAX_MODEL_INPUT_CHARS: "1650" }));
+    const result = await extractModel(sections, new Set(), "4.0.0", budget, new MemoryStore(), miners, caller);
+    expect(result).toMatchObject({ answered: true, minerId: "302", failure: "invalid_reply", complete: false, skipped: [], failed: [1] });
+    expect(result.candidates.map((c) => c.section)).toEqual([0]);
+    // The failed call was paid, so the second miner is not bought for it: the call limit is used up.
+    expect(budget.modelCalls).toBe(2);
+  });
+
+  it("gives one call the whole cost limit when one call is enough", async () => {
+    const caps: (number | undefined)[] = [];
+    const caller: ModelCaller = async (_miner, _prompt, _signal, cap) => {
+      caps.push(cap);
+      return { text: goodReply, costMicroUsdc: 10_000 };
+    };
+    const budget = new Budget(limitsFromEnv({ MAX_MODEL_CALLS: "3" }));
+    await extractModel(sections, new Set(), "4.0.0", budget, new MemoryStore(), miners, caller);
+    expect(caps).toEqual([10_000]);
+  });
+
+  it("counts one failure per miner per answer, however many of its calls failed", async () => {
+    const store = new MemoryStore();
+    const caller: ModelCaller = async () => {
+      throw new ModelFailure("invalid_reply", "miner 302: HTTP 500", 10_000);
+    };
+    const budget = new Budget(limitsFromEnv({ MAX_MODEL_CALLS: "2", MAX_MODEL_COST_USDC: "0.02", MAX_MODEL_INPUT_CHARS: "1650" }));
+    const result = await extractModel(sections, new Set(), "4.0.0", budget, store, miners, caller);
+    expect(result).toMatchObject({ answered: false, failure: "invalid_reply", skipped: [0, 1] });
+    expect(await store.get("llm:failures:302")).toBe("1");
+  });
+
+  it("lets every call finish and be booked before passing on an error one of them threw", async () => {
+    let finished = 0;
+    const caller: ModelCaller = async (_miner, prompt) => {
+      if (prompt.includes("Bump min TS")) throw new Error("bug");
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      finished++;
+      return { text: JSON.stringify({ items: [] }), costMicroUsdc: 10_000 };
+    };
+    const budget = new Budget(limitsFromEnv({ MAX_MODEL_CALLS: "2", MAX_MODEL_COST_USDC: "0.02", MAX_MODEL_INPUT_CHARS: "1650" }));
+    await expect(extractModel(sections, new Set(), "4.0.0", budget, new MemoryStore(), miners, caller)).rejects.toThrow("bug");
+    expect(finished).toBe(1);
+  });
+
   it("leaves sections out when the input budget is too small and reports them", async () => {
     const budget = new Budget(limitsFromEnv({ MAX_MODEL_INPUT_CHARS: "1650" }));
     const result = await extractModel(sections, new Set(), "4.0.0", budget, new MemoryStore(), miners, stub(goodReply));

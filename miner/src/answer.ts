@@ -345,11 +345,13 @@ async function compute(
   metrics.modelInputChars = model.inputChars;
   metrics.modelCostUsdc = model.costMicroUsdc / 1_000_000;
   metrics.llmFailure = model.failure;
-  const modelRan = model.minerId !== null && model.failure === null;
+  const modelRan = model.answered;
   const mode = model.complete || modelRan ? "rules_and_model" : "rules_only";
   metrics.extractorMode = mode;
   // Sections the model should have read but could not fit: those releases are not fully covered.
   if (modelRan) for (const index of model.skipped) tracker.uncover(material.sections[index].version, "budget");
+  // Sections whose call failed while another call answered: the LLM miner is a source that was down for them.
+  for (const index of model.failed) tracker.uncover(material.sections[index].version, "upstream_unavailable");
 
   const candidates: Candidate[] = [...rules.candidates, ...model.candidates];
   const { items } = verify(candidates, material.sections, verifySources);
@@ -384,6 +386,7 @@ async function compute(
   const rendered = render(base, mode === "rules_only", { ...lookups, unassessed });
   const answer: Answer = { ...base, ...rendered, confidence: confidence(base, optionalSourceFailed, mode === "rules_only" || unassessed.length > 0) };
   // A model pass that ran is cached even when sections did not fit: their releases are already reported
-  // as not covered ("budget"), and the same document set would be cut the same way again.
-  return { answer, complete: mode === "rules_and_model" };
+  // as not covered ("budget"), and the same document set would be cut the same way again. A failed call is
+  // not: the next run may read its sections, so that answer is kept only for the partial-answer hour.
+  return { answer, complete: mode === "rules_and_model" && model.failed.length === 0 };
 }
