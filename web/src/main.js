@@ -1,5 +1,7 @@
-import { mergedCosts, purchaseRows } from "./accounting.js";
-const REPO = "borodedamie/telegraph-pr-agent";
+import { EVENT_WINDOW, inWindow, mergedCosts, outcomeSummary, purchaseRows } from "./accounting.js";
+// Any public repo running the Action can be viewed with ?repo=owner/name.
+const REPO_PARAM = new URLSearchParams(location.search).get("repo");
+const REPO = REPO_PARAM ?? "borodedamie/telegraph-pr-agent";
 const LEDGER_URL = `https://raw.githubusercontent.com/${REPO}/ledger/ledger.jsonl`;
 // Rows store the explorer of the chain they paid on. Rows written before 5 Nov 2026
 // don't, so their date decides: the devnode moved Base → Ethereum Sepolia on 1 Nov (mirrors bot/src/memo.ts).
@@ -22,6 +24,7 @@ function el(tag, attrs = {}, ...children) {
 }
 
 async function loadRows() {
+  if (!/^[\w.-]+\/[\w.-]+$/.test(REPO)) throw new Error(`?repo= must be owner/name, got "${REPO}"`);
   const res = await fetch(`${LEDGER_URL}?ts=${Date.now()}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`ledger fetch failed: HTTP ${res.status}`);
   return (await res.text())
@@ -204,6 +207,16 @@ function table(rows) {
   );
 }
 
+// SPEC §4.3: counts and sample size beside every rate, never a bare percentage.
+function outcomesLine(o) {
+  const rate = o.mergeRate === null ? "merge rate N/A" : `merge rate ${Math.round(o.mergeRate * 100)}% (n=${o.proposed})`;
+  const useful = o.costPerUsefulAnswer === null ? "cost per useful answer N/A"
+    : `${usdc(o.costPerUsefulAnswer)} USDC per useful answer (${o.useful} useful)`;
+  return `${o.proposed} PRs proposed · ${o.merged} merged · ${o.closed} closed unmerged (${usdc(o.closedSpend)} USDC) · ${o.open} open · ${rate} · ${useful}`
+    + ` · escrow credits ${usdc(o.escrowCredits.amountUsdc)} USDC (${o.escrowCredits.count}, not spend)`
+    + ` · refused quotes ${usdc(o.refusedQuotes.amountUsdc)} USDC (${o.refusedQuotes.count}, not spend)`;
+}
+
 async function main() {
   app.append(
     el(
@@ -216,7 +229,7 @@ async function main() {
         el(
           "p",
           { class: "sub" },
-          "PR agent spend ledger · Ethereum Sepolia ",
+          `PR agent spend ledger · ${REPO} · Ethereum Sepolia `,
           el("code", {}, "eip155:11155111")
         )
       ),
@@ -237,6 +250,8 @@ async function main() {
   try {
     const entries = await loadRows();
     const costs = mergedCosts(entries);
+    const outcomes = outcomeSummary(entries);
+    const eventCosts = mergedCosts(inWindow(entries, EVENT_WINDOW));
     const rows = purchaseRows(entries).reverse(); // newest purchases first
     const settled = rows.filter((r) => r.status === "settled");
     const total = settled.reduce((sum, r) => sum + r.amountUsdc, 0);
@@ -257,6 +272,10 @@ async function main() {
       el("p", { class: "tally" }, costs.count
         ? `${usdc(costs.costPerMergedPr)} USDC recorded net spend per merged PR · ${costs.count} merged PRs · ${usdc(costs.netSpend)} USDC total · ${usdc(costs.total)} USDC allocated to merges · ${usdc(costs.unmergedSpend)} USDC unmerged/unallocated`
         : `Cost per merged PR: N/A · ${usdc(costs.netSpend)} USDC recorded spend · no merged PRs`),
+      el("p", { class: "tally" }, outcomesLine(outcomes)),
+      el("p", { class: "tally" }, `Event window ${EVENT_WINDOW.label}: `, eventCosts.count
+        ? `${usdc(eventCosts.costPerMergedPr)} USDC per merged PR · ${eventCosts.count} merged · ${usdc(eventCosts.netSpend)} USDC spent`
+        : `cost per merged PR N/A · ${usdc(eventCosts.netSpend)} USDC spent · no merged PRs`),
       table(rows)
     );
   } catch (err) {

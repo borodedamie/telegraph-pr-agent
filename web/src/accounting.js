@@ -26,3 +26,52 @@ export const purchaseRows = (rows) => {
   return rows.filter((row) => !row.kind).map((row) => ({ ...row,
     resultStatus: quality.get(row.attemptId) ?? row.resultStatus }));
 };
+
+/** The event window for hackathon evidence (SPEC §5): 1 Nov – 1 Dec 2026 inclusive, UTC. */
+export const EVENT_WINDOW = { from: "2026-11-01T00:00:00.000Z", to: "2026-12-02T00:00:00.000Z", label: "1 Nov – 1 Dec 2026" };
+
+/** Rows dated inside [from, to). Rows without a timestamp are left out of a dated figure. */
+export const inWindow = (rows, { from, to }) =>
+  rows.filter((row) => typeof row.timestamp === "string" && row.timestamp >= from && row.timestamp < to);
+
+/**
+ * PR outcomes, answer quality and money that never became spend (SPEC §4.3).
+ * Proposed PRs count every PR seen in a proposal, merge or close row, so PRs opened
+ * before proposal rows existed still count. A merge outranks a close.
+ */
+export const outcomeSummary = (rows) => {
+  const pr = (row) => `${row.repo}#${row.prNumber}`;
+  const merged = new Set(rows.filter((row) => row.kind === "merge").map(pr));
+  const closed = new Set(rows.filter((row) => row.kind === "closed").map(pr).filter((key) => !merged.has(key)));
+  const proposed = new Set([...rows.filter((row) => row.kind === "proposal").map(pr), ...merged, ...closed]);
+
+  const purchases = new Map(rows.filter((row) => !row.kind && row.status === "settled" && row.receiptHash)
+    .map((row) => [row.receiptHash, row]));
+  const closedReceipts = new Set(rows.filter((row) => row.kind === "closed" && closed.has(pr(row))).map((row) => row.receiptHash));
+  const closedSpend = [...closedReceipts].reduce((sum, receipt) => sum + (purchases.get(receipt)?.amountUsdc ?? 0), 0);
+
+  const settled = purchaseRows(rows).filter((row) => row.status === "settled");
+  const netSpend = settled.reduce((sum, row) => sum + row.amountUsdc, 0);
+  const useful = settled.filter((row) => row.resultStatus === "useful").length;
+
+  // An attempt's amount is on its request_sent or quote_refused row; its outcome is its latest row.
+  const latest = new Map();
+  const quoted = new Map();
+  for (const row of rows.filter((row) => row.kind === "attempt" && row.attemptId)) {
+    latest.set(row.attemptId, row.state);
+    if (typeof row.quotedAmountUsdc === "number") quoted.set(row.attemptId, row.quotedAmountUsdc);
+  }
+  const ended = (state) => [...latest].filter(([, last]) => last === state).map(([id]) => quoted.get(id) ?? 0);
+  const credited = ended("failed_and_credited");
+  const refused = ended("quote_refused");
+  const sum = (amounts) => amounts.reduce((total, amount) => total + amount, 0);
+
+  return {
+    proposed: proposed.size, merged: merged.size, closed: closed.size, open: proposed.size - merged.size - closed.size,
+    mergeRate: proposed.size ? merged.size / proposed.size : null,
+    closedSpend,
+    useful, costPerUsefulAnswer: useful ? netSpend / useful : null,
+    escrowCredits: { count: credited.length, amountUsdc: sum(credited) },
+    refusedQuotes: { count: refused.length, amountUsdc: sum(refused) },
+  };
+};
