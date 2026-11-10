@@ -105,7 +105,35 @@ export interface MergeRow {
   timestamp: string;
 }
 
-export type LedgerEntry = LedgerRow | AttemptRow | MergeRow;
+/** A dependency PR opened from a paid answer; one per repo and PR number. */
+export interface ProposalRow {
+  kind: "proposal";
+  repo: string;
+  prNumber: number;
+  prUrl: string;
+  assessmentId: string;
+  attemptId: string;
+  receiptHash: string;
+  ecosystem: string;
+  package: string;
+  source: string;
+  currentVersion: string;
+  targetVersion: string;
+  timestamp: string;
+}
+
+/** A dependency PR closed without merging; its purchase stays spent (SPEC §4.3). */
+export interface ClosedRow {
+  kind: "closed";
+  repo: string;
+  prNumber: number;
+  headSha: string;
+  receiptHash: string;
+  closedAt: string;
+  timestamp: string;
+}
+
+export type LedgerEntry = LedgerRow | AttemptRow | MergeRow | ProposalRow | ClosedRow;
 
 export type Preflight =
   | { action: "buy"; nextAttempt: number }
@@ -134,7 +162,8 @@ function* parseRows(existing: string): Generator<Partial<LedgerEntry> & { kind?:
 export function hasLedgerRow(existing: string, prNumber: number | undefined, headSha: string): boolean {
   if (prNumber === undefined) return false;
   for (const row of parseRows(existing)) {
-    if (row.kind === undefined && row.prNumber === prNumber && row.headSha === headSha) return true;
+    // kind undefined means a purchase row, which always has headSha.
+    if (row.kind === undefined && row.prNumber === prNumber && (row as Partial<LedgerRow>).headSha === headSha) return true;
   }
   return false;
 }
@@ -210,6 +239,8 @@ export function checkMayPay(existing: string, key: AttemptKey, attemptId: string
 
 const describeRow = (r: LedgerEntry) =>
   "kind" in r && r.kind === "merge" ? `PR #${r.prNumber} merged ${r.mergeSha}` :
+  "kind" in r && r.kind === "proposal" ? `PR #${r.prNumber} proposed ${r.package} ${r.targetVersion}` :
+  "kind" in r && r.kind === "closed" ? `PR #${r.prNumber} closed unmerged` :
   "kind" in r && r.kind === "attempt"
     ? `${r.prNumber === undefined ? "assessment" : `PR #${r.prNumber}`} ${r.attemptId} ${r.state}`
     : `${r.prNumber === undefined ? "assessment" : `PR #${r.prNumber}`} ${(r as LedgerRow).intent} ${(r as LedgerRow).txHash}`;

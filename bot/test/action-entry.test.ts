@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   NotFoundAssessmentError: class extends Error {}, fetchPr: vi.fn(), InvalidAssessmentError: class extends Error {}, unusable: vi.fn(), notice: vi.fn(), merge: vi.fn(), read: vi.fn(), visibility: vi.fn(), candidates: vi.fn(), open: vi.fn(), purchase: vi.fn(),
   buy: vi.fn(), client: vi.fn(), apply: vi.fn(), failed: vi.fn(), output: vi.fn(),
-  inputs: {} as Record<string, string>,
+  inputs: {} as Record<string, string>, proposal: vi.fn(),
 }));
 vi.mock("../actions/node_modules/@actions/core/lib/core.js", () => ({
   setSecret: vi.fn(), setFailed: mocks.failed, setOutput: mocks.output,
@@ -16,7 +16,7 @@ vi.mock("../actions/src/scan", () => ({ scanRepository: async () => ({
   root: "/repo", skipped: [], dependencies: [{ package: "zod" }],
 }) }));
 vi.mock("../actions/src/cutoff", () => ({ cutoffCandidates: mocks.candidates }));
-vi.mock("../actions/src/purchase", () => ({ openLedger: mocks.open, purchaseAssessment: mocks.purchase, markAssessmentResult: mocks.unusable }));
+vi.mock("../actions/src/purchase", () => ({ openLedger: mocks.open, purchaseAssessment: mocks.purchase, markAssessmentResult: mocks.unusable, recordProposal: mocks.proposal }));
 vi.mock("../actions/src/pull-request", () => ({ checkedOutBranch: () => "feature", assertPublicRepository: mocks.visibility }));
 vi.mock("../actions/src/assessment", () => ({ NotFoundAssessmentError: mocks.NotFoundAssessmentError, InvalidAssessmentError: mocks.InvalidAssessmentError, assessmentPrompt: () => "assess dependencies", applyAssessment: mocks.apply }));
 vi.mock("../src/x402", () => ({ IntelligenceClient: function (options: unknown) {
@@ -115,6 +115,30 @@ it("retains incremental PR output and paid evidence when publication fails", asy
   expect(mocks.unusable).not.toHaveBeenCalled();
   expect(mocks.output).toHaveBeenCalledWith("pull-requests", '["https://github.com/team/repo/pull/1"]');
   expect(mocks.output).toHaveBeenCalledWith("message", '{"answer":"{\\"findings\\":[]}"}');
+});
+
+it("records each published PR on the ledger with its number, purchase and finding", async () => {
+  mocks.buy.mockResolvedValue({ answer: "{}", assessmentId: "assess-1", attemptId: "assess-1:1", receiptHash: "0xreceipt" });
+  const finding = { ecosystem: "npm", package: "zod", source: "package.json", currentVersion: "3.25.0", targetVersion: "4.6.7" };
+  mocks.apply.mockImplementationOnce(async ({ onProposal }) => {
+    await onProposal("https://github.com/team/repo/pull/51", finding);
+    return ["https://github.com/team/repo/pull/51"];
+  });
+  await run();
+  expect(mocks.proposal).toHaveBeenCalledWith({ directory: "/mock-ledger" }, {
+    repo: "team/repo", prNumber: 51, prUrl: "https://github.com/team/repo/pull/51",
+    assessmentId: "assess-1", attemptId: "assess-1:1", receiptHash: "0xreceipt", ...finding,
+  });
+});
+
+it("fails the run when a published PR cannot be recorded", async () => {
+  mocks.proposal.mockRejectedValueOnce(new Error("ledger push failed"));
+  mocks.apply.mockImplementationOnce(async ({ onProposal }) => {
+    await onProposal("https://github.com/team/repo/pull/51", { ecosystem: "npm", package: "zod" });
+    return [];
+  });
+  await run("failed");
+  expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("ledger push failed"));
 });
 
 it("records merge events without a wallet, miner selection or payment", async () => {

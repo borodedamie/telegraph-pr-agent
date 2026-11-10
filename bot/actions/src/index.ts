@@ -3,7 +3,7 @@ import * as core from "@actions/core";
 import { recordMerge, fetchMergedPr } from "./accounting";
 import { readFileSync, rmSync } from "node:fs";
 import { cutoffCandidates } from "./cutoff";
-import { openLedger, purchaseAssessment, markAssessmentResult } from "./purchase";
+import { openLedger, purchaseAssessment, markAssessmentResult, recordProposal } from "./purchase";
 import { execFileSync } from "node:child_process";
 import { scanRepository } from "./scan";
 import { IntelligenceClient } from "../../src/x402";
@@ -96,6 +96,13 @@ const run = async (): Promise<void> => {
               for (const url of published) urls.add(url);
               core.setOutput("has-findings", String(urls.size > 0));
               core.setOutput("pull-requests", JSON.stringify([...urls]));
+            }, onProposal: async (url, finding) => {
+              const prNumber = Number(/\/pull\/(\d+)$/.exec(url)?.[1]);
+              if (!Number.isSafeInteger(prNumber) || prNumber <= 0) throw new Error(`Cannot read the PR number from ${url}`);
+              await recordProposal(ledger!, { repo: repository, prNumber, prUrl: url,
+                assessmentId: purchase.assessmentId, attemptId: purchase.attemptId, receiptHash: purchase.receiptHash,
+                ecosystem: finding.ecosystem, package: finding.package, source: finding.source,
+                currentVersion: finding.currentVersion, targetVersion: finding.targetVersion });
             } });
         } catch (error) {
           if (error instanceof InvalidAssessmentError || error instanceof NotFoundAssessmentError) {

@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
-import { purchaseAssessment, markAssessmentResult } from "../actions/src/purchase.js";
+import { purchaseAssessment, markAssessmentResult, recordProposal } from "../actions/src/purchase.js";
 import { LEDGER_FILE, type AttemptRow } from "../src/ledger.js";
 import { AskFailedError, type OnAttempt, type Purchase } from "../src/x402.js";
 
@@ -160,6 +160,23 @@ it("appends unusable quality once without changing payment evidence or buying ag
   expect(f.rows()[4]).toMatchObject({ kind: "attempt", state: "delivered", resultStatus: "unusable", reason: "Invalid JSON" });
   expect(f.rows()[2]).toMatchObject({ resultStatus: "unchecked", receiptHash: purchase.receiptHash });
   await purchaseAssessment(f.options);
+  expect(f.payments()).toBe(1);
+});
+
+it("records a published PR once per PR number and marks its paid answer useful", async () => {
+  const f = fixture();
+  const purchase = await purchaseAssessment(f.options);
+  const proposal = { repo: "team/repo", prNumber: 51, prUrl: "https://github.com/team/repo/pull/51",
+    assessmentId: purchase.assessmentId, attemptId: purchase.attemptId, receiptHash: purchase.receiptHash,
+    ecosystem: "npm", package: "zod", source: "package.json", currentVersion: "3.25.0", targetVersion: "4.6.7" };
+  await recordProposal(f.options.ledger, proposal);
+  await recordProposal(f.options.ledger, proposal); // a rerun finds the PR already open
+  const proposals = f.rows().filter((row) => row.kind === "proposal");
+  expect(proposals).toHaveLength(1);
+  expect(proposals[0]).toMatchObject({ prNumber: 51, receiptHash: purchase.receiptHash, attemptId: purchase.attemptId });
+  const quality = f.rows().filter((row) => row.kind === "attempt" && row.resultStatus === "useful");
+  expect(quality).toHaveLength(1);
+  expect(quality[0]).toMatchObject({ attemptId: purchase.attemptId, state: "delivered" });
   expect(f.payments()).toBe(1);
 });
 

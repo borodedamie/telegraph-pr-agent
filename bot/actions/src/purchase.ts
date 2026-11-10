@@ -5,7 +5,7 @@ import { lstatSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AttemptConflictError, checkMayPay, commitLedgerRow, LEDGER_FILE, preflight,
-  type AttemptKey, type AttemptRow, type LedgerRow, type ModelProvenance } from "../../src/ledger.js";
+  type AttemptKey, type AttemptRow, type LedgerRow, type ModelProvenance, type ProposalRow } from "../../src/ledger.js";
 import { AskFailedError, type IntelligenceClient, type Purchase } from "../../src/x402.js";
 import { migrationPrompt, MIGRATION_MINER_ID } from "./miner-assessment";
 import type { Dependency } from "./scan";
@@ -146,7 +146,7 @@ export const purchaseAssessment = async (options: {
 };
 
 /** Append answer quality to the exact delivered attempt without rewriting payment evidence. */
-export const markAssessmentResult = async (ledger: Ledger, attemptId: string, resultStatus: "unusable" | "not_found", reason: string): Promise<void> => {
+export const markAssessmentResult = async (ledger: Ledger, attemptId: string, resultStatus: "useful" | "unusable" | "not_found", reason: string): Promise<void> => {
   await commitLedgerRow(ledger.directory, (fresh) => {
     const delivered = checkedLedger(fresh).split("\n").filter((line) => line.trim()).map((line) => JSON.parse(line))
       .reverse().find((row): row is AttemptRow => row.kind === "attempt" && row.attemptId === attemptId && row.state === "delivered");
@@ -154,4 +154,19 @@ export const markAssessmentResult = async (ledger: Ledger, attemptId: string, re
     return delivered.resultStatus === resultStatus ? [] : { ...delivered, resultStatus,
       reason, timestamp: new Date().toISOString() };
   }, ledger);
+};
+
+/**
+ * Record a published dependency PR against the paid answer it was built from, once per
+ * PR, and mark that answer useful: it produced a valid, publishable upgrade.
+ */
+export const recordProposal = async (ledger: Ledger, proposal: Omit<ProposalRow, "kind" | "timestamp">): Promise<void> => {
+  await commitLedgerRow(ledger.directory, (fresh) => {
+    const recorded = checkedLedger(fresh).split("\n").filter((line) => line.trim()).map((line) => JSON.parse(line))
+      .some((row) => row.kind === "proposal" && row.repo === proposal.repo && row.prNumber === proposal.prNumber);
+    if (recorded) return [];
+    const row: ProposalRow = { kind: "proposal", ...proposal, timestamp: new Date().toISOString() };
+    return row;
+  }, ledger);
+  await markAssessmentResult(ledger, proposal.attemptId, "useful", `published PR #${proposal.prNumber}`);
 };
