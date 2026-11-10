@@ -237,6 +237,34 @@ export function checkMayPay(existing: string, key: AttemptKey, attemptId: string
   }
 }
 
+/**
+ * Spend so far in the calendar month (UTC) that `now` falls in. The ledger file belongs
+ * to one repository, so every row counts. Settled purchases count at their charged
+ * amount; an attempt whose latest stage is request_sent or unknown_needs_reconciliation
+ * may have been charged, so it counts at `worstCaseUsdc` (the signer's per-call cap).
+ */
+export function monthToDateSpendUsdc(existing: string, now: Date, worstCaseUsdc: number): number {
+  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+  const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();
+  const inMonth = (timestamp: unknown) => typeof timestamp === "string" && timestamp >= from && timestamp < to;
+  let spent = 0;
+  const latest = new Map<string, AttemptRow>();
+  for (const row of parseRows(existing)) {
+    if (row.kind === undefined) {
+      const purchase = row as Partial<LedgerRow>;
+      if (purchase.status === "settled" && inMonth(purchase.timestamp) && typeof purchase.amountUsdc === "number") {
+        spent += purchase.amountUsdc;
+      }
+    } else if (row.kind === "attempt" && typeof (row as AttemptRow).attemptId === "string") {
+      latest.set((row as AttemptRow).attemptId, row as AttemptRow);
+    }
+  }
+  for (const attempt of latest.values()) {
+    if (isOpen(attempt) && inMonth(attempt.timestamp)) spent += worstCaseUsdc;
+  }
+  return spent;
+}
+
 const describeRow = (r: LedgerEntry) =>
   "kind" in r && r.kind === "merge" ? `PR #${r.prNumber} merged ${r.mergeSha}` :
   "kind" in r && r.kind === "proposal" ? `PR #${r.prNumber} proposed ${r.package} ${r.targetVersion}` :

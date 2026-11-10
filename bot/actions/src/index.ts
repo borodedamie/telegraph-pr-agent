@@ -41,6 +41,12 @@ const run = async (): Promise<void> => {
     if (![maxPrice, budget].every((amount) => Number.isFinite(amount) && amount > 0)) {
       throw new Error("max-price-per-call-usdc and budget-cap-usdc must be positive finite numbers");
     }
+    // Off unless set: a cap on all purchases in the calendar month (UTC), across runs.
+    const monthlyInput = core.getInput("monthly-budget-usdc");
+    const monthlyCap = monthlyInput === "" ? null : Number(monthlyInput);
+    if (monthlyCap !== null && !(Number.isFinite(monthlyCap) && monthlyCap > 0)) {
+      throw new Error("monthly-budget-usdc must be a positive finite number when set");
+    }
     const preferredMinerId = core.getInput("preferred-miner-id") || process.env.PREFERRED_MINER_ID || null;
     if (preferredMinerId && !/^\d+$/.test(preferredMinerId)) throw new Error("preferred-miner-id must be numeric");
     const chainId = Number(core.getInput("chain-id"));
@@ -84,6 +90,7 @@ const run = async (): Promise<void> => {
       for (const dependency of candidates) {
         const purchase = await purchaseAssessment({ ledger, repository, baseSha, dependency, client, provenance,
           intent: INTENT_ID, query: assessmentPrompt([dependency]),
+          monthlyBudget: monthlyCap === null ? undefined : { capUsdc: monthlyCap, worstCaseUsdc: maxPrice },
           onPurchase: (paid) => {
             core.setOutput("message", JSON.stringify(paid));
             if (!paid.receiptHash || !paid.signalHash || !paid.txHash) {

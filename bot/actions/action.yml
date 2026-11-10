@@ -28,6 +28,8 @@ inputs:
   budget-cap-usdc:
     description: "Maximum USDC spend per action run"
     default: "2"
+  monthly-budget-usdc:
+    description: "Optional cap on all purchases in a calendar month (UTC), across runs. Off when empty."
 outputs:
   message:
     description: "Purchase details or execution summary"

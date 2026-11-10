@@ -302,6 +302,11 @@ proving what is installed in a running interpreter. Unresolved versions are repo
   `https://devnode.telegraphprotocol.com`, `max-price-per-call-usdc` is `0.10`,
   and `budget-cap-usdc` is `2`. Optional
   `with:` inputs can override these defaults. These are spending limits, not live prices.
+- `budget-cap-usdc` applies to one run. To cap spend across runs, set the optional
+  `monthly-budget-usdc` input (off when empty): before each purchase the action adds up
+  the calendar month's (UTC) settled purchases on the ledger branch, counts any attempt
+  still mid-payment at `max-price-per-call-usdc`, and refuses the purchase if one more
+  worst-case call would exceed the cap. Nothing is recorded or paid when it refuses.
 - Supply secret `TELEGRAPH_EVM_PRIVATE_KEY` for a dedicated wallet. Private keys
   are not bundled as action defaults.
 - Allow GitHub Actions to create pull requests in repository settings and grant the
