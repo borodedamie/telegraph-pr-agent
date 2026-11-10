@@ -419,16 +419,17 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
 
 **Independent Test**: a 40-release jump makes at most `MAX_MODEL_CALLS` model calls, covers what fits, groups releases without material, and names every release cut by a budget.
 
-- [ ] T067 [P] [US3] Record a multi-major fixture with one missing intermediate release, and a 40-release jump, into `miner/test/fixtures/multi/`
-- [ ] T068 [US3] Extend `miner/src/extract/model.ts` and `miner/src/answer.ts` for large ranges:
+- [x] T067 [P] [US3] Record a multi-major fixture with one missing intermediate release, and a 40-release jump, into `miner/test/fixtures/multi/`
+- [x] T068 [US3] Extend `miner/src/extract/model.ts` and `miner/src/answer.ts` for large ranges:
   - run the rules extractor on every release first;
   - pack the remaining sections into as few model calls as the limits allow (`MAX_MODEL_CALLS`, `MAX_MODEL_RELEASES`, token and cost limits), newest releases first;
   - mark everything cut as `notCovered` with reason `budget`.
-- [ ] T069 [US3] Extend `render.ts` to group adjacent releases that have no changes or no material in the display, without dropping any from `covered` / `notCovered`
-- [ ] T070 [US3] Fixture test in `miner/test/unit/answer.us3.test.ts`:
+- [x] T069 [US3] Extend `render.ts` to group adjacent releases that have no changes or no material in the display, without dropping any from `covered` / `notCovered`
+- [x] T070 [US3] Fixture test in `miner/test/unit/answer.us3.test.ts`:
   - each item carries its version;
   - the missing release is named;
   - the 40-release jump respects `MAX_MODEL_CALLS` and names the releases it cut.
+  Status 10 Nov: the fixture is `got` 8.0.2 → 11.0.0 (40 releases, majors 9–11), recorded without the model; 8.0.3 has no GitHub release and only its tag compare covers it (`test/fixtures/multi/README.md`). Rules already ran on every release first. The model sections are now packed into up to `MAX_MODEL_CALLS` calls made side by side (a second call after the first would not fit the 20 s budget), sharing `MAX_MODEL_COST_USDC` among the calls made; a miner's failure streak moves once per answer. A failed call's releases are reported as `upstream_unavailable` and the answer is kept for an hour only. The coverage line groups neighbouring releases not covered for the same reason (`p9`). Section packing in the tests, with a stub model that finds nothing: one call (the default) sends 16 of the 40 releases to the model, two calls send all 40. Not run against a live LLM miner. Production keeps one call until the team decides the spend.
 - [ ] T071 [US3] Re-run the benchmark (T059), including the large jumps, and update `miner/bench/report.md`
 
 ---
