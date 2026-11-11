@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { chargedWithoutAnswer, EVENT_WINDOW, inWindow, mergedCosts, outcomeSummary, purchaseRows } from "./accounting.js";
+import { chargedWithoutAnswer, EVENT_WINDOW, evidenceCsv, inWindow, mergedCosts, outcomeSummary, purchaseRows } from "./accounting.js";
 
 test("allocates settled receipt costs once and excludes unmatched, failed and cross-repo records", () => {
   const purchase = { repo: "team/repo", status: "settled", receiptHash: "one", amountUsdc: 0.02 };
@@ -104,4 +104,83 @@ test("counts an attempt reconciled as failed_and_charged as spend, using its lat
   assert.equal(mergedCosts(rows).netSpend, 0.75);
   assert.deepEqual(outcomeSummary(rows).chargedWithoutAnswer, { count: 1, amountUsdc: 0.5 });
   assert.equal(outcomeSummary(rows).escrowCredits.count, 0);
+});
+
+// Minimal RFC 4180 reader for the tests: quoted fields, doubled quotes, CRLF lines.
+const parseCsv = (text) => {
+  const lines = [];
+  let line = [], cell = "", quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') quoted = false;
+      else cell += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ",") { line.push(cell); cell = ""; }
+    else if (c === "\r" && text[i + 1] === "\n") { line.push(cell); lines.push(line); line = []; cell = ""; i++; }
+    else cell += c;
+  }
+  return lines;
+};
+const asObjects = (csv) => {
+  const [header, ...lines] = parseCsv(csv);
+  return lines.map((line) => Object.fromEntries(header.map((key, i) => [key, line[i]])));
+};
+
+test("exports one line per settled purchase with its links, quality and PR outcome", () => {
+  const purchase = (receiptHash, timestamp, extra = {}) => ({ repo: "team/repo", status: "settled", receiptHash, timestamp,
+    package: "zod", currentVersion: "3.25.0", targetVersion: "4.6.7", intent: "QUESTION_ANSWERING_GENERAL",
+    minerId: "7314", minerName: "Migration", selectedBy: "our_choice", minerRank: null, amountUsdc: 0.01,
+    network: "eip155:11155111", signalHash: `sig-${receiptHash}`, txHash: `0x${receiptHash}`,
+    explorerBaseUrl: "https://sepolia.etherscan.io", attemptId: `${receiptHash}:1`, resultStatus: "unchecked", ...extra });
+  const rows = [
+    purchase("b", "2026-11-05T00:00:00.000Z"),
+    purchase("a", "2026-11-03T00:00:00.000Z"),
+    purchase("c", "2026-11-07T00:00:00.000Z"),
+    { ...purchase("failed", "2026-11-04T00:00:00.000Z"), status: "failed" },
+    { kind: "attempt", attemptId: "a:1", state: "delivered", resultStatus: "useful" },
+    { kind: "proposal", repo: "team/repo", prNumber: 11, receiptHash: "a" },
+    { kind: "closed", repo: "team/repo", prNumber: 11, receiptHash: "a" },
+    { kind: "merge", repo: "team/repo", prNumber: 11, receiptHash: "a" },
+    { kind: "proposal", repo: "team/repo", prNumber: 12, receiptHash: "b" },
+  ];
+  const out = asObjects(evidenceCsv(rows));
+  assert.deepEqual(out.map((row) => [row.receipt_hash, row.pr_number, row.pr_outcome, row.answer_quality]),
+    [["a", "11", "merged", "useful"], ["b", "12", "open", "unchecked"], ["c", "", "", "unchecked"]]);
+  assert.equal(out[0].record, "purchase");
+  assert.equal(out[0].selected_by, "our_choice");
+  assert.equal(out[0].signal_url, "https://devnode.telegraphprotocol.com/engine/v1/signal/sig-a");
+  assert.equal(out[0].tx_url, "https://sepolia.etherscan.io/tx/0xa");
+  assert.equal(out[0].miner_rank, "");
+});
+
+test("exports attempts reconciled as charged with no answer, with their transaction and who reconciled", () => {
+  const rows = [
+    { kind: "attempt", attemptId: "x:1", state: "request_sent", repo: "team/repo", timestamp: "2026-11-06T00:00:00.000Z" },
+    { kind: "attempt", attemptId: "x:1", state: "failed_and_charged", repo: "team/repo", minerId: "302",
+      chargedAmountUsdc: 0.02, txHash: "0xabc", reconciledBy: "dev", reason: "reconciled: transfer found",
+      timestamp: "2026-11-08T00:00:00.000Z" },
+  ];
+  const [line] = asObjects(evidenceCsv(rows));
+  assert.equal(line.record, "charged_no_answer");
+  assert.equal(line.amount_usdc, "0.02");
+  assert.equal(line.tx_url, "https://sepolia.etherscan.io/tx/0xabc");
+  assert.equal(line.note, "reconciled by dev: reconciled: transfer found");
+});
+
+test("quotes commas, quotes and newlines, and defuses spreadsheet formulas", () => {
+  const rows = [{ status: "settled", receiptHash: "r", timestamp: "2026-11-02T00:00:00.000Z", amountUsdc: 0.01,
+    minerName: '=HYPERLINK("http://x","click")', package: "a,b", intent: "line one\nline two" }];
+  const csv = evidenceCsv(rows);
+  const [line] = asObjects(csv);
+  assert.equal(line.miner_name, `'=HYPERLINK("http://x","click")`);
+  assert.equal(line.package, "a,b");
+  assert.equal(line.intent, "line one\nline two");
+  assert.ok(csv.startsWith("record,date,repo,"));
+  assert.ok(csv.endsWith("\r\n"));
+});
+
+test("has only the header for a ledger with nothing to export", () => {
+  assert.equal(parseCsv(evidenceCsv([])).length, 1);
 });

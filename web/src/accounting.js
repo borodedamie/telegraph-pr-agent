@@ -1,3 +1,9 @@
+// Rows store the explorer of the chain they paid on. Rows written before 5 Nov 2026
+// don't, so their date decides: the devnode moved Base → Ethereum Sepolia on 1 Nov (mirrors bot/src/memo.ts).
+export const explorerBase = (row) =>
+  row.explorerBaseUrl ?? (row.timestamp < "2026-11-01" ? "https://sepolia.basescan.org" : "https://sepolia.etherscan.io");
+export const SIGNAL_URL = "https://devnode.telegraphprotocol.com/engine/v1/signal/";
+
 /** The latest row of each attempt, keyed by attemptId. */
 const latestAttempts = (rows) => {
   const latest = new Map();
@@ -87,4 +93,45 @@ export const outcomeSummary = (rows) => {
     refusedQuotes: { count: refused.length, amountUsdc: sum(refused) },
     chargedWithoutAnswer: chargedWithoutAnswer(rows),
   };
+};
+
+const EVIDENCE_COLUMNS = ["record", "date", "repo", "package", "current_version", "target_version", "intent",
+  "miner_id", "miner_name", "selected_by", "miner_rank", "amount_usdc", "network", "receipt_hash", "signal_url",
+  "tx_url", "answer_quality", "pr_number", "pr_outcome", "evidence_incomplete", "note"];
+
+// RFC 4180 quoting, and a leading ' on text a spreadsheet would run as a formula
+// (miner names and notes come from outside the team).
+const csvCell = (value) => {
+  let text = value === undefined || value === null ? "" : String(value);
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+};
+
+/**
+ * One line per settled purchase and per attempt reconciled as charged with no answer,
+ * with receipt, signal and transaction links, answer quality and PR outcome (SPEC §5).
+ * Pass rows already narrowed to the reporting window.
+ */
+export const evidenceCsv = (rows) => {
+  const outcomes = new Map();
+  for (const row of rows.filter((row) => row.kind === "proposal")) outcomes.set(row.receiptHash, { pr: row.prNumber, outcome: "open" });
+  for (const row of rows.filter((row) => row.kind === "closed")) outcomes.set(row.receiptHash, { pr: row.prNumber, outcome: "closed_unmerged" });
+  // Applied last: a merge outranks an earlier close.
+  for (const row of rows.filter((row) => row.kind === "merge")) outcomes.set(row.receiptHash, { pr: row.prNumber, outcome: "merged" });
+  const tx = (row) => (row.txHash && explorerBase(row) ? `${explorerBase(row)}/tx/${row.txHash}` : "");
+  const lines = purchaseRows(rows).filter((row) => row.status === "settled").map((row) => {
+    const pr = outcomes.get(row.receiptHash);
+    return ["purchase", row.timestamp, row.repo, row.package, row.currentVersion, row.targetVersion, row.intent,
+      row.minerId, row.minerName, row.selectedBy, row.minerRank, row.amountUsdc, row.network, row.receiptHash,
+      row.signalHash ? `${SIGNAL_URL}${row.signalHash}` : "", tx(row), row.resultStatus, pr?.pr, pr?.outcome,
+      row.evidenceIncomplete ? "yes" : "", ""];
+  });
+  const latest = new Map();
+  for (const row of rows.filter((row) => row.kind === "attempt" && row.attemptId)) latest.set(row.attemptId, row);
+  for (const row of [...latest.values()].filter((row) => row.state === "failed_and_charged")) {
+    lines.push(["charged_no_answer", row.timestamp, row.repo, "", "", "", "", row.minerId, "", "", "",
+      row.chargedAmountUsdc, "", "", "", tx(row), "", "", "", "", `reconciled by ${row.reconciledBy}: ${row.reason ?? ""}`]);
+  }
+  lines.sort((a, b) => String(a[1]).localeCompare(String(b[1])));
+  return [EVIDENCE_COLUMNS, ...lines].map((line) => line.map(csvCell).join(",")).join("\r\n") + "\r\n";
 };
