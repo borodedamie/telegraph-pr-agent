@@ -203,6 +203,7 @@ Open, not yet decided by the team. Recommendation: Engine auto-routing (`POST /e
 
 - [PRODUCT] The 402 challenge's `accepts[]` is authoritative for network, chain id, asset, amount and pay-to address. Never hardcode a network or USDC address from an earlier configuration.
 - [PRODUCT] Enforce `MAX_PRICE_PER_CALL_USDC` and the remaining run/stage budget in the application and in the x402 client's spend controls where supported.
+- [PRODUCT] Optional monthly cap across runs (`monthly-budget-usdc`, off unless set): spend for the calendar month (UTC) is read from the ledger before each purchase, with attempts still at `request_sent` or `unknown_needs_reconciliation` counted at the per-call maximum; a purchase that could exceed the cap is refused before `reserved` is recorded.
 - [PRODUCT] Store `min_price_usdc`, quoted amount and actual charged amount separately; a floor is not the payment, demand multipliers change the quote.
 - [PRODUCT] A successful HTTP response is not a useful answer. Inspect the Engine `result_shape` and `field_status`; an HTTP 200 with an error-like body can still be delivered and billable.
 - [PRODUCT] Payment may settle before the miner call; failed delivery may be credited to escrow. Record settlement, delivery and refund/credit as separate states. The x402 guide and the protocol overview describe settlement timing differently: a controlled failed-delivery test against the current node (payment response, settlement, escrow balance, receipt absence) is required before the docs state the behaviour as fact.

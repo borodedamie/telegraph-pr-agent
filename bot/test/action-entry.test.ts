@@ -117,6 +117,25 @@ it("retains incremental PR output and paid evidence when publication fails", asy
   expect(mocks.output).toHaveBeenCalledWith("message", '{"answer":"{\\"findings\\":[]}"}');
 });
 
+it("passes the monthly budget only when monthly-budget-usdc is set", async () => {
+  await run();
+  expect(mocks.purchase.mock.calls[0][0].monthlyBudget).toBeUndefined();
+
+  vi.resetModules();
+  mocks.purchase.mockClear();
+  mocks.output.mockClear();
+  mocks.inputs["monthly-budget-usdc"] = "5";
+  await run();
+  expect(mocks.purchase.mock.calls[0][0].monthlyBudget).toEqual({ capUsdc: 5, worstCaseUsdc: 1 });
+});
+
+it("rejects an invalid monthly budget before opening the ledger", async () => {
+  mocks.inputs["monthly-budget-usdc"] = "-1";
+  await run("failed");
+  expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("monthly-budget-usdc"));
+  expect(mocks.open).not.toHaveBeenCalled();
+});
+
 it("records each published PR on the ledger with its number, purchase and finding", async () => {
   mocks.buy.mockResolvedValue({ answer: "{}", assessmentId: "assess-1", attemptId: "assess-1:1", receiptHash: "0xreceipt" });
   const finding = { ecosystem: "npm", package: "zod", source: "package.json", currentVersion: "3.25.0", targetVersion: "4.6.7" };

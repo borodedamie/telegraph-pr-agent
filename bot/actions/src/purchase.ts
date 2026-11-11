@@ -4,9 +4,9 @@ import { createHash } from "node:crypto";
 import { lstatSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AttemptConflictError, checkMayPay, commitLedgerRow, LEDGER_FILE, preflight,
+import { AttemptConflictError, checkMayPay, commitLedgerRow, LEDGER_FILE, monthToDateSpendUsdc, preflight,
   type AttemptKey, type AttemptRow, type LedgerRow, type ModelProvenance, type ProposalRow } from "../../src/ledger.js";
-import { AskFailedError, type IntelligenceClient, type Purchase } from "../../src/x402.js";
+import { AskFailedError, BudgetCapError, type IntelligenceClient, type Purchase } from "../../src/x402.js";
 import { migrationPrompt, MIGRATION_MINER_ID } from "./miner-assessment";
 import type { Dependency } from "./scan";
 
@@ -72,6 +72,8 @@ export const purchaseAssessment = async (options: {
   ledger: Ledger; repository: string; baseSha: string; dependency: Dependency;
   provenance: ModelProvenance; intent: string; query: string; client: Pick<IntelligenceClient, "buy">;
   onPurchase: (purchase: Purchase) => void;
+  /** Off when absent. worstCaseUsdc is the most one call can settle (max-price-per-call-usdc). */
+  monthlyBudget?: { capUsdc: number; worstCaseUsdc: number };
 }): Promise<Purchase & { assessmentId: string; attemptId: string }> => {
   const { ledger, repository, baseSha, dependency, intent, query, client } = options;
   let assessmentId = createHash("sha256").update(JSON.stringify([
@@ -121,6 +123,14 @@ export const purchaseAssessment = async (options: {
       if (assessmentId !== legacyId) {
         const prior = preflight(fresh, { ...key, assessmentId: legacyId });
         if (prior.action === "halt") throw new AttemptConflictError(prior.reason);
+      }
+      if (event.state === "reserved" && options.monthlyBudget) {
+        // Checked on the fresh ledger so overlapping runs share one monthly budget.
+        const { capUsdc, worstCaseUsdc } = options.monthlyBudget;
+        const spent = monthToDateSpendUsdc(fresh, new Date(), worstCaseUsdc);
+        if (spent + worstCaseUsdc > capUsdc) {
+          throw new BudgetCapError(`monthly budget: ${spent} USDC spent this month + up to ${worstCaseUsdc} USDC for this call exceeds monthly-budget-usdc ${capUsdc}`);
+        }
       }
       if (event.state === "reserved") {
         const now = preflight(fresh, key);
