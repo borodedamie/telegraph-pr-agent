@@ -4,7 +4,7 @@
   "license": "ISC",
   "dependencies": {
     "@actions/core": "^3.0.1",
-    "@renovatebot/pep440": "^4.2.4",
+    "@renovatebot/pep440": "^6.0.0",
     "semver": "^7.8.6"
   },
   "devDependencies": {
