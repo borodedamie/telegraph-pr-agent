@@ -42,6 +42,9 @@ jobs:
       - name: Assess dependencies and open update PRs
         id: update
         uses: ./bot/actions
+        with:
+          # Optional cap on all purchases in the calendar month (UTC); empty variable = off.
+          monthly-budget-usdc: ${{ vars.MONTHLY_BUDGET_USDC }}
         env:
           TELEGRAPH_EVM_PRIVATE_KEY: ${{ secrets.TELEGRAPH_EVM_PRIVATE_KEY }}
           GITHUB_TOKEN: ${{ github.token }}

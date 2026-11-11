@@ -306,7 +306,7 @@ proving what is installed in a running interpreter. Unresolved versions are repo
   `monthly-budget-usdc` input (off when empty): before each purchase the action adds up
   the calendar month's (UTC) settled purchases on the ledger branch, counts any attempt
   still mid-payment at `max-price-per-call-usdc`, and refuses the purchase if one more
-  worst-case call would exceed the cap. Nothing is recorded or paid when it refuses.
+  worst-case call would exceed the cap. Nothing is recorded or paid when it refuses. In this repository's workflow it comes from the repository variable `MONTHLY_BUDGET_USDC`.
 - Supply secret `TELEGRAPH_EVM_PRIVATE_KEY` for a dedicated wallet. Private keys
   are not bundled as action defaults.
 - Allow GitHub Actions to create pull requests in repository settings and grant the
