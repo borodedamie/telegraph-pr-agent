@@ -1,13 +1,8 @@
-import { EVENT_WINDOW, inWindow, mergedCosts, outcomeSummary, purchaseRows } from "./accounting.js";
+import { EVENT_WINDOW, evidenceCsv, explorerBase, inWindow, mergedCosts, outcomeSummary, purchaseRows, SIGNAL_URL } from "./accounting.js";
 // Any public repo running the Action can be viewed with ?repo=owner/name.
 const REPO_PARAM = new URLSearchParams(location.search).get("repo");
 const REPO = REPO_PARAM ?? "borodedamie/telegraph-pr-agent";
 const LEDGER_URL = `https://raw.githubusercontent.com/${REPO}/ledger/ledger.jsonl`;
-// Rows store the explorer of the chain they paid on. Rows written before 5 Nov 2026
-// don't, so their date decides: the devnode moved Base → Ethereum Sepolia on 1 Nov (mirrors bot/src/memo.ts).
-const explorerBase = (row) =>
-  row.explorerBaseUrl ?? (row.timestamp < "2026-11-01" ? "https://sepolia.basescan.org" : "https://sepolia.etherscan.io");
-const SIGNAL_URL = "https://devnode.telegraphprotocol.com/engine/v1/signal/";
 
 const app = document.getElementById("app");
 const drawer = document.getElementById("drawer");
@@ -207,6 +202,19 @@ function table(rows) {
   );
 }
 
+// Built in the browser from the public ledger; nothing is uploaded.
+function evidenceButton(entries) {
+  const button = el("button", { type: "button", class: "export-btn" }, `Download evidence CSV (${EVENT_WINDOW.label})`);
+  button.addEventListener("click", () => {
+    const csv = evidenceCsv(inWindow(entries, EVENT_WINDOW));
+    const link = el("a", { href: URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })),
+      download: `telegraph-evidence-${REPO.replace("/", "-")}-2026-11-01_2026-12-01.csv` });
+    link.click();
+    URL.revokeObjectURL(link.href);
+  });
+  return button;
+}
+
 // SPEC §4.3: counts and sample size beside every rate, never a bare percentage.
 function outcomesLine(o) {
   const rate = o.mergeRate === null ? "merge rate N/A" : `merge rate ${Math.round(o.mergeRate * 100)}% (n=${o.proposed})`;
@@ -278,6 +286,8 @@ async function main() {
       el("p", { class: "tally" }, `Event window ${EVENT_WINDOW.label}: `, eventCosts.count
         ? `${usdc(eventCosts.costPerMergedPr)} USDC per merged PR · ${eventCosts.count} merged · ${usdc(eventCosts.netSpend)} USDC spent`
         : `cost per merged PR N/A · ${usdc(eventCosts.netSpend)} USDC spent · no merged PRs`),
+      el("p", { class: "tally" }, evidenceButton(entries), el("span", { class: "dot" }, "·"),
+        el("a", { href: LEDGER_URL, target: "_blank", rel: "noopener" }, "Raw ledger (JSONL) ↗")),
       table(rows)
     );
   } catch (err) {

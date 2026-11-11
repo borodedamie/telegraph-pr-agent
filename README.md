@@ -1,10 +1,10 @@
 # Telegraph PR Agent
 
-A testnet prototype of a dependency-migration agent that is designed to buy release intelligence through [Telegraph](https://anjoman.ai/docs/introduction) instead of guessing. The current CLI demonstrates dependency-change detection and one historical Telegraph x402 purchase; it has not yet demonstrated a useful package-release answer, a completed migration PR or cost per merged PR. The GitHub Action, migration PR and cost-per-merged-PR workflow are in development.
+A testnet prototype of a dependency-migration agent that is designed to buy release intelligence through [Telegraph](https://anjoman.ai/docs/introduction) instead of guessing. The product is a GitHub Action ([Dependency update Action](#dependency-update-action)); an earlier CLI prototype made the first test purchases and was removed on 11 Nov 2026. The project has not yet demonstrated a completed migration PR or cost per merged PR.
 
 Built for the Telegraph Hackathon Season II, mission [Model Economy](https://hackathon.telegraphprotocol.com/missions/model-economy). Specification (source of truth): [docs/SPEC.md](docs/SPEC.md). Milestones: [docs/HACKATHON-PLAN.md](docs/HACKATHON-PLAN.md). Who does what: [docs/TEAM.md](docs/TEAM.md). Live QA intent contract: [docs/telegraph/qa-intent-contract-2026-11-02.md](docs/telegraph/qa-intent-contract-2026-11-02.md).
 
-> **Testnet prototype.** The current CLI completed one Telegraph x402 purchase on the devnode on 28 Oct 2026; the answer was unrelated to the package. The project has not yet demonstrated a useful package-release answer, a complete package migration or production customer usage. Testnet USDC is not revenue.
+> **Testnet prototype.** The CLI prototype (since removed) completed one Telegraph x402 purchase on the devnode on 28 Oct 2026; the answer was unrelated to the package. The project has not yet demonstrated a useful package-release answer, a complete package migration or production customer usage. Testnet USDC is not revenue.
 
 ## Status
 
@@ -22,18 +22,18 @@ Status is a snapshot, not a promise.
 | --- | --- |
 | Detect a dependency upgrade released after the cutoff | The action resolves supported installed versions and selects newer stable npm/PyPI releases strictly after `MODEL_CUTOFF`, reusing `bot/src/trigger.ts` for npm date checks. Covered by offline tests; hosted operation remains unverified. |
 | Buy an answer on Telegraph with x402; record receipt hash, signal hash, tx hash | Historical integration test only: one pre-event payment succeeded on 28 Oct 2026; the returned content was unrelated to package releases. The current client is not compatible with the 2 Nov live intent contract until it sends the canonical intent id and request shape and is retested. |
-| Append-only purchase ledger on a `ledger` git branch | Shared attempts and per-receipt records are wired into the action. Pre-PR assessments use dependency/version/query identity across commits; the slice retains its PR/commit keys. Failure and concurrency behavior is covered by offline tests; hosted writes remain unverified. |
-| Purchase dashboard | Works locally: `pnpm install`, then `pnpm --filter @telegraph-pr-agent/web dev`; it reads `ledger.jsonl` from GitHub raw for a public repository. Not deployed to a public URL yet. Shows purchases, cost per merged PR (all-time and for the 1 Nov – 1 Dec event window), PRs proposed, merged, closed and open with the merge rate and sample size, closed-PR spend, cost per useful answer, and escrow credits and refused quotes as non-spend. Add `?repo=owner/name` to view another public repository's ledger. Hosted merge capture remains unverified. |
+| Append-only purchase ledger on a `ledger` git branch | Shared attempts and per-receipt records are wired into the action. Pre-PR assessments use dependency/version/query identity across commits; rows written by the removed CLI keep their PR/commit keys. Failure and concurrency behavior is covered by offline tests; hosted writes remain unverified. |
+| Purchase dashboard | Works locally: `pnpm install`, then `pnpm --filter @telegraph-pr-agent/web dev`; it reads `ledger.jsonl` from GitHub raw for a public repository. Not deployed to a public URL yet. Shows purchases, cost per merged PR (all-time and for the 1 Nov – 1 Dec event window), PRs proposed, merged, closed and open with the merge rate and sample size, closed-PR spend, cost per useful answer, and escrow credits and refused quotes as non-spend. Add `?repo=owner/name` to view another public repository's ledger. **Download evidence CSV** exports, for 1 Nov – 1 Dec 2026, one line per settled purchase and per attempt reconciled as charged with no answer: date, repo, package and versions, miner and how it was selected (`rank` or `our_choice`), amount, network, receipt hash, signal and transaction links, answer quality and PR outcome. It is built in the browser from the public ledger; the raw `ledger.jsonl` is linked beside it. Hosted merge capture remains unverified. |
 | GitHub Action, draft dependency PRs, migration and merge accounting | Packaged action with cutoff gating, attempt ledger and draft dependency PR preparation; validated locally. `telegraph:fix` and migration execution remain planned. Receipt-linked merge accounting is implemented and tested offline. |
 | Package-release Q&A miner | Working, in production at `https://telegraph-pr-miner-n30sk.vercel.app` and registered on Telegraph since 6 Nov as miner 7314 (`package-release-intel`, `QUESTION_ANSWERING_GENERAL`, 0.02 USDC). It answers what changed in an npm package between two versions from npm, GitHub release material, migration guides and OSV, each change with a verbatim quote and its source. A paid direct call through Telegraph was served and settled on 6 Nov; Engine routing sent the same kind of question to another intent (`WEB_SEARCH_GENERAL`), so buyers ask it by id. Benchmark: 67.1% of reviewed breaking changes by word matching, 82.6% with an LLM judge (target 80%), every quote checked. Scored by the intent's general-purpose judge: rank 6 of 17 on 9 Nov (11 of 17 on 8 Nov), measured with our own 30 questions in the pool (1 of 6 contributors), so it is not independent evidence of quality; the benchmark is the quality evidence. Details: [miner/README.md](miner/README.md). |
 
-**About the one purchase so far.** On 28 Oct 2026 the CLI paid 0.01 testnet USDC through the devnode to Crossref QA, which was third in the provider list the old client read for question answering on that date (the client's ordering, not a saved Telegraph ranking snapshot), and recorded the tx hash, receipt hash and signal hash. The returned answer was academic search results unrelated to the package. That run is a pre-event integration test: it shows the payment flow was exercised. It is not event-period hackathon evidence and not a successful package-release answer. It also used the node interface as it stood on that date; the request shape and intent ids have to be rechecked against the live node before any new run.
+**About the one purchase so far.** On 28 Oct 2026 the CLI prototype (since removed) paid 0.01 testnet USDC through the devnode to Crossref QA, which was third in the provider list the old client read for question answering on that date (the client's ordering, not a saved Telegraph ranking snapshot), and recorded the tx hash, receipt hash and signal hash. The returned answer was academic search results unrelated to the package. That run is a pre-event integration test: it shows the payment flow was exercised. It is not event-period hackathon evidence and not a successful package-release answer. It also used the node interface as it stood on that date; the request shape and intent ids have to be rechecked against the live node before any new run.
 
 ## How it will work
 
 Each stage is marked current or planned.
 
-1. **Scan** (planned): on a schedule the developer sets in the workflow (the example uses weekly) or a manual run, read the installed version A of each direct dependency from `package-lock.json`, look up the latest stable version B on npm, and query OSV for known advisories in A. Current slice: compares two `package.json` files only.
+1. **Scan** (planned): on a schedule the developer sets in the workflow (the example uses weekly) or a manual run, read the installed version A of each direct dependency from `package-lock.json`, look up the latest stable version B on npm, and query OSV for known advisories in A.
 2. **Learn** (current, partly): when B is newer than A *and* B was released after the configured cutoff, buy one question-answering request on Telegraph on the live canonical intent (`QUESTION_ANSWERING_GENERAL` on 2 Nov). The current client calls a chosen miner directly; whether the Action uses Engine routing instead is still open ([SPEC §2.4](docs/SPEC.md)). The quote comes from the 402 challenge and can vary; 0.01 USDC is an observed example, not a price.
 3. **Report** (planned): open one draft PR per package and target version, updated on later runs, never duplicated. It lists why to upgrade, known advisories, which changed symbols the repository uses (found by a local search, not by the miner), what to change, spend so far and an estimated fix cost. If the answer is `not_found`, the purchase and receipt are kept, the PR is report-only, and no migration is invented.
 4. **Fix** (planned, after a maintainer with write access adds `telegraph:fix`): generate a patch with the purchased answer as input. Paid `CODE_GENERATION`, `CODE_PATCH_VERIFY` and `REGRESSION_VERIFY` calls are conditional on a provider passing our quality tests; until then the installer's own LLM writes the patch. The repository's install, typecheck and tests run in a job with no secrets. Nothing is pushed unless they pass.
@@ -42,105 +42,49 @@ Each stage is marked current or planned.
 
 ## What runs today
 
-`bot/src/slice.ts` takes a base `package.json`, a head `package.json`, a PR number and a commit SHA. It:
+The GitHub Action under [Dependency update Action](#dependency-update-action) is what runs; [Enable the workflow](#enable-the-workflow) covers setup and configuration. The CLI prototype (`bot/src/slice.ts`, with `bot/src/memo.ts` and `bot/.env.example`) that made the purchases of 28 Oct, 3 Nov and 4 Nov was removed on 11 Nov 2026. Those purchases stay on the ledger with their original PR/commit keys, so their repo, package and version fields are empty on the dashboard and in the evidence CSV.
 
-- diffs declared dependencies (`dependencies` and `devDependencies`), resolves each changed range to its bare version, and asks the npm registry for that version's release date;
-- picks the first dependency released after `MODEL_CUTOFF` (one purchase per run);
-- lists providers for the intent, keeps only those with a Telegraph score for that intent, sorts them by rank and pays the top one through `POST /engine/v1/ask/{minerId}` with the provider's native request, stepping down to the next (up to 3) on a failed call. This is the application's choice, not Engine routing. It records the answer plus tx, receipt and signal hashes;
-- appends one ledger row and pushes it to the `ledger` branch, after the answer has been received.
-
-Known gaps in this slice, kept here so nobody mistakes them for features:
+Ledger behaviour and known gaps:
 
 - The intent id `QUESTION_ANSWERING_GENERAL` is hardcoded; it was checked against `GET /engine/v1/intents` on 3 Nov 2026 and must be rechecked if the catalogue changes.
 - Each payment try is recorded on the ledger branch at every stage (`reserved`, then `quote_refused` or `request_sent`, then `delivered`, `failed_and_credited`, `failed_not_charged` or `unknown_needs_reconciliation`; definitions in [SPEC §2.6](docs/SPEC.md)) before the bot moves on. If a run dies or its push fails after `request_sent`, the next run for that PR and commit stops instead of paying again, and a person checks the wallet, escrow balance and signal. Before recording `reserved` and `request_sent`, the run re-checks the freshly fetched ledger, and a push loses if another run pushed first, so two runs for the same PR and commit can't both pay; the second stops. To clear a stuck attempt, check the wallet, escrow balance and signal, then run the **Reconcile a stuck payment attempt** workflow (`.github/workflows/reconcile-attempt.yml`, Actions tab, default branch) with the `attemptId`, the outcome (`failed_and_credited`, `failed_not_charged`, or `failed_and_charged` when the payment was charged but no answer was kept) and a note. `failed_and_charged` requires the payment's transaction hash and counts as spend. The workflow holds no wallet key; it refuses attempts that aren't stuck, and records who reconciled.
 - A purchase is recorded once per `receipt_hash`; writing a receipt that is already on the ledger is refused. Each purchase row has a `resultStatus` for answer quality, kept apart from payment: new rows start `unchecked`, and `useful`, `unusable` or `not_found` can be recorded separately. The dependency action automatically appends `useful` when an answer produces a published PR and `unusable` for invalid findings; the dashboard uses the latest quality update.
-- Each purchase row stores the network, chain id, USDC contract and explorer URL of the 402 option it paid, and transaction links are built from that. Rows written before 5 Nov 2026 lack these fields; their links use the date (before 1 Nov: Basescan, Base Sepolia; after: Etherscan, Ethereum Sepolia). The memo's summary line still names Ethereum Sepolia as fixed text.
+- Each purchase row stores the network, chain id, USDC contract and explorer URL of the 402 option it paid, and transaction links are built from that. Rows written before 5 Nov 2026 lack these fields; their links use the date (before 1 Nov: Basescan, Base Sepolia; after: Etherscan, Ethereum Sepolia). The dashboard header still names Ethereum Sepolia as fixed text.
 
 ## Repository layout
 
 ```
-bot/                TypeScript agent, Node 22.20+, vitest
-  src/config.ts       env validation
-  src/trigger.ts      post-cutoff detection from two package.json files
+bot/                TypeScript, Node 22.20+, vitest
+  src/config.ts       model provenance validation
+  src/trigger.ts      post-cutoff release-date checks against the npm registry
   src/x402.ts         Telegraph client: provider list, x402 payment, receipt capture
-  src/ledger.ts       ledger.jsonl on the `ledger` branch, push retry
-  src/memo.ts         PR comment text (not posted by the slice)
-  src/slice.ts        CLI runner
-  test/               43 unit tests; no network, no payments
-  .env.example        configuration template (see Configuration for known stale values)
-web/                static purchase dashboard (Vite); reads ledger.jsonl from GitHub raw
+  src/ledger.ts       ledger.jsonl on the `ledger` branch: attempts, purchases, PR outcomes
+  actions/            the GitHub Action (source in src/, packaged dist/index.js)
+  test/               unit tests; no network, no payments
+web/                static dashboard (Vite); reads ledger.jsonl from GitHub raw
+.github/workflows/  dependency updates, merge accounting, attempt reconciliation, tests
 docs/               plan, specification, team split, ADRs
 CONTEXT.md          glossary used during design; reviewers can skip it
 ```
 
-No workflow YAML, fixtures or sample ledger export exist yet; the `examples/` files below are created by hand.
+No public fixture repository for reviewers exists yet ([TEAM.md](docs/TEAM.md)).
 
-## Run the current slice
+## Run it
 
-Prerequisites: Node 22.20 or later, pnpm 9 or later, macOS or Linux shell, a dedicated testnet wallet holding a few cents of test USDC on the network the devnode quotes (Ethereum Sepolia as of 2 Nov 2026; the 402 challenge is authoritative), and a fine-grained GitHub token limited to a public repository you control (`DEMO_REPO`) with `contents: read/write`, so the run can push its ledger branch. Gas is handled by the x402 facilitator; the wallet needs test USDC only.
-
-All commands run from the repository root, in one shell.
-
-**1. Offline: install and unit tests (no network, no payment).**
+Offline checks (no network, no payment), from the repository root:
 
 ```bash
 pnpm install
-cp bot/.env.example bot/.env     # then edit; see Configuration for values to correct
 pnpm --filter ./bot test
+npm test --prefix web
+pnpm --filter @telegraph-pr-agent/web dev    # dashboard; add ?repo=owner/name for another public repository
 ```
 
-**2. Create the input files.** These pin `zod` before the cutoff (3.23.8, May 2024), after it (4.6.7, 12 Oct 2026), and a pre-cutoff bump (3.24.1, Dec 2024), assuming `MODEL_CUTOFF=January 1, 2026`:
-
-```bash
-mkdir -p examples
-printf '{"name":"fixture-app","version":"1.0.0","dependencies":{"zod":"%s"}}\n' 3.23.8 > examples/base-package.json
-printf '{"name":"fixture-app","version":"1.0.0","dependencies":{"zod":"%s"}}\n' 4.6.7  > examples/head-package.json
-printf '{"name":"fixture-app","version":"1.0.0","dependencies":{"zod":"%s"}}\n' 3.24.1 > examples/head-pre-cutoff-package.json
-```
-
-**3. Paid testnet run.** Not runnable against the live node until the client is updated (see Known gaps). The PR number and SHA are placeholders that label the ledger row; they need not exist.
-
-```bash
-pnpm --filter ./bot exec tsx --env-file=.env src/slice.ts \
-  ../examples/base-package.json \
-  ../examples/head-package.json \
-  1 \
-  0123456789abcdef0123456789abcdef01234567
-```
-
-This command spends testnet USDC and pushes to the ledger branch of `DEMO_REPO`. Until fixtures and the updated client are committed, this is not a one-command reviewer reproduction.
-
-Expected output, post-cutoff case with the fixtures above (the purchase line is the shape of the 28 Oct run, values redacted; the intent id, provider and rank field will differ once the client is updated to the live catalogue, and on 2 Nov no QA rank existed):
-
-```
-triggers: [{ package: "zod", version: "4.6.7", releaseDate: "2026-10-12T16:29:37.778Z", status: "past-cutoff" }]
-purchase: { intent: "QUESTION_ANSWERING_GENERAL", minerId: "…", minerName: "…", minerRank: 3,
-            amountUsdc: 0.01, txHash: "0x…", receiptHash: "0x…", signalHash: "0x…",
-            answer: "…", status: "settled" }
-ledger row committed: PR #1 QUESTION_ANSWERING_GENERAL 0x…
-```
-
-No-spend case: run the same command with `../examples/head-pre-cutoff-package.json` as the head file. The run prints that there is no post-cutoff candidate and exits with zero spend, without any Telegraph request.
+To make a purchase, install the workflow on a public repository: see [Enable the workflow](#enable-the-workflow). It spends testnet USDC from the wallet you configure and writes to that repository's `ledger` branch.
 
 ## Verify a purchase
 
 Open `https://devnode.telegraphprotocol.com/engine/v1/signal/<signalHash>` to inspect the request and response Telegraph recorded, and the tx hash on the explorer for the chain named in the quote. The signal and receipt show what was bought and returned; they do not by themselves show the answer is factually correct. Package-release claims have to be checked against their linked registry and release-note sources, and migration correctness by the repository's tests.
-
-## Configuration
-
-Variables read by the current slice:
-
-| Variable | Meaning |
-| --- | --- |
-| `NODE_URL` | Base node URL, e.g. `https://devnode.telegraphprotocol.com`; the client appends `/engine/v1/…` and `/api/…` |
-| `CHAIN_ID`, `USDC_ADDRESS` | Local allowlist: the network and token the client will pay on. The 402 challenge decides what is offered; a quote outside this allowlist must be refused |
-| `MODEL_CUTOFF` | The cutoff date used as a heuristic for "the model may not know this release". Record in your notes which model and source the date comes from; the slice does not store that yet |
-| `MAX_PRICE_PER_CALL_USDC` | Refuse any single quote above this, checked against the quoted amount |
-| `BUDGET_CAP_USDC` | Ceiling for one CLI invocation, enforced in the application |
-| `TELEGRAPH_EVM_PRIVATE_KEY` | The paying wallet. Dedicated, low balance, never committed, never printed, never exposed to repository code |
-| `GH_PAT`, `DEMO_REPO` | Token and `owner/repo` for pushing the ledger branch |
-| `PREFERRED_MINER_ID` | Optional. A miner id to try before the leaderboard, even if it is not ranked yet; on a failed call the client steps down to the ranked miners. Its purchases are recorded with `selectedBy: "our_choice"`, ranked ones with `"rank"` (SPEC §2.4). If the node has not ranked it, `minerRank` and `minerScore` are `null`. Unset or empty: rank only |
-| `LLM_API_KEY`, `LLM_BASE_URL` | Required by config validation today but unused by the slice. Known defect: they are to be removed from validation until patch generation exists. Until then the template's placeholder values pass; never put a real key here for the slice |
 
 ## Network and spending limits
 
@@ -162,8 +106,6 @@ On the documented x402 path a valid payment may settle before the miner is calle
 
 ## Limitations
 
-- npm only; `package.json` comparison only; no lockfile parsing. The CLI is a manifest-diff prototype; the planned Action scans the lockfile instead.
-- One Q&A purchase per CLI run; the first eligible dependency only.
 - Package-release answer quality has not been demonstrated by existing providers.
 - The team's package-release miner is registered and scored, but the intent's test questions are mostly general, so its rank moves with the pool (6 of 17 on 9 Nov, 11 of 17 on 8 Nov).
 - GitHub Action, draft PR, label approval, patch generation, secretless CI and merge accounting are planned.
@@ -175,7 +117,7 @@ On the documented x402 path a valid payment may settle before the miner is calle
 
 - The same team controls the agent and the package-release miner (payout wallet `0x74f2840C8A564F791f50aD76c38EF078258588dC`). Any agent purchase from that miner is related-party testing, not independent demand, adoption or third-party validation.
 - Buyer wallet and miner wallet addresses, with explorer links, will be listed here before submission. Keys are never published.
-- Code written before 1 Nov 2026: the CLI vertical slice described above (commit `9faf16a` and earlier). Work added during the event will be summarised here.
+- Code written before 1 Nov 2026: the CLI vertical slice (commit `9faf16a` and earlier; removed on 11 Nov 2026). Work added during the event will be summarised here.
 - Event window: purchases, transactions, usage, demos and adoption evidence claimed for Season II fall between 1 Nov and 1 Dec 2026. Package release notes and registry records keep their original dates, including dates before the event.
 - Reused open source: `@x402/fetch` and `@x402/evm` (Apache-2.0), `viem` (MIT), `zod` (MIT), `vitest` (MIT), `vite` (MIT). Confirm each licence from the package before submission.
 
@@ -188,16 +130,16 @@ To be filled in as each item exists; nothing below is claimed yet.
 | Tested commit and public repository | this repository, commit listed under Status |
 | Public dashboard URL | not deployed |
 | Testnet and token in use | from the live 402 challenge; Ethereum Sepolia test USDC as of 2 Nov 2026 |
-| One command for a new realistic input | the slice command above, once fixtures and the updated client are committed |
-| No-post-cutoff, no-spend case | the slice command with `examples/head-pre-cutoff-package.json` |
+| One command for a new realistic input | planned: the Action on a public fixture repository ([TEAM.md](docs/TEAM.md)) |
+| No-post-cutoff, no-spend case | planned on the fixture repository; offline test: no purchase or PR when no dependency is past the cutoff |
 | Failing typecheck, no push case | planned with the Action |
-| Event-period receipts, signal links, transactions, ledger export | none yet |
+| Event-period receipts, signal links, transactions, ledger export | Dashboard **Download evidence CSV** plus the raw `ledger.jsonl`. As of 11 Nov 2026: 3 purchases (0.04 USDC): two CLI test buys (3 and 4 Nov, answers not useful) and one Action assessment from the team's own miner 7314 (`our_choice`, a self-purchase, not independent adoption) |
 | 2–5 minute demo | not recorded |
 | Five-question commercial summary | not written |
 | Public updates (at least three, separate dates) | none yet |
 | Technical tutorial and independent reproduction evidence | none yet |
 
-If you try the slice, open an issue with what you ran, the signal hash and whether the answer was useful. That is the kind of independent test the project needs.
+If you try the Action, open an issue with what you ran, the signal hash and whether the answer was useful. That is the kind of independent test the project needs.
 
 ## Dependency update Action
 
