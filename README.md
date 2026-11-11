@@ -23,7 +23,7 @@ Status is a snapshot, not a promise.
 | Detect a dependency upgrade released after the cutoff | The action resolves supported installed versions and selects newer stable npm/PyPI releases strictly after `MODEL_CUTOFF`, reusing `bot/src/trigger.ts` for npm date checks. Covered by offline tests; hosted operation remains unverified. |
 | Buy an answer on Telegraph with x402; record receipt hash, signal hash, tx hash | Historical integration test only: one pre-event payment succeeded on 28 Oct 2026; the returned content was unrelated to package releases. The current client is not compatible with the 2 Nov live intent contract until it sends the canonical intent id and request shape and is retested. |
 | Append-only purchase ledger on a `ledger` git branch | Shared attempts and per-receipt records are wired into the action. Pre-PR assessments use dependency/version/query identity across commits; the slice retains its PR/commit keys. Failure and concurrency behavior is covered by offline tests; hosted writes remain unverified. |
-| Purchase dashboard | Works locally: `pnpm install`, then `pnpm --filter @telegraph-pr-agent/web dev`; it reads `ledger.jsonl` from GitHub raw for a public repository. Not deployed to a public URL yet. Shows purchases and receipt-linked merged PR costs; hosted merge capture remains unverified. |
+| Purchase dashboard | Works locally: `pnpm install`, then `pnpm --filter @telegraph-pr-agent/web dev`; it reads `ledger.jsonl` from GitHub raw for a public repository. Not deployed to a public URL yet. Shows purchases, cost per merged PR (all-time and for the 1 Nov – 1 Dec event window), PRs proposed, merged, closed and open with the merge rate and sample size, closed-PR spend, cost per useful answer, and escrow credits and refused quotes as non-spend. Add `?repo=owner/name` to view another public repository's ledger. Hosted merge capture remains unverified. |
 | GitHub Action, draft dependency PRs, migration and merge accounting | Packaged action with cutoff gating, attempt ledger and draft dependency PR preparation; validated locally. `telegraph:fix` and migration execution remain planned. Receipt-linked merge accounting is implemented and tested offline. |
 | Package-release Q&A miner | Working, in production at `https://telegraph-pr-miner-n30sk.vercel.app` and registered on Telegraph since 6 Nov as miner 7314 (`package-release-intel`, `QUESTION_ANSWERING_GENERAL`, 0.02 USDC). It answers what changed in an npm package between two versions from npm, GitHub release material, migration guides and OSV, each change with a verbatim quote and its source. A paid direct call through Telegraph was served and settled on 6 Nov; Engine routing sent the same kind of question to another intent (`WEB_SEARCH_GENERAL`), so buyers ask it by id. Benchmark: 67.1% of reviewed breaking changes by word matching, 82.6% with an LLM judge (target 80%), every quote checked. Scored by the intent's general-purpose judge: rank 6 of 17 on 9 Nov (11 of 17 on 8 Nov), measured with our own 30 questions in the pool (1 of 6 contributors), so it is not independent evidence of quality; the benchmark is the quality evidence. Details: [miner/README.md](miner/README.md). |
 
@@ -53,7 +53,7 @@ Known gaps in this slice, kept here so nobody mistakes them for features:
 
 - The intent id `QUESTION_ANSWERING_GENERAL` is hardcoded; it was checked against `GET /engine/v1/intents` on 3 Nov 2026 and must be rechecked if the catalogue changes.
 - Each payment try is recorded on the ledger branch at every stage (`reserved`, then `quote_refused` or `request_sent`, then `delivered`, `failed_and_credited`, `failed_not_charged` or `unknown_needs_reconciliation`; definitions in [SPEC §2.6](docs/SPEC.md)) before the bot moves on. If a run dies or its push fails after `request_sent`, the next run for that PR and commit stops instead of paying again, and a person checks the wallet, escrow balance and signal. Before recording `reserved` and `request_sent`, the run re-checks the freshly fetched ledger, and a push loses if another run pushed first, so two runs for the same PR and commit can't both pay; the second stops. Nothing yet marks a stuck attempt as reconciled; that is done by hand on the ledger branch.
-- A purchase is recorded once per `receipt_hash`; writing a receipt that is already on the ledger is refused. Each purchase row has a `resultStatus` for answer quality, kept apart from payment: new rows start `unchecked`, and `useful`, `unusable` or `not_found` can be recorded separately. The dependency action automatically appends `unusable` for invalid findings; the dashboard uses the latest quality update.
+- A purchase is recorded once per `receipt_hash`; writing a receipt that is already on the ledger is refused. Each purchase row has a `resultStatus` for answer quality, kept apart from payment: new rows start `unchecked`, and `useful`, `unusable` or `not_found` can be recorded separately. The dependency action automatically appends `useful` when an answer produces a published PR and `unusable` for invalid findings; the dashboard uses the latest quality update.
 - Each purchase row stores the network, chain id, USDC contract and explorer URL of the 402 option it paid, and transaction links are built from that. Rows written before 5 Nov 2026 lack these fields; their links use the date (before 1 Nov: Basescan, Base Sepolia; after: Etherscan, Ethereum Sepolia). The memo's summary line still names Ethereum Sepolia as fixed text.
 
 ## Repository layout
@@ -168,7 +168,7 @@ On the documented x402 path a valid payment may settle before the miner is calle
 - The team's package-release miner is registered and scored, but the intent's test questions are mostly general, so its rank moves with the pool (6 of 17 on 9 Nov, 11 of 17 on 8 Nov).
 - GitHub Action, draft PR, label approval, patch generation, secretless CI and merge accounting are planned.
 - `CODE_GENERATION`, `CODE_PATCH_VERIFY` and `REGRESSION_VERIFY` are conditional on providers passing quality tests.
-- The dashboard shows purchase records, not cost per merged PR, and is not deployed publicly.
+- The dashboard is not deployed publicly.
 - Public repositories only. Testnet only; no revenue or adoption claim.
 
 ## Disclosure
@@ -377,10 +377,10 @@ Each new assessment records provider, exact configured model, cutoff date/source
 assumed-or-documented status and configuration timestamp in its attempt and purchase
 rows. A settled answer with missing hashes is retained and can be reused without
 another purchase; the ledger/dashboard flags incomplete evidence for reconciliation.
-Merge accounting refuses receipts that are missing or do not match settled evidence.
+Each published dependency PR appends a `proposal` row (repo, PR number and URL, package and versions, and the attempt and receipt that paid for it), once per PR. When a generated PR closes, merge accounting appends a `merge` row if it was merged or a `closed` row if it was not; a merge outranks an earlier close, and reruns add nothing. Merge accounting refuses receipts that are missing or do not match settled evidence.
 
 Purchase rows include amount, receipt, selection policy, package/version context,
-and `resultStatus: "unchecked"`. Invalid findings append an `unusable` quality update;
+and `resultStatus: "unchecked"`. A published PR appends a `useful` quality update; invalid findings append `unusable`;
 the dashboard displays the latest quality without rewriting payment evidence.
 Publication failures do not mark answers unusable. Valid miner `not_found` answers
 append `not_found`, emit a notice and create no PR; invalid answers remain `unusable`.
@@ -392,7 +392,7 @@ and security caveats, and refuses introduced vulnerabilities. Python dependencie
 skip this npm-only miner before payment; ranked fallback retains the generic
 assessment prompt. Preferred miner `0` remains a notice-only setup placeholder.
 The existing dashboard displays purchases as assessments
-when no PR exists yet. `.github/workflows/merge-accounting.yml` records closed-and-merged generated PRs
+when no PR exists yet. `.github/workflows/merge-accounting.yml` records closed generated PRs, merged or not,
 from this repository on any supported target branch, including release branches.
 Missing or reformatted evidence fails with a recovery message rather than silently
 omitting a merged cost. It checks out the trusted default branch, receives

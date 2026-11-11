@@ -353,7 +353,7 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
   Status 5 Nov, preview `p5-bench6` (`bench/report.md`, `bench/judge-report.md`):
   - Pass: SC-001 (673/673), SC-003 (0 invented), SC-004 (8/8), SC-005 (38/38), SC-006 identical and free repeats (38/38), SC-008 (security tests) and SC-012 (38/38).
   - SC-002 recall: 67.1% by word matching. With the judge it is 82.6%; 2 of the judged pairs were read by hand and found wrong, which leaves 82.1% (302/368), above the 80% target.
-  - Not met, and deferred by decision on 5 Nov so that registration can go ahead: repeat latency p95 is 1056 ms against a target under 500 ms. A repeat still revalidates every source to compute its cache key; a short cache keyed by package and versions would fix it. Added 9 Nov as the one-hour repeat pointer (`data-model.md`); not deployed or measured yet.
+  - Not met, and deferred by decision on 5 Nov so that registration can go ahead: repeat latency p95 is 1056 ms against a target under 500 ms. A repeat still revalidates every source to compute its cache key; a short cache keyed by package and versions would fix it. Added 9 Nov as the one-hour repeat pointer (`data-model.md`) and deployed: on production, 15 repeats of one question took p50 433 ms, p95 466 ms, max 513 ms end to end from a laptop (`miner/bench/network.md`); the full benchmark was not re-run.
   - Not run: n08 and n09, which need a local run with a simulated outage.
   - First-time cost: at most one model call at 0.01 USDC per answer.
 
