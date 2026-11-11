@@ -1,5 +1,5 @@
 // Rows store the explorer of the chain they paid on. Rows written before 5 Nov 2026
-// don't, so their date decides: the devnode moved Base → Ethereum Sepolia on 1 Nov (mirrors bot/src/memo.ts).
+// don't, so their date decides: the devnode moved Base → Ethereum Sepolia on 1 Nov.
 export const explorerBase = (row) =>
   row.explorerBaseUrl ?? (row.timestamp < "2026-11-01" ? "https://sepolia.basescan.org" : "https://sepolia.etherscan.io");
 export const SIGNAL_URL = "https://devnode.telegraphprotocol.com/engine/v1/signal/";
