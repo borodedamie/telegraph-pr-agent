@@ -12,11 +12,16 @@ export interface Store {
   del(key: string): Promise<void>;
   /** Increments and sets the expiry in one atomic step, so the counter can never be left without a TTL. */
   incr(key: string, ttlSec: number): Promise<number>;
+  /** Adds `value` to the front of the list at `key` and keeps only the newest `max` entries. */
+  pushCapped(key: string, value: string, max: number): Promise<void>;
+  /** The list at `key`, newest first. */
+  list(key: string): Promise<string[]>;
   ping(): Promise<boolean>;
 }
 
 export class MemoryStore implements Store {
   private readonly entries = new Map<string, { value: string; expiresAt: number | null }>();
+  private readonly lists = new Map<string, string[]>();
 
   constructor(private readonly now: () => number = Date.now) {}
 
@@ -50,6 +55,15 @@ export class MemoryStore implements Store {
     return next;
   }
 
+  async pushCapped(key: string, value: string, max: number): Promise<void> {
+    const entries = this.lists.get(key) ?? [];
+    this.lists.set(key, [value, ...entries].slice(0, max));
+  }
+
+  async list(key: string): Promise<string[]> {
+    return this.lists.get(key) ?? [];
+  }
+
   async ping(): Promise<boolean> {
     return true;
   }
@@ -78,6 +92,14 @@ export class RedisStore implements Store {
   async incr(key: string, ttlSec: number): Promise<number> {
     const [value] = await this.redis.multi().incr(key).expire(key, ttlSec).exec();
     return Number(value);
+  }
+
+  async pushCapped(key: string, value: string, max: number): Promise<void> {
+    await this.redis.multi().lpush(key, value).ltrim(key, 0, max - 1).exec();
+  }
+
+  async list(key: string): Promise<string[]> {
+    return this.redis.lrange<string>(key, 0, -1);
   }
 
   async ping(): Promise<boolean> {

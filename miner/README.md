@@ -37,6 +37,8 @@ curl http://localhost:3000/api/health
 
 Setup, tests and the benchmark: [specs/001-package-release-miner/quickstart.md](specs/001-package-release-miner/quickstart.md).
 
+Live traffic: every answered request leaves one metrics record (what was asked, outcome, latency, LLM calls and cost, LLM items returned, kept and dropped by the quote check), kept in Redis as the newest 10,000 (from 11 Nov). `pnpm stats [--since 2026-11-11] [--json]` in `miner/` summarises them, with the Redis URL and token from `miner/.env.local`. Records do not hold the question text. Whether Telegraph passes on who asked is not known yet: `headerNames` lists the request headers it sends, without their values.
+
 ## A good question
 
 Name the package, then the installed version, then the target, oldest first: "What changed in zod from 3.23.8 to 4.0.0?" or "Our app runs express 4.21.0; what breaks in 5.0.0?". The parser reads the word right before the first version as the package name, and more than two versions get `needs_clarification`.

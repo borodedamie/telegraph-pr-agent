@@ -83,6 +83,26 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     expect(answer.answer).toContain("(from version assumed: 3.25.76");
   });
 
+  it("counts what the model added and what verification dropped", async () => {
+    const real = stubModel();
+    const caller: ModelCaller = async (miner, prompt, ...rest) => {
+      const reply = await real.caller(miner, prompt, ...rest);
+      const { items } = JSON.parse(reply.text) as { items: Record<string, unknown>[] };
+      const invented = { ...items[0], id: "i2", excerpt: "A sentence no release note contains", migration: null, migrationExcerpt: null };
+      return { ...reply, text: JSON.stringify({ items: [...items, invented] }) };
+    };
+    const roomy = { ...deps(new MemoryStore(), caller), limits: limitsFromEnv({ MAX_MODEL_RELEASES: "100", MAX_MODEL_INPUT_CHARS: "500000" }) };
+    const { metrics, answer } = await answerQuestion(QUESTION, roomy);
+    expect(metrics).toMatchObject({
+      package: "zod", fromVersion: "3.23.8", toVersion: "4.0.0", changes: answer.changes.length,
+      modelItems: 2, modelItemsKept: 1, modelDrops: { "excerpt not in source": 1 }, rulesItems: answer.changes.length - 1,
+    });
+    expect(metrics.releasesCovered).toBe(answer.coverage!.covered.length);
+
+    const repeat = await answerQuestion(QUESTION, roomy);
+    expect(repeat.metrics).toMatchObject({ cacheHit: true, package: "zod", changes: answer.changes.length, modelItems: 0 });
+  });
+
   it("returns the identical string on a repeat call without calling the model", async () => {
     const store = new MemoryStore();
     const model = stubModel();

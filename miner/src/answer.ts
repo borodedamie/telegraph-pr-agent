@@ -58,7 +58,7 @@ export interface PipelineResult {
   json: string;
   answer: Answer;
   cacheHit: boolean;
-  metrics: Omit<MetricsRecord, "requestHash" | "authOk" | "msTotal">;
+  metrics: Omit<MetricsRecord, "requestHash" | "authOk" | "headerNames" | "msTotal">;
 }
 
 /** Vercel kills the function at maxDuration (vercel.json). */
@@ -73,7 +73,27 @@ function emptyMetrics(): PipelineResult["metrics"] {
     cacheHit: false, outcome: null, declaredFailure: false, extractorMode: null,
     msResolve: 0, msFetch: 0, msModel: 0, upstreamRequests: 0, conditionalHits: 0,
     llmMinerId: null, modelCalls: 0, modelInputChars: 0, modelCostUsdc: 0, llmFailure: null, budgetExhausted: null,
+    package: null, fromVersion: null, toVersion: null, changes: 0, confidence: null, releasesCovered: 0, notCovered: {},
+    rulesItems: 0, modelItems: 0, modelItemsKept: 0, modelDrops: {}, modelSectionsCut: 0, modelSectionsSkipped: 0, modelSectionsFailed: 0,
   };
+}
+
+/** The answer's own fields in the metrics record, for computed and cached answers alike. */
+function describeAnswer(answer: Answer, metrics: PipelineResult["metrics"]): void {
+  metrics.outcome = answer.outcome;
+  metrics.package = answer.request?.package ?? null;
+  metrics.fromVersion = answer.request?.fromResolved ?? null;
+  metrics.toVersion = answer.request?.toResolved ?? null;
+  metrics.changes = answer.changes.length;
+  metrics.confidence = answer.confidence;
+  metrics.releasesCovered = answer.coverage?.covered.length ?? 0;
+  metrics.notCovered = countBy((answer.coverage?.notCovered ?? []).map((gap) => gap.reason));
+}
+
+function countBy(keys: string[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const key of keys) counts[key] = (counts[key] ?? 0) + 1;
+  return counts;
 }
 
 function isUpstreamFailure(err: unknown): boolean {
@@ -96,7 +116,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
 
   const finish = (answer: Answer): PipelineResult => {
     const parsed = Answer.parse(answer);
-    metrics.outcome = parsed.outcome;
+    describeAnswer(parsed, metrics);
     metrics.declaredFailure = parsed.outcome === "temporarily_unavailable";
     return { json: JSON.stringify(parsed), answer: parsed, cacheHit: false, metrics };
   };
@@ -291,7 +311,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
 function fromCache(json: string, metrics: PipelineResult["metrics"]): PipelineResult {
   const answer = Answer.parse(JSON.parse(json));
   metrics.cacheHit = true;
-  metrics.outcome = answer.outcome;
+  describeAnswer(answer, metrics);
   return { json, answer, cacheHit: true, metrics };
 }
 
@@ -356,8 +376,17 @@ async function compute(
   for (const index of model.cut) tracker.uncover(material.sections[index].version, "truncated");
 
   const candidates: Candidate[] = [...rules.candidates, ...model.candidates];
-  const { items } = verify(candidates, material.sections, verifySources);
+  const { items, dropped } = verify(candidates, material.sections, verifySources);
   const changes: ChangeItem[] = items;
+  const modelRefs = new Set(model.candidates.map((c) => c.ref));
+  const modelDropped = dropped.filter((drop) => modelRefs.has(drop.ref));
+  metrics.rulesItems = items.length - (model.candidates.length - modelDropped.length);
+  metrics.modelItems = model.candidates.length;
+  metrics.modelItemsKept = model.candidates.length - modelDropped.length;
+  metrics.modelDrops = countBy(modelDropped.map((drop) => drop.reason));
+  metrics.modelSectionsCut = model.cut.length;
+  metrics.modelSectionsSkipped = model.skipped.length;
+  metrics.modelSectionsFailed = model.failed.length;
 
   // A release whose notes only point elsewhere, with nothing found in any source, was not read: it is not
   // covered, so the answer cannot say it has no changes.
