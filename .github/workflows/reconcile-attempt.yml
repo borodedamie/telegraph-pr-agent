@@ -1,0 +1,63 @@
+name: Reconcile a stuck payment attempt
+
+# Run by hand after checking the wallet, escrow balance and signal for an attempt stuck at
+# request_sent or unknown_needs_reconciliation. Appends one final row to the ledger branch.
+# No wallet key and no purchase.
+on:
+  workflow_dispatch:
+    inputs:
+      attempt-id:
+        description: "attemptId from the ledger (latest stage request_sent or unknown_needs_reconciliation)"
+        required: true
+        type: string
+      outcome:
+        description: "What happened to the payment"
+        required: true
+        type: choice
+        options:
+          - failed_and_credited
+          - failed_not_charged
+          - failed_and_charged
+      note:
+        description: "What you checked and found"
+        required: true
+        type: string
+      tx-hash:
+        description: "Payment transaction hash (required for failed_and_charged)"
+        required: false
+        type: string
+      amount-usdc:
+        description: "Amount charged, for failed_and_charged (defaults to the attempt's quote)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: telegraph-reconcile-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - uses: ./bot/actions
+        with:
+          reconcile-attempt-id: ${{ inputs.attempt-id }}
+          reconcile-outcome: ${{ inputs.outcome }}
+          reconcile-note: ${{ inputs.note }}
+          reconcile-tx-hash: ${{ inputs.tx-hash }}
+          reconcile-amount-usdc: ${{ inputs.amount-usdc }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

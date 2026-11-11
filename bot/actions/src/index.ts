@@ -9,6 +9,7 @@ import { scanRepository } from "./scan";
 import { IntelligenceClient } from "../../src/x402";
 import { applyAssessment, assessmentPrompt, InvalidAssessmentError, NotFoundAssessmentError } from "./assessment";
 import { assertPublicRepository, checkedOutBranch } from "./pull-request";
+import { checkReconciliation, reconcileAttempt, type ReconcileOutcome } from "./reconcile";
 
 const INTENT_ID = "QUESTION_ANSWERING_GENERAL";
 
@@ -21,6 +22,21 @@ const run = async (): Promise<void> => {
     if (!token) throw new Error("GITHUB_TOKEN is required");
     const repository = process.env.GITHUB_REPOSITORY ?? "";
     if (!/^[\w.-]+\/[\w.-]+$/.test(repository)) throw new Error("GITHUB_REPOSITORY must be owner/repo");
+    const reconcileId = core.getInput("reconcile-attempt-id");
+    if (reconcileId) {
+      // Manual reconciliation: no wallet, no purchase; one row on the ledger.
+      const txHash = core.getInput("reconcile-tx-hash");
+      const amount = core.getInput("reconcile-amount-usdc");
+      const reconciliation = { attemptId: reconcileId, outcome: core.getInput("reconcile-outcome") as ReconcileOutcome,
+        note: core.getInput("reconcile-note"), actor: process.env.GITHUB_ACTOR ?? "",
+        txHash: txHash || undefined, amountUsdc: amount ? Number(amount) : undefined };
+      checkReconciliation(reconciliation);
+      await assertPublicRepository(repository, token);
+      ledger = await openLedger(repository, token);
+      await reconcileAttempt(ledger, reconciliation);
+      core.setOutput("status", "success");
+      return;
+    }
     const mergePrNumber = core.getInput("merge-pr-number");
     if (process.env.GITHUB_EVENT_NAME === "pull_request_target" || mergePrNumber) {
       const number = mergePrNumber ? Number(mergePrNumber)
@@ -40,6 +56,12 @@ const run = async (): Promise<void> => {
     const budget = Number(core.getInput("budget-cap-usdc"));
     if (![maxPrice, budget].every((amount) => Number.isFinite(amount) && amount > 0)) {
       throw new Error("max-price-per-call-usdc and budget-cap-usdc must be positive finite numbers");
+    }
+    // Off unless set: a cap on all purchases in the calendar month (UTC), across runs.
+    const monthlyInput = core.getInput("monthly-budget-usdc");
+    const monthlyCap = monthlyInput === "" ? null : Number(monthlyInput);
+    if (monthlyCap !== null && !(Number.isFinite(monthlyCap) && monthlyCap > 0)) {
+      throw new Error("monthly-budget-usdc must be a positive finite number when set");
     }
     const preferredMinerId = core.getInput("preferred-miner-id") || process.env.PREFERRED_MINER_ID || null;
     if (preferredMinerId && !/^\d+$/.test(preferredMinerId)) throw new Error("preferred-miner-id must be numeric");
@@ -84,6 +106,7 @@ const run = async (): Promise<void> => {
       for (const dependency of candidates) {
         const purchase = await purchaseAssessment({ ledger, repository, baseSha, dependency, client, provenance,
           intent: INTENT_ID, query: assessmentPrompt([dependency]),
+          monthlyBudget: monthlyCap === null ? undefined : { capUsdc: monthlyCap, worstCaseUsdc: maxPrice },
           onPurchase: (paid) => {
             core.setOutput("message", JSON.stringify(paid));
             if (!paid.receiptHash || !paid.signalHash || !paid.txHash) {

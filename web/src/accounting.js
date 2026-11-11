@@ -1,3 +1,16 @@
+/** The latest row of each attempt, keyed by attemptId. */
+const latestAttempts = (rows) => {
+  const latest = new Map();
+  for (const row of rows.filter((row) => row.kind === "attempt" && row.attemptId)) latest.set(row.attemptId, row);
+  return latest;
+};
+
+/** Attempts reconciled as charged with no answer kept: real spend with no purchase row. */
+export const chargedWithoutAnswer = (rows) => {
+  const charged = [...latestAttempts(rows).values()].filter((row) => row.state === "failed_and_charged");
+  return { count: charged.length, amountUsdc: charged.reduce((sum, row) => sum + (row.chargedAmountUsdc ?? 0), 0) };
+};
+
 /** Keep receipt-linked allocation separate from all recorded net spending per merged PR. */
 export const mergedCosts = (rows) => {
   const purchases = new Map(rows.filter((row) => !row.kind && row.status === "settled" && row.receiptHash)
@@ -14,7 +27,7 @@ export const mergedCosts = (rows) => {
   }
   const settled = new Map(rows.filter((row) => !row.kind && row.status === "settled")
     .map((row, index) => [row.receiptHash || row.attemptId || `unlinked:${index}`, row]));
-  const netSpend = [...settled.values()].reduce((sum, row) => sum + row.amountUsdc, 0);
+  const netSpend = [...settled.values()].reduce((sum, row) => sum + row.amountUsdc, 0) + chargedWithoutAnswer(rows).amountUsdc;
   return { total, count: prs.size, average: prs.size ? total / prs.size : null,
     netSpend, unmergedSpend: netSpend - total, costPerMergedPr: prs.size ? netSpend / prs.size : null };
 };
@@ -51,17 +64,16 @@ export const outcomeSummary = (rows) => {
   const closedSpend = [...closedReceipts].reduce((sum, receipt) => sum + (purchases.get(receipt)?.amountUsdc ?? 0), 0);
 
   const settled = purchaseRows(rows).filter((row) => row.status === "settled");
-  const netSpend = settled.reduce((sum, row) => sum + row.amountUsdc, 0);
+  const netSpend = settled.reduce((sum, row) => sum + row.amountUsdc, 0) + chargedWithoutAnswer(rows).amountUsdc;
   const useful = settled.filter((row) => row.resultStatus === "useful").length;
 
   // An attempt's amount is on its request_sent or quote_refused row; its outcome is its latest row.
-  const latest = new Map();
   const quoted = new Map();
-  for (const row of rows.filter((row) => row.kind === "attempt" && row.attemptId)) {
-    latest.set(row.attemptId, row.state);
-    if (typeof row.quotedAmountUsdc === "number") quoted.set(row.attemptId, row.quotedAmountUsdc);
+  for (const row of rows.filter((row) => row.kind === "attempt" && typeof row.quotedAmountUsdc === "number")) {
+    quoted.set(row.attemptId, row.quotedAmountUsdc);
   }
-  const ended = (state) => [...latest].filter(([, last]) => last === state).map(([id]) => quoted.get(id) ?? 0);
+  const ended = (state) => [...latestAttempts(rows).values()].filter((row) => row.state === state)
+    .map((row) => quoted.get(row.attemptId) ?? 0);
   const credited = ended("failed_and_credited");
   const refused = ended("quote_refused");
   const sum = (amounts) => amounts.reduce((total, amount) => total + amount, 0);
@@ -73,5 +85,6 @@ export const outcomeSummary = (rows) => {
     useful, costPerUsefulAnswer: useful ? netSpend / useful : null,
     escrowCredits: { count: credited.length, amountUsdc: sum(credited) },
     refusedQuotes: { count: refused.length, amountUsdc: sum(refused) },
+    chargedWithoutAnswer: chargedWithoutAnswer(rows),
   };
 };

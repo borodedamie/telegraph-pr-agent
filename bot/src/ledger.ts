@@ -61,6 +61,7 @@ export interface LedgerRow {
 
 // One payment try moves reserved → quote_refused, or reserved → request_sent →
 // delivered / failed_and_credited / failed_not_charged / unknown_needs_reconciliation.
+// A person resolves request_sent / unknown_needs_reconciliation to a failed_* stage.
 // Each change of state appends a new row; the latest row for an attemptId wins.
 export type AttemptState =
   | "reserved" // about to try; no money has moved
@@ -69,6 +70,7 @@ export type AttemptState =
   | "delivered" // paid and answered; the purchase row holds the receipt
   | "failed_and_credited" // paid, then the call failed; amount credited to escrow
   | "failed_not_charged" // the node rejected the payment or reported it unsettled
+  | "failed_and_charged" // set by reconciliation: charged on chain, but no answer was kept
   | "unknown_needs_reconciliation"; // sent, but no clear outcome; a person must check
 
 export interface AttemptKey {
@@ -91,6 +93,11 @@ export interface AttemptRow extends AttemptKey {
   quotedAmountUsdc?: number;
   receiptHash?: string;
   reason?: string;
+  /** Reconciliation only: who resolved the attempt (GitHub actor). */
+  reconciledBy?: string;
+  /** failed_and_charged only: the on-chain payment and the amount it settled. */
+  txHash?: string;
+  chargedAmountUsdc?: number;
   timestamp: string;
 }
 
@@ -237,10 +244,42 @@ export function checkMayPay(existing: string, key: AttemptKey, attemptId: string
   }
 }
 
+/**
+ * Spend so far in the calendar month (UTC) that `now` falls in. The ledger file belongs
+ * to one repository, so every row counts. Settled purchases count at their charged
+ * amount; an attempt whose latest stage is request_sent or unknown_needs_reconciliation
+ * may have been charged, so it counts at `worstCaseUsdc` (the signer's per-call cap).
+ * A reconciled failed_and_charged attempt counts at its recorded charged amount.
+ */
+export function monthToDateSpendUsdc(existing: string, now: Date, worstCaseUsdc: number): number {
+  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+  const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();
+  const inMonth = (timestamp: unknown) => typeof timestamp === "string" && timestamp >= from && timestamp < to;
+  let spent = 0;
+  const latest = new Map<string, AttemptRow>();
+  for (const row of parseRows(existing)) {
+    if (row.kind === undefined) {
+      const purchase = row as Partial<LedgerRow>;
+      if (purchase.status === "settled" && inMonth(purchase.timestamp) && typeof purchase.amountUsdc === "number") {
+        spent += purchase.amountUsdc;
+      }
+    } else if (row.kind === "attempt" && typeof (row as AttemptRow).attemptId === "string") {
+      latest.set((row as AttemptRow).attemptId, row as AttemptRow);
+    }
+  }
+  for (const attempt of latest.values()) {
+    if (isOpen(attempt) && inMonth(attempt.timestamp)) spent += worstCaseUsdc;
+    // Charged with no purchase row: the reconciled amount is real spend.
+    if (attempt.state === "failed_and_charged" && inMonth(attempt.timestamp)) spent += attempt.chargedAmountUsdc ?? worstCaseUsdc;
+  }
+  return spent;
+}
+
 const describeRow = (r: LedgerEntry) =>
   "kind" in r && r.kind === "merge" ? `PR #${r.prNumber} merged ${r.mergeSha}` :
   "kind" in r && r.kind === "proposal" ? `PR #${r.prNumber} proposed ${r.package} ${r.targetVersion}` :
   "kind" in r && r.kind === "closed" ? `PR #${r.prNumber} closed unmerged` :
+  "kind" in r && r.kind === "attempt" && r.reconciledBy ? `${r.attemptId} reconciled ${r.state} by ${r.reconciledBy}` :
   "kind" in r && r.kind === "attempt"
     ? `${r.prNumber === undefined ? "assessment" : `PR #${r.prNumber}`} ${r.attemptId} ${r.state}`
     : `${r.prNumber === undefined ? "assessment" : `PR #${r.prNumber}`} ${(r as LedgerRow).intent} ${(r as LedgerRow).txHash}`;

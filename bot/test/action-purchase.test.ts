@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
 import { purchaseAssessment, markAssessmentResult, recordProposal } from "../actions/src/purchase.js";
 import { LEDGER_FILE, type AttemptRow } from "../src/ledger.js";
-import { AskFailedError, type OnAttempt, type Purchase } from "../src/x402.js";
+import { AskFailedError, BudgetCapError, type OnAttempt, type Purchase } from "../src/x402.js";
 
 const directories: string[] = [];
 afterEach(() => { for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true }); });
@@ -178,6 +178,41 @@ it("records a published PR once per PR number and marks its paid answer useful",
   expect(quality).toHaveLength(1);
   expect(quality[0]).toMatchObject({ attemptId: purchase.attemptId, state: "delivered" });
   expect(f.payments()).toBe(1);
+});
+
+// A settled purchase from another assessment, dated now so it falls in this month.
+const priorSpend = (amountUsdc: number) => `${JSON.stringify({ repo: "team/repo", status: "settled", amountUsdc,
+  receiptHash: "earlier", timestamp: new Date().toISOString() })}\n`;
+
+it("refuses before reserving when this month's spend plus one worst-case call would exceed the monthly budget", async () => {
+  const f = fixture();
+  f.setRemote(priorSpend(0.95));
+  await expect(purchaseAssessment({ ...f.options, monthlyBudget: { capUsdc: 1, worstCaseUsdc: 0.1 } }))
+    .rejects.toThrow(BudgetCapError);
+  expect(f.payments()).toBe(0);
+  expect(f.rows()).toHaveLength(1); // nothing recorded: no reserved row
+});
+
+it("buys when the monthly budget still covers a worst-case call, and ignores it when unset", async () => {
+  const under = fixture();
+  under.setRemote(priorSpend(0.9));
+  await purchaseAssessment({ ...under.options, monthlyBudget: { capUsdc: 1, worstCaseUsdc: 0.1 } });
+  expect(under.payments()).toBe(1);
+
+  const off = fixture();
+  off.setRemote(priorSpend(1000));
+  await purchaseAssessment(off.options);
+  expect(off.payments()).toBe(1);
+});
+
+it("counts another run's in-flight payment against the monthly budget", async () => {
+  const f = fixture();
+  const inFlight: AttemptRow = { kind: "attempt", repo: "team/repo", headSha: "sha0", step: "other", attemptId: "other:1",
+    attempt: 1, state: "request_sent", minerId: "302", timestamp: new Date().toISOString() };
+  f.setRemote(`${JSON.stringify(inFlight)}\n`);
+  await expect(purchaseAssessment({ ...f.options, monthlyBudget: { capUsdc: 0.15, worstCaseUsdc: 0.1 } }))
+    .rejects.toThrow(/monthly budget/);
+  expect(f.payments()).toBe(0);
 });
 
 it("sends the miner-specific migration question and retains structured answers on reuse", async () => {

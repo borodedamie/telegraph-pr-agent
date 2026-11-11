@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { EVENT_WINDOW, inWindow, mergedCosts, outcomeSummary, purchaseRows } from "./accounting.js";
+import { chargedWithoutAnswer, EVENT_WINDOW, inWindow, mergedCosts, outcomeSummary, purchaseRows } from "./accounting.js";
 
 test("allocates settled receipt costs once and excludes unmatched, failed and cross-repo records", () => {
   const purchase = { repo: "team/repo", status: "settled", receiptHash: "one", amountUsdc: 0.02 };
@@ -51,9 +51,9 @@ test("counts proposed, merged, closed and open PRs, and the merge rate", () => {
     { kind: "merge", repo: "r", prNumber: 4, receiptHash: "d" },
   ];
   const summary = outcomeSummary(rows);
-  assert.deepEqual({ ...summary, escrowCredits: undefined, refusedQuotes: undefined }, {
+  assert.deepEqual({ ...summary, escrowCredits: undefined, refusedQuotes: undefined, chargedWithoutAnswer: undefined }, {
     proposed: 4, merged: 2, closed: 1, open: 1, mergeRate: 0.5, closedSpend: 0.5,
-    useful: 0, costPerUsefulAnswer: null, escrowCredits: undefined, refusedQuotes: undefined,
+    useful: 0, costPerUsefulAnswer: null, escrowCredits: undefined, refusedQuotes: undefined, chargedWithoutAnswer: undefined,
   });
   assert.equal(outcomeSummary([]).mergeRate, null);
 });
@@ -93,4 +93,15 @@ test("keeps only rows dated inside the event window", () => {
     { timestamp: "2026-12-01T23:59:59.000Z" }, { timestamp: "2026-12-02T00:00:00.000Z" }, {}];
   assert.deepEqual(inWindow(rows, EVENT_WINDOW).map((row) => row.timestamp),
     ["2026-11-01T00:00:00.000Z", "2026-12-01T23:59:59.000Z"]);
+});
+
+test("counts an attempt reconciled as failed_and_charged as spend, using its latest state", () => {
+  const purchase = { repo: "r", status: "settled", receiptHash: "a", amountUsdc: 0.25 };
+  const charged = { kind: "attempt", attemptId: "x:1", state: "failed_and_charged", chargedAmountUsdc: 0.5, reconciledBy: "dev" };
+  const rows = [purchase, { kind: "attempt", attemptId: "x:1", state: "request_sent", quotedAmountUsdc: 0.125 }, charged,
+    { kind: "attempt", attemptId: "y:1", state: "request_sent", quotedAmountUsdc: 1 }]; // still open: not spend
+  assert.deepEqual(chargedWithoutAnswer(rows), { count: 1, amountUsdc: 0.5 });
+  assert.equal(mergedCosts(rows).netSpend, 0.75);
+  assert.deepEqual(outcomeSummary(rows).chargedWithoutAnswer, { count: 1, amountUsdc: 0.5 });
+  assert.equal(outcomeSummary(rows).escrowCredits.count, 0);
 });

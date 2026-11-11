@@ -52,7 +52,7 @@ Each stage is marked current or planned.
 Known gaps in this slice, kept here so nobody mistakes them for features:
 
 - The intent id `QUESTION_ANSWERING_GENERAL` is hardcoded; it was checked against `GET /engine/v1/intents` on 3 Nov 2026 and must be rechecked if the catalogue changes.
-- Each payment try is recorded on the ledger branch at every stage (`reserved`, then `quote_refused` or `request_sent`, then `delivered`, `failed_and_credited`, `failed_not_charged` or `unknown_needs_reconciliation`; definitions in [SPEC §2.6](docs/SPEC.md)) before the bot moves on. If a run dies or its push fails after `request_sent`, the next run for that PR and commit stops instead of paying again, and a person checks the wallet, escrow balance and signal. Before recording `reserved` and `request_sent`, the run re-checks the freshly fetched ledger, and a push loses if another run pushed first, so two runs for the same PR and commit can't both pay; the second stops. Nothing yet marks a stuck attempt as reconciled; that is done by hand on the ledger branch.
+- Each payment try is recorded on the ledger branch at every stage (`reserved`, then `quote_refused` or `request_sent`, then `delivered`, `failed_and_credited`, `failed_not_charged` or `unknown_needs_reconciliation`; definitions in [SPEC §2.6](docs/SPEC.md)) before the bot moves on. If a run dies or its push fails after `request_sent`, the next run for that PR and commit stops instead of paying again, and a person checks the wallet, escrow balance and signal. Before recording `reserved` and `request_sent`, the run re-checks the freshly fetched ledger, and a push loses if another run pushed first, so two runs for the same PR and commit can't both pay; the second stops. To clear a stuck attempt, check the wallet, escrow balance and signal, then run the **Reconcile a stuck payment attempt** workflow (`.github/workflows/reconcile-attempt.yml`, Actions tab, default branch) with the `attemptId`, the outcome (`failed_and_credited`, `failed_not_charged`, or `failed_and_charged` when the payment was charged but no answer was kept) and a note. `failed_and_charged` requires the payment's transaction hash and counts as spend. The workflow holds no wallet key; it refuses attempts that aren't stuck, and records who reconciled.
 - A purchase is recorded once per `receipt_hash`; writing a receipt that is already on the ledger is refused. Each purchase row has a `resultStatus` for answer quality, kept apart from payment: new rows start `unchecked`, and `useful`, `unusable` or `not_found` can be recorded separately. The dependency action automatically appends `useful` when an answer produces a published PR and `unusable` for invalid findings; the dashboard uses the latest quality update.
 - Each purchase row stores the network, chain id, USDC contract and explorer URL of the 402 option it paid, and transaction links are built from that. Rows written before 5 Nov 2026 lack these fields; their links use the date (before 1 Nov: Basescan, Base Sepolia; after: Etherscan, Ethereum Sepolia). The memo's summary line still names Ethereum Sepolia as fixed text.
 
@@ -302,6 +302,11 @@ proving what is installed in a running interpreter. Unresolved versions are repo
   `https://devnode.telegraphprotocol.com`, `max-price-per-call-usdc` is `0.10`,
   and `budget-cap-usdc` is `2`. Optional
   `with:` inputs can override these defaults. These are spending limits, not live prices.
+- `budget-cap-usdc` applies to one run. To cap spend across runs, set the optional
+  `monthly-budget-usdc` input (off when empty): before each purchase the action adds up
+  the calendar month's (UTC) settled purchases on the ledger branch, counts any attempt
+  still mid-payment at `max-price-per-call-usdc`, and refuses the purchase if one more
+  worst-case call would exceed the cap. Nothing is recorded or paid when it refuses. In this repository's workflow it comes from the repository variable `MONTHLY_BUDGET_USDC`.
 - Supply secret `TELEGRAPH_EVM_PRIVATE_KEY` for a dedicated wallet. Private keys
   are not bundled as action defaults.
 - Allow GitHub Actions to create pull requests in repository settings and grant the

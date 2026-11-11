@@ -203,6 +203,7 @@ Open, not yet decided by the team. Recommendation: Engine auto-routing (`POST /e
 
 - [PRODUCT] The 402 challenge's `accepts[]` is authoritative for network, chain id, asset, amount and pay-to address. Never hardcode a network or USDC address from an earlier configuration.
 - [PRODUCT] Enforce `MAX_PRICE_PER_CALL_USDC` and the remaining run/stage budget in the application and in the x402 client's spend controls where supported.
+- [PRODUCT] Optional monthly cap across runs (`monthly-budget-usdc`, off unless set): spend for the calendar month (UTC) is read from the ledger before each purchase, with attempts still at `request_sent` or `unknown_needs_reconciliation` counted at the per-call maximum; a purchase that could exceed the cap is refused before `reserved` is recorded.
 - [PRODUCT] Store `min_price_usdc`, quoted amount and actual charged amount separately; a floor is not the payment, demand multipliers change the quote.
 - [PRODUCT] A successful HTTP response is not a useful answer. Inspect the Engine `result_shape` and `field_status`; an HTTP 200 with an error-like body can still be delivered and billable.
 - [PRODUCT] Payment may settle before the miner call; failed delivery may be credited to escrow. Record settlement, delivery and refund/credit as separate states. The x402 guide and the protocol overview describe settlement timing differently: a controlled failed-delivery test against the current node (payment response, settlement, escrow balance, receipt absence) is required before the docs state the behaviour as fact.
@@ -223,11 +224,15 @@ reserved → quote_refused
                         ↘ failed_and_credited
                         ↘ failed_not_charged
                         ↘ unknown_needs_reconciliation
+
+request_sent / unknown_needs_reconciliation → (person reconciles) → failed_and_credited
+                                                                   ↘ failed_not_charged
+                                                                   ↘ failed_and_charged
 ```
 
-- [PRODUCT] `quote_refused`: our price or budget limit refused the quote; nothing was sent. `failed_and_credited`: a valid payment settled, then the call failed (miner down, timeout, error status); the amount is credited to escrow and never charged. `failed_not_charged`: the node rejected the signed payment (402, or 400 "Invalid payment") or the settlement header reported `success: false`. `unknown_needs_reconciliation`: the request went out and no readable outcome came back. Source for the two failure meanings: [x402 inference, Step 3](https://anjoman.ai/docs/using/x402-inference). `quote_refused`, `failed_and_credited` and `failed_not_charged` are final and allow a new attempt.
+- [PRODUCT] `quote_refused`: our price or budget limit refused the quote; nothing was sent. `failed_and_credited`: a valid payment settled, then the call failed (miner down, timeout, error status); the amount is credited to escrow and never charged. `failed_not_charged`: the node rejected the signed payment (402, or 400 "Invalid payment") or the settlement header reported `success: false`. `unknown_needs_reconciliation`: the request went out and no readable outcome came back. Source for the two failure meanings: [x402 inference, Step 3](https://anjoman.ai/docs/using/x402-inference). `failed_and_charged`: set only by reconciliation; the payment was charged on chain but no answer was delivered or kept. It needs the payment's transaction hash and records the charged amount (the attempt's quote unless stated); it is spend in net-spend, cost-per-merged-PR and monthly-budget figures. `quote_refused`, `failed_and_credited`, `failed_not_charged` and `failed_and_charged` are final and allow a new attempt.
 
-- [PRODUCT] Persist the attempt as `reserved` before the external request and as `request_sent` immediately before sending. Persist payment response, receipt and signal immediately after the call. A run that finds an attempt in `request_sent` or `unknown_needs_reconciliation` for the same key halts automatic retries for that key and reports it; a person reconciles it against settlement, escrow and signal evidence. Where attempt state is persisted (the ledger branch or a run artifact) and who reconciles are part of C's ledger design. No exactly-once claim unless the payment rail offers an idempotency key and we use it.
+- [PRODUCT] Persist the attempt as `reserved` before the external request and as `request_sent` immediately before sending. Persist payment response, receipt and signal immediately after the call. A run that finds an attempt in `request_sent` or `unknown_needs_reconciliation` for the same key halts automatic retries for that key and reports it; a person reconciles it against settlement, escrow and signal evidence, then runs the manual `reconcile-attempt.yml` workflow (no wallet) to append the final stage with a note and their GitHub handle. Attempt state is persisted on the ledger branch. No exactly-once claim unless the payment rail offers an idempotency key and we use it.
 
 ### 2.7 Q&A result and `not_found` handling
 

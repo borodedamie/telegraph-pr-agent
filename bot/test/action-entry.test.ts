@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   NotFoundAssessmentError: class extends Error {}, fetchPr: vi.fn(), InvalidAssessmentError: class extends Error {}, unusable: vi.fn(), notice: vi.fn(), merge: vi.fn(), read: vi.fn(), visibility: vi.fn(), candidates: vi.fn(), open: vi.fn(), purchase: vi.fn(),
   buy: vi.fn(), client: vi.fn(), apply: vi.fn(), failed: vi.fn(), output: vi.fn(),
-  inputs: {} as Record<string, string>, proposal: vi.fn(),
+  inputs: {} as Record<string, string>, proposal: vi.fn(), reconcile: vi.fn(), checkReconciliation: vi.fn(),
 }));
 vi.mock("../actions/node_modules/@actions/core/lib/core.js", () => ({
   setSecret: vi.fn(), setFailed: mocks.failed, setOutput: mocks.output,
@@ -19,6 +19,7 @@ vi.mock("../actions/src/cutoff", () => ({ cutoffCandidates: mocks.candidates }))
 vi.mock("../actions/src/purchase", () => ({ openLedger: mocks.open, purchaseAssessment: mocks.purchase, markAssessmentResult: mocks.unusable, recordProposal: mocks.proposal }));
 vi.mock("../actions/src/pull-request", () => ({ checkedOutBranch: () => "feature", assertPublicRepository: mocks.visibility }));
 vi.mock("../actions/src/assessment", () => ({ NotFoundAssessmentError: mocks.NotFoundAssessmentError, InvalidAssessmentError: mocks.InvalidAssessmentError, assessmentPrompt: () => "assess dependencies", applyAssessment: mocks.apply }));
+vi.mock("../actions/src/reconcile", () => ({ checkReconciliation: mocks.checkReconciliation, reconcileAttempt: mocks.reconcile }));
 vi.mock("../src/x402", () => ({ IntelligenceClient: function (options: unknown) {
   mocks.client(options);
   return { buy: mocks.buy };
@@ -117,6 +118,25 @@ it("retains incremental PR output and paid evidence when publication fails", asy
   expect(mocks.output).toHaveBeenCalledWith("message", '{"answer":"{\\"findings\\":[]}"}');
 });
 
+it("passes the monthly budget only when monthly-budget-usdc is set", async () => {
+  await run();
+  expect(mocks.purchase.mock.calls[0][0].monthlyBudget).toBeUndefined();
+
+  vi.resetModules();
+  mocks.purchase.mockClear();
+  mocks.output.mockClear();
+  mocks.inputs["monthly-budget-usdc"] = "5";
+  await run();
+  expect(mocks.purchase.mock.calls[0][0].monthlyBudget).toEqual({ capUsdc: 5, worstCaseUsdc: 1 });
+});
+
+it("rejects an invalid monthly budget before opening the ledger", async () => {
+  mocks.inputs["monthly-budget-usdc"] = "-1";
+  await run("failed");
+  expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("monthly-budget-usdc"));
+  expect(mocks.open).not.toHaveBeenCalled();
+});
+
 it("records each published PR on the ledger with its number, purchase and finding", async () => {
   mocks.buy.mockResolvedValue({ answer: "{}", assessmentId: "assess-1", attemptId: "assess-1:1", receiptHash: "0xreceipt" });
   const finding = { ecosystem: "npm", package: "zod", source: "package.json", currentVersion: "3.25.0", targetVersion: "4.6.7" };
@@ -139,6 +159,30 @@ it("fails the run when a published PR cannot be recorded", async () => {
   });
   await run("failed");
   expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("ledger push failed"));
+});
+
+it("reconciles an attempt without a wallet, scan or payment", async () => {
+  vi.stubEnv("TELEGRAPH_EVM_PRIVATE_KEY", "");
+  vi.stubEnv("MODEL_CUTOFF", "");
+  vi.stubEnv("GITHUB_ACTOR", "borodedamie");
+  Object.assign(mocks.inputs, { "reconcile-attempt-id": "assess:1", "reconcile-outcome": "failed_and_charged",
+    "reconcile-note": "found the transfer", "reconcile-tx-hash": `0x${"a".repeat(64)}`, "reconcile-amount-usdc": "0.02" });
+  await run();
+  expect(mocks.reconcile).toHaveBeenCalledWith({ directory: "/mock-ledger" }, { attemptId: "assess:1",
+    outcome: "failed_and_charged", note: "found the transfer", actor: "borodedamie",
+    txHash: `0x${"a".repeat(64)}`, amountUsdc: 0.02 });
+  expect(mocks.client).not.toHaveBeenCalled();
+  expect(mocks.candidates).not.toHaveBeenCalled();
+});
+
+it("validates reconciliation inputs before opening the ledger", async () => {
+  vi.stubEnv("GITHUB_ACTOR", "borodedamie");
+  mocks.checkReconciliation.mockImplementation(() => { throw new Error("failed_and_charged needs reconcile-tx-hash"); });
+  Object.assign(mocks.inputs, { "reconcile-attempt-id": "assess:1", "reconcile-outcome": "failed_and_charged",
+    "reconcile-note": "found the transfer" });
+  await run("failed");
+  expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("reconcile-tx-hash"));
+  expect(mocks.open).not.toHaveBeenCalled();
 });
 
 it("records merge events without a wallet, miner selection or payment", async () => {

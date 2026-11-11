@@ -12,6 +12,7 @@ import {
   checkMayPay,
   hasLedgerRow,
   LEDGER_FILE,
+  monthToDateSpendUsdc,
   type LedgerRow,
   preflight,
 } from "../src/ledger.js";
@@ -303,5 +304,52 @@ describe("commitLedgerRow", () => {
     const git = makeFakeGit({ failPushTimes: 99 });
     await expect(commitLedgerRow(dir, row, { runGit: git.runGit })).rejects.toThrow(/ledger push failed/);
     expect(git.calls.filter((c) => c[0] === "push")).toHaveLength(3);
+  });
+});
+
+describe("monthToDateSpendUsdc", () => {
+  const now = new Date("2026-11-15T12:00:00.000Z");
+  const purchase = (timestamp: string, amountUsdc: number, status: LedgerRow["status"] = "settled") =>
+    ({ ...row, timestamp, amountUsdc, status, receiptHash: `r-${timestamp}` });
+  const attempt = (attemptId: string, state: AttemptRow["state"], timestamp: string): AttemptRow => ({
+    kind: "attempt", repo: "o/r", headSha: "sha", step: "qa", attemptId, attempt: 1, state, minerId: "1", timestamp,
+  });
+  const ledger = (...rows: (LedgerRow | AttemptRow)[]) => rows.reduce(appendLedgerRow, "");
+
+  it("adds settled purchases dated in the current UTC month only", () => {
+    const rows = ledger(
+      purchase("2026-10-31T23:59:59.999Z", 4), // last month
+      purchase("2026-11-01T00:00:00.000Z", 0.25),
+      purchase("2026-11-30T23:59:59.999Z", 0.5),
+      purchase("2026-12-01T00:00:00.000Z", 8), // next month
+      purchase("2026-11-10T00:00:00.000Z", 16, "failed")
+    );
+    expect(monthToDateSpendUsdc(rows, now, 0.1)).toBe(0.75);
+  });
+
+  it("counts an attempt still mid-payment at the worst case, and nothing for reserved or finished ones", () => {
+    const rows = ledger(
+      attempt("a:1", "reserved", "2026-11-02T00:00:00.000Z"),
+      attempt("a:1", "request_sent", "2026-11-02T00:00:01.000Z"), // open
+      attempt("b:1", "request_sent", "2026-11-03T00:00:00.000Z"),
+      attempt("b:1", "unknown_needs_reconciliation", "2026-11-03T00:00:01.000Z"), // open
+      attempt("c:1", "request_sent", "2026-11-04T00:00:00.000Z"),
+      attempt("c:1", "failed_not_charged", "2026-11-04T00:00:01.000Z"),
+      attempt("d:1", "reserved", "2026-11-05T00:00:00.000Z"),
+      attempt("e:1", "request_sent", "2026-10-20T00:00:00.000Z") // open, but last month
+    );
+    expect(monthToDateSpendUsdc(rows, now, 0.25)).toBe(0.5);
+  });
+
+  it("is zero for an empty ledger", () => {
+    expect(monthToDateSpendUsdc("", now, 0.1)).toBe(0);
+  });
+
+  it("counts a reconciled failed_and_charged attempt at its charged amount", () => {
+    const rows = ledger(
+      attempt("f:1", "request_sent", "2026-11-06T00:00:00.000Z"),
+      { ...attempt("f:1", "failed_and_charged", "2026-11-06T01:00:00.000Z"), chargedAmountUsdc: 0.5, reconciledBy: "dev" }
+    );
+    expect(monthToDateSpendUsdc(rows, now, 0.1)).toBe(0.5);
   });
 });
