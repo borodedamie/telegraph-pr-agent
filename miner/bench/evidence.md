@@ -40,17 +40,19 @@ recorded; only the five sample answers were collected for this page.
 | SC-006 repeats byte-identical | 38/38 | all |
 | SC-012 security conclusions match OSV | 38/38 | all |
 
-The benchmark predates processing versions `p8` (Key changes line) and `p9` (grouped coverage line, more model
-calls per answer when configured); it has not been re-run on them (T071).
+Re-run on production `p9` on 11 Nov (T071) with LLM miner 7413 and up to two model calls: the same 67.1% word-match
+recall case for case, so the model pass adds no reviewed change; every matched change comes from the rules. SC-001,
+SC-003 to SC-006 and SC-012 still pass. The LLM-judge figure (82.6%) is from the 5 Nov run and was not re-run.
+7413 takes prompts up to 8,000 chars, so long release notes are cut and those releases are reported `truncated`.
 
 ## Latency and cost
 
 | Item | Value | Recorded in |
 | --- | --- | --- |
-| First-time answer, p50 / p95 | 4.3 s / 11.2 s (38 answers, 5 Nov preview) | [`report.md`](report.md) |
+| First-time answer, p50 / p95 | 2.1 s / 9.8 s (37 answers, 11 Nov production `p9`; 4.3 s / 11.2 s on the 5 Nov preview) | [`report.md`](report.md) |
 | Repeat on production, after the repeat pointer | p50 433 ms, p95 466 ms, max 513 ms (one question, 15 repeats, 9 Nov); target under 500 ms | `network.md`, 9 Nov (PR #18) |
 | Price per answer | 0.02 USDC floor on the direct ask | [`network.md`](network.md), 6 Nov |
-| Our cost per first-time answer | At most one LLM-miner call at 0.01 USDC (default `MAX_MODEL_CALLS=1`); repeats cost nothing | [`miner/README.md`](../README.md) |
+| Our cost per first-time answer | Production since 11 Nov: up to two LLM-miner calls at 0.01 USDC (`MAX_MODEL_CALLS=2`, `MAX_MODEL_COST_USDC=0.02`); 24 calls, 0.23 USDC over 37 benchmark answers; repeats cost nothing | [`report.md`](report.md) |
 | Payout so far | 0.0196 USDC accrued (0.02 less the 2% protocol fee), credited as 0.00368 MACHINA at epoch 2045, claimable, not claimed. From the one paid test, which is related-party | [`network.md`](network.md), 9 Nov |
 
 ## Five sample requests and answers

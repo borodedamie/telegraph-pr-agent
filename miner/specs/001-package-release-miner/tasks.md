@@ -402,7 +402,8 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
   Record each response's actual shape, plus the score and rank if present or the observed reason they are absent, in `miner/bench/network.md`.
 
   Status 8 Nov (`miner/bench/network.md`, `docs/telegraph/qa-scoring-2026-11-09.md`): scored on `QUESTION_ANSWERING_GENERAL`, rank 11 of 17, score 0.7955 at epoch 2042, on a pool of 426 rows from 5 of 5 submitters. The intent is `judgment`, scored by the `GENERIC` fallback adapter. On 9 Nov 30 package-upgrade questions were uploaded to the pool, and found answers lead with a "Key changes" line (`p8`).
-- [ ] T065 [US5] Monitor `https://<prod>/api/health` with an external uptime check (any free monitor). Log failures and routing suspensions in `miner/bench/network.md` (SC-007)
+- [x] T065 [US5] Monitor `https://<prod>/api/health` with an external uptime check (any free monitor). Log failures and routing suspensions in `miner/bench/network.md` (SC-007)
+  Status 11 Nov: the scheduled `miner-health` GitHub workflow is the monitor; 5 runs from 9 Nov 23:34 to 11 Nov 00:45 UTC, all green. Miner 7314 is listed on `QUESTION_ANSWERING_GENERAL` (6th of 17) with no suspension shown (`miner/bench/network.md`).
 
   Status 9 Nov: `.github/workflows/miner-health.yml` checks `/api/health` every 15 minutes and fails the run when the miner or an upstream is down. Scheduled workflows run only from the default branch, so it starts once merged into `main`; tick this task after its first scheduled runs.
 - [x] T066 [US5] Record payout accounting in `miner/bench/network.md`:
@@ -430,7 +431,8 @@ Status 3 Nov: T022–T044 done; 120 unit tests pass. Deviations, recorded in res
   - the missing release is named;
   - the 40-release jump respects `MAX_MODEL_CALLS` and names the releases it cut.
   Status 10 Nov: the fixture is `got` 8.0.2 → 11.0.0 (40 releases, majors 9–11), recorded without the model; 8.0.3 has no GitHub release and only its tag compare covers it (`test/fixtures/multi/README.md`). Rules already ran on every release first. The model sections are now packed into up to `MAX_MODEL_CALLS` calls made side by side (a second call after the first would not fit the 20 s budget), sharing `MAX_MODEL_COST_USDC` among the calls made; a miner's failure streak moves once per answer. A failed call's releases are reported as `upstream_unavailable` and the answer is kept for an hour only. The coverage line groups neighbouring releases not covered for the same reason (`p9`). Section packing in the tests, with a stub model that finds nothing: one call (the default) sends 16 of the 40 releases to the model, two calls send all 40. Not run against a live LLM miner. Production keeps one call until the team decides the spend.
-- [ ] T071 [US3] Re-run the benchmark (T059), including the large jumps, and update `miner/bench/report.md`
+- [x] T071 [US3] Re-run the benchmark (T059), including the large jumps, and update `miner/bench/report.md`
+  Status 11 Nov: run against production `p9` (LLM miner 7413, `MAX_MODEL_CALLS=2`, `MAX_MODEL_INPUT_CHARS=4000`). 38 answered, 2 skipped (n08, n09). The model ran on 15 answers, 24 calls, 0.23 USDC recorded. SC-002 recall 247/368 (67.1%), the same case for case as the 5 Nov run on miner 302: every matched change comes from the rules, so 7413 adds no reviewed change. SC-001 675/675, SC-003 0, SC-004 8/8, SC-005 38/38, SC-006 38/38 identical, repeat p95 606 ms (target under 500 ms), first-time p50/p95 2.1 s / 9.8 s. 7413 takes prompts up to 8,000 chars, so long release notes are cut and reported `truncated`: vite 5.4.0 → 6.0.0 has 21 of 22 releases truncated, next 14.2.0 → 15.0.0 24 of 36. The LLM judge was not re-run (its miner, 302, now returns unrelated content).
 
 ---
 
