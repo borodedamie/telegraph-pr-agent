@@ -35,6 +35,8 @@ curl -H "X-Telegraph-Key: $KEY" "http://localhost:3000/api/answer?query=What%20c
 curl http://localhost:3000/api/health
 ```
 
+How to call it as a buyer: [USAGE.md](USAGE.md).
+
 Setup, tests and the benchmark: [specs/001-package-release-miner/quickstart.md](specs/001-package-release-miner/quickstart.md).
 
 ## A good question
