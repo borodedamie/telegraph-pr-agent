@@ -35,6 +35,8 @@ curl -H "X-Telegraph-Key: $KEY" "http://localhost:3000/api/answer?query=What%20c
 curl http://localhost:3000/api/health
 ```
 
+How to call it as a buyer: [USAGE.md](USAGE.md).
+
 Setup, tests and the benchmark: [specs/001-package-release-miner/quickstart.md](specs/001-package-release-miner/quickstart.md).
 
 Live traffic: every answered request leaves one metrics record (what was asked, outcome, latency, LLM calls and cost, LLM items returned, kept and dropped by the quote check), kept in Redis as the newest 10,000 (from 11 Nov). `pnpm stats [--since 2026-11-11] [--json]` in `miner/` summarises them, with the Redis URL and token from `miner/.env.local`. Records do not hold the question text. Whether Telegraph passes on who asked is not known yet: `headerNames` lists the request headers it sends, without their values.
