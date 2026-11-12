@@ -1,6 +1,6 @@
 # Telegraph PR Agent
 
-A testnet prototype of a dependency-migration agent that is designed to buy release intelligence through [Telegraph](https://anjoman.ai/docs/introduction) instead of guessing. The product is a GitHub Action ([Dependency update Action](#dependency-update-action)); an earlier CLI prototype made the first test purchases and was removed on 11 Nov 2026. The project has not yet demonstrated a completed migration PR or cost per merged PR.
+A testnet prototype of a dependency-migration agent that is designed to buy release intelligence through [Telegraph](https://anjoman.ai/docs/introduction) instead of guessing. The product is a GitHub Action ([Dependency update Action](#dependency-update-action); to add it to your own repository, see [Install in your repository](#install-in-your-repository-5-minutes)); an earlier CLI prototype made the first test purchases and was removed on 11 Nov 2026. The project has not yet demonstrated a completed migration PR or cost per merged PR.
 
 Built for the Telegraph Hackathon Season II, mission [Model Economy](https://hackathon.telegraphprotocol.com/missions/model-economy). Specification (source of truth): [docs/SPEC.md](docs/SPEC.md). Milestones: [docs/HACKATHON-PLAN.md](docs/HACKATHON-PLAN.md). Who does what: [docs/TEAM.md](docs/TEAM.md). Live QA intent contract: [docs/telegraph/qa-intent-contract-2026-11-02.md](docs/telegraph/qa-intent-contract-2026-11-02.md).
 
@@ -141,6 +141,139 @@ To be filled in as each item exists; nothing below is claimed yet.
 
 If you try the Action, open an issue with what you ran, the signal hash and whether the answer was useful. That is the kind of independent test the project needs.
 
+## Install in your repository (5 minutes)
+
+Runs on testnet: payments are Ethereum Sepolia test USDC. Nothing here spends real money.
+
+**1. Check your repository fits.**
+
+- Public repository. Private ones fail closed before any purchase.
+- npm projects with a standalone `package-lock.json` (lockfile v2 or v3), and/or Python
+  exact pins (`name==1.2.3`) in `requirements*.txt` or `requirements/*.txt`. pnpm, yarn
+  and npm workspaces are skipped, with a warning per skipped package.
+
+**2. Repository settings.** Settings → Actions → General → Workflow permissions: tick
+**Allow GitHub Actions to create and approve pull requests**. The Action creates a
+`ledger` branch on first use; a branch protection rule covering every branch would block it.
+
+**3. One secret.** Settings → Secrets and variables → Actions → New repository secret:
+
+| Secret | Value |
+| --- | --- |
+| `TELEGRAPH_EVM_PRIVATE_KEY` | Private key of a dedicated, low-balance wallet holding Sepolia test USDC (`0xcc194e1a843B658526D0D5C431f670028582Ae17`, chain `11155111`). Each answer costs about 0.02 USDC; the facilitator pays gas. |
+
+**4. Repository variables** (same page, Variables tab). The cutoff is your coding model's
+training cutoff: only dependency releases published after it are bought.
+
+| Variable | Required | Example |
+| --- | --- | --- |
+| `MODEL_CUTOFF` | yes | `2026-01-01` |
+| `MODEL_PROVIDER` | yes | `anthropic` |
+| `MODEL_ID` | yes | the exact model your team codes with |
+| `MODEL_CUTOFF_SOURCE_URL` | yes | HTTPS page that documents the cutoff |
+| `MODEL_CUTOFF_STATUS` | yes | `provider-documented` or `team-assumed` |
+| `PREFERRED_MINER_ID` | no | miner tried first; defaults to `7314` |
+| `MONTHLY_BUDGET_USDC` | no | cap across all runs in a calendar month (UTC), e.g. `1` |
+
+**5. Two workflow files.** Copy both. They reference this Action by tag:
+`borodedamie/telegraph-pr-agent@v1` is published when the Action's restructure merges; until
+then, replace `@v1` with the full commit SHA of `main`.
+
+`.github/workflows/telegraph-dependency-updates.yml`, scans and opens draft PRs (change
+`main` if your default branch has another name):
+
+```yaml
+name: Telegraph dependency updates
+
+on:
+  push:
+    branches: [main]
+    paths: ['**/package.json', '**/package-lock.json', '**/requirements*.txt', 'requirements/**']
+  workflow_dispatch:
+
+concurrency:
+  group: telegraph-dependency-updates-${{ github.repository }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  update-dependencies:
+    if: github.ref_type == 'branch' && github.event.deleted != true && !startsWith(github.ref_name, 'fix/telegraph-dependency-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - uses: borodedamie/telegraph-pr-agent@v1
+        with:
+          monthly-budget-usdc: ${{ vars.MONTHLY_BUDGET_USDC }}
+        env:
+          TELEGRAPH_EVM_PRIVATE_KEY: ${{ secrets.TELEGRAPH_EVM_PRIVATE_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+          MODEL_CUTOFF: ${{ vars.MODEL_CUTOFF }}
+          MODEL_PROVIDER: ${{ vars.MODEL_PROVIDER }}
+          MODEL_ID: ${{ vars.MODEL_ID }}
+          MODEL_CUTOFF_SOURCE_URL: ${{ vars.MODEL_CUTOFF_SOURCE_URL }}
+          MODEL_CUTOFF_STATUS: ${{ vars.MODEL_CUTOFF_STATUS }}
+          PREFERRED_MINER_ID: ${{ vars.PREFERRED_MINER_ID || '7314' }}
+```
+
+`.github/workflows/telegraph-pr-outcomes.yml`, records each closed dependency PR (merged or
+not) on the ledger, which is what cost per merged PR is computed from. It checks out your
+default branch, never the PR's code, and has no wallet key:
+
+```yaml
+name: Telegraph PR outcomes
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  record-outcome:
+    if: github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'fix/telegraph-dependency-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: borodedamie/telegraph-pr-agent@v1
+        with:
+          merge-pr-number: ${{ github.event.pull_request.number }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+```
+
+**6. Run it.** Actions → Telegraph dependency updates → Run workflow. With no dependency
+released after your cutoff it ends with "no purchase made" and spends nothing. Otherwise
+it buys one answer per package and opens one draft PR per update; review it, run your CI,
+merge or close it.
+
+**7. See the spend.** `https://telegraph-pr-agent.vercel.app/?repo=OWNER/REPO` reads your
+repository's `ledger` branch: every purchase with its receipt, signal and transaction, and
+cost per merged PR once a dependency PR has merged.
+
+Limits by default: 0.10 USDC per call and 2 USDC per run (`max-price-per-call-usdc`,
+`budget-cap-usdc` inputs). A payment stuck mid-flight blocks a repeat purchase for that
+package until it is reconciled with [reconcile-attempt.yml](.github/workflows/reconcile-attempt.yml) (copy it
+and change `uses: ./` to `uses: borodedamie/telegraph-pr-agent@v1`).
+
 ## Dependency update Action
 
 The workflow in `.github/workflows/dependency-updates.yml` runs automatically only
@@ -164,7 +297,7 @@ jobs:
           ref: ${{ github.ref_name }}
           persist-credentials: false
       - name: Update dependencies
-        uses: ./
+        uses: ./ # inside this repository only; other repositories: see "Install in your repository"
         env:
           TELEGRAPH_EVM_PRIVATE_KEY: ${{ secrets.TELEGRAPH_EVM_PRIVATE_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
