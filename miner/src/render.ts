@@ -1,4 +1,5 @@
 // Plain-text rendering of an answer (FR-013): the `answer` field, readable without the structured parts.
+import semver from "semver";
 import type { Advisory, Answer, ChangeItem } from "./types.js";
 
 type Renderable = Omit<Answer, "answer" | "summary" | "confidence">;
@@ -29,13 +30,40 @@ function counts(changes: ChangeItem[]): string {
   return parts.join(", ");
 }
 
+/**
+ * Runs of releases not covered for the same reason with no covered release between them, so a large jump cut by a
+ * budget reads "9.0.0–9.6.0 (budget, 12 releases)" instead of twelve entries. `notCovered` itself keeps every release.
+ */
+function notCoveredGroups(coverage: NonNullable<Answer["coverage"]>): { text: string; count: number }[] {
+  const reasons = new Map(coverage.notCovered.map((n) => [n.version, n.reason.replace("_", " ")]));
+  const all = [...coverage.covered, ...reasons.keys()].sort(semver.compare);
+  type Group = { first: string; last: string; reason: string; count: number };
+  const groups: Group[] = [];
+  // Cast, so TypeScript does not narrow it to null for the whole loop.
+  let current = null as Group | null;
+  for (const version of all) {
+    const reason = reasons.get(version);
+    if (reason === undefined) {
+      current = null;
+    } else if (current?.reason === reason) {
+      current.last = version;
+      current.count++;
+    } else {
+      current = { first: version, last: version, reason, count: 1 };
+      groups.push(current);
+    }
+  }
+  return groups.map((g) => ({
+    text: g.count === 1 ? `${g.first} (${g.reason})` : `${g.first}–${g.last} (${g.reason}, ${g.count} releases)`,
+    count: g.count,
+  }));
+}
+
 export function coverageLine(coverage: NonNullable<Answer["coverage"]>): string {
   if (coverage.complete) return `Coverage complete (${plural(coverage.covered.length, "release")}).`;
-  const listed = coverage.notCovered
-    .slice(0, MAX_LISTED_NOT_COVERED)
-    .map((n) => `${n.version} (${n.reason.replace("_", " ")})`)
-    .join(", ");
-  const more = coverage.notCovered.length - MAX_LISTED_NOT_COVERED;
+  const groups = notCoveredGroups(coverage);
+  const listed = groups.slice(0, MAX_LISTED_NOT_COVERED).map((g) => g.text).join(", ");
+  const more = groups.slice(MAX_LISTED_NOT_COVERED).reduce((sum, g) => sum + g.count, 0);
   return `Coverage partial: ${coverage.covered.length} of ${coverage.covered.length + coverage.notCovered.length} releases covered; not covered ${listed}${more > 0 ? ` and ${more} more` : ""}.`;
 }
 

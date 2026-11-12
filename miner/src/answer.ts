@@ -58,7 +58,7 @@ export interface PipelineResult {
   json: string;
   answer: Answer;
   cacheHit: boolean;
-  metrics: Omit<MetricsRecord, "requestHash" | "authOk" | "msTotal">;
+  metrics: Omit<MetricsRecord, "requestHash" | "authOk" | "headerNames" | "msTotal">;
 }
 
 /** Vercel kills the function at maxDuration (vercel.json). */
@@ -73,7 +73,27 @@ function emptyMetrics(): PipelineResult["metrics"] {
     cacheHit: false, outcome: null, declaredFailure: false, extractorMode: null,
     msResolve: 0, msFetch: 0, msModel: 0, upstreamRequests: 0, conditionalHits: 0,
     llmMinerId: null, modelCalls: 0, modelInputChars: 0, modelCostUsdc: 0, llmFailure: null, budgetExhausted: null,
+    package: null, fromVersion: null, toVersion: null, changes: 0, confidence: null, releasesCovered: 0, notCovered: {},
+    rulesItems: 0, modelItems: 0, modelItemsKept: 0, modelDrops: {}, modelSectionsCut: 0, modelSectionsSkipped: 0, modelSectionsFailed: 0,
   };
+}
+
+/** The answer's own fields in the metrics record, for computed and cached answers alike. */
+function describeAnswer(answer: Answer, metrics: PipelineResult["metrics"]): void {
+  metrics.outcome = answer.outcome;
+  metrics.package = answer.request?.package ?? null;
+  metrics.fromVersion = answer.request?.fromResolved ?? null;
+  metrics.toVersion = answer.request?.toResolved ?? null;
+  metrics.changes = answer.changes.length;
+  metrics.confidence = answer.confidence;
+  metrics.releasesCovered = answer.coverage?.covered.length ?? 0;
+  metrics.notCovered = countBy((answer.coverage?.notCovered ?? []).map((gap) => gap.reason));
+}
+
+function countBy(keys: string[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const key of keys) counts[key] = (counts[key] ?? 0) + 1;
+  return counts;
 }
 
 function isUpstreamFailure(err: unknown): boolean {
@@ -96,7 +116,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
 
   const finish = (answer: Answer): PipelineResult => {
     const parsed = Answer.parse(answer);
-    metrics.outcome = parsed.outcome;
+    describeAnswer(parsed, metrics);
     metrics.declaredFailure = parsed.outcome === "temporarily_unavailable";
     return { json: JSON.stringify(parsed), answer: parsed, cacheHit: false, metrics };
   };
@@ -291,7 +311,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
 function fromCache(json: string, metrics: PipelineResult["metrics"]): PipelineResult {
   const answer = Answer.parse(JSON.parse(json));
   metrics.cacheHit = true;
-  metrics.outcome = answer.outcome;
+  describeAnswer(answer, metrics);
   return { json, answer, cacheHit: true, metrics };
 }
 
@@ -345,15 +365,30 @@ async function compute(
   metrics.modelInputChars = model.inputChars;
   metrics.modelCostUsdc = model.costMicroUsdc / 1_000_000;
   metrics.llmFailure = model.failure;
-  const modelRan = model.minerId !== null && model.failure === null;
+  const modelRan = model.answered;
   const mode = model.complete || modelRan ? "rules_and_model" : "rules_only";
   metrics.extractorMode = mode;
   // Sections the model should have read but could not fit: those releases are not fully covered.
   if (modelRan) for (const index of model.skipped) tracker.uncover(material.sections[index].version, "budget");
+  // Sections whose call failed while another call answered: the LLM miner is a source that was down for them.
+  for (const index of model.failed) tracker.uncover(material.sections[index].version, "upstream_unavailable");
+  // Sections the model read only the start of: the rest of those notes may hold changes this answer misses.
+  for (const index of model.cut) tracker.uncover(material.sections[index].version, "truncated");
 
   const candidates: Candidate[] = [...rules.candidates, ...model.candidates];
-  const { items } = verify(candidates, material.sections, verifySources);
+  const { items, dropped } = verify(candidates, material.sections, verifySources);
   const changes: ChangeItem[] = items;
+  const modelRefs = new Set(model.candidates.map((c) => c.ref));
+  const modelDropped = dropped.filter((drop) => modelRefs.has(drop.ref));
+  metrics.rulesItems = items.length - (model.candidates.length - modelDropped.length);
+  metrics.modelItems = model.candidates.length;
+  metrics.modelItemsKept = model.candidates.length - modelDropped.length;
+  metrics.modelDrops = countBy(modelDropped.map((drop) => drop.reason));
+  metrics.modelSectionsCut = model.cut.length;
+  // When no call answered, the sections sent count as failed, not as cut by budget, so an LLM outage reads as one.
+  const unanswered = modelRan ? 0 : model.sent;
+  metrics.modelSectionsSkipped = model.skipped.length - unanswered;
+  metrics.modelSectionsFailed = model.failed.length + unanswered;
 
   // A release whose notes only point elsewhere, with nothing found in any source, was not read: it is not
   // covered, so the answer cannot say it has no changes.
@@ -384,6 +419,7 @@ async function compute(
   const rendered = render(base, mode === "rules_only", { ...lookups, unassessed });
   const answer: Answer = { ...base, ...rendered, confidence: confidence(base, optionalSourceFailed, mode === "rules_only" || unassessed.length > 0) };
   // A model pass that ran is cached even when sections did not fit: their releases are already reported
-  // as not covered ("budget"), and the same document set would be cut the same way again.
-  return { answer, complete: mode === "rules_and_model" };
+  // as not covered ("budget"), and the same document set would be cut the same way again. A failed call is
+  // not: the next run may read its sections, so that answer is kept only for the partial-answer hour.
+  return { answer, complete: mode === "rules_and_model" && model.failed.length === 0 };
 }

@@ -109,6 +109,19 @@ export class Budget {
     this.modelReleases += releaseCount;
   }
 
+  /** Gives back a call recorded in advance that was refused before payment. */
+  cancelModelCall(inputChars: number, costMicroUsdc: number, releaseCount: number): void {
+    this.modelCalls--;
+    this.modelInputChars -= inputChars;
+    this.modelCostMicroUsdc -= costMicroUsdc;
+    this.modelReleases -= releaseCount;
+  }
+
+  /** Replaces the cost a call was recorded at in advance with what it was paid. */
+  settleModelCost(recordedMicroUsdc: number, paidMicroUsdc: number): void {
+    this.modelCostMicroUsdc += paidMicroUsdc - recordedMicroUsdc;
+  }
+
   /** Whether this limit stopped some work. */
   hit(kind: BudgetKind): boolean {
     return this.exhaustedKinds.includes(kind);

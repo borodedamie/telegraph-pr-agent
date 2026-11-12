@@ -1,27 +1,27 @@
 # Benchmark report
 
-Run 2026-11-05T16:48:03.865Z against https://telegraph-pr-miner-otcztx454-n30sk.vercel.app, processing version p5-bench6-miners_302-llm302-rules_and_model-s1.
+Run 2026-11-11T02:10:42.857Z against https://telegraph-pr-miner-n30sk.vercel.app, processing version p9-miners_7413-llm7413-rules_and_model-s1.
 38 cases answered, 2 skipped, 0 failed. Written by `bench/run.ts`.
 
 ## Success criteria
 
 | Criterion | Result | Target | Status |
 | --- | --- | --- | --- |
-| SC-001 evidence: excerpt found in the cited source, at a version in range | 673/673 (100.0%) | ≥ 90% | pass |
+| SC-001 evidence: excerpt found in the cited source, at a version in range | 675/675 (100.0%) | ≥ 90% | pass |
 | SC-002 recall of reviewed breaking changes, cases within the model budget | 247/368 (67.1%) | ≥ 80% | **FAIL** |
 | SC-002 recall, all positive cases (for information) | 260/427 (60.9%) | — | — |
 | SC-003 invented versions, dates or links | 0 | 0 | pass |
 | SC-004 negative cases with the right outcome and no safe-upgrade claim | 8/8 | all | pass |
 | SC-005 answers whose coverage names every release in range | 38/38 | all | pass |
 | SC-006 repeats byte-identical | 38/38 | all | pass |
-| SC-006 repeat latency p95 | 1056 ms | < 500 ms | **FAIL** |
-| SC-006 first-time latency p50 / p95 (38 answers) | 4344 ms / 11198 ms | published; 2 s where the intent requires it | — |
+| SC-006 repeat latency p95 | 606 ms | < 500 ms | **FAIL** |
+| SC-006 first-time latency p50 / p95 (37 answers) | 2105 ms / 9783 ms | published; 2 s where the intent requires it | — |
 | SC-008 security tests | see `test/unit/security.test.ts` | no private-network request, no package execution, no injection | — |
-| SC-011 model calls and cost, first-time answers | 24 calls, 0.2400 USDC | reported against the payout per answer | — |
+| SC-011 model calls and cost, first-time answers | 24 calls, 0.2300 USDC | reported against the payout per answer | — |
 | SC-011 model cost, repeats | 0.0000 USDC | 0 | pass |
 | SC-012 security conclusions match OSV and the US4 table | 38/38 | all | pass |
 
-First calls that were already cached on this processing version: 0 (p50 n/a); they are left out of first-time latency and cost.
+First calls that were already cached on this processing version: 1 (p50 444 ms); they are left out of first-time latency and cost.
 
 SC-001 is checked mechanically: the excerpt is in the source text fetched by this harness and the item's version is in range. Whether the excerpt supports the stated change and migration needs a reader.
 SC-002 matches an expected entry to an answer item of the same version when the item's excerpt contains the expected quote, or shares at least half of its significant words, or states at least three quarters of the key's description of the change (words cut to five letters); unmatched entries are listed below for a reader to confirm.
@@ -30,46 +30,46 @@ SC-002 matches an expected entry to an answer item of the same version when the 
 
 | Case | Outcome (expected) | First call | Repeat | Breaking found | Evidence | Problems |
 | --- | --- | --- | --- | --- | --- | --- |
-| p01 | found (found) | 6536 ms, miss, 1 model calls | 933 ms, hit | 13/32 | 36/36 | none |
-| p02 | found (found) | 7689 ms, miss, 1 model calls | 660 ms, hit | 16/33 | 75/75 | none |
-| p03 | found (found) | 4558 ms, miss, 1 model calls | 389 ms, hit | 34/34 | 54/54 | none |
-| p04 | found (found) | 14633 ms, miss, 1 model calls | 587 ms, hit | 6/17 | 29/29 | none |
-| p05 | found (found) | 11198 ms, miss, 0 model calls | 1525 ms, hit | 0/27 | 2/2 | none |
-| p06 | found (found) | 3659 ms, miss, 0 model calls | 1056 ms, hit | 21/24 | 86/86 | none |
-| p07 | found (found) | 2359 ms, miss, 0 model calls | 532 ms, hit | 0/8 | 0/0 | none |
-| p08 | found (found) | 2752 ms, miss, 0 model calls | 832 ms, hit | 16/22 | 19/19 | none |
-| p09 | found (found) | 5747 ms, miss, 1 model calls | 421 ms, hit | 11/11 | 16/16 | none |
-| p10 | found (found) | 7411 ms, miss, 1 model calls | 441 ms, hit | 12/19 | 20/20 | none |
-| p11 | found (found) | 5874 ms, miss, 1 model calls | 353 ms, hit | 3/6 | 41/41 | none |
-| p12 | found (found) | 5226 ms, miss, 1 model calls | 331 ms, hit | 7/7 | 20/20 | none |
-| p13 | found (found) | 5068 ms, miss, 1 model calls | 453 ms, hit | 4/33 | 59/59 | none |
-| p14 | found (found) | 6377 ms, miss, 1 model calls | 577 ms, hit | 0/7 | 39/39 | none |
-| p15 | found (found) | 5155 ms, miss, 1 model calls | 409 ms, hit | 1/1 | 1/1 | none |
-| p16 | found (found) | 5536 ms, miss, 1 model calls | 391 ms, hit | 15/15 | 18/18 | none |
-| p17 | found (found) | 7773 ms, miss, 1 model calls | 357 ms, hit | 1/1 | 1/1 | none |
-| p18 | found (found) | 4344 ms, miss, 1 model calls | 339 ms, hit | 5/5 | 19/19 | none |
-| p19 | found (found) | 3436 ms, miss, 1 model calls | 370 ms, hit | 7/12 | 8/8 | none |
-| p20 | found (found) | 4009 ms, miss, 1 model calls | 343 ms, hit | 1/2 | 1/1 | none |
-| p21 | found (found) | 7514 ms, miss, 0 model calls | 701 ms, hit | 29/34 | 33/33 | none |
-| p22 | found (found) | 3122 ms, miss, 1 model calls | 360 ms, hit | 0/0 | 1/1 | none |
-| p23 | found (found) | 9566 ms, miss, 1 model calls | 433 ms, hit | 25/25 | 32/32 | none |
-| p24 | found (found) | 6769 ms, miss, 1 model calls | 417 ms, hit | 0/2 | 1/1 | none |
-| p25 | found (found) | 4294 ms, miss, 1 model calls | 334 ms, hit | 0/1 | 4/4 | none |
-| p26 | found (found) | 6641 ms, miss, 1 model calls | 424 ms, hit | 16/16 | 33/33 | none |
-| p27 | not_found (found) | 1591 ms, miss, 0 model calls | 555 ms, hit | 0/0 | 0/0 | wrong outcome |
-| p28 | found (found) | 2681 ms, miss, 1 model calls | 345 ms, hit | 0/0 | 1/1 | none |
-| p29 | found (found) | 3668 ms, miss, 1 model calls | 335 ms, hit | 0/1 | 0/0 | safe-upgrade claim |
-| p30 | found (found) | 5587 ms, miss, 1 model calls | 898 ms, hit | 17/32 | 24/24 | none |
-| n01 | not_found (not_found) | 343 ms, miss, 0 model calls | 320 ms, miss | — | 0/0 | none |
-| n02 | not_found (not_found) | 326 ms, miss, 0 model calls | 308 ms, miss | — | 0/0 | none |
-| n03 | out_of_scope (out_of_scope) | 450 ms, miss, 0 model calls | 420 ms, miss | — | 0/0 | none |
-| n04 | out_of_scope (out_of_scope) | 290 ms, miss, 0 model calls | 325 ms, miss | — | 0/0 | none |
-| n05 | needs_clarification (needs_clarification) | 298 ms, miss, 0 model calls | 294 ms, miss | — | 0/0 | none |
-| n06 | not_found (not_found) | 1938 ms, miss, 0 model calls | 750 ms, hit | — | 0/0 | none |
-| n07 | not_found (found or not_found) | 1688 ms, miss, 0 model calls | 567 ms, hit | — | 0/0 | none |
+| p01 | found (found) | 9092 ms, miss, 2 model calls | 782 ms, hit | 13/32 | 37/37 | none |
+| p02 | found (found) | 7882 ms, miss, 2 model calls | 316 ms, hit | 16/33 | 72/72 | none |
+| p03 | found (found) | 6757 ms, miss, 2 model calls | 302 ms, hit | 34/34 | 64/64 | none |
+| p04 | found (found) | 5692 ms, miss, 2 model calls | 306 ms, hit | 6/17 | 27/27 | none |
+| p05 | found (found) | 15198 ms, miss, 2 model calls | 337 ms, hit | 0/27 | 12/12 | none |
+| p06 | found (found) | 444 ms, hit, 0 model calls | 431 ms, hit | 21/24 | 86/86 | none |
+| p07 | found (found) | 1546 ms, miss, 0 model calls | 300 ms, hit | 0/8 | 0/0 | none |
+| p08 | found (found) | 2049 ms, miss, 0 model calls | 309 ms, hit | 16/22 | 19/19 | none |
+| p09 | found (found) | 9783 ms, miss, 1 model calls | 299 ms, hit | 11/11 | 11/11 | none |
+| p10 | found (found) | 7519 ms, miss, 2 model calls | 346 ms, hit | 12/19 | 21/21 | none |
+| p11 | found (found) | 6538 ms, miss, 2 model calls | 606 ms, hit | 3/6 | 43/43 | none |
+| p12 | found (found) | 9042 ms, miss, 2 model calls | 304 ms, hit | 7/7 | 17/17 | none |
+| p13 | found (found) | 7589 ms, miss, 2 model calls | 299 ms, hit | 4/33 | 62/62 | none |
+| p14 | found (found) | 2760 ms, miss, 1 model calls | 301 ms, hit | 0/7 | 37/37 | none |
+| p15 | found (found) | 4008 ms, miss, 1 model calls | 308 ms, hit | 1/1 | 1/1 | none |
+| p16 | found (found) | 2105 ms, miss, 1 model calls | 304 ms, hit | 15/15 | 15/15 | none |
+| p17 | found (found) | 1561 ms, miss, 1 model calls | 287 ms, hit | 1/1 | 1/1 | none |
+| p18 | found (found) | 1900 ms, miss, 1 model calls | 289 ms, hit | 5/5 | 16/16 | none |
+| p19 | found (found) | 1782 ms, miss, 0 model calls | 289 ms, hit | 7/12 | 8/8 | none |
+| p20 | found (found) | 1758 ms, miss, 0 model calls | 296 ms, hit | 1/2 | 1/1 | none |
+| p21 | found (found) | 4554 ms, miss, 0 model calls | 348 ms, hit | 29/34 | 33/33 | none |
+| p22 | found (found) | 2279 ms, miss, 0 model calls | 299 ms, hit | 0/0 | 1/1 | none |
+| p23 | found (found) | 4254 ms, miss, 0 model calls | 296 ms, hit | 25/25 | 32/32 | none |
+| p24 | found (found) | 3971 ms, miss, 0 model calls | 315 ms, hit | 0/2 | 0/0 | none |
+| p25 | found (found) | 1934 ms, miss, 0 model calls | 299 ms, hit | 0/1 | 4/4 | none |
+| p26 | found (found) | 3854 ms, miss, 0 model calls | 323 ms, hit | 16/16 | 32/32 | none |
+| p27 | not_found (found) | 1114 ms, miss, 0 model calls | 293 ms, hit | 0/0 | 0/0 | wrong outcome |
+| p28 | found (found) | 1799 ms, miss, 0 model calls | 318 ms, hit | 0/0 | 0/0 | safe-upgrade claim |
+| p29 | found (found) | 1728 ms, miss, 0 model calls | 292 ms, hit | 0/1 | 0/0 | safe-upgrade claim |
+| p30 | found (found) | 2943 ms, miss, 0 model calls | 282 ms, hit | 17/32 | 23/23 | none |
+| n01 | not_found (not_found) | 319 ms, miss, 0 model calls | 307 ms, miss | — | 0/0 | none |
+| n02 | not_found (not_found) | 312 ms, miss, 0 model calls | 293 ms, miss | — | 0/0 | none |
+| n03 | out_of_scope (out_of_scope) | 477 ms, miss, 0 model calls | 400 ms, miss | — | 0/0 | none |
+| n04 | out_of_scope (out_of_scope) | 286 ms, miss, 0 model calls | 280 ms, miss | — | 0/0 | none |
+| n05 | needs_clarification (needs_clarification) | 297 ms, miss, 0 model calls | 292 ms, miss | — | 0/0 | none |
+| n06 | not_found (not_found) | 1313 ms, miss, 0 model calls | 308 ms, hit | — | 0/0 | none |
+| n07 | not_found (found or not_found) | 1155 ms, miss, 0 model calls | 291 ms, hit | — | 0/0 | none |
 | n08 | — (temporarily_unavailable) | skipped: needs a local run with a simulated outage | | | | |
 | n09 | — (found) | skipped: needs a local run with a simulated outage | | | | |
-| n10 | needs_clarification (needs_clarification) | 305 ms, miss, 0 model calls | 326 ms, miss | — | 0/0 | none |
+| n10 | needs_clarification (needs_clarification) | 331 ms, miss, 0 model calls | 304 ms, miss | — | 0/0 | none |
 
 ## Details
 

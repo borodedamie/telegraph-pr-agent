@@ -4,7 +4,7 @@ import { ComputeRefused, answerQuestion } from "../src/answer.js";
 import { admit, admitLimitsFromEnv, checkKey, enterCompute, leaveCompute } from "../src/auth.js";
 import { limitsFromEnv } from "../src/budget.js";
 import { getStore, lockTtlSec, sha256Hex } from "../src/cache.js";
-import { writeMetrics } from "../src/metrics.js";
+import { writeFailure, writeMetrics } from "../src/metrics.js";
 
 const MAX_QUERY_CHARS = 2_000;
 
@@ -70,7 +70,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         return () => leaveCompute(store, slot.slot);
       },
     });
-    writeMetrics({ requestHash, authOk: true, msTotal: Date.now() - startedAt, ...result.metrics });
+    const headerNames = Object.keys(req.headers).sort();
+    await writeMetrics(store, { requestHash, authOk: true, headerNames, msTotal: Date.now() - startedAt, ...result.metrics });
     // Cache state and model spend for the benchmark (SC-006, SC-011); never secrets.
     res.setHeader("x-miner-cache", result.metrics.cacheHit ? "hit" : "miss");
     res.setHeader("x-miner-model-calls", String(result.metrics.modelCalls));
@@ -79,10 +80,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     res.status(200).setHeader("content-type", "application/json; charset=utf-8").send(result.json);
   } catch (err) {
     if (err instanceof ComputeRefused) {
+      await writeFailure(store, { kind: "compute_refused", requestHash, reason: err.reason });
       res.status(429).json({ error: err.reason });
       return;
     }
     console.error(JSON.stringify({ kind: "answer_failed", requestHash, error: String(err), stack: (err as Error).stack }));
+    await writeFailure(store, { kind: "answer_failed", requestHash, error: String(err) });
     res.status(500).json({ error: "internal error", requestHash });
   }
 }

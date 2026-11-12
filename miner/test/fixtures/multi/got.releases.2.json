@@ -1,0 +1,538 @@
+[
+ {
+  "tag_name": "v10.0.3",
+  "name": "",
+  "body": "- Fix the `responseType` option (071bf5ed39a1262b1bf806067752395421090a23)\r\n- Fix unhandled `Premature close` and `Request timed out` errors (7b2ccb0d69fca9aba27373ab344f97d389d692f2)\r\n- Make `options.path` backwards-compatible (b3f1ac9c9725459f4ffab9baa20b9459d3495fba)",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.0.3",
+  "draft": false,
+  "published_at": "2019-12-09T18:50:14Z"
+ },
+ {
+  "tag_name": "v10.0.2",
+  "name": "",
+  "body": "- Fix TypeScript type problem with `URL` and `URLSearchParams` globals (#969)  2d5e28d\r\n- Fix `got.mergeOptions(...)` TypeScript type (#953)  b962d08\r\n- Fix unhandled timeout errors when connection drops  5a8f461\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.0.1...v10.0.2",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.0.2",
+  "draft": false,
+  "published_at": "2019-12-07T18:50:41Z"
+ },
+ {
+  "tag_name": "v10.0.1",
+  "name": "",
+  "body": "- Fix using the `json` option with `got.stream.post`  2ec5c4d\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.0.0...v10.0.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.0.1",
+  "draft": false,
+  "published_at": "2019-12-01T16:50:54Z"
+ },
+ {
+  "tag_name": "v10.0.0",
+  "name": "",
+  "body": "We're excited to announce Got 10! 🎉 This release has been in the works for almost a year and has been a major undertaking. Got was fully rewritten in TypeScript, which helped us catch many bugs and will give us more confidence in the codebase going forward. Got is now faster and much more stable. We also fixed a huge amount of bugs. Big thanks to everyone that helped make this release possible. 🙌\r\n\r\n---\r\n\r\n*If you find Got useful, you might want to [sponsor the Got maintainers](https://github.com/sindresorhus/got?sponsor=1).*\r\n\r\n**Note:** Some HTTP agents like `https-proxy-agent` and `agentkeepalive` are not compatible with Node.js 10 and hence not compatible with Got as Got takes advantage of some Node.js 10-only APIs.\r\n\r\n### Breaking\r\n\r\n- Require Node.js 10  633651f\r\n\t- Why: This is so that we can use `stream.pipeline` for more reliable stream handling. Node.js 8 will be out of LTS at the end of this month anyway.\r\n- Remove support for protocol-less URLs in the `url` argument  92bc808\r\n\t- Why: To reduce ambiguity. It was not clear from just reading the code what it would default to.\r\n\t- Migrate:\r\n```diff\r\n- got('sindresorhus.com');\r\n+ got('https://sindresorhus.com');\r\n```\r\n- Rename the `query` option to `searchParams` and make it stricter  b223663 5376216 518f0f5906e1fcd38691555b17fb91db643f3d47\r\n\t- Why: To get closer to the `window.fetch` naming in the browser.\r\n\t- Migrate:\r\n```diff\r\n- got(…, {query: …});\r\n+ got(…, {searchParams: …});\r\n```\r\n- Replace the `baseUrl` option with `prefixUrl` (#829)  0d534ed\r\n\t- Note: We also made it stricter to reduce ambiguity. The Got `url` argument now [cannot be prefixed with a slash](https://github.com/sindresorhus/got#prefixurl) when this option is used.\r\n\t- Why: We renamed it to make it clear that it doesn't do any URL resolution.\r\n\t- Migrate:\r\n```diff\r\n- got('/foo', {baseUrl: 'https://x.com'});\r\n+ got('foo', {prefixUrl: 'https://x.com'});\r\n```\r\n- Change the `json` option to accept an object instead of a boolean and to only be responsible for the request, not the response (#704)  a6a7d5a\r\n\t- Note: You now set the request body in this option instead of the `body` option when you want to send JSON. This option also no longer sets the response type to JSON. You either call the `.json()` method or specify the `responseType` option for that.\r\n\t- Why: Many people were confused how `{json: true}` worked and they also complained that they could not set the request/response type individually.\r\n\t- Migrate:\r\n```diff\r\n- got(url, {body: {x: true}, json: true});\r\n+ got.post(url, {json: {x: true}}).json();\r\n```\r\n- Use the [`responseType`](https://github.com/sindresorhus/got#responsetype) option instead of [`encoding`](https://github.com/sindresorhus/got#encoding) to get a Buffer (#940)  6cc3d9f\r\n\t- Why: Previously, you would pass `{encoding: null}` to get a Buffer, but this was confusing. You now use `{responseType: 'buffer'}` instead.\r\n\t- Tip: You can also use `got(…).buffer();`.\r\n\t- Migrate:\r\n```diff\r\n- got(…, {encoding: null});\r\n+ got(…, {responseType: 'buffer'});\r\n```\r\n- Don't infer `POST` automatically when specifying `body` (#756)  e367bdb\r\n\t- Why: We're trying to reduce the amount of magic behavior.\r\n\t- Migrate:\r\n```diff\r\n- got(…, {body: 'foo'});\r\n+ got.post(…, {body: 'foo'});\r\n```\r\n- The `retries.retry` option was split into `retries.limit` and `retries.calculateDelay` b15ce1d\r\n\t- Migrate:\r\n```diff\r\n got(…, {\r\n \tretry: {\r\n-\t\tretries: 2\r\n+\t\tlimit: 2\r\n \t}\r\n });\r\n```\r\n```diff\r\n got(…, {\r\n \tretry: {\r\n-\t\tretries: iteration => iteration < 2\r\n+\t\tcalculateDelay: ({attemptCount}) => attemptCount < 2\r\n \t}\r\n });\r\n```\r\n- Use `undefined` instead of `null` to omit a header (https://github.com/sindresorhus/got#headers)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n\t- Why: We're trying to [reduce the use of `null`](https://github.com/sindresorhus/meta/issues/7).\r\n\t- Migrate:\r\n```diff\r\n got(…, {\r\n \theaders: {\r\n-\t\t'user-agent': null\r\n+\t\t'user-agent': undefined\r\n \t}\r\n });\r\n```\r\n- Rename the Promise API property `.fromCache` to `.isFromCache` (#768)  b5e443b\r\n- Rename the `stream` option to `isStream`  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n\t- Why: To make it clearer that it's a boolean and that it doesn't expect a stream to be passed in.\r\n\t- Migrate:\r\n```diff\r\n- got(…, {stream: true});\r\n+ got(…, {isStream: true});\r\n```\r\n- Don't include the Got version in the default `user-agent` header (#911)  95bed1e\r\n\t- `got/9.6.0 (https://github.com/sindresorhus/got)` → `got (https://github.com/sindresorhus/got)`\r\n\t- Why: Importing package.json to get the version caused a lot of problems. And you should ideally set your own `user-agent` header anyway.\r\n- Remove `got.create()`  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n\t- You can achieve the same thing with `got.extend()` now.\r\n- Remove `got.mergeInstances()`  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n\t- Use `gotInstance.extend(...gotInstances)` instead.\r\n- Move top-level error properties into an `.options` and `.response` property (#773)  6eaa81b\r\n\t- Migrate:\r\n```diff\r\n- error.gotOptions\r\n+ error.options\r\n\r\n- error.headers\r\n+ error.response.headers\r\n\r\n- error.statusCode\r\n+ error.response.statusCode\r\n\r\n- error.statusMessage\r\n+ error.response.statusMessage\r\n\r\n- error.body\r\n+ error.response.body\r\n\r\n- error.redirectUrls\r\n+ error.response.redirectUrls\r\n\r\n- error.host\r\n+ error.options.host\r\n\r\n- error.hostname\r\n+ error.options.hostname\r\n\r\n- error.method\r\n+ error.options.method\r\n\r\n- error.protocol\r\n+ error.options.protocol\r\n\r\n- error.url\r\n+ error.options.url\r\n\r\n- error.path\r\n+ error.options.path\r\n```\r\n- Custom instance creation was simplified (#707)  8eaef94\r\n\t- Note: `got.mergeInstances(...instances)` is deprecated. Use `instanceA.extend(instanceB)` instead.\r\n\t- Migrate:\r\n```diff\r\n# Merging instances\r\n- got.mergeInstances(instanceA, instanceB, instanceC, …);\r\n+ instanceA.extend(instanceB, instanceC, …);\r\n\r\n# Merging options\r\n- instanceA.extend(optionsB).extend(optionsC).extend(…);\r\n+ instanceA.extend(optionsB, optionsC, …);\r\n\r\n# Merging instances and options\r\n- got.mergeInstances(instanceA.extend(optionsB), instanceC);\r\n+ instanceA.extend(optionsB, instanceC, …);\r\n\r\n# Extending handlers\r\n- got.mergeInstances(instanceA, got.create({handler: handlerB}));\r\n+ instanceA.extend({handlers: [handlerB]});\r\n```\r\n\r\n### Enhancements\r\n\r\n- Got has been rewritten in TypeScript.\r\n\t- Why: This means we can provide our own type definitions and we can be more confident when working on the Got codebase and produce less bugs.\r\n\tHuge thanks to @pmmmwh, @LinusU, @vladfrangu, @mastermatt, and everyone else that helped us with this rewrite. 🙌\r\n- Add support for [Brotli](https://en.wikipedia.org/wiki/Brotli) (Node.js 12 and later) (#706)  d5d2e6f\r\n- Add opt-in [DNS cache](https://github.com/sindresorhus/got#dnscache) (#731)  cd12351\r\n- Add [`context` option](https://github.com/sindresorhus/got#context) for storing custom metadata across request and hooks (#777)  3bb5aa7\r\n- Add [option to ignore invalid cookies](https://github.com/sindresorhus/got#ignoreinvalidcookies) (#826)  e9c01e0\r\n- Add [`maxRedirects` option](https://github.com/sindresorhus/got#maxredirects) (#914)  0c505b0\r\n- Allow method rewriting on redirects (#913)  b7ead5f\r\n- Add [`methodRewriting` option](https://github.com/sindresorhus/got#methodrewriting) (#942)  b82358f\r\n- Add ability to use something other than [`tough-cookie`](https://www.npmjs.com/package/tough-cookie) for handling cookies (#882)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- Preserve stack trace when wrapping errors (#935)  8874a45\r\n- Proxy headers from server request to Got (#772)  00e5fd5\r\n- Pass the response as the second argument to the `beforeRedirect` hook (#812)  3557896\r\n- Throw on canceled request with incomplete response (#767)  92b1005\r\n- Add [`.isFromCache` property](https://github.com/sindresorhus/got#streams-1) to the stream API (#768)  b5e443b\r\n- The [`timeout` option](https://github.com/sindresorhus/got#timeout) can now be modified in hooks  d520a3a\r\n- The [`prefixUrl` option](https://github.com/sindresorhus/got#prefixurl) can now be modified in hooks (https://github.com/sindresorhus/got/issues/867)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- Make `URLSearchParams` instances mergeable (#734)  95c7c2c\r\n\r\n### Fixes\r\n\r\n- Fix parsing response when using `afterResponse` hook (#775)  e2054cd\r\n- Fix `port` not being reset on redirect (#729)  ada5861\r\n- Fix the retry functionality (#787)  0501e00\r\n- Fix default `retry` option value when specifying a number (#809)  9c04a7c\r\n- Correctly handle promise- and stream-specific errors in the `beforeError` hook  134c9b7\r\n- Don't throw on early lookups  4faf5c7\r\n- Fix Node.js 13 compatibility (#915)  b0dfc95\r\n- Fix memory leak when using cache feature (#792)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- Don't throw on `204 No Content` when parsing response (#925)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- When redirect fails, don't retry from scratch (#930)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- Retrying inside `afterResponse` hook should trigger `beforeRetry` hook (#918)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- Fix a bug that sometimes caused the Node.js process to hang  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- Fix a bug where cookies weren't reset on redirect between two different sites  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- Make the progress events not be based on internal Node.js properties  cd11a50\r\n\r\n### Docs\r\n\r\n- Clarify `retry` behavior  5e6782a\r\n- Clarify `prefixUrl` behavior (#943)  f008bc9\r\n- Document that `retry` option doesn't work with streams  9088866\r\n- Encourage using `Stream.pipeline()` when using the stream API  06afb27\r\n- Add instructions for `global-agent` (#822)  ca8c560\r\n- Mention the `TimeoutError.timings` property  8fa18f4\r\n- Mention how to abort the request using hooks  96ea75f\r\n\r\n### All commits\r\n\r\nhttps://github.com/sindresorhus/got/compare/v9.6.0...v10.0.0\r\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.0.0",
+  "draft": false,
+  "published_at": "2019-12-01T08:09:53Z"
+ },
+ {
+  "tag_name": "v10.0.0-beta.2",
+  "name": "",
+  "body": "**While this is an beta release, the code is well-tested and fairly stable. We encourage you to test it out and [report any issues](https://github.com/sindresorhus/got/issues/876).**\r\n\r\n```\r\n$ npm install got@10.0.0-beta.2\r\n```\r\n\r\n**Make sure you also read the [`alpha.1`](https://github.com/sindresorhus/got/releases/tag/v10.0.0-alpha.1), [`alpha.2`](https://github.com/sindresorhus/got/releases/tag/v10.0.0-alpha.2), [`alpha.3`](https://github.com/sindresorhus/got/releases/tag/v10.0.0-alpha.3), and [`beta.1`](https://github.com/sindresorhus/got/releases/tag/v10.0.0-beta.1) release notes.**\r\n\r\nChanges in beta 2:\r\n\r\n### Breaking\r\n\r\n- Use the [`responseType`](https://github.com/sindresorhus/got#responsetype) option instead of [`encoding`](https://github.com/sindresorhus/got#encoding) to get a Buffer (#940)  6cc3d9f\r\n\tPreviously, you would pass `{encoding: null}` to get a Buffer, but this was confusing. You now use `{responseType: 'buffer'}` instead.\r\n\r\n### Enhancements\r\n\r\n- Preserve stack trace when wrapping errors (#935)  8874a45\r\n- Make TypeScript types conforms to strict mode (#928)  c537dee\r\n\r\n### Fixes\r\n\r\n- Make the progress events not be based on internal Node.js properties  cd11a50\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.0.0-beta.1...v10.0.0-beta.2",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.0.0-beta.2",
+  "draft": false,
+  "published_at": "2019-11-25T04:59:54Z"
+ },
+ {
+  "tag_name": "v10.0.0-beta.1",
+  "name": "",
+  "body": "**While this is an beta release, the code is well-tested and fairly stable. We encourage you to test it out and [report any issues](https://github.com/sindresorhus/got/issues/876).**\r\n\r\n```\r\n$ npm install got@10.0.0-beta.1\r\n```\r\n\r\n**Make sure you also read the [`alpha.1`](https://github.com/sindresorhus/got/releases/tag/v10.0.0-alpha.1), [`alpha.2`](https://github.com/sindresorhus/got/releases/tag/v10.0.0-alpha.2), and [`alpha.3`](https://github.com/sindresorhus/got/releases/tag/v10.0.0-alpha.3) release notes.**\r\n\r\nChanges in beta 1:\r\n\r\n### Breaking\r\n\r\n- Remove the `query` option in favor of the `searchParams` option (It was previously deprecated)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- Rename the `stream` option to `isStream`  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- Don't include the Got version in the default `user-agent` header (#911)  95bed1e\r\n\t- `got/9.6.0 (https://github.com/sindresorhus/got)` → `got (https://github.com/sindresorhus/got)`\r\n\t- Why: Importing package.json to get the version caused a lot of problems.\r\n- Remove `got.create()`  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n\t- You can achieve the same thing with `got.extend()` now.\r\n- Remove `got.mergeInstances()`  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n\t- Use `gotInstance.extend(...gotInstances)` instead.\r\n- Use `undefined` instead of `null` to omit a header (https://github.com/sindresorhus/got#headers)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n\r\n### Enhancements\r\n\r\n- Add [`maxRedirects` option](https://github.com/sindresorhus/got#maxredirects) (#914)  0c505b0\r\n- Add ability to use something other than [`tough-cookie`](https://www.npmjs.com/package/tough-cookie) for handling cookies (#882)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- Allow method rewriting on redirects (#913)  b7ead5f\r\n- `options.timeout` can now be modified in hooks  d520a3a\r\n- `options.prefixUrl` can now be modified in hooks (https://github.com/sindresorhus/got/issues/867)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- Only allow supported event names when using TypeScript (#877)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n\r\n### Fixes\r\n\r\n- Fix Node.js 13 compatibility (#915)  b0dfc95\r\n- Fix memory leak when using cache feature (#792)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- Don't throw on `204 No Content` when parsing response (#925)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- When redirect fails, don't retry from scratch (#930)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- Retrying inside `afterResponse` hook should trigger `beforeRetry` hook (#918)  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- Fix a bug that sometimes caused the Node process to hang  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n- Fix a bug where cookies weren't reset on redirect between two different sites  518f0f5906e1fcd38691555b17fb91db643f3d47\r\n\r\n### Docs\r\n\r\n- Clarify `retry` behavior  5e6782a\r\n- Mention how to abort the request using hooks  96ea75f\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.0.0-alpha.3...v10.0.0-beta.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.0.0-beta.1",
+  "draft": false,
+  "published_at": "2019-11-18T08:54:26Z"
+ },
+ {
+  "tag_name": "v10.0.0-alpha.3",
+  "name": "",
+  "body": "**While this is an alpha release, the code is well-tested and fairly stable. We encourage you to test it out and [report any issues](https://github.com/sindresorhus/got/issues/876).**\r\n\r\n```\r\n$ npm install got@10.0.0-alpha.3.2\r\n```\r\n\r\n**Note the `.2` at the end**\r\n\r\n**Make sure you also read the [`alpha.1`](https://github.com/sindresorhus/got/releases/tag/v10.0.0-alpha.1) and [`alpha.2`](https://github.com/sindresorhus/got/releases/tag/v10.0.0-alpha.2) release notes.**\r\n\r\nChanges in alpha.3:\r\n\r\n### Breaking\r\n\r\n- Require Node.js 10  633651f\r\n\tThis is so that we can use `stream.pipeline` for more reliable stream handling. Node.js 8 will be out of LTS in a month anyway.\r\n\r\n### Enhancements\r\n\r\n- Add remote IP address to the response (#827)  74301bb\r\n\r\n### Fixes\r\n\r\n- Fix `Stream.pipeline(...)` usage and properly detect aborted requests (#908)  abd95a3\r\n- Fix TypeScript definition for projects not using the DOM types (#893)  3a0e4f4\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.0.0-alpha.2...v10.0.0-alpha.3",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.0.0-alpha.3",
+  "draft": false,
+  "published_at": "2019-11-01T19:59:36Z"
+ },
+ {
+  "tag_name": "v10.0.0-alpha.2",
+  "name": "",
+  "body": "**While this is an alpha release, the code is well-tested and fairly stable. We encourage you to test it out and [report any issues](https://github.com/sindresorhus/got/issues/876). However, we don't recommend TypeScript users to use this yet as [the types are incomplete](https://github.com/sindresorhus/got/issues/758).**\r\n\r\n```\r\n$ npm install got@10.0.0-alpha.2.2\r\n```\r\n\r\n**Make sure you also read the [`alpha.1` release notes](https://github.com/sindresorhus/got/releases/tag/v10.0.0-alpha.1).**\r\n\r\nChanges in alpha.2:\r\n\r\n- Export useful TypeScript types for end-users (#889)  afe3081\r\n- Fix types: Allow custom retry options (#884)  ce8e15b\r\n- Fix types: Allow promises in `afterResponse` hook (#883)  d0c2f05\r\n\r\nhttps://github.com/sindresorhus/got/compare/v10.0.0-alpha.1...v10.0.0-alpha.2",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.0.0-alpha.2",
+  "draft": false,
+  "published_at": "2019-09-23T14:45:21Z"
+ },
+ {
+  "tag_name": "v10.0.0-alpha.1",
+  "name": "",
+  "body": "**While this is an alpha release, the code is well-tested and fairly stable. We encourage you to test it out and [report any issues](https://github.com/sindresorhus/got/issues/876). However, we don't recommend TypeScript users to use this yet as [the types are incomplete](https://github.com/sindresorhus/got/issues/758).**\r\n\r\n```\r\n$ npm install got@10.0.0-alpha.1.1\r\n```\r\n\r\n### Breaking\r\n\r\n- Remove support for protocol-less URLs in the `url` argument  92bc808\r\n\t- Why: To reduce ambiguity. It was not clear from just reading the code what it would default to.\r\n\t- Migrate:\r\n```diff\r\n- got('sindresorhus.com');\r\n+ got('https://sindresorhus.com');\r\n```\r\n- Rename the `query` option to `searchParams` and make it stricter  b223663 5376216\r\n\t- Note: The `query` option name is still supported, but it will be removed in the next major version.\r\n\t- Why: To get closer to the `window.fetch` naming in the browser.\r\n\t- Migrate:\r\n```diff\r\n- got(…, {query: …});\r\n+ got(…, {searchParams: …});\r\n```\r\n- Replace the `baseUrl` option with `prefixUrl` (#829)  0d534ed\r\n\t- Note: We also made it stricter to reduce ambiguity. The Got `url` argument now cannot be prefixed with a slash when this option is used.\r\n\t- Why: To make it clear that it doesn't do any URL resolution.\r\n\t- Migrate:\r\n```diff\r\n- got('/foo', {baseUrl: 'https://x.com'});\r\n+ got('foo', {prefixUrl: 'https://x.com'});\r\n```\r\n- Change the `json` option to accept an object instead of a boolean and to only be responsible for the request, not the response (#704)  a6a7d5a\r\n\t- Note: You now set the request body in this option instead of the `body` option when you want to send JSON. This option also no longer sets the response type to JSON. You either call the `.json()` method or specify the `responseType` option for that.\r\n\t- Why: Many people were confused how `{json: true}` worked and they also complained that they could not set the request/response individually.\r\n\t- Migrate:\r\n```diff\r\n- got(url, {body: {x: true}, json: true});\r\n+ got.post(url, {json: {x: true}}).json();\r\n```\r\n- Don't infer `POST` automatically when specifying `body` (#756)  e367bdb\r\n\t- Why: We're trying to reduce the amount of magic behavior.\r\n\t- Migrate:\r\n```diff\r\n- got(…, {body: 'foo'});\r\n+ got.post(…, {body: 'foo'});\r\n```\r\n- The `retries.retry` option was split into `retries.limit` and `retries.calculateDelay` b15ce1d\r\n\t- Migrate:\r\n```diff\r\n got(…, {\r\n \tretry: {\r\n-\t\tretries: 2\r\n+\t\tlimit: 2\r\n \t}\r\n });\r\n```\r\n```diff\r\n got(…, {\r\n \tretry: {\r\n-\t\tretries: iteration => iteration < 2\r\n+\t\tcalculateDelay: ({attemptCount}) => attemptCount < 2\r\n \t}\r\n });\r\n```\r\n- Rename the Promise API property `.fromCache` to `.isFromCache` (#768)  b5e443b\r\n- Move top-level error properties into an `.options` and `.response` property (#773)  6eaa81b\r\n\t- Migrate:\r\n```diff\r\n- error.gotOptions\r\n+ error.options\r\n\r\n- error.headers\r\n+ error.response.headers\r\n\r\n- error.statusCode\r\n+ error.response.statusCode\r\n\r\n- error.statusMessage\r\n+ error.response.statusMessage\r\n\r\n- error.body\r\n+ error.response.body\r\n\r\n- error.redirectUrls\r\n+ error.response.redirectUrls\r\n\r\n- error.host\r\n+ error.options.host\r\n\r\n- error.hostname\r\n+ error.options.hostname\r\n\r\n- error.method\r\n+ error.options.method\r\n\r\n- error.protocol\r\n+ error.options.protocol\r\n\r\n- error.url\r\n+ error.options.url\r\n\r\n- error.path\r\n+ error.options.path\r\n```\r\n- Custom instance creation was simplified (#707)  8eaef94\r\n\t- Note: `got.mergeInstances(...instances)` is deprecated. Use `instanceA.extend(instanceB)` instead.\r\n\t- Migrate:\r\n```diff\r\n- got.create({handler: handler});\r\n+ got.create({handlers: [handler]});\r\n\r\n# Merging instances\r\n- got.mergeInstances(instanceA, instanceB, instanceC, …);\r\n+ instanceA.extend(instanceB, instanceC, …);\r\n\r\n# Merging options\r\n- instanceA.extend(optionsB).extend(optionsC).extend(…);\r\n+ instanceA.extend(optionsB, optionsC, …);\r\n\r\n# Merging instances and options\r\n- got.mergeInstances(instanceA.extend(optionsB), instanceC);\r\n+ instanceA.extend(optionsB, instanceC, …);\r\n\r\n# Extending handlers\r\n- got.mergeInstances(instanceA, got.create({handler: handlerB}));\r\n+ instanceA.extend({handlers: [handlerB]});\r\n```\r\n\r\n*Note: The notes here will be expanded in the final release.*\r\n\r\n### Enhancements\r\n\r\n- Got has been rewritten in TypeScript.\r\n\tThis means we can provide our own type definitions and we can be more confident when working on the Got codebase and produce less bugs.\r\n- Add support for [Brotli](https://en.wikipedia.org/wiki/Brotli) (Node.js 12 and later) (#706)  d5d2e6f\r\n- Add opt-in [DNS cache](https://github.com/sindresorhus/got#dnscache) (#731)  cd12351\r\n- Add [`context` option](https://github.com/sindresorhus/got#context) for storing custom metadata across request and hooks (#777)  3bb5aa7\r\n- Add [option to ignore invalid cookies](https://github.com/sindresorhus/got#ignoreinvalidcookies) (#826)  e9c01e0\r\n- Proxy headers from server request to Got (#772)  00e5fd5\r\n- Pass the response as the second argument to the `beforeRedirect` hook (#812)  3557896\r\n- Make `URLSearchParams` instances mergeable (#734)  95c7c2c\r\n- Throw on canceled request with incomplete response (#767)  92b1005\r\n- Add `[.isFromCache` property](https://github.com/sindresorhus/got#streams-1) to the stream API (#768)  b5e443b\r\n\r\n### Fixes\r\n\r\n- Fix parsing response when using `afterResponse` hook (#775)  e2054cd\r\n- Fix `port` not being reset on redirect (#729)  ada5861\r\n- Fix the retry functionality (#787)  0501e00\r\n- Fix default `retry` option value when specifying a number (#809)  9c04a7c\r\n- Correctly handle promise- and stream-specific errors in the `beforeError` hook  134c9b7\r\n- Don't throw on early lookups  4faf5c7\r\n\r\n### Docs\r\n\r\n- Document that `retry` option doesn't work with streams  9088866\r\n- Encourage using `Stream.pipeline()` when using the stream API  06afb27\r\n- Add instructions for `global-agent` (#822)  ca8c560\r\n- Mention the `TimeoutError.timings` property  8fa18f4\r\n\r\n\r\n---\r\n\r\nhttps://github.com/sindresorhus/got/compare/v9.6.0...v10.0.0-alpha.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v10.0.0-alpha.1",
+  "draft": false,
+  "published_at": "2019-09-17T09:20:38Z"
+ },
+ {
+  "tag_name": "v9.6.0",
+  "name": "",
+  "body": "- Add `init` hook (#683)  677d0a4\r\n- Add `beforeError` hook (#696)  29ffb44\r\n\r\nhttps://github.com/sindresorhus/got/compare/v9.5.1...v9.6.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v9.6.0",
+  "draft": false,
+  "published_at": "2019-01-17T05:05:16Z"
+ },
+ {
+  "tag_name": "v9.5.1",
+  "name": "",
+  "body": "- Fix memory leak when using socket timeout and keepalive agent (#694)  203dadc\r\n- Fix strange timing data for HTTP requests d136e61\r\n- Correctly preserve original status code when returning cached responses d136e61\r\n\r\nhttps://github.com/sindresorhus/got/compare/v9.5.0...v9.5.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v9.5.1",
+  "draft": false,
+  "published_at": "2019-01-13T06:11:39Z"
+ },
+ {
+  "tag_name": "v9.5.0",
+  "name": "",
+  "body": "- Remove error thrown for URLs with auth component (#676)  5d20a43\r\n- Upgrade dependencies  a1eadfe\r\n\r\nhttps://github.com/sindresorhus/got/compare/v9.4.0...v9.5.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v9.5.0",
+  "draft": false,
+  "published_at": "2018-12-18T15:09:36Z"
+ },
+ {
+  "tag_name": "v9.4.0",
+  "name": "",
+  "body": "- Add ability to specify which network error codes to retry on.  9f3a099\r\n- Add Got options onto responses and errors.  33b838f\r\n- Correctly clear `socket` timeout on error.  c8e358f\r\n\r\nhttps://github.com/sindresorhus/got/compare/v9.3.2...v9.4.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v9.4.0",
+  "draft": false,
+  "published_at": "2018-12-10T21:06:38Z"
+ },
+ {
+  "tag_name": "v9.3.2",
+  "name": "",
+  "body": "- No new timeouts after an error. https://github.com/sindresorhus/got/commit/d8dd881382dab612ad5b9204de93a02527dc81a9\r\n- Fix the retry math. https://github.com/sindresorhus/got/commit/07b3ce5070515c1a4d1462d2c046ef13b805e812\r\n\r\nhttps://github.com/sindresorhus/got/compare/v9.3.1...v9.3.2",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v9.3.2",
+  "draft": false,
+  "published_at": "2018-11-08T16:20:32Z"
+ },
+ {
+  "tag_name": "v9.3.1",
+  "name": "",
+  "body": "- Don't override headers defined in the `url` argument when it's an object.  191e00a\r\n- Don't set `content-length` header when upload body size is `null`.  311b184\r\n\r\nhttps://github.com/sindresorhus/got/compare/v9.3.0...v9.3.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v9.3.1",
+  "draft": false,
+  "published_at": "2018-11-03T12:21:52Z"
+ },
+ {
+  "tag_name": "v9.3.0",
+  "name": "",
+  "body": "- Add option to allow defaults to be mutable.  b392f60\r\n- Add `beforeRedirect`, `beforeRetry`, and `afterResponse` hooks.  325409c\r\n- Retry on a few more errors.  fbaaa2a\r\n- Include `body` property in `HTTPError`.  fdc0fa6\r\n- Transform user set headers to lowercase.  a07b2be\r\n- Support Electron renderer timings.  25f18be\r\n\r\nhttps://github.com/sindresorhus/got/compare/v9.2.0...v9.3.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v9.3.0",
+  "draft": false,
+  "published_at": "2018-10-30T09:04:08Z"
+ },
+ {
+  "tag_name": "v9.2.2",
+  "name": "",
+  "body": "- Gracefully handle invalid `Location` redirect URLs. (#605)  7ae6939\r\n- Don't override hooks when merging arguments.  3ad3950\r\n- Merge hooks on `got.extend()`. (#608)  292f78a\r\n\r\nhttps://github.com/sindresorhus/got/compare/v9.2.1...v9.2.2",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v9.2.2",
+  "draft": false,
+  "published_at": "2018-09-17T05:22:34Z"
+ },
+ {
+  "tag_name": "v9.2.1",
+  "name": "",
+  "body": "- Don't cache response when HTTP error was received. #597  b8480f3 \r\n- Fix merging default & custom handlers.  5f191b9\r\n\r\n\r\nhttps://github.com/sindresorhus/got/compare/v9.2.0...v9.2.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v9.2.1",
+  "draft": false,
+  "published_at": "2018-09-06T10:38:20Z"
+ },
+ {
+  "tag_name": "v9.2.0",
+  "name": "",
+  "body": "- [Experimental HTTP2 support.](https://github.com/sindresorhus/got#experimental-http2-support) (#583)  8191daf\r\n- Add [`cookieJar` option](https://github.com/sindresorhus/got#cookiejar). (#596)  eedebc9\r\n- Provide [timings](https://github.com/sindresorhus/got#timings). (#590)  78a56ec\r\n- Set `content-length` header to zero when doing a PUT request with no body. (#584)  9a966ec\r\n- Don't parse the `query` option when it's a string. (#589)  f23f350\r\n- Document the [`response` object](https://github.com/sindresorhus/got#response). (#592)  267cb66\r\n- Fix Electron throwing `HTTP trailers are not supported` error. (#598)  e66a6b6\r\n\r\nhttps://github.com/sindresorhus/got/compare/v9.1.0...v9.2.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v9.2.0",
+  "draft": false,
+  "published_at": "2018-08-31T11:18:26Z"
+ },
+ {
+  "tag_name": "v9.1.0",
+  "name": "",
+  "body": "- Add [`got.mergeInstances()`](https://github.com/sindresorhus/got/blob/master/advanced-creation.md#merging-instances) which lets you easily compose multiple instances of Got into a single one. It's like plugins without any of the plugin mess. (#510)  f0b190a\r\n- Normalize the URL in the `baseUrl` option. (#579)  c901c46\r\n- Follow redirects with encoded URI. (#564)  3d98b9b\r\n- Allow the `query` option to be a `URLSearchParams` instance. (#565)  b8a086f\r\n- Support retrying on 500 HTTP status code.  a3e77de\r\n- Bump [`get-stream` to 0.4.0](https://github.com/sindresorhus/get-stream/compare/v3.0.0...v4.0.0) for improved handling of stream edge-cases. (#578)  45d3a60\r\n- Normalize the casing of the `method` option. (#547)  ecf3180\r\n- Fix the `agent` option with `got.extend()`. (#577)  2ffcd49\r\n- Fix throwing errors when using `got.stream()`. (#550)  ae5b114\r\n- Ignore empty query objects. (#572)  eb652f8\r\n\r\n\r\nhttps://github.com/sindresorhus/got/compare/v9.0.0...v9.1.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v9.1.0",
+  "draft": false,
+  "published_at": "2018-08-23T12:07:05Z"
+ },
+ {
+  "tag_name": "v9.0.0",
+  "name": "",
+  "body": "Got version 9 is a massive release! Many new awesome features and we have pretty much fixed all the open issues regarding Got bugs on the issue tracker.\r\n\r\n> Got is a human-friendly and powerful HTTP request library for Node.js\r\n\r\n## Breaking changes\r\n\r\n- Requires Node.js 8.\r\n    You might ask, why not follow the Node.js LTS cycle and target Node.js 6. In short, async/await and WHATWG URL, which enabled us to simplify the codebase and reduce the dependency-tree considerably. Got v8 is a stable release, and you can continue using that if you need to support Node.js 6.\r\n- The [retry functionality](https://github.com/sindresorhus/got#retry) was rewritten to improve its reliability and to support retrying on HTTP status codes. Previously, it only retried on some network failures. https://github.com/sindresorhus/got/commit/98b566444c9dd103af14281ace61fe2bd17d4f49\r\n    The option was renamed from `retries` to `retry` and it now accepts either a number of retries or an object with the ability to specify the number of retries, HTTP status codes and methods to retry on, and a function to decide how to retry. See the [docs](https://github.com/sindresorhus/got#retry) for more.\r\n    Migration:\r\n        - `{ retries: 4 }` → `{ retry: 4 }`\r\n        - `{ retries: () => { … } }` → `{ retry: { retries: () => { … } } }`\r\n- Renamed the `.canceled` property to `.isCanceled`. https://github.com/sindresorhus/got/commit/00fdeea9395225f1ca0f25230f5dfcc4010e3af0\r\n- Dropped support for the `body` option being an Array when `form: true`. https://github.com/sindresorhus/got/commit/dfe5b1cfd762d4ccf4bf53ef2c1c0b31500baa30\r\n    The built-in `new URLSearchParams()` API doesn't support this either and it's a weird use-case. If you need support for this, just don't set `form: true` and handle stringifying yourself.\r\n- Got throws an error if `.pipe()` was called after the response has been emitted.\r\n\tThis makes us sure you receive whole response in case flowing mode is on (#223).\r\n\r\n## Improvements\r\n\r\n- Fewer dependencies and smaller install size!\r\n\t- Got v9: [![install size](https://packagephobia.now.sh/badge?p=got@9.0.0)](https://packagephobia.now.sh/result?p=got@9.0.0)\r\n\t- Got v8: [![install size](https://packagephobia.now.sh/badge?p=got@8.3.2)](https://packagephobia.now.sh/result?p=got@8.3.2)\r\n\t- [Request](https://github.com/request/request) (latest): [![install size](https://packagephobia.now.sh/badge?p=request@2.87.0)](https://packagephobia.now.sh/result?p=request@2.87.0)\r\n- The `timeout` option was rewritten to be more reliable and flexible. You can now set a timeout for every phase of the request if you want, or just for the whole request. That's up to you. https://github.com/sindresorhus/got/commit/da4f23699dead63f17b5e27f9cadd9e4cb95e9a9\r\n- Added [`got.extend()`](https://github.com/sindresorhus/got#gotextendoptions) which lets you easily create instances of Got with some options overridden. https://github.com/sindresorhus/got/commit/bc41a49f14f16374766bfe8f7f8ee59365794d9c\r\n- Added [`got.create()`](https://github.com/sindresorhus/got/blob/master/advanced-creation.md) which is a more advanced and powerful version of `got.extend()`. With this API, you can create your own niche-specific instance of Got, for example, an HTTP-client for GitHub. https://github.com/sindresorhus/got/commit/bc41a49f14f16374766bfe8f7f8ee59365794d9c\r\n- Added a [`beforeRequest` hook](https://github.com/sindresorhus/got#hooksbeforerequest). https://github.com/sindresorhus/got/commit/107756fc28dce579c521b15248f8bba730ae9e54\r\n- Added `request` and `response` events to the Promise API. https://github.com/sindresorhus/got/commit/e86aad7cf17edb596d9ed362d610960529d505c6\r\n- The `content-length` header is now also automatically set if the `body` option is set to a `fs.createReadStream` instance. https://github.com/sindresorhus/got/commit/6e7a4557d7568fed0677d146bdbd655d60d4fd92\r\n- You can now remove the default `user-agent` header by passing in `'user-agent': null` as a header. https://github.com/sindresorhus/got/commit/e473a26de25f8cc8fa34f5285f52aa01bb6065eb\r\n- The `body` option can now be any kind of object, not just a plain object. https://github.com/sindresorhus/got/commit/7a49ce7b72e3c482fd66f1d3a30ec39098d8e618\r\n\r\n## Bug fixes\r\n\r\n- Fixed a problem with the cache not working when using the `query` option. https://github.com/sindresorhus/got/commit/07a91cc94db41d4d797a46e45e1834ef65818a43\r\n- Less unhandled errors (Hopefully none!). https://github.com/sindresorhus/got/commit/f621184d401329c1397ff5a033dfcea155218440\r\n- Headers are now correctly proxied when you pipe `got.stream()`. https://github.com/sindresorhus/got/commit/83bc44c536f0c0ffb743e20e04bf569c51fa5d69\r\n- Lots of more bug fixes.\r\n\r\n## Other\r\n\r\n- 100% code coverage! Doing this caught a couple of bugs, so definitely worth doing even if 100% doesn't mean bug-free.\r\n- The codebase was significantly refactored for better readability and maintainability. https://github.com/sindresorhus/got/commit/b54b68060c52a95621cae20132e90833dd999433\r\n\r\n## Team\r\n\r\nWelcome @szmarczak and @brandon93s as maintainers 🎉\r\n\r\nSpecial shoutout to @jstewmon for helping us with many of the above improvements and fixes 🙌\r\n\r\n## All changes\r\n\r\nhttps://github.com/sindresorhus/got/compare/v8.3.2...v9.0.0\r\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v9.0.0",
+  "draft": false,
+  "published_at": "2018-08-04T06:46:08Z"
+ },
+ {
+  "tag_name": "v8.3.2",
+  "name": "",
+  "body": "Fix Got throwing an error in some cases when trying to pipe one `got.stream` into another one. https://github.com/sindresorhus/got/commit/7ac705f831658c11b4a6fca6c6b21035ef8db3e8",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v8.3.2",
+  "draft": false,
+  "published_at": "2018-07-03T09:03:33Z"
+ },
+ {
+  "tag_name": "v8.3.1",
+  "name": "",
+  "body": "- No longer overrides `accept-encoding` header if already provided. https://github.com/sindresorhus/got/commit/81f2537e6950643e986c09c182dbf29d5fcee8e2\r\n- Sets `content-length` header when using `form-data` if not already set. https://github.com/sindresorhus/got/commit/de9514d897ca58ec70bbf82acc52e43b44cca870\r\n- Now clears the progress interval if the socket has been destroyed. https://github.com/sindresorhus/got/commit/82763c8089596dcee5eaa7f57f5dbf8194842fe6\r\n\r\nhttps://github.com/sindresorhus/got/compare/v8.3.0...v8.3.1",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v8.3.1",
+  "draft": false,
+  "published_at": "2018-05-01T07:36:19Z"
+ },
+ {
+  "tag_name": "v8.3.0",
+  "name": "",
+  "body": "- Fixed socket `connect` memory leak. https://github.com/sindresorhus/got/commit/13d6b68ba02413374519f490d75741a427d705ad\r\n- Prevented uncaught exception in some cases. https://github.com/sindresorhus/got/commit/43b51ba661140b102b7e243748d683dd39620631\r\n- No longer continues the request after cancelation. https://github.com/sindresorhus/got/commit/9a646a39e6761d0914694f9d97bf332b06fdb8f5\r\n\r\nhttps://github.com/sindresorhus/got/compare/v8.2.0...v8.3.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v8.3.0",
+  "draft": false,
+  "published_at": "2018-03-09T17:01:01Z"
+ },
+ {
+  "tag_name": "v8.2.0",
+  "name": "",
+  "body": "No longer sets the default `accept-encoding: gzip,deflate` header if the `decompress` option is `false`.\r\n\r\nhttps://github.com/sindresorhus/got/compare/v8.1.0...v8.2.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v8.2.0",
+  "draft": false,
+  "published_at": "2018-02-19T06:23:42Z"
+ },
+ {
+  "tag_name": "v8.1.0",
+  "name": "",
+  "body": "- Add [`throwHttpErrors`](https://github.com/sindresorhus/got#throwhttperrors) option. https://github.com/sindresorhus/got/commit/5a8894363172f1d39761447b93e0496b363782f0\r\n- Allow calling of `got.stream` [via options](https://github.com/sindresorhus/got#stream). https://github.com/sindresorhus/got/commit/b26c51e50f1657b702cb738561239654f5a4cbd9\r\n\r\nhttps://github.com/sindresorhus/got/compare/v8.0.3...v8.1.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v8.1.0",
+  "draft": false,
+  "published_at": "2018-02-11T15:22:30Z"
+ },
+ {
+  "tag_name": "v8.0.2",
+  "name": "",
+  "body": "- Fix browser usage. https://github.com/sindresorhus/got/commit/30c39bc1c3042a80ed3f6752677e0ab42cb1ca98\r\n- Validate that `url` is UTF-8 encoded. https://github.com/sindresorhus/got/commit/4f5e6bfc8f4ed83b3e2c4c03fe20ea706543cfc9\r\n\r\nhttps://github.com/sindresorhus/got/compare/v8.0.1...v8.0.2",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v8.0.2",
+  "draft": false,
+  "published_at": "2018-01-13T13:58:22Z"
+ },
+ {
+  "tag_name": "v8.0.1",
+  "name": "",
+  "body": "- Correctly forwards stream errors. https://github.com/sindresorhus/got/commit/974473aadb2f43a7feacfd0e9246af8690ac016e\r\n- Fix the request not aborting if the connection cannot be established and the timeout expires. https://github.com/sindresorhus/got/commit/98d226cff2935ab4d3c59cc1259acfa819765c76\r\n\r\nhttps://github.com/sindresorhus/got/compare/v8.0.0...v8.0.1\r\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v8.0.1",
+  "draft": false,
+  "published_at": "2017-12-01T12:51:03Z"
+ },
+ {
+  "tag_name": "v8.0.0",
+  "name": "",
+  "body": "- Added a powerful [`cache` option](https://github.com/sindresorhus/got#cache-adapters). https://github.com/sindresorhus/got/commit/3c7920507fae88a5f53d0640b5116fa34a5ed829 (Thanks to @lukechilds ✨)\r\n- Added download/upload [progress events](https://github.com/sindresorhus/got#onuploadprogress-progress). https://github.com/sindresorhus/got/commit/be7b80252a7a678533b51d59bb7e11e9f317aced (Thanks to @vadimdemedes 🌟)\r\n- Support for an object in the `agent` option. https://github.com/sindresorhus/got/commit/b9bf2e6bfcb0ccdb8761a4ce1b04e80a422234de\r\n- [Breaking change] Uses HTTPS for protocol-less URLs (Previously it defaulted to `http`). https://github.com/sindresorhus/got/commit/ae1a0fedf202ac2adcac8f2d3e0d2ef40fe52d37\r\n- Excludes passed headers with values `null` or `undefined`. https://github.com/sindresorhus/got/commit/c5e2f8d456c72dd5ce6acf73a12a80c700a26c83\r\n- Fixed some memory leaks. https://github.com/sindresorhus/got/commit/0c5e44ce3cdb0e274fcb0e3d68cd9df297baf1ce https://github.com/sindresorhus/got/commit/98a714462c3e7b901454b3cb9975b1c4d974c4ca\r\n- [Potentially breaking change] Uses `statusMessage` returned by endpoint. https://github.com/sindresorhus/got/commit/01c26364d9e34c60cf0cf81e331271ee4fc11d1a\r\n- [Breaking change] Made the `useElectron` option `false` by default. https://github.com/sindresorhus/got/commit/33cbb6ffcf4cf9d8a735531fcc9ca81b4196efd4\r\n- Exposed `got.CancelError`. https://github.com/sindresorhus/got/commit/b55f79e99d11d11d438f64dd8499dcee964d1c5d\r\n- Fixed `.cancel()` when timeout exists. https://github.com/sindresorhus/got/commit/e31282dfd3402e7581bc7921746a62b35e9a8a31\r\n\r\nhttps://github.com/sindresorhus/got/compare/v7.1.0...v8.0.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v8.0.0",
+  "draft": false,
+  "published_at": "2017-11-16T10:07:49Z"
+ },
+ {
+  "tag_name": "v7.1.0",
+  "name": "",
+  "body": "- Added [`decompress`](https://github.com/sindresorhus/got#decompress) option. https://github.com/sindresorhus/got/commit/f9d19e333413396a40328f28fd56b0e9fa26d5ed\r\n- Support `Array` with the [`json`](https://github.com/sindresorhus/got#json) option. https://github.com/sindresorhus/got/commit/1cf2bbf8cf1d26a4449171a4bbb689310dc9036b\r\n- Fixed a bug with the Unix address parser. https://github.com/sindresorhus/got/commit/c0c6bcf1acb7132356d5fdddcf757466071799f4\r\n- Worked around an issue with New Relic and Promise subclasses. https://github.com/sindresorhus/p-cancelable/commit/fe1fb8ede911846b428ecd7deb8e8c895c1ca165\r\n\r\nhttps://github.com/sindresorhus/got/compare/v7.0.0...v7.1.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v7.1.0",
+  "draft": false,
+  "published_at": "2017-06-30T15:54:19Z"
+ },
+ {
+  "tag_name": "v7.0.0",
+  "name": "7.0.0",
+  "body": "## Breaking changes\r\n\r\n- Changes stringifying options behavior. https://github.com/sindresorhus/got/commit/51a3eafbdfa2e98e36a6231cd16c80ca16b6523b\r\n  Setting the `body` option to be an object to stringify is no longer possible without setting either the `form` option for URL encoding or the `json` option for JSON encoding. Previously, Got would use URL encoding by default, now it will throw an error. Since the `json` option also means Got will decode a JSON response for you, setting both options to `true` will encode the request as URL and decode the response as JSON.\r\n- Now also redirects on 307, 308, 303 responses. https://github.com/sindresorhus/got/commit/b45896aa4ec7a0ed0472a2a2436b6430099431b5\r\n- The `timeout` option now applies to the whole request and we added ability to control the timeout of the individual phases. https://github.com/sindresorhus/got/commit/7964f2cdef36d98d498d7cc2dfe811c5291aaaf5\r\n\r\n## Highlights\r\n\r\n- Added ability to cancel in-progress requests! https://github.com/sindresorhus/got/commit/9ef7a5aab9f989a8df2d867fa3fc6015eece8b86\r\n- Added [WHATWG URL](https://nodejs.org/api/url.html#url_the_whatwg_url_api) support. https://github.com/sindresorhus/got/commit/f501fc2c7c6667dcd36d13384752b0d8b507bbdc\r\n- Improve request retries by reducing the number of retries and making delays shorter. https://github.com/sindresorhus/got/commit/14d0859261aec38a73b0d30b5a350127b9e82ab6\r\n- Only throws `ParseError` when parsing fails on 2xx responses. https://github.com/sindresorhus/got/commit/c86706bd23277ba033abefaf92a9c8fa69f78eee\r\n- No longer throws HTTPError on 304 responses. https://github.com/sindresorhus/got/commit/7b12b7582d71abc652013d3b967473a776abf481\r\n- Added `protocol` property to errors. https://github.com/sindresorhus/got/commit/919703cd8e9ba944753457d7f6b0ca4ecd94748d\r\n- Added `url` property to errors. https://github.com/sindresorhus/got/commit/a287f8ec8a6498d9d5e1037255b36946f5c0c97b\r\n- Includes response headers in errors, and redirect URLs in errors and the response. https://github.com/sindresorhus/got/commit/8b4d06ef31942721157d437f4135fc84535ba7ba\r\n- Improve use in Electron. https://github.com/sindresorhus/got/commit/213057084cc4de325a829c82aae50d55b4f73c7d https://github.com/sindresorhus/got/commit/6fc1902805bae0791ee36895d351823248da9d07\r\n\r\n\r\n## All changes\r\n\r\nhttps://github.com/sindresorhus/got/compare/v6.7.1...v7.0.0",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v7.0.0",
+  "draft": false,
+  "published_at": "2017-05-29T08:07:17Z"
+ },
+ {
+  "tag_name": "v6.7.0",
+  "name": "6.7.0",
+  "body": "This minor release fixes `timeout` behaviour to correspond with readme:\n\n> Milliseconds to wait for a server to send response headers before aborting request with ETIMEDOUT error.\n\nBefore this release `ESOCKTIMEDOUT` can be thrown (which can lead to false-positive errors for keep-alive sockets).\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v6.7.0",
+  "draft": false,
+  "published_at": "2016-12-29T10:20:36Z"
+ },
+ {
+  "tag_name": "v6.6.0",
+  "name": "6.6.0",
+  "body": "- Add `requestUrl` to response in streaming mode (#230)\n- `new Buffer()` => `Buffer.from()` 5888ca7aa1ca982caac27e7796e225f70ded68a4\n- Add `url` to response (#236)\n- `timed-out` updated to `^3.0.0`\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v6.6.0",
+  "draft": false,
+  "published_at": "2016-11-01T08:52:58Z"
+ },
+ {
+  "tag_name": "v5.7.0",
+  "name": "5.7.0 – Last minor release of 5.x branch",
+  "body": "This is last release of `5.x` branch (which compatible with old versions of Node.JS). In this release we pulled all fixes (only UTF in headers is not cherry-picked):\n- Add `url` to response (#236) \n- Add `requestUrl` to response in streaming mode (#230)\n- Allow non-plain object as request body (#217)\n- Fixed unexpected EOF when decompressing content\n- Detect formdata body and set content-type header (#220)\n- Add a `requestUrl` property to the response object (#205)\n- Add redirect url to response object (#191)\n\n🎃 Happy Halloween!\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v5.7.0",
+  "draft": false,
+  "published_at": "2016-11-01T08:48:57Z"
+ },
+ {
+  "tag_name": "v6.5.0",
+  "name": "6.5.0",
+  "body": "- Add a redirect `url` property to the response object (#191)\n- Add a `requestUrl` property to the response object (#205) \n- ⬆️ `get-stream` bumped to `^2.3.0` – which fixes some nasty encoding bugs\n- Fix location encoding (#214)\n- Detect formdata body and set content-type header (#220)\n- ⬆️ `unzip-response` bumped to `^2.0.1` – which fixes `unexpected EOF` error\n- Allow non-plain object as request body (#217)\n\n### Changes\n\nhttps://github.com/sindresorhus/got/compare/v6.3.0...v6.5.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v6.5.0",
+  "draft": false,
+  "published_at": "2016-09-14T09:12:13Z"
+ },
+ {
+  "tag_name": "v6.3.0",
+  "name": "6.3.0",
+  "body": "## `followRedirect` option\n\nThis option disables following redirects and `got` will not treat them as errors:\n\n``` js\nconst res = await got(`google.com`, {followRedirect: false});\nres.statusCode === 302; // true\n```\n\nBy default this option is `true`, so no major changes in code are needed.\n\n### Changes\n\nhttps://github.com/sindresorhus/got/compare/v6.2.0...v6.3.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v6.3.0",
+  "draft": false,
+  "published_at": "2016-04-06T18:37:22Z"
+ },
+ {
+  "tag_name": "v6.2.0",
+  "name": "6.2.0",
+  "body": "- 26a499c0332ae673c89ca6bb680cf04e11965a66 `statusCode` and `statusMessage` added to ParseError object\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v6.2.0",
+  "draft": false,
+  "published_at": "2016-03-03T08:06:50Z"
+ },
+ {
+  "tag_name": "v6.1.2",
+  "name": "6.1.2",
+  "body": "- 45a636c6c22c2f7c9ffc14c78b8679d23485f9d2 fixes errors on parsing empty JSON body\n- f9078b6440eefd3a8ebf15ff07b61d2bc1b27b8b fixes default user-agent to be RFS complaint\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v6.1.2",
+  "draft": false,
+  "published_at": "2016-03-03T08:09:11Z"
+ },
+ {
+  "tag_name": "v6.1.1",
+  "name": "6.1.1",
+  "body": "- f9ef29a3fc91708e5c4635f0c2afa1b781fd39b8 fixes redirects with uppercased `method` option\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v6.1.1",
+  "draft": false,
+  "published_at": "2016-03-03T08:09:30Z"
+ },
+ {
+  "tag_name": "v6.1.0",
+  "name": "6.1.0",
+  "body": "## Non-retrieable errors\n\nIn [`got@5`](https://github.com/sindresorhus/got/releases/tag/v5.0.0) we introduced `retries` option, which (as name says) retry request on every Error. For most errors this was right thing to do, but in case `ENETUNREACH` and `ENOTFOUND` retries are pointless.\n\nThis version removes retries from such errors, so you will get instant error, when typo gets into configs.\n\n### Changes\n\nhttps://github.com/sindresorhus/got/compare/v6.0.0...v6.1.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v6.1.0",
+  "draft": false,
+  "published_at": "2016-01-16T11:32:09Z"
+ },
+ {
+  "tag_name": "v5.3.1",
+  "name": "5.3.1",
+  "body": "- 43a6ea5cdf8f22225df951e331f12934cc466b3c Missing exception in helper methods for stream mode.\n- 436600f9db8cd3719a14a5d62d26f9d085182a80 Fixed piping `response` in `response` event for stream mode.\n\nhttps://github.com/sindresorhus/got/compare/v5.3.0...v5.3.1\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v5.3.1",
+  "draft": false,
+  "published_at": "2016-01-12T10:46:18Z"
+ },
+ {
+  "tag_name": "v6.0.0",
+  "name": "6.0.0",
+  "body": "### Aiming on Node.js 4\n\nThis release drops Node.js 0.10/0.12 support, so we replaced lots of modules and reduce dependency tree more than twice ([see PR overview](https://github.com/sindresorhus/got/pull/140)). Module folder size reduced from `1.1 MB` to `216 KB`.\n\nFor older Node.js versions we will still maintain [`v5.x`](https://github.com/sindresorhus/got/tree/v5.x) for critical bug-fixes.\n\n### Promises by default\n\nCallback interface was replaced by Promises, because it is a better way to work with asynchronous operations and they can be used with `yield`/`await` nicely.\n\nIf you use callback before:\n\n``` js\ngot('todomvc.com', (err, body) => {\n    if (err) {\n        console.log(err);\n        return;\n    }\n\n    console.log(body);\n});\n```\n\nYou can rewrite it this way:\n\n``` js\ngot('todomvc.com')\n    .then(res => {\n        console.log(res.body);\n    })\n    .catch(err => {\n        console.log(err);\n    });\n```\n\nYou can read more about Promises in [\"ECMAScript 6 promises (2/2): the API\"](http://www.2ality.com/2014/10/es6-promises-api.html) post and some caveats in [\"We have a problem with promises\"](http://pouchdb.com/2015/05/18/we-have-a-problem-with-promises.html).\n\n### Update\n\n```\n$ npm install --save got@6\n```\n\n### Changes\n\nhttps://github.com/sindresorhus/got/compare/v5.3.0...v6.0.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v6.0.0",
+  "draft": false,
+  "published_at": "2016-01-07T18:58:52Z"
+ },
+ {
+  "tag_name": "v5.3.0",
+  "name": "5.3.0",
+  "body": "- 59aa1d3a1da88fe46a2e3fa85f4c194d3fa6b743 Error is passed to `retries` function as well\n- da9fc07a590ecb3a92f3322f370269c1d5223d6e Unzipping HEAD requests is disabled\n\nhttps://github.com/sindresorhus/got/compare/v5.2.0...v5.3.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v5.3.0",
+  "draft": false,
+  "published_at": "2015-12-20T17:29:19Z"
+ },
+ {
+  "tag_name": "v5.2.0",
+  "name": "5.2.0",
+  "body": "- 54bd6f5bbad9590be6ffc7baf004c381bf1ea7a9 default intervals between delays decreased - now they are around 1s, 2s, 4s, 8s, etc...\n- a10a99e8ae6cfb84522795605ce0014877fb9f52 `retries` option accepts backoff function, for example you can:\n\n``` js\n// Constant delay of 10ms for 5 iterations\ngot('google.com', {\n    retries: iter => iter < 5 && 10\n});\n\n// Infinity retries with constant delay\ngot('google.com', {\n    retries: () => 10\n});\n```\n\nhttps://github.com/sindresorhus/got/compare/v5.1.0...v5.2.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v5.2.0",
+  "draft": false,
+  "published_at": "2015-12-02T07:57:46Z"
+ },
+ {
+  "tag_name": "v5.1.0",
+  "name": "5.1.0",
+  "body": "- 5205e7260f6082fe567f505be4aa15249c2c74a5 `body` option now accepts Stream1 streams\n- e45087ab049d5a0228c106fc0f84a5737ab762cd `content-length` and `accept` headers now can be falsy values (`''` or `0` for example)\n- dcc7de68152a5ca5c0d0e263b28258bf719feb43 `response` property is now non-enumerable in error object\n- cf544592571f3fc944a8a1e74e468e2fe378e176 `undefined` value of `code` property in error removed \n\nhttps://github.com/sindresorhus/got/compare/v5.0.0...v5.1.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v5.1.0",
+  "draft": false,
+  "published_at": "2015-11-04T06:18:50Z"
+ },
+ {
+  "tag_name": "v5.0.0",
+  "name": "5.0.0",
+  "body": "![zjvxrhf](https://cloud.githubusercontent.com/assets/365089/10563542/90b81fde-75a7-11e5-831c-bb0716c29a9a.gif)\n\n### Retries\n\nWe added retries on network failures with noisy exponential backoff. By default `got` will try five times, before returning error.\n\nRetries only applies to network errors (because network is not reliable). Requests with server errors, like `50x` status codes, will not be retried.\n\nYou can disable them by passing `0` to [`retries`](https://github.com/sindresorhus/got#retries) option.\n\n### Update\n\n``` sh\n$ npm install --save got@5\n```\n\n### Highlights\n- 0109725b7406e8b7005a4a435a0617179b1dc2da Reject promise on internal exception\n- df26918b3d39ac803ecc5020c92e5a7d8c3d88b3 Catch callbacks in stream mode\n- f9f2807e63635432ab175824859caa70e3c583aa Reduce size for browserify\n- 066e6125e0c5da942650e67bd9b920c949718704 Remove `response` event on `error` (in stream mode) (#110)\n- 62ff082deb41e711ae29c9e09ce173eef04390d6 Catch `auth` option passed in `url` string (#106)\n- 6c59ce8b346e3171e9388c18d78ccc5f38a96c8e Add retries on network errors (#98)\n- 9ffbbdf5aba98892519282ad7799a991c0b04483 Deferred `response` event\n- 013a2b57f8d9d0417c89923ee93b0a8a4283cbdd [![Coverage Status](https://coveralls.io/repos/sindresorhus/got/badge.svg?service=github&branch=master)](https://coveralls.io/github/sindresorhus/got?branch=master)\n\n### Changes\n\nhttps://github.com/sindresorhus/got/compare/v4.2.0...v5.0.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v5.0.0",
+  "draft": false,
+  "published_at": "2015-10-18T09:45:49Z"
+ },
+ {
+  "tag_name": "v4.2.0",
+  "name": "4.2.0",
+  "body": "- e944467ed5e54ac37e19d924f17e7a1f93ebf01f improves error message on invalid JSON\n- e0863dcce94783283350be863f5fff226ec90de8 enable errors in stream mode (#97)\n- 3182234d0e91dca37f3b71d20696408c174c9137 allow requests via domain sockets\n\nhttps://github.com/sindresorhus/got/compare/v4.1.1...v4.2.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v4.2.0",
+  "draft": false,
+  "published_at": "2015-09-09T09:02:48Z"
+ },
+ {
+  "tag_name": "v4.1.1",
+  "name": "4.1.1",
+  "body": "- bdc1bfb2b849bbb914c20520e12357df92be1e58 fixes crashes on RequestError in Promise mode\n\nhttps://github.com/sindresorhus/got/compare/v4.1.0...v4.1.1\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v4.1.1",
+  "draft": false,
+  "published_at": "2015-07-28T15:03:00Z"
+ },
+ {
+  "tag_name": "v4.1.0",
+  "name": "4.1.0 - x-www-form-urlencoded",
+  "body": "- 7bea9c4d33ca4bbc01b44e28d4aefca2d170c680 If `body` is a plain Object, it will be stringified and sent as `application/x-www-form-urlencoded`.\n\nhttps://github.com/sindresorhus/got/compare/v4.0.0...v4.1.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v4.1.0",
+  "draft": false,
+  "published_at": "2015-07-27T11:15:39Z"
+ },
+ {
+  "tag_name": "v4.0.0",
+  "name": "4.0.0",
+  "body": "Major release with lots of new stuff! Enjoy!\n\n![anigif_enhanced-buzz-14210-1427585395-12](https://cloud.githubusercontent.com/assets/365089/8888453/011afacc-32c7-11e5-8435-2f31133e37b7.gif)\n\n## Promise API\n\n`got` without callback now returns a promise instead of a stream. The stream API now lives under `stream` property (look at the end of section).\n\n``` js\ngot('todomvc.com')\n    .then(function (res) {\n        console.log(res.body);\n    })\n    .catch(function (err) {\n        console.error(err.response.body);\n    });\n```\n\nIn `resolve` handler you receive a [`http.response`](https://github.com/sindresorhus/got#response) object with `body` as additional property. \n\nIn `reject` handler we provide an Error object. Unless Error type is `RequestError`, it will have  `response` property with `body` property.\n\nThis API will be a huge advantage with [`co`](https://www.npmjs.com/package/co) and [Generators](http://davidwalsh.name/async-generators):\n\n``` js\nvar co = require('co');\n\nco(function * () {\n    try {\n        var response = yield got('todomvc.com');\n        console.log(response.body);\n    } catch (err) {\n        console.error(err);\n    }\n});\n```\n\nYou can go even further with [destructuring](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment) and `await` from ES7:\n\n``` js\nasync function () {\n    try {\n        var {body} = await got('todomvc.com');\n        console.log(body);\n    } catch (err) {\n        console.error(err);\n    }\n}\n```\n\nStream support is preserved, but now under the `streams` property:\n\n``` js\ngot.stream('todomvc.com').pipe(process.stdout);\n```\n\n## New Errors\n\nBefore `4.0.0` got had one Error class (`GotError`) with nested stack traces and custom error messages. This was a nice concept, but in production use some edge cases popped out:\n- Error stacks are too long.\n- Relevant information often were in one or two levels deep (eg. `error.nested.nested`).\n- Errors message are hard to parse for `url`.\n\nSo we decided to review Errors in new version. In `4.0.0` got now have multiple Error classes for different situations: `RequestError`, `ReadError`, `ParseError`, `HTTPError` and `MaxRedirectsError`.\n\nIn addition to `message` and `code` properties from the original error, the new errors types also provide additional properties (`host`, `hostname`, `path` and `method`) for logging and debugging.\n\n## Infinity-agent removed\n\nCustom agent was removed. This returns the ability to configure or replace global Agent, but also returns low `maxSockets` value in NodeJS 0.10.x. To fix this you can add this lines at the top of your app (not in reusable modules!):\n\n``` js\nrequire('http').globalAgent.maxSockets = Infinity;\nrequire('https').globalAgent.maxSockets = Infinity;\n```\n\n## Changes\n\nhttps://github.com/sindresorhus/got/compare/v3.3.1...v4.0.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v4.0.0",
+  "draft": false,
+  "published_at": "2015-07-25T07:08:11Z"
+ },
+ {
+  "tag_name": "v3.3.1",
+  "name": "3.3.1",
+  "body": "- 312c80d82cd0472d009914fe8ffeebf06637e9c3 Don't parse JSON on 204 responses. #78\n- 79f1390727dc2845969d1361fbf71c8975e5e3f0 Emit response event only on final request. #75 \n- b9c33aa64e6c8bf38201714d114579b3040645f6 Reselect agent on redirect from HTTP to HTTPS. #80\n\nhttps://github.com/sindresorhus/got/compare/v3.3.0...v3.3.1\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v3.3.1",
+  "draft": false,
+  "published_at": "2015-07-16T01:22:45Z"
+ },
+ {
+  "tag_name": "v3.3.0",
+  "name": "3.3.0",
+  "body": "- 87d98e1f46103044b2152886435a1b97203add32 Added `content-length` header in requests with body.\n- d7a66baac7bb3c0915b921997e401adf4718baaf Fallback on `pathname` option, if no `path` is present.\n\nhttps://github.com/sindresorhus/got/compare/v3.2.0...v3.3.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v3.3.0",
+  "draft": false,
+  "published_at": "2015-06-30T15:51:24Z"
+ },
+ {
+  "tag_name": "v3.2.0",
+  "name": "3.2.0",
+  "body": "`json` option now sets `Accept` header to `application/json` (if it was not specified in `headers`)\n\nhttps://github.com/sindresorhus/got/compare/v3.1.0...v3.2.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v3.2.0",
+  "draft": false,
+  "published_at": "2015-05-09T07:46:16Z"
+ },
+ {
+  "tag_name": "v3.1.0",
+  "name": "3.1.0",
+  "body": "`error` event now have additional `body` and `response` arguments in callback:\n\n``` js\ngot('http://giggle.com')\n    .on('error', function (error, body, response) {\n        console.log(error, body, response);\n    });\n```\n\nhttps://github.com/sindresorhus/got/compare/v3.0.0...v3.1.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v3.1.0",
+  "draft": false,
+  "published_at": "2015-05-09T07:44:53Z"
+ },
+ {
+  "tag_name": "v3.0.0",
+  "name": "3.0.0",
+  "body": "#### Changes\n\n##### 52490b2e88f263ab8abfb9498cb65575f3a15b01 New `redirect` event\n\nThis event fired before any redirect with `response` and `nextOptions` objects. You can access cookies and store them to be passed with next request in `nextOptions`.\n\n``` js\ngot('cookie.com')\n    .on('redirect', function (res, nextOptions) {\n        nextOptions.headers.cookie = cookie(res);\n    });\n```\n\n#### Breaking changes\n\n##### 2302a1e6e584f0b4a64bc6c0b16c72c645cd3cb7 Redirects enabled only for GET and HEAD methods\n\nAs [rfc2616 HTTP 1.1](http://tools.ietf.org/html/rfc2616#section-10.3.3) says:\n\n> If the 302 status code is received in response to a request other\n> than GET or HEAD, the user agent MUST NOT automatically redirect the\n> request unless it can be confirmed by the user, since this might\n> change the conditions under which the request was issued.\n\nNow `got` will not auto-redirect you with unsafe methods (like POST or DELETE), which can cause lots of troubles. \n\nhttps://github.com/sindresorhus/got/compare/v2.9.0...v3.0.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v3.0.0",
+  "draft": false,
+  "published_at": "2015-05-06T06:38:09Z"
+ },
+ {
+  "tag_name": "v2.9.0",
+  "name": "2.9.0",
+  "body": "![angry-bear](https://cloud.githubusercontent.com/assets/365089/7338032/7087b928-ec58-11e4-8e8d-31cd0cb31528.gif)\n\n#### Validation\n- `url` now throws error if not string or object 6b015692aa9dd42f69085c24be5e4bdf450f22de\n- Nice error on wrong `body` option type a0913bc13c337c03ae9312fe4d851e9a367885aa\n\n#### Options\n- `url` now accepts `http.request` options as first argument 47da1181a52501fd30a14ddb43f576043d2bc711\n- [`query` option](https://github.com/sindresorhus/got#query) added 53df1ca251fbc0299916d3309ff53df065e97fbe\n\nhttps://github.com/sindresorhus/got/compare/v2.8.0...v2.9.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v2.9.0",
+  "draft": false,
+  "published_at": "2015-04-26T16:10:00Z"
+ },
+ {
+  "tag_name": "v2.8.0",
+  "name": "2.8.0",
+  "body": "- Don't mutate the user-supplied options object ae73837301b2b50664e732d2b5bf93847b2b4cb3\n- [infinity-agent](https://github.com/floatdrop/infinity-agent) updated to `2.0.0` - which uses backported Agent from Node core c06d741131cd71a0cc9ca38a960ef5469cc3c1ce \n  - Every request (in Node 0.10) will now have `Connection: close` header instead of `Connection: keep-alive`. `maxSockets` is now `Infinity` always - if you want different value, pass `null` or new Agent instance.\n\nhttps://github.com/sindresorhus/got/compare/v2.7.2...v2.8.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v2.8.0",
+  "draft": false,
+  "published_at": "2015-04-21T05:45:33Z"
+ },
+ {
+  "tag_name": "v2.7.2",
+  "name": "2.7.2",
+  "body": "Fixed absent nested error on parse error of response.\n\nhttps://github.com/sindresorhus/got/compare/v2.7.1...v2.7.2\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v2.7.2",
+  "draft": false,
+  "published_at": "2015-04-08T19:05:28Z"
+ },
+ {
+  "tag_name": "v2.7.1",
+  "name": "2.7.1",
+  "body": "Parse response with non-2xx status code, when `json` option is `true`.\n\nhttps://github.com/sindresorhus/got/compare/v2.7.0...v2.7.1\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v2.7.1",
+  "draft": false,
+  "published_at": "2015-04-08T11:05:07Z"
+ },
+ {
+  "tag_name": "v2.7.0",
+  "name": "2.7.0",
+  "body": "New `json` option for auto-parsing JSON response. abdd0f09606fa4c79b277d2b637a9aa47b9c9643\n\n**Before:**\n\n``` js\ngot('jsonendpoint.com', function (err, data) {\n    if (err) { return cb(err); }\n\n    var json;\n\n    try {\n        json = JSON.parse(data);\n    } catch (e) {\n        return cb(new Error('Reponse from jsonendpoint.com is broken: ' + e.message));\n    }\n\n    // working with json\n});\n```\n\n**After:**\n\n``` js\ngot('jsonendpoint.com', {json: true}, function (err, json) {\n    if (err) { return cb(err); }\n\n    // working with json\n});\n```\n\nhttps://github.com/sindresorhus/got/compare/v2.6.0...v2.7.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v2.7.0",
+  "draft": false,
+  "published_at": "2015-04-06T11:34:02Z"
+ },
+ {
+  "tag_name": "v2.6.0",
+  "name": "2.6.0",
+  "body": "Thanks to [nested-error-stacks](https://github.com/mdlavin/nested-error-stacks) by @mdlavin `got` now emits much more detailed errors! For example `Error: getaddrinfo ENOTFOUND` now looks like:\n\n```\nGotError: Request to .com failed\n    at ClientRequest.<anonymous> (index.js:123:7)\n    at ClientRequest.g (events.js:180:16)\n    at ClientRequest.emit (events.js:95:17)\n    at Socket.socketErrorListener (http.js:1552:9)\n    at Socket.emit (events.js:95:17)\n    at net.js:834:16\n    at process._tickCallback (node.js:442:13)\nCaused By: Error: getaddrinfo ENOTFOUND\n    at errnoException (dns.js:37:11)\n    at Object.onanswer [as oncomplete] (dns.js:124:16)\n```\n\nSame goes for ungzip errors and response stream reading errors. All of them will be wrapped in `GotError` with `url` in message.\n\n## Highlights\n- `read-all-stream` was updated to `^2.0.0` - release fixes hanging requests on error in underlying streams (like ungzip) 3e55aa613708472537ba4d3cf5fb1923ec5ec5f0\n\n## Changes\n\nhttps://github.com/sindresorhus/got/compare/v2.5.0...v2.6.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v2.6.0",
+  "draft": false,
+  "published_at": "2015-04-03T14:59:16Z"
+ },
+ {
+  "tag_name": "v2.5.0",
+  "name": "2.5.0",
+  "body": "Emit `response` event with [response object](http://nodejs.org/api/http.html#http_http_incomingmessage) in Stream mode, when server response is ready. https://github.com/sindresorhus/got/commit/929cb59857848c1c14e470baca9a1ae204d0be8b\n\nhttps://github.com/sindresorhus/got/compare/v2.4.0...v2.5.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v2.5.0",
+  "draft": false,
+  "published_at": "2015-03-24T18:51:00Z"
+ },
+ {
+  "tag_name": "v2.4.0",
+  "name": "2.4.0",
+  "body": "Improve status code error messages. https://github.com/sindresorhus/got/commit/ef8bdeb22655e06ebe320b580bb0eae4d03f336d\n\nhttps://github.com/sindresorhus/got/compare/v2.3.2...v2.4.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v2.4.0",
+  "draft": false,
+  "published_at": "2015-02-06T09:23:51Z"
+ },
+ {
+  "tag_name": "v2.3.2",
+  "name": "2.3.2",
+  "body": "Prevent duplicate headers of different casing. Node will throw if it encounters that.\n\nhttps://github.com/sindresorhus/got/compare/v2.3.1...v2.3.2\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v2.3.2",
+  "draft": false,
+  "published_at": "2015-01-24T08:02:55Z"
+ },
+ {
+  "tag_name": "v2.3.1",
+  "name": "2.3.1",
+  "body": "https://github.com/sindresorhus/got/compare/v2.3.0...v2.3.1\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v2.3.1",
+  "draft": false,
+  "published_at": "2015-01-19T13:00:03Z"
+ },
+ {
+  "tag_name": "v2.3.0",
+  "name": "2.3.0 - funkadelic-bear",
+  "body": "![tumblr_mzkfuyhmyr1s373hwo1_400](https://cloud.githubusercontent.com/assets/170270/5611893/36dfaf6a-94ff-11e4-9864-a317dde00b80.gif)\n\n### Update\n\n``` sh\n$ npm update --save got\n```\n\n### Highlights\n- Add readable stream support in `options.body`. https://github.com/sindresorhus/got/commit/7693a7d645740e7a1d2f17f04310eb7d183bcaae\n- Support protocol-less URLs as input. https://github.com/sindresorhus/got/commit/0b6d7da87a5bedd8ef1cc8343687f64d66d768cb\n- Use agents with `maxSockets` set to `Infinity`. #22 https://github.com/sindresorhus/got/commit/5d5d0cc6e26192f45ec8c7816cce93355293aa2d\n- Discard response payload on redirect response. https://github.com/sindresorhus/got/commit/1f9281f27d437e3bf06eb3ad0929f708e8d53507\n\n### Changes\n\nhttps://github.com/sindresorhus/got/compare/v2.2.0...v2.3.0\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v2.3.0",
+  "draft": false,
+  "published_at": "2015-01-05T09:54:59Z"
+ },
+ {
+  "tag_name": "v2.0.0",
+  "name": "2.0.0",
+  "body": "- Return an error object on connection failure instead of the HTTP status code. 4a6b6d7cc7a6f3d97f4e55ab07900bb9206a6da2\n  _The HTTP status code is now available as a `code` property on the error object._\n- Read response stream even if status is not 200. cef2daacb55882dac46b8007fe14142fa29bfaed\n  _If you only care about the returned status code make sure to do a `HEAD` request._\n- Add `timeout` option. 14e0dd88924324ed25ece7beef6132f8acdb96a4\n",
+  "html_url": "https://github.com/sindresorhus/got/releases/tag/v2.0.0",
+  "draft": false,
+  "published_at": "2014-11-23T09:01:37Z"
+ }
+]

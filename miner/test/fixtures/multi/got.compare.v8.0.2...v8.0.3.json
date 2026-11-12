@@ -1,0 +1,29 @@
+{
+ "total_commits": 2,
+ "commits": [
+  {
+   "sha": "e71d3806fd68ee2ab9c4488d5ea39b1f67a2688d",
+   "commit": {
+    "message": "Thanks to MOXY for sponsoring my open source work!"
+   }
+  },
+  {
+   "sha": "3f427bb08f30e9a9b8581e77ebb259b52f19d7c5",
+   "commit": {
+    "message": "8.0.3"
+   }
+  }
+ ],
+ "files": [
+  {
+   "filename": "package.json",
+   "status": "modified",
+   "patch": "@@ -1,6 +1,6 @@\n {\n \t\"name\": \"got\",\n-\t\"version\": \"8.0.2\",\n+\t\"version\": \"8.0.3\",\n \t\"description\": \"Simplified HTTP requests\",\n \t\"license\": \"MIT\",\n \t\"repository\": \"sindresorhus/got\","
+  },
+  {
+   "filename": "readme.md",
+   "status": "modified",
+   "patch": "@@ -1,10 +1,15 @@\n-<h1 align=\"center\">\n+<div align=\"center\">\n+\t<br>\n \t<br>\n \t<img width=\"360\" src=\"https://rawgit.com/sindresorhus/got/master/media/logo.svg\" alt=\"got\">\n \t<br>\n \t<br>\n \t<br>\n-</h1>\n+\t<p align=\"center\">Huge thanks to <a href=\"https://moxy.studio\"><img src=\"https://sindresorhus.com/assets/thanks/moxy-logo.svg\" width=\"150\"></a> for sponsoring me!\n+\t</p>\n+\t<br>\n+\t<br>\n+</div>\n \n > Simplified HTTP requests\n \n@@ -37,6 +42,10 @@ Created because [`request`](https://github.com/request/request) is bloated *(sev\n $ npm install got\n ```\n \n+<a href=\"https://www.patreon.com/sindresorhus\">\n+\t<img src=\"https://c5.patreon.com/external/logo/become_a_patron_button@2x.png\" width=\"160\">\n+</a>\n+\n \n ## Usage\n "
+  }
+ ]
+}

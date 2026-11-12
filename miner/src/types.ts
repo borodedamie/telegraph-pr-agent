@@ -179,6 +179,8 @@ export type Answer = z.infer<typeof Answer>;
 export const MetricsRecord = z.object({
   requestHash: z.string(),
   authOk: z.boolean(),
+  /** Request header names, never values: shows what Telegraph passes on (a buyer or receipt header, if any). */
+  headerNames: z.array(z.string()),
   cacheHit: z.boolean(),
   outcome: Outcome.nullable(),
   declaredFailure: z.boolean(),
@@ -195,5 +197,24 @@ export const MetricsRecord = z.object({
   modelCostUsdc: z.number().nonnegative(),
   llmFailure: z.enum(["timeout", "invalid_reply", "payment"]).nullable(),
   budgetExhausted: z.string().nullable(),
+  // What was asked and what came back: package and versions are public npm names, never the question text.
+  package: z.string().nullable(),
+  fromVersion: z.string().nullable(),
+  toVersion: z.string().nullable(),
+  changes: z.number().int().nonnegative(),
+  confidence: z.number().min(0).max(1).nullable(),
+  releasesCovered: z.number().int().nonnegative(),
+  /** Releases not covered, counted by reason (budget, truncated, upstream_unavailable, ...). */
+  notCovered: z.record(z.number().int().nonnegative()),
+  // How much the LLM added on a first-time answer. It reads only sections the rules did not handle, and its items
+  // are verified after the rules' ones, so a kept model item is one the rules did not find.
+  rulesItems: z.number().int().nonnegative(),
+  modelItems: z.number().int().nonnegative(),
+  modelItemsKept: z.number().int().nonnegative(),
+  /** Model items dropped by verification, counted by reason ("excerpt not in source", "duplicate", ...). */
+  modelDrops: z.record(z.number().int().nonnegative()),
+  modelSectionsCut: z.number().int().nonnegative(),
+  modelSectionsSkipped: z.number().int().nonnegative(),
+  modelSectionsFailed: z.number().int().nonnegative(),
 });
 export type MetricsRecord = z.infer<typeof MetricsRecord>;

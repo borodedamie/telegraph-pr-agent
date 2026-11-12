@@ -35,7 +35,11 @@ curl -H "X-Telegraph-Key: $KEY" "http://localhost:3000/api/answer?query=What%20c
 curl http://localhost:3000/api/health
 ```
 
+How to call it as a buyer: [USAGE.md](USAGE.md).
+
 Setup, tests and the benchmark: [specs/001-package-release-miner/quickstart.md](specs/001-package-release-miner/quickstart.md).
+
+Live traffic: every answered request leaves one metrics record (what was asked, outcome, latency, LLM calls and cost, LLM items returned, kept and dropped by the quote check), kept in Redis as the newest 10,000 (from 11 Nov). `pnpm stats [--since 2026-11-11] [--json]` in `miner/` summarises them, with the Redis URL and token from `miner/.env.local`. Records do not hold the question text. Whether Telegraph passes on who asked is not known yet: `headerNames` lists the request headers it sends, without their values.
 
 ## A good question
 
@@ -59,7 +63,7 @@ The code defaults; each can be set by an env var (`ORIGIN_RATE_PER_MIN`, `MAX_CO
 
 - Questions up to 2,000 characters.
 - 120 requests a minute at the origin, 4 first-time answers computed at once; the YAML declares 2 a second and 1,000 a day.
-- A first-time answer has 20 seconds and at most one model call (0.01 USDC, paid from the miner's own spend wallet to LLM miner 302 on Telegraph). Text the rules or the model did not read is reported as not covered.
+- A first-time answer has 20 seconds and, by default, at most one model call (0.01 USDC, paid from the miner's own spend wallet to an LLM miner on Telegraph; production uses AIWire, 7413, since 11 Nov, after 302 began answering with unrelated feeds on 10 Nov; production allows two calls, `MAX_MODEL_CALLS=2` and `MAX_MODEL_COST_USDC=0.02`, and sends at most 4,000 chars per call, `MAX_MODEL_INPUT_CHARS=4000`, under 7413's 8,000-char prompt limit). A release section longer than one call takes is sent cut short and reported `truncated`. Text the rules or the model did not read is reported as not covered. Releases not covered for the same reason are grouped in the text, for example `9.2.1–9.2.2 (budget, 2 releases)`; the JSON `coverage` lists each one. By default there is one call. Setting `MAX_MODEL_CALLS` above 1 splits a large jump over up to that many calls made side by side; `MAX_MODEL_COST_USDC` is shared by the calls made, so raise it with them (2 calls at 0.01 each need 0.02), or every call is refused as over its cap. A call that fails leaves its releases `upstream unavailable`, and that answer is kept for an hour only.
 - npm only. Sources: npm registry, GitHub releases, changelogs, migration guides (in the repository or on the package's own website), OSV.
 - Answers are cached by question, source content and processing version; a repeat is served from the cache. Within an hour of the last full check, a repeat skips the sources entirely (about 0.45 s end to end), so an edited release note or a new advisory can show up to an hour late.
 

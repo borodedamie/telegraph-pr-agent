@@ -1,0 +1,2120 @@
+{
+  "askedAt": "2026-11-10T03:58:08.193Z",
+  "query": "What breaks if I upgrade vite from 5.4.0 to 6.0.0?",
+  "ms": 13515,
+  "intent": "QUESTION_ANSWERING_GENERAL",
+  "minerId": "7314",
+  "minerName": "Package Release Intelligence",
+  "minerRank": 0,
+  "minerScore": 0,
+  "amountUsdc": 0.02,
+  "txHash": "0x2ed336f8c0acde10d32233bea51937816a8a0a1b4c66f63553a699fe07abce5b",
+  "receiptHash": "0x8381390da55fec623d4b31c2732c5287d55955650157752a5e337d6a4aa2d2ff",
+  "signalHash": "0xee469e25a81b75eb8dd67139b1becabc397341f07040866e0321ec01826b38c1",
+  "result": {
+    "answer": "vite 5.4.0 → 6.0.0 (released 2024-11-26): 27 breaking changes, 0 deprecations.\nKey changes: drop node 21 support in version ranges ([#18729](https://github.com/vitejs/vite/issues/18…; **deps:** update dependency dotenv-expand to v12 ([#18697](https://github.com/vitejs/vite…; **resolve:** allow removing conditions ([#18395](https://github.com/vitejs/vite/issues/18…; **html:** support more asset sources ([#11138](https://github.com/vitejs/vite/issues/1113…; remove fs.cachedChecks option ([#18493](https://github.com/vitejs/vite/issues/18493)) ([9…; and 22 more below.\nCoverage partial: 1 of 22 releases covered; not covered 5.4.1 (truncated), 5.4.2 (truncated), 5.4.3 (truncated), 5.4.4 (truncated), 5.4.5 (truncated), 5.4.6 (truncated), 5.4.7 (truncated), 5.4.8 (truncated), 5.4.9 (truncated), 5.4.10 (truncated) and 11 more.\nSecurity: OSV checked at 2026-11-10T03:58:16.487Z, 21 advisories.\nNotice: the model pass did not run. Marked sections and common breaking-change phrases in major releases were read; other prose may hold changes this list misses.\n\nBreaking:\n1. drop node 21 support in version ranges ([#18729](https://github.com/vitejs/vite/issues/18729)) ([a384d8f](https://github.com/vitejs/vite/commit/a384d8fd39162190675abcfea31ba657383a3d03)) (6.0.0). Migration: manual review needed. Evidence (documented): \"drop node 21 support in version ranges ([#18729](https://github.com/vitejs/vite/issues/18729)) ([a384d8f](https://github.com/vitejs/vite/commit/a384d8fd39162190675abcfea31ba657383a3d03))\" [s2]\n2. **deps:** update dependency dotenv-expand to v12 ([#18697](https://github.com/vitejs/vite/issues/18697)) ([0c658de](https://github.com/vitejs/vite/commit/0c658de41f4c1576c526a8c48a8ea0a019c6311c)) (6.0.0). Migration: manual review needed. Evidence (documented): \"**deps:** update dependency dotenv-expand to v12 ([#18697](https://github.com/vitejs/vite/issues/18697)) ([0c658de](https://github.com/vitejs/vite/commit/0c658de41f4c1576c526a8c48a8ea0a019c6311c))\" [s2]\n3. **resolve:** allow removing conditions ([#18395](https://github.com/vitejs/vite/issues/18395)) ([d002e7d](https://github.com/vitejs/vite/commit/d002e7d05a0f23110f9185b39222819bcdfffc16)) (6.0.0). Migration: manual review needed. Evidence (documented): \"**resolve:** allow removing conditions ([#18395](https://github.com/vitejs/vite/issues/18395)) ([d002e7d](https://github.com/vitejs/vite/commit/d002e7d05a0f23110f9185b39222819bcdfffc16))\" [s2]\n4. **html:** support more asset sources ([#11138](https://github.com/vitejs/vite/issues/11138)) ([8a7af50](https://github.com/vitejs/vite/commit/8a7af50b5ddf72f21098406e9668bc609b323899)) (6.0.0). Migration: manual review needed. Evidence (documented): \"**html:** support more asset sources ([#11138](https://github.com/vitejs/vite/issues/11138)) ([8a7af50](https://github.com/vitejs/vite/commit/8a7af50b5ddf72f21098406e9668bc609b323899))\" [s2]\n5. remove fs.cachedChecks option ([#18493](https://github.com/vitejs/vite/issues/18493)) ([94b0857](https://github.com/vitejs/vite/commit/94b085735372588d5f92c7f4a8cf68e8291f2db0)) (6.0.0). Migration: manual review needed. Evidence (documented): \"remove fs.cachedChecks option ([#18493](https://github.com/vitejs/vite/issues/18493)) ([94b0857](https://github.com/vitejs/vite/commit/94b085735372588d5f92c7f4a8cf68e8291f2db0))\" [s2]\n6. proxy bypass with WebSocket ([#18070](https://github.com/vitejs/vite/issues/18070)) ([3c9836d](https://github.com/vitejs/vite/commit/3c9836d96f118ff5748916241bc3871a54247ad1)) (6.0.0). Migration: manual review needed. Evidence (documented): \"proxy bypass with WebSocket ([#18070](https://github.com/vitejs/vite/issues/18070)) ([3c9836d](https://github.com/vitejs/vite/commit/3c9836d96f118ff5748916241bc3871a54247ad1))\" [s2]\n7. **css:** remove default import in ssr dev ([#17922](https://github.com/vitejs/vite/issues/17922)) ([eccf663](https://github.com/vitejs/vite/commit/eccf663e35a17458425860895bb30b3b0613ea96)) (6.0.0). Migration: manual review needed. Evidence (documented): \"**css:** remove default import in ssr dev ([#17922](https://github.com/vitejs/vite/issues/17922)) ([eccf663](https://github.com/vitejs/vite/commit/eccf663e35a17458425860895bb30b3b0613ea96))\" [s2]\n8. **lib:** use package name for css output file name ([#18488](https://github.com/vitejs/vite/issues/18488)) ([61cbf6f](https://github.com/vitejs/vite/commit/61cbf6f2cfcd5afc91fe0a0ad56abfc36a32f1ab)) (6.0.0). Migrate (documented): **lib:** use package name for css output file name ([#18488](https://github.com/vitejs/vite/issues/18488)) ([61cbf6f](https://github.com/vitejs/vite/commit/61cbf6f2cfcd5afc91fe0a0ad56abfc36a32f1ab)) Evidence (documented): \"**lib:** use package name for css output file name ([#18488](https://github.com/vitejs/vite/issues/18488)) ([61cbf6f](https://github.com/vitejs/vite/commit/61cbf6f2cfcd5afc91fe0a0ad56abfc36a32f1ab))\" [s2]\n9. update to chokidar v4 ([#18453](https://github.com/vitejs/vite/issues/18453)) ([192d555](https://github.com/vitejs/vite/commit/192d555f88bba7576e8a40cc027e8a11e006079c)) (6.0.0). Migration: manual review needed. Evidence (documented): \"update to chokidar v4 ([#18453](https://github.com/vitejs/vite/issues/18453)) ([192d555](https://github.com/vitejs/vite/commit/192d555f88bba7576e8a40cc027e8a11e006079c))\" [s2]\n10. support `file://` resolution ([#18422](https://github.com/vitejs/vite/issues/18422)) ([6a7e313](https://github.com/vitejs/vite/commit/6a7e313754dce5faa5cd7c1e2343448cd7f3a2a2)) (6.0.0). Migration: manual review needed. Evidence (documented): \"support `file://` resolution ([#18422](https://github.com/vitejs/vite/issues/18422)) ([6a7e313](https://github.com/vitejs/vite/commit/6a7e313754dce5faa5cd7c1e2343448cd7f3a2a2))\" [s2]\n11. **deps:** update postcss-load-config to v6 ([#15235](https://github.com/vitejs/vite/issues/15235)) ([3a27f62](https://github.com/vitejs/vite/commit/3a27f627df278f6c9778a55f44cb347665b65204)) (6.0.0). Migration: manual review needed. Evidence (documented): \"**deps:** update postcss-load-config to v6 ([#15235](https://github.com/vitejs/vite/issues/15235)) ([3a27f62](https://github.com/vitejs/vite/commit/3a27f627df278f6c9778a55f44cb347665b65204))\" [s2]\n12. **css:** change default sass api to modern/modern-compiler ([#17937](https://github.com/vitejs/vite/issues/17937)) ([d4e0442](https://github.com/vitejs/vite/commit/d4e0442f9d6adc70b72ea0713dc8abb4b1f75ae4)) (6.0.0). Migration: manual review needed. Evidence (documented): \"**css:** change default sass api to modern/modern-compiler ([#17937](https://github.com/vitejs/vite/issues/17937)) ([d4e0442](https://github.com/vitejs/vite/commit/d4e0442f9d6adc70b72ea0713dc8abb4b1f75ae4))\" [s2]\n13. **css:** load postcss config within workspace root only ([#18440](https://github.com/vitejs/vite/issues/18440)) ([d23a493](https://github.com/vitejs/vite/commit/d23a493cc4b54a2e2b2c1337b3b1f0c9b1be311e)) (6.0.0). Migration: manual review needed. Evidence (documented): \"**css:** load postcss config within workspace root only ([#18440](https://github.com/vitejs/vite/issues/18440)) ([d23a493](https://github.com/vitejs/vite/commit/d23a493cc4b54a2e2b2c1337b3b1f0c9b1be311e))\" [s2]\n14. default `build.cssMinify` to `'esbuild'` for SSR ([#15637](https://github.com/vitejs/vite/issues/15637)) ([f1d3bf7](https://github.com/vitejs/vite/commit/f1d3bf74cc7f12e759442fd7111d07e2c0262a67)) (6.0.0). Migration: manual review needed. Evidence (documented): \"default `build.cssMinify` to `'esbuild'` for SSR ([#15637](https://github.com/vitejs/vite/issues/15637)) ([f1d3bf7](https://github.com/vitejs/vite/commit/f1d3bf74cc7f12e759442fd7111d07e2c0262a67))\" [s2]\n15. **json:** add `json.stringify: 'auto'` and make that the default ([#18303](https://github.com/vitejs/vite/issues/18303)) ([b80daa7](https://github.com/vitejs/vite/commit/b80daa7c0970645dca569d572892648f66c6799c)) (6.0.0). Migration: manual review needed. Evidence (documented): \"**json:** add `json.stringify: 'auto'` and make that the default ([#18303](https://github.com/vitejs/vite/issues/18303)) ([b80daa7](https://github.com/vitejs/vite/commit/b80daa7c0970645dca569d572892648f66c6799c))\" [s2]\n16. bump minimal terser version to 5.16.0 ([#18209](https://github.com/vitejs/vite/issues/18209)) ([19ce525](https://github.com/vitejs/vite/commit/19ce525b974328e4668ad8c6540c2a5ea652795b)) (6.0.0). Migration: manual review needed. Evidence (documented): \"bump minimal terser version to 5.16.0 ([#18209](https://github.com/vitejs/vite/issues/18209)) ([19ce525](https://github.com/vitejs/vite/commit/19ce525b974328e4668ad8c6540c2a5ea652795b))\" [s2]\n17. **deps:** migrate `fast-glob` to `tinyglobby` ([#18243](https://github.com/vitejs/vite/issues/18243)) ([6f74a3a](https://github.com/vitejs/vite/commit/6f74a3a1b2469a24a86743d16267b0cc3653bc4a)) (6.0.0). Migration: manual review needed. Evidence (documented): \"**deps:** migrate `fast-glob` to `tinyglobby` ([#18243](https://github.com/vitejs/vite/issues/18243)) ([6f74a3a](https://github.com/vitejs/vite/commit/6f74a3a1b2469a24a86743d16267b0cc3653bc4a))\" [s2]\n18. remove strip-ansi for a node built-in ([#18630](https://github.com/vitejs/vite/issues/18630)) ([5182272](https://github.com/vitejs/vite/commit/5182272d52fc092a6219c8efe73ecb3f8e65a0b5)) (6.0.0). Migration: manual review needed. Evidence (documented): \"remove strip-ansi for a node built-in ([#18630](https://github.com/vitejs/vite/issues/18630)) ([5182272](https://github.com/vitejs/vite/commit/5182272d52fc092a6219c8efe73ecb3f8e65a0b5))\" [s2]\n19. rename `HotUpdateContext` to `HotUpdateOptions` ([#18718](https://github.com/vitejs/vite/issues/18718)) ([824c347](https://github.com/vitejs/vite/commit/824c347fa21aaf5bbf811994385b790db4287ab0)) (6.0.0). Migration: manual review needed. Evidence (documented): \"rename `HotUpdateContext` to `HotUpdateOptions` ([#18718](https://github.com/vitejs/vite/issues/18718)) ([824c347](https://github.com/vitejs/vite/commit/824c347fa21aaf5bbf811994385b790db4287ab0))\" [s2]\n20. use premove instead of rimraf ([#18499](https://github.com/vitejs/vite/issues/18499)) ([f97a578](https://github.com/vitejs/vite/commit/f97a57893b3a7ddf11ca4c126b6be33cd2d9283b)) (6.0.0). Migrate (documented): use premove instead of rimraf ([#18499](https://github.com/vitejs/vite/issues/18499)) ([f97a578](https://github.com/vitejs/vite/commit/f97a57893b3a7ddf11ca4c126b6be33cd2d9283b)) Evidence (documented): \"use premove instead of rimraf ([#18499](https://github.com/vitejs/vite/issues/18499)) ([f97a578](https://github.com/vitejs/vite/commit/f97a57893b3a7ddf11ca4c126b6be33cd2d9283b))\" [s2]\n21. remove npm-run-all2 ([#18083](https://github.com/vitejs/vite/issues/18083)) ([41180d0](https://github.com/vitejs/vite/commit/41180d02730a7ce7c9b6ec7ac71fc6e750dd22c6)) (6.0.0). Migration: manual review needed. Evidence (documented): \"remove npm-run-all2 ([#18083](https://github.com/vitejs/vite/issues/18083)) ([41180d0](https://github.com/vitejs/vite/commit/41180d02730a7ce7c9b6ec7ac71fc6e750dd22c6))\" [s2]\n22. rename runner.destroy() to runner.close() ([#18304](https://github.com/vitejs/vite/issues/18304)) ([cd368f9](https://github.com/vitejs/vite/commit/cd368f9fed393a8649597f0e5d873504a9ac62e2)) (6.0.0). Migration: manual review needed. Evidence (documented): \"rename runner.destroy() to runner.close() ([#18304](https://github.com/vitejs/vite/issues/18304)) ([cd368f9](https://github.com/vitejs/vite/commit/cd368f9fed393a8649597f0e5d873504a9ac62e2))\" [s2]\n23. remove `_onCrawlEnd` ([#18207](https://github.com/vitejs/vite/issues/18207)) ([bea0272](https://github.com/vitejs/vite/commit/bea0272decd908cd04ac0a2c87dd0a676f218a1a)) (6.0.0). Migration: manual review needed. Evidence (documented): \"remove `_onCrawlEnd` ([#18207](https://github.com/vitejs/vite/issues/18207)) ([bea0272](https://github.com/vitejs/vite/commit/bea0272decd908cd04ac0a2c87dd0a676f218a1a))\" [s2]\n24. remove the need for \"processSourceMap\" ([#18187](https://github.com/vitejs/vite/issues/18187)) ([08ff233](https://github.com/vitejs/vite/commit/08ff23319964903b9f380859c216b10e577ddb6f)) (6.0.0). Migration: manual review needed. Evidence (documented): \"remove the need for \"processSourceMap\" ([#18187](https://github.com/vitejs/vite/issues/18187)) ([08ff233](https://github.com/vitejs/vite/commit/08ff23319964903b9f380859c216b10e577ddb6f))\" [s2]\n25. remove custom resolveOptions from pre-alias plugin ([#18041](https://github.com/vitejs/vite/issues/18041)) ([6f60adc](https://github.com/vitejs/vite/commit/6f60adc15283c6b25218d2392738671b6ab4b392)) (6.0.0). Migration: manual review needed. Evidence (documented): \"remove custom resolveOptions from pre-alias plugin ([#18041](https://github.com/vitejs/vite/issues/18041)) ([6f60adc](https://github.com/vitejs/vite/commit/6f60adc15283c6b25218d2392738671b6ab4b392))\" [s2]\n26. remove unnecessary escape ([#18044](https://github.com/vitejs/vite/issues/18044)) ([8062d36](https://github.com/vitejs/vite/commit/8062d36773cafaec98196965d33d79887e58f437)) (6.0.0). Migration: manual review needed. Evidence (documented): \"remove unnecessary escape ([#18044](https://github.com/vitejs/vite/issues/18044)) ([8062d36](https://github.com/vitejs/vite/commit/8062d36773cafaec98196965d33d79887e58f437))\" [s2]\n27. remove unnecessary logs from output ([#18368](https://github.com/vitejs/vite/issues/18368)) ([f50d358](https://github.com/vitejs/vite/commit/f50d3583e2c460bb02c118371a79b5ceac9877f3)) (6.0.0). Migration: manual review needed. Evidence (documented): \"remove unnecessary logs from output ([#18368](https://github.com/vitejs/vite/issues/18368)) ([f50d358](https://github.com/vitejs/vite/commit/f50d3583e2c460bb02c118371a79b5ceac9877f3))\" [s2]\n\nAdvisories (OSV):\n- GHSA-p9ff-h696-f583 (CVE-2026-39363, high) [s5]. Vite Vulnerable to Arbitrary File Read via Vite Dev Server WebSocket. Warning: the upgrade introduces it: 5.4.0 is not affected, 6.0.0 is.\n- GHSA-356w-63v5-8wf4 (CVE-2025-32395, moderate) [s4]. Vite has an `server.fs.deny` bypass with an invalid `request-target`. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-4r4m-qw57-chr8 (CVE-2025-31125, moderate) [s4]. Vite has a `server.fs.deny` bypassed for `inline` and `raw` with `?import` query. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-4w7w-66w2-5vf9 (CVE-2026-39365, moderate) [s4]. Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-587h-7wmj-h5pm (CVE-2026-112942, high) [s4]. launch-editor: `fs.existsSync()` existence check can be bypassed on Windows. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-698v-4r3x-3vcv (CVE-2026-112943, moderate) [s4]. launch-editor: escapeCmdArgs() omits % escaping on Windows. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-859w-5945-r5v3 (CVE-2025-46565, moderate) [s4]. Vite's server.fs.deny bypassed with /. for files under project root. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-93m4-6634-74q7 (CVE-2025-62522, moderate) [s4]. vite allows server.fs.deny bypass via backslash on Windows. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-9jrq-w75r-8gcw (CVE-2026-112945, low) [s4]. Vite: Cross origin script execution through Vite custom middleware. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-fx2h-pf6j-xcff (CVE-2026-53571, moderate) [s4]. vite: `server.fs.deny` bypass on Windows alternate paths. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-g4jq-h2w9-997c (CVE-2025-58751, low) [s4]. Vite middleware may serve files starting with the same name with the public directory. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-jqfw-vq24-v9c3 (CVE-2025-58752, low) [s4]. Vite's `server.fs` settings were not applied to HTML files. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-r825-w8mm-5pxw (CVE-2026-112944, moderate) [s4]. launch-editor: Editor CLI flag misinterpretation causing arbitrary command execution for some editors. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-rq7h-c2jc-7f22 (CVE-2026-112946, moderate) [s4]. Vite: Files outside `server.fs.allow` could be served when project paths match system paths on non-Windows machine. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-v6wh-96g9-6wx3 (CVE-2026-53632, moderate) [s4]. launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-vg6x-rcgg-rjx6 (CVE-2025-24010, moderate) [s4]. Websites were able to send any requests to the development server and read the response in vite. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-x574-m823-4x7w (CVE-2025-30208, moderate) [s4]. Vite bypasses server.fs.deny when using ?raw??. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-xcj6-pq6g-qj4x (CVE-2025-31486, moderate) [s4]. Vite allows server.fs.deny to be bypassed with .svg or relative paths. Warning: 6.0.0 is still affected; upgrading from 5.4.0 does not resolve it.\n- GHSA-64vr-g452-qvp3 (CVE-2024-45812, moderate) [s4]. Vite DOM Clobbering gadget found in vite bundled scripts that leads to XSS. Fixed by this upgrade: 5.4.0 is affected, 6.0.0 is not.\n- GHSA-9cwx-2883-4wfx (CVE-2024-45811, moderate) [s4]. Vite's `server.fs.deny` is bypassed when using `?import&raw`. Fixed by this upgrade: 5.4.0 is affected, 6.0.0 is not.\n- GHSA-c27g-q93r-2cwf (CVE-2024-52011, high) [s4]. launch-editor vulnerable to command injection via the crafted request on Windows. Fixed by this upgrade: 5.4.0 is affected, 6.0.0 is not.\n\nSources: [s1] https://registry.npmjs.org/vite [s2] https://raw.githubusercontent.com/vitejs/vite/HEAD/packages/vite/CHANGELOG.md [s3] https://github.com/vitejs/vite/compare/v5.4.0...v5.4.21 [s4] https://api.osv.dev/v1/query [s5] https://api.osv.dev/v1/query",
+    "changes": [
+      {
+        "change": "drop node 21 support in version ranges ([#18729](https://github.com/vitejs/vite/issues/18729)) ([a384d8f](https://github.com/vitejs/vite/commit/a384d8fd39162190675abcfea31ba657383a3d03))",
+        "evidenceType": "documented",
+        "excerpt": "drop node 21 support in version ranges ([#18729](https://github.com/vitejs/vite/issues/18729)) ([a384d8f](https://github.com/vitejs/vite/commit/a384d8fd39162190675abcfea31ba657383a3d03))",
+        "id": "c1",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "**deps:** update dependency dotenv-expand to v12 ([#18697](https://github.com/vitejs/vite/issues/18697)) ([0c658de](https://github.com/vitejs/vite/commit/0c658de41f4c1576c526a8c48a8ea0a019c6311c))",
+        "evidenceType": "documented",
+        "excerpt": "**deps:** update dependency dotenv-expand to v12 ([#18697](https://github.com/vitejs/vite/issues/18697)) ([0c658de](https://github.com/vitejs/vite/commit/0c658de41f4c1576c526a8c48a8ea0a019c6311c))",
+        "id": "c2",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "**resolve:** allow removing conditions ([#18395](https://github.com/vitejs/vite/issues/18395)) ([d002e7d](https://github.com/vitejs/vite/commit/d002e7d05a0f23110f9185b39222819bcdfffc16))",
+        "evidenceType": "documented",
+        "excerpt": "**resolve:** allow removing conditions ([#18395](https://github.com/vitejs/vite/issues/18395)) ([d002e7d](https://github.com/vitejs/vite/commit/d002e7d05a0f23110f9185b39222819bcdfffc16))",
+        "id": "c3",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "**html:** support more asset sources ([#11138](https://github.com/vitejs/vite/issues/11138)) ([8a7af50](https://github.com/vitejs/vite/commit/8a7af50b5ddf72f21098406e9668bc609b323899))",
+        "evidenceType": "documented",
+        "excerpt": "**html:** support more asset sources ([#11138](https://github.com/vitejs/vite/issues/11138)) ([8a7af50](https://github.com/vitejs/vite/commit/8a7af50b5ddf72f21098406e9668bc609b323899))",
+        "id": "c4",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "remove fs.cachedChecks option ([#18493](https://github.com/vitejs/vite/issues/18493)) ([94b0857](https://github.com/vitejs/vite/commit/94b085735372588d5f92c7f4a8cf68e8291f2db0))",
+        "evidenceType": "documented",
+        "excerpt": "remove fs.cachedChecks option ([#18493](https://github.com/vitejs/vite/issues/18493)) ([94b0857](https://github.com/vitejs/vite/commit/94b085735372588d5f92c7f4a8cf68e8291f2db0))",
+        "id": "c5",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "proxy bypass with WebSocket ([#18070](https://github.com/vitejs/vite/issues/18070)) ([3c9836d](https://github.com/vitejs/vite/commit/3c9836d96f118ff5748916241bc3871a54247ad1))",
+        "evidenceType": "documented",
+        "excerpt": "proxy bypass with WebSocket ([#18070](https://github.com/vitejs/vite/issues/18070)) ([3c9836d](https://github.com/vitejs/vite/commit/3c9836d96f118ff5748916241bc3871a54247ad1))",
+        "id": "c6",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "**css:** remove default import in ssr dev ([#17922](https://github.com/vitejs/vite/issues/17922)) ([eccf663](https://github.com/vitejs/vite/commit/eccf663e35a17458425860895bb30b3b0613ea96))",
+        "evidenceType": "documented",
+        "excerpt": "**css:** remove default import in ssr dev ([#17922](https://github.com/vitejs/vite/issues/17922)) ([eccf663](https://github.com/vitejs/vite/commit/eccf663e35a17458425860895bb30b3b0613ea96))",
+        "id": "c7",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "**lib:** use package name for css output file name ([#18488](https://github.com/vitejs/vite/issues/18488)) ([61cbf6f](https://github.com/vitejs/vite/commit/61cbf6f2cfcd5afc91fe0a0ad56abfc36a32f1ab))",
+        "evidenceType": "documented",
+        "excerpt": "**lib:** use package name for css output file name ([#18488](https://github.com/vitejs/vite/issues/18488)) ([61cbf6f](https://github.com/vitejs/vite/commit/61cbf6f2cfcd5afc91fe0a0ad56abfc36a32f1ab))",
+        "id": "c8",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": "**lib:** use package name for css output file name ([#18488](https://github.com/vitejs/vite/issues/18488)) ([61cbf6f](https://github.com/vitejs/vite/commit/61cbf6f2cfcd5afc91fe0a0ad56abfc36a32f1ab))",
+        "migrationEvidence": "documented",
+        "migrationExcerpt": "**lib:** use package name for css output file name ([#18488](https://github.com/vitejs/vite/issues/18488)) ([61cbf6f](https://github.com/vitejs/vite/commit/61cbf6f2cfcd5afc91fe0a0ad56abfc36a32f1ab))",
+        "migrationInferredFrom": [],
+        "migrationSourceId": "s2",
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "update to chokidar v4 ([#18453](https://github.com/vitejs/vite/issues/18453)) ([192d555](https://github.com/vitejs/vite/commit/192d555f88bba7576e8a40cc027e8a11e006079c))",
+        "evidenceType": "documented",
+        "excerpt": "update to chokidar v4 ([#18453](https://github.com/vitejs/vite/issues/18453)) ([192d555](https://github.com/vitejs/vite/commit/192d555f88bba7576e8a40cc027e8a11e006079c))",
+        "id": "c9",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "support `file://` resolution ([#18422](https://github.com/vitejs/vite/issues/18422)) ([6a7e313](https://github.com/vitejs/vite/commit/6a7e313754dce5faa5cd7c1e2343448cd7f3a2a2))",
+        "evidenceType": "documented",
+        "excerpt": "support `file://` resolution ([#18422](https://github.com/vitejs/vite/issues/18422)) ([6a7e313](https://github.com/vitejs/vite/commit/6a7e313754dce5faa5cd7c1e2343448cd7f3a2a2))",
+        "id": "c10",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "**deps:** update postcss-load-config to v6 ([#15235](https://github.com/vitejs/vite/issues/15235)) ([3a27f62](https://github.com/vitejs/vite/commit/3a27f627df278f6c9778a55f44cb347665b65204))",
+        "evidenceType": "documented",
+        "excerpt": "**deps:** update postcss-load-config to v6 ([#15235](https://github.com/vitejs/vite/issues/15235)) ([3a27f62](https://github.com/vitejs/vite/commit/3a27f627df278f6c9778a55f44cb347665b65204))",
+        "id": "c11",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "**css:** change default sass api to modern/modern-compiler ([#17937](https://github.com/vitejs/vite/issues/17937)) ([d4e0442](https://github.com/vitejs/vite/commit/d4e0442f9d6adc70b72ea0713dc8abb4b1f75ae4))",
+        "evidenceType": "documented",
+        "excerpt": "**css:** change default sass api to modern/modern-compiler ([#17937](https://github.com/vitejs/vite/issues/17937)) ([d4e0442](https://github.com/vitejs/vite/commit/d4e0442f9d6adc70b72ea0713dc8abb4b1f75ae4))",
+        "id": "c12",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "**css:** load postcss config within workspace root only ([#18440](https://github.com/vitejs/vite/issues/18440)) ([d23a493](https://github.com/vitejs/vite/commit/d23a493cc4b54a2e2b2c1337b3b1f0c9b1be311e))",
+        "evidenceType": "documented",
+        "excerpt": "**css:** load postcss config within workspace root only ([#18440](https://github.com/vitejs/vite/issues/18440)) ([d23a493](https://github.com/vitejs/vite/commit/d23a493cc4b54a2e2b2c1337b3b1f0c9b1be311e))",
+        "id": "c13",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "default `build.cssMinify` to `'esbuild'` for SSR ([#15637](https://github.com/vitejs/vite/issues/15637)) ([f1d3bf7](https://github.com/vitejs/vite/commit/f1d3bf74cc7f12e759442fd7111d07e2c0262a67))",
+        "evidenceType": "documented",
+        "excerpt": "default `build.cssMinify` to `'esbuild'` for SSR ([#15637](https://github.com/vitejs/vite/issues/15637)) ([f1d3bf7](https://github.com/vitejs/vite/commit/f1d3bf74cc7f12e759442fd7111d07e2c0262a67))",
+        "id": "c14",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "**json:** add `json.stringify: 'auto'` and make that the default ([#18303](https://github.com/vitejs/vite/issues/18303)) ([b80daa7](https://github.com/vitejs/vite/commit/b80daa7c0970645dca569d572892648f66c6799c))",
+        "evidenceType": "documented",
+        "excerpt": "**json:** add `json.stringify: 'auto'` and make that the default ([#18303](https://github.com/vitejs/vite/issues/18303)) ([b80daa7](https://github.com/vitejs/vite/commit/b80daa7c0970645dca569d572892648f66c6799c))",
+        "id": "c15",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "bump minimal terser version to 5.16.0 ([#18209](https://github.com/vitejs/vite/issues/18209)) ([19ce525](https://github.com/vitejs/vite/commit/19ce525b974328e4668ad8c6540c2a5ea652795b))",
+        "evidenceType": "documented",
+        "excerpt": "bump minimal terser version to 5.16.0 ([#18209](https://github.com/vitejs/vite/issues/18209)) ([19ce525](https://github.com/vitejs/vite/commit/19ce525b974328e4668ad8c6540c2a5ea652795b))",
+        "id": "c16",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "**deps:** migrate `fast-glob` to `tinyglobby` ([#18243](https://github.com/vitejs/vite/issues/18243)) ([6f74a3a](https://github.com/vitejs/vite/commit/6f74a3a1b2469a24a86743d16267b0cc3653bc4a))",
+        "evidenceType": "documented",
+        "excerpt": "**deps:** migrate `fast-glob` to `tinyglobby` ([#18243](https://github.com/vitejs/vite/issues/18243)) ([6f74a3a](https://github.com/vitejs/vite/commit/6f74a3a1b2469a24a86743d16267b0cc3653bc4a))",
+        "id": "c17",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "remove strip-ansi for a node built-in ([#18630](https://github.com/vitejs/vite/issues/18630)) ([5182272](https://github.com/vitejs/vite/commit/5182272d52fc092a6219c8efe73ecb3f8e65a0b5))",
+        "evidenceType": "documented",
+        "excerpt": "remove strip-ansi for a node built-in ([#18630](https://github.com/vitejs/vite/issues/18630)) ([5182272](https://github.com/vitejs/vite/commit/5182272d52fc092a6219c8efe73ecb3f8e65a0b5))",
+        "id": "c18",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "rename `HotUpdateContext` to `HotUpdateOptions` ([#18718](https://github.com/vitejs/vite/issues/18718)) ([824c347](https://github.com/vitejs/vite/commit/824c347fa21aaf5bbf811994385b790db4287ab0))",
+        "evidenceType": "documented",
+        "excerpt": "rename `HotUpdateContext` to `HotUpdateOptions` ([#18718](https://github.com/vitejs/vite/issues/18718)) ([824c347](https://github.com/vitejs/vite/commit/824c347fa21aaf5bbf811994385b790db4287ab0))",
+        "id": "c19",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "use premove instead of rimraf ([#18499](https://github.com/vitejs/vite/issues/18499)) ([f97a578](https://github.com/vitejs/vite/commit/f97a57893b3a7ddf11ca4c126b6be33cd2d9283b))",
+        "evidenceType": "documented",
+        "excerpt": "use premove instead of rimraf ([#18499](https://github.com/vitejs/vite/issues/18499)) ([f97a578](https://github.com/vitejs/vite/commit/f97a57893b3a7ddf11ca4c126b6be33cd2d9283b))",
+        "id": "c20",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": "use premove instead of rimraf ([#18499](https://github.com/vitejs/vite/issues/18499)) ([f97a578](https://github.com/vitejs/vite/commit/f97a57893b3a7ddf11ca4c126b6be33cd2d9283b))",
+        "migrationEvidence": "documented",
+        "migrationExcerpt": "use premove instead of rimraf ([#18499](https://github.com/vitejs/vite/issues/18499)) ([f97a578](https://github.com/vitejs/vite/commit/f97a57893b3a7ddf11ca4c126b6be33cd2d9283b))",
+        "migrationInferredFrom": [],
+        "migrationSourceId": "s2",
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "remove npm-run-all2 ([#18083](https://github.com/vitejs/vite/issues/18083)) ([41180d0](https://github.com/vitejs/vite/commit/41180d02730a7ce7c9b6ec7ac71fc6e750dd22c6))",
+        "evidenceType": "documented",
+        "excerpt": "remove npm-run-all2 ([#18083](https://github.com/vitejs/vite/issues/18083)) ([41180d0](https://github.com/vitejs/vite/commit/41180d02730a7ce7c9b6ec7ac71fc6e750dd22c6))",
+        "id": "c21",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "rename runner.destroy() to runner.close() ([#18304](https://github.com/vitejs/vite/issues/18304)) ([cd368f9](https://github.com/vitejs/vite/commit/cd368f9fed393a8649597f0e5d873504a9ac62e2))",
+        "evidenceType": "documented",
+        "excerpt": "rename runner.destroy() to runner.close() ([#18304](https://github.com/vitejs/vite/issues/18304)) ([cd368f9](https://github.com/vitejs/vite/commit/cd368f9fed393a8649597f0e5d873504a9ac62e2))",
+        "id": "c22",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "remove `_onCrawlEnd` ([#18207](https://github.com/vitejs/vite/issues/18207)) ([bea0272](https://github.com/vitejs/vite/commit/bea0272decd908cd04ac0a2c87dd0a676f218a1a))",
+        "evidenceType": "documented",
+        "excerpt": "remove `_onCrawlEnd` ([#18207](https://github.com/vitejs/vite/issues/18207)) ([bea0272](https://github.com/vitejs/vite/commit/bea0272decd908cd04ac0a2c87dd0a676f218a1a))",
+        "id": "c23",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "remove the need for \"processSourceMap\" ([#18187](https://github.com/vitejs/vite/issues/18187)) ([08ff233](https://github.com/vitejs/vite/commit/08ff23319964903b9f380859c216b10e577ddb6f))",
+        "evidenceType": "documented",
+        "excerpt": "remove the need for \"processSourceMap\" ([#18187](https://github.com/vitejs/vite/issues/18187)) ([08ff233](https://github.com/vitejs/vite/commit/08ff23319964903b9f380859c216b10e577ddb6f))",
+        "id": "c24",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "remove custom resolveOptions from pre-alias plugin ([#18041](https://github.com/vitejs/vite/issues/18041)) ([6f60adc](https://github.com/vitejs/vite/commit/6f60adc15283c6b25218d2392738671b6ab4b392))",
+        "evidenceType": "documented",
+        "excerpt": "remove custom resolveOptions from pre-alias plugin ([#18041](https://github.com/vitejs/vite/issues/18041)) ([6f60adc](https://github.com/vitejs/vite/commit/6f60adc15283c6b25218d2392738671b6ab4b392))",
+        "id": "c25",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "remove unnecessary escape ([#18044](https://github.com/vitejs/vite/issues/18044)) ([8062d36](https://github.com/vitejs/vite/commit/8062d36773cafaec98196965d33d79887e58f437))",
+        "evidenceType": "documented",
+        "excerpt": "remove unnecessary escape ([#18044](https://github.com/vitejs/vite/issues/18044)) ([8062d36](https://github.com/vitejs/vite/commit/8062d36773cafaec98196965d33d79887e58f437))",
+        "id": "c26",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      },
+      {
+        "change": "remove unnecessary logs from output ([#18368](https://github.com/vitejs/vite/issues/18368)) ([f50d358](https://github.com/vitejs/vite/commit/f50d3583e2c460bb02c118371a79b5ceac9877f3))",
+        "evidenceType": "documented",
+        "excerpt": "remove unnecessary logs from output ([#18368](https://github.com/vitejs/vite/issues/18368)) ([f50d358](https://github.com/vitejs/vite/commit/f50d3583e2c460bb02c118371a79b5ceac9877f3))",
+        "id": "c27",
+        "ids": [],
+        "inferredFrom": [],
+        "kind": "breaking",
+        "migration": null,
+        "migrationEvidence": "manual_review",
+        "migrationExcerpt": null,
+        "migrationInferredFrom": [],
+        "migrationSourceId": null,
+        "sourceId": "s2",
+        "version": "6.0.0"
+      }
+    ],
+    "clarification": null,
+    "confidence": 0.5,
+    "coverage": {
+      "complete": false,
+      "covered": [
+        "6.0.0"
+      ],
+      "notCovered": [
+        {
+          "reason": "truncated",
+          "version": "5.4.1"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.2"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.3"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.4"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.5"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.6"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.7"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.8"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.9"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.10"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.11"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.12"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.13"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.14"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.15"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.16"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.17"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.18"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.19"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.20"
+        },
+        {
+          "reason": "truncated",
+          "version": "5.4.21"
+        }
+      ]
+    },
+    "outcome": "found",
+    "processingVersion": "p8-miners_302_7413-nollm-rules_only-s1",
+    "request": {
+      "ecosystem": "npm",
+      "fromAssumed": false,
+      "fromRequested": "5.4.0",
+      "fromResolved": "5.4.0",
+      "package": "vite",
+      "toRequested": "6.0.0",
+      "toResolved": "6.0.0"
+    },
+    "security": {
+      "advisories": [
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2025-32395"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-356w-63v5-8wf4",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "6.2.0"
+                },
+                {
+                  "fixed": "6.2.6"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "6.1.0"
+                },
+                {
+                  "fixed": "6.1.5"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "6.0.0"
+                },
+                {
+                  "fixed": "6.0.15"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "5.0.0"
+                },
+                {
+                  "fixed": "5.4.18"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "4.5.13"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:P/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "Vite has an `server.fs.deny` bypass with an invalid `request-target`",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2025-31125"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-4r4m-qw57-chr8",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "6.2.0"
+                },
+                {
+                  "fixed": "6.2.4"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "6.1.0"
+                },
+                {
+                  "fixed": "6.1.3"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "6.0.0"
+                },
+                {
+                  "fixed": "6.0.13"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "5.0.0"
+                },
+                {
+                  "fixed": "5.4.16"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "4.5.11"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N",
+              "type": "CVSS_V3"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "Vite has a `server.fs.deny` bypassed for `inline` and `raw` with `?import` query",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2026-39365"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-4w7w-66w2-5vf9",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "8.0.0"
+                },
+                {
+                  "fixed": "8.0.5"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "7.0.0"
+                },
+                {
+                  "fixed": "7.3.2"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "6.4.2"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2026-112942"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "high",
+          "fromAffected": "yes",
+          "id": "GHSA-587h-7wmj-h5pm",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "8.3.0"
+                },
+                {
+                  "fixed": "8.3.3"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "8.2.0"
+                },
+                {
+                  "fixed": "8.2.4"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "8.0.0"
+                },
+                {
+                  "fixed": "8.1.6"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "7.0.0"
+                },
+                {
+                  "fixed": "7.3.7"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "6.4.4"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:A/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "launch-editor: `fs.existsSync()` existence check can be bypassed on Windows",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2024-45812"
+          ],
+          "conclusion": "fixed_by_upgrade",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-64vr-g452-qvp3",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "5.4.0"
+                },
+                {
+                  "fixed": "5.4.6"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "5.3.0"
+                },
+                {
+                  "fixed": "5.3.6"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "5.2.0"
+                },
+                {
+                  "fixed": "5.2.14"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "4.0.0"
+                },
+                {
+                  "fixed": "4.5.4"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "3.2.11"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "5.0.0"
+                },
+                {
+                  "fixed": "5.1.8"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:L/I:L/A:H",
+              "type": "CVSS_V3"
+            },
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:A/VC:N/VI:N/VA:N/SC:L/SI:L/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "Vite DOM Clobbering gadget found in vite bundled scripts that leads to XSS",
+          "targetAffected": "no"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2026-112943"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-698v-4r3x-3vcv",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "8.3.0"
+                },
+                {
+                  "fixed": "8.3.3"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "8.2.0"
+                },
+                {
+                  "fixed": "8.2.4"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "8.0.0"
+                },
+                {
+                  "fixed": "8.1.6"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "7.0.0"
+                },
+                {
+                  "fixed": "7.3.7"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "6.4.4"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:L/VI:L/VA:L/SC:N/SI:N/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "launch-editor: escapeCmdArgs() omits % escaping on Windows",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2025-46565"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-859w-5945-r5v3",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "6.3.0"
+                },
+                {
+                  "fixed": "6.3.4"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "6.2.0"
+                },
+                {
+                  "fixed": "6.2.7"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "6.0.0"
+                },
+                {
+                  "fixed": "6.1.6"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "5.0.0"
+                },
+                {
+                  "fixed": "5.4.19"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "4.5.14"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:P/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "Vite's server.fs.deny bypassed with /. for files under project root",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2025-62522"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-93m4-6634-74q7",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "7.1.0"
+                },
+                {
+                  "fixed": "7.1.11"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "7.0.0"
+                },
+                {
+                  "fixed": "7.0.8"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "6.0.0"
+                },
+                {
+                  "fixed": "6.4.1"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "2.9.18"
+                },
+                {
+                  "fixed": "5.4.21"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "3.2.9"
+                },
+                {
+                  "fixed": "5.4.21"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "4.5.3"
+                },
+                {
+                  "fixed": "5.4.21"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "5.2.6"
+                },
+                {
+                  "fixed": "5.4.21"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:P/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "vite allows server.fs.deny bypass via backslash on Windows",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2024-45811"
+          ],
+          "conclusion": "fixed_by_upgrade",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-9cwx-2883-4wfx",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "5.4.0"
+                },
+                {
+                  "fixed": "5.4.6"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "5.3.0"
+                },
+                {
+                  "fixed": "5.3.6"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "5.2.0"
+                },
+                {
+                  "fixed": "5.2.14"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "4.0.0"
+                },
+                {
+                  "fixed": "4.5.4"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "3.2.11"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "5.0.0"
+                },
+                {
+                  "fixed": "5.1.8"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
+              "type": "CVSS_V3"
+            },
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "Vite's `server.fs.deny` is bypassed when using `?import&raw`",
+          "targetAffected": "no"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2026-112945"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "low",
+          "fromAffected": "yes",
+          "id": "GHSA-9jrq-w75r-8gcw",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "8.3.0"
+                },
+                {
+                  "fixed": "8.3.3"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "8.2.0"
+                },
+                {
+                  "fixed": "8.2.4"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "8.0.0"
+                },
+                {
+                  "fixed": "8.1.6"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "7.0.0"
+                },
+                {
+                  "fixed": "7.3.7"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "6.4.4"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:A/VC:L/VI:L/VA:N/SC:N/SI:N/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "Vite: Cross origin script execution through Vite custom middleware",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2024-52011"
+          ],
+          "conclusion": "fixed_by_upgrade",
+          "displaySeverity": "high",
+          "fromAffected": "yes",
+          "id": "GHSA-c27g-q93r-2cwf",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "5.4.9"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:A/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "launch-editor vulnerable to command injection via the crafted request on Windows",
+          "targetAffected": "no"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2026-53571"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-fx2h-pf6j-xcff",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "8.0.0"
+                },
+                {
+                  "fixed": "8.0.16"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "7.0.0"
+                },
+                {
+                  "fixed": "7.3.5"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "6.4.3"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:L/VI:N/VA:N/SC:H/SI:N/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "vite: `server.fs.deny` bypass on Windows alternate paths",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2025-58751"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "low",
+          "fromAffected": "yes",
+          "id": "GHSA-g4jq-h2w9-997c",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "7.1.0"
+                },
+                {
+                  "fixed": "7.1.5"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "7.0.0"
+                },
+                {
+                  "fixed": "7.0.7"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "6.0.0"
+                },
+                {
+                  "fixed": "6.3.6"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "5.4.20"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:P/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "Vite middleware may serve files starting with the same name with the public directory",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2025-58752"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "low",
+          "fromAffected": "yes",
+          "id": "GHSA-jqfw-vq24-v9c3",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "7.1.0"
+                },
+                {
+                  "fixed": "7.1.5"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "7.0.0"
+                },
+                {
+                  "fixed": "7.0.7"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "6.0.0"
+                },
+                {
+                  "fixed": "6.3.6"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "5.4.20"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:P/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "Vite's `server.fs` settings were not applied to HTML files",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2026-112944"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-r825-w8mm-5pxw",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "8.3.0"
+                },
+                {
+                  "fixed": "8.3.3"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "8.2.0"
+                },
+                {
+                  "fixed": "8.2.4"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "8.0.0"
+                },
+                {
+                  "fixed": "8.1.6"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "7.0.0"
+                },
+                {
+                  "fixed": "7.3.7"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "6.4.4"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:L/VI:L/VA:L/SC:N/SI:N/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "launch-editor: Editor CLI flag misinterpretation causing arbitrary command execution for some editors",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2026-112946"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-rq7h-c2jc-7f22",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "8.3.0"
+                },
+                {
+                  "fixed": "8.3.3"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "8.2.0"
+                },
+                {
+                  "fixed": "8.2.4"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "8.0.0"
+                },
+                {
+                  "fixed": "8.1.6"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "7.0.0"
+                },
+                {
+                  "fixed": "7.3.7"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "6.4.4"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "Vite: Files outside `server.fs.allow` could be served when project paths match system paths on non-Windows machine",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2026-53632"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-v6wh-96g9-6wx3",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "8.0.0"
+                },
+                {
+                  "fixed": "8.0.16"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "7.0.0"
+                },
+                {
+                  "fixed": "7.3.5"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "6.4.3"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:4.0/AV:N/AC:H/AT:N/PR:N/UI:A/VC:N/VI:N/VA:N/SC:H/SI:H/SA:H",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2025-24010"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-vg6x-rcgg-rjx6",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "6.0.0"
+                },
+                {
+                  "fixed": "6.0.9"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "5.0.0"
+                },
+                {
+                  "fixed": "5.4.12"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "4.5.6"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N",
+              "type": "CVSS_V3"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "Websites were able to send any requests to the development server and read the response in vite",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2025-30208"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-x574-m823-4x7w",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "6.2.0"
+                },
+                {
+                  "fixed": "6.2.3"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "6.1.0"
+                },
+                {
+                  "fixed": "6.1.2"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "6.0.0"
+                },
+                {
+                  "fixed": "6.0.12"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "5.0.0"
+                },
+                {
+                  "fixed": "5.4.15"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "4.5.10"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N",
+              "type": "CVSS_V3"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "Vite bypasses server.fs.deny when using ?raw??",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2025-31486"
+          ],
+          "conclusion": "still_affected",
+          "displaySeverity": "moderate",
+          "fromAffected": "yes",
+          "id": "GHSA-xcj6-pq6g-qj4x",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "6.2.0"
+                },
+                {
+                  "fixed": "6.2.5"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "6.1.0"
+                },
+                {
+                  "fixed": "6.1.4"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "6.0.0"
+                },
+                {
+                  "fixed": "6.0.14"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "5.0.0"
+                },
+                {
+                  "fixed": "5.4.17"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "4.5.12"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N",
+              "type": "CVSS_V3"
+            }
+          ],
+          "sourceId": "s4",
+          "summary": "Vite allows server.fs.deny to be bypassed with .svg or relative paths",
+          "targetAffected": "yes"
+        },
+        {
+          "affectedVersions": [],
+          "aliases": [
+            "CVE-2026-39363"
+          ],
+          "conclusion": "introduced_by_upgrade",
+          "displaySeverity": "high",
+          "fromAffected": "no",
+          "id": "GHSA-p9ff-h696-f583",
+          "ranges": [
+            {
+              "events": [
+                {
+                  "introduced": "8.0.0"
+                },
+                {
+                  "fixed": "8.0.5"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "7.0.0"
+                },
+                {
+                  "fixed": "7.3.2"
+                }
+              ],
+              "type": "SEMVER"
+            },
+            {
+              "events": [
+                {
+                  "introduced": "6.0.0"
+                },
+                {
+                  "fixed": "6.4.2"
+                }
+              ],
+              "type": "SEMVER"
+            }
+          ],
+          "releaseNoteItemId": null,
+          "severity": [
+            {
+              "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
+              "type": "CVSS_V4"
+            }
+          ],
+          "sourceId": "s5",
+          "summary": "Vite Vulnerable to Arbitrary File Read via Vite Dev Server WebSocket",
+          "targetAffected": "yes"
+        }
+      ],
+      "checkedAt": "2026-11-10T03:58:16.487Z",
+      "documentedFixes": 0,
+      "status": "complete"
+    },
+    "sources": [
+      {
+        "contentHash": "a29595aa416bd68ec5caa41163e5991a07e13a8cc15b51ff38ac409bcc61d26d",
+        "id": "s1",
+        "retrievedAt": "2026-11-10T03:58:15.792Z",
+        "snapshotKey": "snap:a29595aa416bd68ec5caa41163e5991a07e13a8cc15b51ff38ac409bcc61d26d",
+        "trust": "official",
+        "type": "registry",
+        "url": "https://registry.npmjs.org/vite",
+        "versionFrom": null,
+        "versionTo": "6.0.0"
+      },
+      {
+        "contentHash": "c5e5967541d0d8965b2cee7e5c3b1583138c9862665845b2b1f68c36fdde1472",
+        "id": "s2",
+        "retrievedAt": "2026-11-10T03:58:17.622Z",
+        "snapshotKey": "snap:c5e5967541d0d8965b2cee7e5c3b1583138c9862665845b2b1f68c36fdde1472",
+        "trust": "official",
+        "type": "changelog",
+        "url": "https://raw.githubusercontent.com/vitejs/vite/HEAD/packages/vite/CHANGELOG.md",
+        "versionFrom": "5.4.21",
+        "versionTo": "6.0.0"
+      },
+      {
+        "contentHash": "6147ec3de363e49968285164e7ede82a416a04652b1fc11bdafbe62142a74593",
+        "id": "s3",
+        "retrievedAt": "2026-11-10T03:58:19.105Z",
+        "snapshotKey": "snap:6147ec3de363e49968285164e7ede82a416a04652b1fc11bdafbe62142a74593",
+        "trust": "repository_evidence",
+        "type": "tag_compare",
+        "url": "https://github.com/vitejs/vite/compare/v5.4.0...v5.4.21",
+        "versionFrom": "5.4.0",
+        "versionTo": "5.4.21"
+      },
+      {
+        "contentHash": "b6b25a4b6f89dfaad00f69d052aaaa207fd8d36a6b5b6057669868a0262bdb1d",
+        "id": "s4",
+        "retrievedAt": "2026-11-10T03:58:16.257Z",
+        "snapshotKey": "snap:b6b25a4b6f89dfaad00f69d052aaaa207fd8d36a6b5b6057669868a0262bdb1d",
+        "trust": "advisory_db",
+        "type": "advisory",
+        "url": "https://api.osv.dev/v1/query",
+        "versionFrom": null,
+        "versionTo": null
+      },
+      {
+        "contentHash": "86cee79b4f74e9047958a18a0d25049e70ae6d9888191b5ea6062507bda0df71",
+        "id": "s5",
+        "retrievedAt": "2026-11-10T03:58:16.473Z",
+        "snapshotKey": "snap:86cee79b4f74e9047958a18a0d25049e70ae6d9888191b5ea6062507bda0df71",
+        "trust": "advisory_db",
+        "type": "advisory",
+        "url": "https://api.osv.dev/v1/query",
+        "versionFrom": null,
+        "versionTo": null
+      }
+    ],
+    "summary": "Upgrading vite 5.4.0 → 6.0.0: 27 breaking changes, 0 deprecations found in the release material; coverage partial.",
+    "targetReleasedAt": "2024-11-26T09:35:53.231Z"
+  },
+  "status": "settled",
+  "network": "eip155:11155111",
+  "chainId": 11155111,
+  "usdcContract": "0xcc194e1a843B658526D0D5C431f670028582Ae17",
+  "explorerBaseUrl": "https://sepolia.etherscan.io"
+}

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { answerQuestion, type PipelineDeps } from "../../src/answer.js";
 import { limitsFromEnv } from "../../src/budget.js";
 import { MemoryStore, getSnapshot } from "../../src/cache.js";
-import type { ModelCaller } from "../../src/extract/model.js";
+import { ModelFailure, type ModelCaller } from "../../src/extract/model.js";
 import { findSpan } from "../../src/extract/verify.js";
 import { registryUrl } from "../../src/resolve.js";
 import { TooLarge } from "../../src/safeFetch.js";
@@ -81,6 +81,36 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     const { answer } = await answerQuestion("What breaks if I upgrade zod to 4.0.0?", deps(new MemoryStore(), stubModel().caller));
     expect(answer.request).toMatchObject({ fromResolved: "3.25.76", fromAssumed: true });
     expect(answer.answer).toContain("(from version assumed: 3.25.76");
+  });
+
+  it("counts what the model added and what verification dropped", async () => {
+    const real = stubModel();
+    const caller: ModelCaller = async (miner, prompt, ...rest) => {
+      const reply = await real.caller(miner, prompt, ...rest);
+      const { items } = JSON.parse(reply.text) as { items: Record<string, unknown>[] };
+      const invented = { ...items[0], id: "i2", excerpt: "A sentence no release note contains", migration: null, migrationExcerpt: null };
+      return { ...reply, text: JSON.stringify({ items: [...items, invented] }) };
+    };
+    const roomy = { ...deps(new MemoryStore(), caller), limits: limitsFromEnv({ MAX_MODEL_RELEASES: "100", MAX_MODEL_INPUT_CHARS: "500000" }) };
+    const { metrics, answer } = await answerQuestion(QUESTION, roomy);
+    expect(metrics).toMatchObject({
+      package: "zod", fromVersion: "3.23.8", toVersion: "4.0.0", changes: answer.changes.length,
+      modelItems: 2, modelItemsKept: 1, modelDrops: { "excerpt not in source": 1 }, rulesItems: answer.changes.length - 1,
+    });
+    expect(metrics.releasesCovered).toBe(answer.coverage!.covered.length);
+
+    const repeat = await answerQuestion(QUESTION, roomy);
+    expect(repeat.metrics).toMatchObject({ cacheHit: true, package: "zod", changes: answer.changes.length, modelItems: 0 });
+  });
+
+  it("counts the sections sent to a model that never answered as failed, not as cut by budget", async () => {
+    const down: ModelCaller = async () => {
+      throw new ModelFailure("invalid_reply", "stub outage", 0);
+    };
+    const { metrics } = await answerQuestion(QUESTION, { ...deps(new MemoryStore(), down), limits: limitsFromEnv({ MAX_MODEL_RELEASES: "2" }) });
+    expect(metrics.llmFailure).toBe("invalid_reply");
+    expect(metrics.modelSectionsFailed).toBe(2);
+    expect(metrics.modelSectionsSkipped).toBeGreaterThan(0);
   });
 
   it("returns the identical string on a repeat call without calling the model", async () => {
