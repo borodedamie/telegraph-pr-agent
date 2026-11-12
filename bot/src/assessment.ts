@@ -1,11 +1,11 @@
-import { migrationFindings, MIGRATION_MINER_ID, NotFoundAssessmentError } from "./miner-assessment";
+import { migrationFindings, MIGRATION_MINER_ID, NotFoundAssessmentError } from "./miner-assessment.js";
 import { z } from "zod";
 import semver from "semver";
 import * as pep440 from "@renovatebot/pep440";
-import type { Dependency } from "./scan";
-import type { Purchase } from "../../src/x402";
-import { prepareUpdate } from "./updates";
-import { createDependencyPr } from "./pull-request";
+import type { Dependency } from "./scan.js";
+import type { Purchase } from "./x402.js";
+import { prepareUpdate } from "./updates.js";
+import { createDependencyPr } from "./pull-request.js";
 
 const source = z.string().url().refine((value) => {
   const url = new URL(value);

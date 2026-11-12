@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { commitLedgerRow, type ClosedRow, type LedgerRow, type MergeRow } from "../../src/ledger.js";
-import type { Ledger } from "./purchase";
+import { commitLedgerRow, type ClosedRow, type LedgerRow, type MergeRow } from "./ledger.js";
+import type { Ledger } from "./purchase.js";
 
 export interface MergedPr {
   number: number;

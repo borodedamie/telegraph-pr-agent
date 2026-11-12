@@ -41,7 +41,7 @@ jobs:
           node-version: 24
       - name: Assess dependencies and open update PRs
         id: update
-        uses: ./bot/actions
+        uses: ./
         with:
           # Optional cap on all purchases in the calendar month (UTC); empty variable = off.
           monthly-budget-usdc: ${{ vars.MONTHLY_BUDGET_USDC }}

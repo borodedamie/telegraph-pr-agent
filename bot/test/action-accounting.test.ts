@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
-import { recordMerge, fetchMergedPr } from "../actions/src/accounting.js";
+import { recordMerge, fetchMergedPr } from "../src/accounting.js";
 
 const directories: string[] = [];
 afterEach(() => { for (const d of directories.splice(0)) rmSync(d, { recursive: true, force: true }); });

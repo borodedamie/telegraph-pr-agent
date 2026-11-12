@@ -6,7 +6,7 @@ const git = vi.hoisted(() => vi.fn());
 vi.mock("node:child_process", async (importOriginal) => ({
   ...await importOriginal<typeof import("node:child_process")>(), execFileSync: git,
 }));
-import { openLedger } from "../actions/src/purchase.js";
+import { openLedger } from "../src/purchase.js";
 
 const directories: string[] = [];
 afterEach(() => { git.mockReset(); for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true }); });

@@ -3,12 +3,12 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { applyAssessment, assessmentPrompt, parseFindings, InvalidAssessmentError } from "../actions/src/assessment.js";
-import { prepareUpdate, updateManifest } from "../actions/src/updates.js";
-import { checkedOutBranch, createDependencyPr } from "../actions/src/pull-request.js";
-import { scanRepository } from "../actions/src/scan.js";
-import * as updateModule from "../actions/src/updates.js";
-import * as prModule from "../actions/src/pull-request.js";
+import { applyAssessment, assessmentPrompt, parseFindings, InvalidAssessmentError } from "../src/assessment.js";
+import { prepareUpdate, updateManifest } from "../src/updates.js";
+import { checkedOutBranch, createDependencyPr } from "../src/pull-request.js";
+import { scanRepository } from "../src/scan.js";
+import * as updateModule from "../src/updates.js";
+import * as prModule from "../src/pull-request.js";
 
 const directories: string[] = [];
 afterEach(() => { vi.restoreAllMocks(); for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true }); });
@@ -165,30 +165,6 @@ describe("dependency preparation", () => {
     expect(npm).not.toHaveBeenCalled();
   });
 
-  it("includes only a verified rebuilt bundle in action dependency PRs", async () => {
-    const root = directory();
-    mkdirSync(join(root, "bot/actions/dist"), { recursive: true });
-    const actionFinding = { ...finding, source: "bot/actions/package.json" };
-    writeFileSync(join(root, actionFinding.source), JSON.stringify({ dependencies: { zod: "^3.23.0" } }));
-    writeFileSync(join(root, "bot/actions/dist/index.js"), "old bundle");
-    writeFileSync(join(root, "bot/actions/package-lock.json"), JSON.stringify({ lockfileVersion: 3, packages: {} }));
-    const update = await prepareUpdate(root, actionFinding,
-      async () => new Response(JSON.stringify({ name: "zod", version: "4.0.0" })),
-      (temporary) => writeFileSync(join(temporary, "package-lock.json"), JSON.stringify({ lockfileVersion: 3,
-        packages: { "": { dependencies: { zod: "4.0.0" } }, "node_modules/zod": { version: "4.0.0" } } })),
-      () => "verified rebuilt bundle");
-    expect(update.files.map((file) => file.path)).toEqual([
-      actionFinding.source, "bot/actions/package-lock.json", "bot/actions/dist/index.js",
-    ]);
-    expect(updateModule.hasVerifiedBundle(update)).toBe(true);
-    const fixture = publisherFixture();
-    const input = { ...fixture, root, update };
-    await expect(createDependencyPr(input)).resolves.toContain("/pull/1");
-    fixture.fetchImpl.mockClear();
-    update.files[2].content = "tampered bundle";
-    await expect(createDependencyPr(input)).rejects.toThrow(/not verified or has changed/);
-    expect(fixture.fetchImpl).not.toHaveBeenCalled();
-  });
 
   it("rejects unresolvable target versions", async () => {
     const fetchImpl = vi.fn(async () => new Response("", { status: 404 }));

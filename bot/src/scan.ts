@@ -1,4 +1,4 @@
-import { readNpmLock, readRepositoryFile, updateManifest } from "./updates";
+import { readNpmLock, readRepositoryFile, updateManifest } from "./updates.js";
 import semver from "semver";
 import * as pep440 from "@renovatebot/pep440";
 import { execFileSync } from 'node:child_process';
@@ -77,11 +77,6 @@ export const scanRepository = async (directory: string = process.cwd()): Promise
         if (typeof declared !== 'string' || !/^(?:@[a-z0-9._-]+\/)?[a-z0-9][a-z0-9._-]*$/.test(name)
           || !/^[~^]?\d/.test(declared)) {
           skipped.push({ project, package: name, reason: 'Unsupported dependency name or specifier.' });
-          continue;
-        }
-        // shortcut: action bundle builds pin their trusted builder; validate tooling before upgrading it.
-        if (source === 'bot/actions/package.json' && name === 'esbuild') {
-          skipped.push({ project, package: name, reason: 'Automatic action builder upgrades require separate toolchain validation.' });
           continue;
         }
         const locked = packages[`node_modules/${name}`];

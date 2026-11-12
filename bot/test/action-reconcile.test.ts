@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
-import { checkReconciliation, reconcileAttempt, type Reconciliation } from "../actions/src/reconcile.js";
+import { checkReconciliation, reconcileAttempt, type Reconciliation } from "../src/reconcile.js";
 import { LEDGER_FILE, preflight, type AttemptRow } from "../src/ledger.js";
 
 const directories: string[] = [];

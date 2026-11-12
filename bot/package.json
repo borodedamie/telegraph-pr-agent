@@ -7,18 +7,23 @@
   },
   "scripts": {
     "test": "vitest run",
-    "build": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && esbuild src/action.ts --bundle --platform=node --target=node24 --format=cjs --minify --outfile=dist/index.js"
   },
   "dependencies": {
+    "@actions/core": "^3.0.1",
+    "@renovatebot/pep440": "^4.2.4",
     "@x402/evm": "^2.11.0",
     "@x402/fetch": "^2.11.0",
+    "semver": "^7.8.6",
     "viem": "^2.21.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "tsx": "^4.23.15",
-    "typescript": "^5.7.0",
+    "@types/node": "^26.6.6",
+    "@types/semver": "^7.8.0",
+    "esbuild": "0.28.2",
+    "typescript": "^7.0.2",
     "vitest": "^3.0.0"
   }
 }

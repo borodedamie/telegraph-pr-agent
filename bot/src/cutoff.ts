@@ -1,8 +1,8 @@
 import semver from "semver";
 import * as pep440 from "@renovatebot/pep440";
-import { detectCutoffTriggers } from "../../src/trigger.js";
-import { isUpgrade } from "./assessment";
-import type { Dependency } from "./scan";
+import { detectCutoffTriggers } from "./trigger.js";
+import { isUpgrade } from "./assessment.js";
+import type { Dependency } from "./scan.js";
 
 const asObject = (value: unknown): Record<string, unknown> => {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Expected registry object");

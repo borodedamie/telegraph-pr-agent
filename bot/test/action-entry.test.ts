@@ -5,22 +5,22 @@ const mocks = vi.hoisted(() => ({
   buy: vi.fn(), client: vi.fn(), apply: vi.fn(), failed: vi.fn(), output: vi.fn(),
   inputs: {} as Record<string, string>, proposal: vi.fn(), reconcile: vi.fn(), checkReconciliation: vi.fn(),
 }));
-vi.mock("../actions/node_modules/@actions/core/lib/core.js", () => ({
+vi.mock("@actions/core", () => ({
   setSecret: vi.fn(), setFailed: mocks.failed, setOutput: mocks.output,
   notice: mocks.notice, warning: vi.fn(), info: vi.fn(), getInput: (name: string) => mocks.inputs[name] ?? "",
 }));
 vi.mock("node:child_process", () => ({ execFileSync: () => "a".repeat(40) }));
 vi.mock("node:fs", () => ({ rmSync: vi.fn(), readFileSync: mocks.read }));
-vi.mock("../actions/src/accounting", () => ({ recordMerge: mocks.merge, fetchMergedPr: mocks.fetchPr }));
-vi.mock("../actions/src/scan", () => ({ scanRepository: async () => ({
+vi.mock("../src/accounting.js", () => ({ recordMerge: mocks.merge, fetchMergedPr: mocks.fetchPr }));
+vi.mock("../src/scan.js", () => ({ scanRepository: async () => ({
   root: "/repo", skipped: [], dependencies: [{ package: "zod" }],
 }) }));
-vi.mock("../actions/src/cutoff", () => ({ cutoffCandidates: mocks.candidates }));
-vi.mock("../actions/src/purchase", () => ({ openLedger: mocks.open, purchaseAssessment: mocks.purchase, markAssessmentResult: mocks.unusable, recordProposal: mocks.proposal }));
-vi.mock("../actions/src/pull-request", () => ({ checkedOutBranch: () => "feature", assertPublicRepository: mocks.visibility }));
-vi.mock("../actions/src/assessment", () => ({ NotFoundAssessmentError: mocks.NotFoundAssessmentError, InvalidAssessmentError: mocks.InvalidAssessmentError, assessmentPrompt: () => "assess dependencies", applyAssessment: mocks.apply }));
-vi.mock("../actions/src/reconcile", () => ({ checkReconciliation: mocks.checkReconciliation, reconcileAttempt: mocks.reconcile }));
-vi.mock("../src/x402", () => ({ IntelligenceClient: function (options: unknown) {
+vi.mock("../src/cutoff.js", () => ({ cutoffCandidates: mocks.candidates }));
+vi.mock("../src/purchase.js", () => ({ openLedger: mocks.open, purchaseAssessment: mocks.purchase, markAssessmentResult: mocks.unusable, recordProposal: mocks.proposal }));
+vi.mock("../src/pull-request.js", () => ({ checkedOutBranch: () => "feature", assertPublicRepository: mocks.visibility }));
+vi.mock("../src/assessment.js", () => ({ NotFoundAssessmentError: mocks.NotFoundAssessmentError, InvalidAssessmentError: mocks.InvalidAssessmentError, assessmentPrompt: () => "assess dependencies", applyAssessment: mocks.apply }));
+vi.mock("../src/reconcile.js", () => ({ checkReconciliation: mocks.checkReconciliation, reconcileAttempt: mocks.reconcile }));
+vi.mock("../src/x402.js", () => ({ IntelligenceClient: function (options: unknown) {
   mocks.client(options);
   return { buy: mocks.buy };
 } }));
@@ -54,7 +54,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllEnvs());
 const run = async (status = "success") => {
-  await import("../actions/src/index.js");
+  await import("../src/action.js");
   await vi.waitFor(() => expect(mocks.output).toHaveBeenCalledWith("status", status));
 };
 
