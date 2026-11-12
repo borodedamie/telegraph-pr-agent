@@ -99,11 +99,14 @@ const EVIDENCE_COLUMNS = ["record", "date", "repo", "package", "current_version"
   "miner_id", "miner_name", "selected_by", "miner_rank", "amount_usdc", "network", "receipt_hash", "signal_url",
   "tx_url", "answer_quality", "pr_number", "pr_outcome", "evidence_incomplete", "note"];
 
-// RFC 4180 quoting, and a leading ' on text a spreadsheet would run as a formula
-// (miner names and notes come from outside the team).
-const csvCell = (value) => {
+// Columns whose text comes from outside the team. Only these get the formula guard:
+// package names come from the repo's own manifest, and scoped npm names start with "@".
+const EXTERNAL_TEXT = new Set(["miner_name", "note"]);
+
+// RFC 4180 quoting, and for external text a leading ' on anything a spreadsheet would run as a formula.
+const csvCell = (value, external) => {
   let text = value === undefined || value === null ? "" : String(value);
-  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  if (external && /^[=+\-@\t\r]/.test(text)) text = `'${text}`;
   return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 };
 
@@ -133,5 +136,7 @@ export const evidenceCsv = (rows) => {
       row.chargedAmountUsdc, "", "", "", tx(row), "", "", "", "", `reconciled by ${row.reconciledBy}: ${row.reason ?? ""}`]);
   }
   lines.sort((a, b) => String(a[1]).localeCompare(String(b[1])));
-  return [EVIDENCE_COLUMNS, ...lines].map((line) => line.map(csvCell).join(",")).join("\r\n") + "\r\n";
+  return [EVIDENCE_COLUMNS, ...lines]
+    .map((line) => line.map((value, i) => csvCell(value, EXTERNAL_TEXT.has(EVIDENCE_COLUMNS[i]))).join(","))
+    .join("\r\n") + "\r\n";
 };
