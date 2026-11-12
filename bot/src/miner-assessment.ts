@@ -1,6 +1,6 @@
 import semver from "semver";
 import { z } from "zod";
-import type { Dependency } from "./scan";
+import type { Dependency } from "./scan.js";
 
 export class NotFoundAssessmentError extends Error {}
 

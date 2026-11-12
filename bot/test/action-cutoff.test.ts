@@ -1,6 +1,6 @@
 import { expect, it, vi } from "vitest";
-import { cutoffCandidates } from "../actions/src/cutoff.js";
-import { parseFindings } from "../actions/src/assessment.js";
+import { cutoffCandidates } from "../src/cutoff.js";
+import { parseFindings } from "../src/assessment.js";
 
 const dependency = { ecosystem: "npm" as const, package: "foo", currentVersion: "1.0.0", source: "package.json", declared: "^1.0.0" };
 const cutoff = new Date("2025-01-01");

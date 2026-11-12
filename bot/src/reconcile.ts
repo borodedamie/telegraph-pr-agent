@@ -1,5 +1,5 @@
-import { commitLedgerRow, type AttemptRow } from "../../src/ledger.js";
-import type { Ledger } from "./purchase";
+import { commitLedgerRow, type AttemptRow } from "./ledger.js";
+import type { Ledger } from "./purchase.js";
 
 export const RECONCILE_OUTCOMES = ["failed_and_credited", "failed_not_charged", "failed_and_charged"] as const;
 export type ReconcileOutcome = typeof RECONCILE_OUTCOMES[number];

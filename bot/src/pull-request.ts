@@ -1,9 +1,9 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { dirname, join, sep } from "node:path";
-import type { Purchase } from "../../src/x402";
-import type { PreparedUpdate } from "./updates";
-import { hasVerifiedBundle, readRepositoryFile, updateManifest } from "./updates";
+import type { Purchase } from "./x402.js";
+import type { PreparedUpdate } from "./updates.js";
+import { readRepositoryFile, updateManifest } from "./updates.js";
 
 type GitReference = { ref: string; object: { sha: string } };
 type GitCommit = { tree: { sha: string }; parents: { sha: string }[] };
@@ -53,10 +53,6 @@ export const createDependencyPr = async (options: {
   }
   const lockPath = join(dirname(finding.source), "package-lock.json").split(sep).join("/");
   const allowed = finding.ecosystem === "npm" ? [finding.source, lockPath] : [finding.source];
-  if (finding.source === "bot/actions/package.json") {
-    if (!hasVerifiedBundle(update)) throw new Error("Prepared action bundle was not verified or has changed");
-    allowed.push("bot/actions/dist/index.js");
-  }
   if (files.length !== allowed.length || files.some((file) => !allowed.includes(file.path))) {
     throw new Error("Prepared changes contain unexpected or missing files");
   }

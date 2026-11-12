@@ -1,63 +1,11 @@
-import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, matchesGlob, relative, sep } from "node:path";
-import type { Finding } from "./assessment";
+import type { Finding } from "./assessment.js";
 
 export type ChangedFile = { path: string; content: string };
 export type PreparedUpdate = { finding: Finding; files: ChangedFile[] };
-
-// Only bundles produced by preparation may pass the publisher's file allowlist.
-const verifiedBundles = new WeakMap<PreparedUpdate, string>();
-export const hasVerifiedBundle = (update: PreparedUpdate): boolean => {
-  const bundle = update.files.find((file) => file.path === "bot/actions/dist/index.js");
-  return !!bundle && verifiedBundles.get(update) === createHash("sha256").update(bundle.content).digest("hex");
-};
-
-const rebuildAction = (root: string, update: PreparedUpdate): string => {
-  const lock = JSON.parse(update.files.find((file) => file.path === "bot/actions/package-lock.json")!.content);
-  // shortcut: the trusted builder is pinned; validate new tooling before supporting builder upgrades.
-  if (lock.packages?.["node_modules/esbuild"]?.version !== "0.28.2") {
-    throw new Error("Action bundle rebuild requires the verified esbuild 0.28.2 toolchain");
-  }
-  const directory = mkdtempSync(join(tmpdir(), "telegraph-bundle-"));
-  const env = { PATH: process.env.PATH, HOME: directory, TMPDIR: directory,
-    npm_config_cache: join(directory, ".npm-cache"), npm_config_userconfig: join(directory, "user.npmrc"),
-    npm_config_globalconfig: join(directory, "global.npmrc") };
-  const run = (args: string[], cwd: string) => execFileSync("npm", args, {
-    cwd, env, timeout: 120_000, stdio: "pipe",
-  });
-  try {
-    const paths = execFileSync("git", ["-C", root, "ls-files", "-z"], { encoding: "utf8" }).split("\0");
-    for (const path of paths.filter((path) => /^(?:bot\/(?:src|actions\/src)\/.*\.ts|(?:bot\/(?:actions\/)?)?package\.json|pnpm-(?:lock\.yaml|workspace\.yaml))$/.test(path))) {
-      const destination = join(directory, path);
-      mkdirSync(dirname(destination), { recursive: true });
-      writeFileSync(destination, readRepositoryFile(root, path));
-    }
-    for (const file of update.files) {
-      const destination = join(directory, file.path);
-      mkdirSync(dirname(destination), { recursive: true });
-      writeFileSync(destination, file.content);
-    }
-    // Run fixed package-manager/build tools, never scripts from the assessed repository.
-    run(["exec", "--yes", "--package=pnpm@10.18.3", "--", "pnpm", "--filter", "@telegraph-pr-agent/bot",
-      "install", "--frozen-lockfile", "--ignore-scripts"], directory);
-    const actionDirectory = join(directory, "bot/actions");
-    run(["ci", "--ignore-scripts", "--no-audit", "--no-fund", "--registry=https://registry.npmjs.org"], actionDirectory);
-    const build = ["exec", "--yes", "--package=esbuild@0.28.2", "--", "esbuild", "src/index.ts", "--bundle",
-      "--platform=node", "--target=node24", "--format=cjs", "--minify", "--outfile=dist/index.js"];
-    run(build, actionDirectory);
-    const bundle = readFileSync(join(actionDirectory, "dist/index.js"), "utf8");
-    run(build, actionDirectory);
-    if (bundle !== readFileSync(join(actionDirectory, "dist/index.js"), "utf8")) {
-      throw new Error("Action bundle rebuild was not reproducible");
-    }
-    return bundle;
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
-  }
-};
 
 export const readRepositoryFile = (root: string, source: string): string => {
   if (isAbsolute(source) || source.split(/[\\/]/).includes("..") || source.includes("\\")) {
@@ -169,7 +117,6 @@ export const prepareUpdate = async (
       timeout: 120_000, stdio: "pipe",
     });
   },
-  buildAction: (root: string, update: PreparedUpdate) => string = rebuildAction,
 ): Promise<PreparedUpdate> => {
   const metadataUrl = finding.ecosystem === "npm"
     ? `https://registry.npmjs.org/${encodeURIComponent(finding.package)}/${finding.targetVersion}`
@@ -212,12 +159,5 @@ export const prepareUpdate = async (
       rmSync(directory, { recursive: true, force: true });
     }
   }
-  const update = { finding, files };
-  if (finding.source === "bot/actions/package.json") {
-    readRepositoryFile(root, "bot/actions/dist/index.js");
-    const bundle = buildAction(root, update);
-    files.push({ path: "bot/actions/dist/index.js", content: bundle });
-    verifiedBundles.set(update, createHash("sha256").update(bundle).digest("hex"));
-  }
-  return update;
+  return { finding, files };
 };

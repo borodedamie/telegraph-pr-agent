@@ -1,15 +1,15 @@
-import { readModelProvenance } from "../../src/config.js";
+import { readModelProvenance } from "./config.js";
 import * as core from "@actions/core";
-import { recordMerge, fetchMergedPr } from "./accounting";
+import { recordMerge, fetchMergedPr } from "./accounting.js";
 import { readFileSync, rmSync } from "node:fs";
-import { cutoffCandidates } from "./cutoff";
-import { openLedger, purchaseAssessment, markAssessmentResult, recordProposal } from "./purchase";
+import { cutoffCandidates } from "./cutoff.js";
+import { openLedger, purchaseAssessment, markAssessmentResult, recordProposal } from "./purchase.js";
 import { execFileSync } from "node:child_process";
-import { scanRepository } from "./scan";
-import { IntelligenceClient } from "../../src/x402";
-import { applyAssessment, assessmentPrompt, InvalidAssessmentError, NotFoundAssessmentError } from "./assessment";
-import { assertPublicRepository, checkedOutBranch } from "./pull-request";
-import { checkReconciliation, reconcileAttempt, type ReconcileOutcome } from "./reconcile";
+import { scanRepository } from "./scan.js";
+import { IntelligenceClient } from "./x402.js";
+import { applyAssessment, assessmentPrompt, InvalidAssessmentError, NotFoundAssessmentError } from "./assessment.js";
+import { assertPublicRepository, checkedOutBranch } from "./pull-request.js";
+import { checkReconciliation, reconcileAttempt, type ReconcileOutcome } from "./reconcile.js";
 
 const INTENT_ID = "QUESTION_ANSWERING_GENERAL";
 

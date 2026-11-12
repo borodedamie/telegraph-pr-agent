@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
-import { purchaseAssessment, markAssessmentResult, recordProposal } from "../actions/src/purchase.js";
+import { purchaseAssessment, markAssessmentResult, recordProposal } from "../src/purchase.js";
 import { LEDGER_FILE, type AttemptRow } from "../src/ledger.js";
 import { AskFailedError, BudgetCapError, type OnAttempt, type Purchase } from "../src/x402.js";
 

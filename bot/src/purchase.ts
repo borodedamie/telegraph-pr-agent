@@ -5,10 +5,10 @@ import { lstatSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AttemptConflictError, checkMayPay, commitLedgerRow, LEDGER_FILE, monthToDateSpendUsdc, preflight,
-  type AttemptKey, type AttemptRow, type LedgerRow, type ModelProvenance, type ProposalRow } from "../../src/ledger.js";
-import { AskFailedError, BudgetCapError, type IntelligenceClient, type Purchase } from "../../src/x402.js";
-import { migrationPrompt, MIGRATION_MINER_ID } from "./miner-assessment";
-import type { Dependency } from "./scan";
+  type AttemptKey, type AttemptRow, type LedgerRow, type ModelProvenance, type ProposalRow } from "./ledger.js";
+import { AskFailedError, BudgetCapError, type IntelligenceClient, type Purchase } from "./x402.js";
+import { migrationPrompt, MIGRATION_MINER_ID } from "./miner-assessment.js";
+import type { Dependency } from "./scan.js";
 
 export type Ledger = { directory: string; runGit: (args: string[]) => Promise<void> };
 

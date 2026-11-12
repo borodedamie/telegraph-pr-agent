@@ -164,7 +164,7 @@ jobs:
           ref: ${{ github.ref_name }}
           persist-credentials: false
       - name: Update dependencies
-        uses: ./bot/actions
+        uses: ./
         env:
           TELEGRAPH_EVM_PRIVATE_KEY: ${{ secrets.TELEGRAPH_EVM_PRIVATE_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
@@ -178,9 +178,10 @@ jobs:
 ```
 
 Checkout makes the repository available; the dependency automation is a single step.
-The packaged `bot/actions/dist/index.js` is included so callers need no install or
-build steps. For another repository, use `OWNER/REPO/bot/actions@IMMUTABLE_SHA` after
-publishing a commit containing the bundle, rather than the local `./bot/actions` path.
+The packaged `bot/dist/index.js` is included so callers need no install or
+build steps. `action.yml` sits at the repository root, so another repository uses
+`OWNER/REPO@IMMUTABLE_SHA` after publishing a commit containing the bundle, rather than
+the local `./` path.
 
 Before purchasing, the action selects newer stable npm/PyPI releases with verified
 release dates strictly after `MODEL_CUTOFF`. No candidate means no purchase or PR. Registry failures are reported per dependency
@@ -204,7 +205,7 @@ directory with `--package-lock-only --ignore-scripts`, a minimal environment wit
 inherited wallet/GitHub credentials, and no repository npm configuration. Human
 review and merge remain required; this does not provide separate-runner isolation.
 
-`bot/actions/src/scan.ts` detects the repository from the current working directory
+`bot/src/scan.ts` detects the repository from the current working directory
 using Git; no workspace environment variable is required. It reads npm dependencies
 and devDependencies from standalone npm package-lock v2/v3 entries, and
 Python exact pins from requirements.txt, requirements-*.txt and requirements/*.txt.
@@ -240,7 +241,7 @@ proving what is installed in a running interpreter. Unresolved versions are repo
   are required; inputs can override the allowlist. These defaults were verified with an unsigned, unpaid devnode
   [402 challenge on 5 Nov 2026](docs/telegraph/action-payment-2026-11-05.json).
   The wallet must hold this token; quotes for other networks or assets are refused.
-- Public settings default in `bot/actions/action.yml`: `node-url` is
+- Public settings default in `action.yml`: `node-url` is
   `https://devnode.telegraphprotocol.com`, `max-price-per-call-usdc` is `0.10`,
   and `budget-cap-usdc` is `2`. Optional
   `with:` inputs can override these defaults. These are spending limits, not live prices.
@@ -255,18 +256,19 @@ proving what is installed in a running interpreter. Unresolved versions are repo
   job `contents: write` and `pull-requests: write`.
 - Run **Telegraph dependency updates** on the branch you want to update. A named
   branch must be checked out; detached HEAD is rejected instead of guessing a target.
-- After editing action source, run `npm run build:prod` in
-  `bot/actions` and include its updated distribution bundle in the same change.
-  Building requires the existing action and shared bot dependencies; callers do not.
+- After editing bot source, run `pnpm --filter @telegraph-pr-agent/bot build` (or
+  `npm run build --prefix bot`) and include the updated `bot/dist/index.js` in the same
+  change; CI fails when the committed bundle differs from a fresh build. Building needs
+  the bot's dependencies; callers do not.
 
 The action has no stage or artifact inputs. Public node/spending settings have
 action-defined defaults; the wallet remains a secret. Outputs are `has-findings`,
 `pull-requests` (JSON URLs), `message` (purchase details, retained even if later
 validation fails), and `status`. Repository visibility is checked before assessment;
 private or unknown visibility fails closed. The `pull-requests` output retains earlier
-URLs if a later publication fails. Action dependency PRs also include a rebuilt
-`bot/actions/dist/index.js`, verified by two identical builds using fixed tooling
-and installs with lifecycle scripts disabled.
+URLs if a later publication fails. The agent does not update its own dependencies:
+the bot lives in the pnpm workspace, whose lockfile the updater does not support, so
+its dependency upgrades are made by hand.
 
 ### Workflow checks
 

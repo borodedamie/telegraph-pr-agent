@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
-import { migrationFindings, migrationPrompt } from "../actions/src/miner-assessment.js";
-import { parseFindings } from "../actions/src/assessment.js";
+import { migrationFindings, migrationPrompt } from "../src/miner-assessment.js";
+import { parseFindings } from "../src/assessment.js";
 import { parse } from "../../miner/src/parse.js";
 
 const dependency = { ecosystem: "npm" as const, package: "express", source: "package.json", declared: "^4.21.0",

@@ -21,28 +21,17 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: |
-            bot/actions/package-lock.json
-            pnpm-lock.yaml
 
-      - name: Install action build dependencies
-        working-directory: ./bot/actions
-        run: npm ci --ignore-scripts
-
-      - name: Install shared bot dependencies from the workspace lockfile
+      - name: Install bot dependencies from the workspace lockfile
         run: npm exec --yes --package=pnpm@10.18.3 -- pnpm --filter @telegraph-pr-agent/bot install --frozen-lockfile --ignore-scripts
 
-      - name: Typecheck shared bot and tests
+      - name: Typecheck and build the packaged action
         run: npm run build --prefix bot
 
-      - name: Build packaged action
-        run: npm run build:prod --prefix bot/actions
-
       - name: Check packaged action matches its source
-        run: git diff --exit-code -- bot/actions/dist/index.js
+        run: git diff --exit-code -- bot/dist/index.js
 
-      - name: Run bot and action tests without payment or write credentials
+      - name: Run bot tests without payment or write credentials
         run: npm test --prefix bot
 
       - name: Test merged PR cost accounting
