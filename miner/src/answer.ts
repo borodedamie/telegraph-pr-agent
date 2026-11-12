@@ -385,8 +385,10 @@ async function compute(
   metrics.modelItemsKept = model.candidates.length - modelDropped.length;
   metrics.modelDrops = countBy(modelDropped.map((drop) => drop.reason));
   metrics.modelSectionsCut = model.cut.length;
-  metrics.modelSectionsSkipped = model.skipped.length;
-  metrics.modelSectionsFailed = model.failed.length;
+  // When no call answered, the sections sent count as failed, not as cut by budget, so an LLM outage reads as one.
+  const unanswered = modelRan ? 0 : model.sent;
+  metrics.modelSectionsSkipped = model.skipped.length - unanswered;
+  metrics.modelSectionsFailed = model.failed.length + unanswered;
 
   // A release whose notes only point elsewhere, with nothing found in any source, was not read: it is not
   // covered, so the answer cannot say it has no changes.

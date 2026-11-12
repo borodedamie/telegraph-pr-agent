@@ -309,6 +309,8 @@ export interface ModelResult {
   failed: number[];
   /** Sections longer than one call takes: only their start was sent, so the model did not read them whole. */
   cut: number[];
+  /** Sections put into a call. When no call answered they are in `skipped`, but for stats they were sent, not cut by budget. */
+  sent: number;
 }
 
 /**
@@ -474,7 +476,7 @@ export async function extractModel(
   const needed = sections.map((_, i) => i).filter((i) => !handled.has(i) && sections[i].text.trim() !== "");
   const result: ModelResult = {
     candidates: [], complete: needed.length === 0, answered: false, minerId: null, failure: null,
-    inputChars: 0, costMicroUsdc: 0, msModel: 0, skipped: [], failed: [], cut: [],
+    inputChars: 0, costMicroUsdc: 0, msModel: 0, skipped: [], failed: [], cut: [], sent: 0,
   };
   if (needed.length === 0) return result;
 
@@ -505,6 +507,7 @@ export async function extractModel(
     result.skipped = needed;
     return result;
   }
+  result.sent = batches.reduce((sum, b) => sum + b.indexes.length, 0);
 
   // Side by side: a second call made after the first would not fit the time budget. The cost limit is shared by
   // the calls actually made, so an answer that needs one call may spend all of it.

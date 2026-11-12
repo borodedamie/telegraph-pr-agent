@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { answerQuestion, type PipelineDeps } from "../../src/answer.js";
 import { limitsFromEnv } from "../../src/budget.js";
 import { MemoryStore, getSnapshot } from "../../src/cache.js";
-import type { ModelCaller } from "../../src/extract/model.js";
+import { ModelFailure, type ModelCaller } from "../../src/extract/model.js";
 import { findSpan } from "../../src/extract/verify.js";
 import { registryUrl } from "../../src/resolve.js";
 import { TooLarge } from "../../src/safeFetch.js";
@@ -101,6 +101,16 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
 
     const repeat = await answerQuestion(QUESTION, roomy);
     expect(repeat.metrics).toMatchObject({ cacheHit: true, package: "zod", changes: answer.changes.length, modelItems: 0 });
+  });
+
+  it("counts the sections sent to a model that never answered as failed, not as cut by budget", async () => {
+    const down: ModelCaller = async () => {
+      throw new ModelFailure("invalid_reply", "stub outage", 0);
+    };
+    const { metrics } = await answerQuestion(QUESTION, { ...deps(new MemoryStore(), down), limits: limitsFromEnv({ MAX_MODEL_RELEASES: "2" }) });
+    expect(metrics.llmFailure).toBe("invalid_reply");
+    expect(metrics.modelSectionsFailed).toBe(2);
+    expect(metrics.modelSectionsSkipped).toBeGreaterThan(0);
   });
 
   it("returns the identical string on a repeat call without calling the model", async () => {

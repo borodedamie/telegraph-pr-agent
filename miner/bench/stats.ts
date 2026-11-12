@@ -64,7 +64,8 @@ async function main(): Promise<void> {
 
   const firstTime = records.filter((r) => !r.cacheHit);
   const repeats = records.filter((r) => r.cacheHit);
-  const withModel = firstTime.filter((r) => r.modelCalls > 0);
+  // A call refused on price is taken off modelCalls but leaves llmFailure, so such answers still count here.
+  const withModel = firstTime.filter((r) => r.modelCalls > 0 || r.llmFailure !== null);
   const modelItems = sum(withModel.map((r) => r.modelItems));
   const modelKept = sum(withModel.map((r) => r.modelItemsKept));
   const changesWithModel = sum(withModel.map((r) => r.changes));
@@ -78,7 +79,7 @@ async function main(): Promise<void> {
       repeat: { p50: percentile(repeats.map((r) => r.msTotal), 50), p95: percentile(repeats.map((r) => r.msTotal), 95) },
     },
     llm: {
-      answersThatCalledIt: withModel.length,
+      answersThatTriedIt: withModel.length,
       calls: sum(withModel.map((r) => r.modelCalls)),
       costUsdc: Number(sum(withModel.map((r) => r.modelCostUsdc)).toFixed(4)),
       miners: tally(withModel.map((r) => r.llmMinerId ?? "none")),
@@ -108,9 +109,9 @@ async function main(): Promise<void> {
   console.log(`Answered ${requests.answered}: ${requests.firstTime} first-time, ${requests.repeats} from cache. No answer: ${JSON.stringify(requests.failures)}`);
   console.log(`Outcomes ${JSON.stringify(summary.outcomes)}`);
   console.log(`Latency ms: first-time p50 ${summary.latencyMs.firstTime.p50} p95 ${summary.latencyMs.firstTime.p95}; repeat p50 ${summary.latencyMs.repeat.p50} p95 ${summary.latencyMs.repeat.p95}`);
-  console.log(`LLM: called on ${llm.answersThatCalledIt} answers, ${llm.calls} calls, ${llm.costUsdc} USDC, miners ${JSON.stringify(llm.miners)}, failures ${JSON.stringify(llm.failures)}, ms p50 ${llm.msModel.p50} p95 ${llm.msModel.p95}`);
+  console.log(`LLM: tried on ${llm.answersThatTriedIt} answers, ${llm.calls} calls, ${llm.costUsdc} USDC, miners ${JSON.stringify(llm.miners)}, failures ${JSON.stringify(llm.failures)}, ms p50 ${llm.msModel.p50} p95 ${llm.msModel.p95}`);
   console.log(`LLM items: ${llm.itemsReturned} returned, ${llm.itemsKept} kept (${llm.keptRate}), dropped ${JSON.stringify(llm.drops)}`);
-  console.log(`LLM added something on ${llm.answersWhereItAddedSomething} of ${llm.answersThatCalledIt} answers; ${llm.shareOfChangesFromLlm} of those answers' changes came from it`);
+  console.log(`LLM added something on ${llm.answersWhereItAddedSomething} of ${llm.answersThatTriedIt} answers; ${llm.shareOfChangesFromLlm} of those answers' changes came from it`);
   console.log(`LLM sections: ${llm.sectionsCut} cut short, ${llm.sectionsSkipped} skipped for budget, ${llm.sectionsFailed} failed`);
   console.log(`Not covered (first-time) ${JSON.stringify(summary.notCovered)}`);
   console.log(`Packages ${JSON.stringify(summary.packages)}`);

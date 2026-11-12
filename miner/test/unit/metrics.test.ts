@@ -30,6 +30,14 @@ describe("metrics records", () => {
     expect(kept[0]).toBe(String(METRICS_KEPT + 1));
   });
 
+  it("does not wait long for a slow store", async () => {
+    const store = new MemoryStore();
+    store.pushCapped = () => new Promise(() => {});
+    const started = Date.now();
+    await writeMetrics(store, RECORD, new Date(), 50);
+    expect(Date.now() - started).toBeLessThan(1_000);
+  });
+
   it("answers even when the store cannot keep the record", async () => {
     const store = new MemoryStore();
     store.pushCapped = async () => {
