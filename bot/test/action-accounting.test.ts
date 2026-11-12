@@ -23,7 +23,7 @@ const fixture = (status = "settled", baseBranch = "main") => {
     if (args[0] === "push") remote = readFileSync(path, "utf8");
   });
   const pr = { number: 42, merged: true, merged_at: "2026-11-08T00:00:00Z", merge_commit_sha: "b".repeat(40),
-    body: `Miner finding and purchase evidence:\n\n${JSON.stringify(detail, null, 2).split("\n").map((l) => `    ${l}`).join("\n")}\n\nDraft for human review.`,
+    body: `Miner finding and purchase evidence:\n\n${JSON.stringify(detail, null, 2).split("\n").map((l) => `    ${l}`).join("\n")}\n\nDraft for human review.\n\nSpend and receipts for this repository: https://telegraph-pr-agent.vercel.app/?repo=team/repo`,
     base: { ref: baseBranch, repo: { full_name: "team/repo" } },
     head: { ref: `fix/telegraph-dependency-${branch}`, sha: "a".repeat(40), repo: { full_name: "team/repo" } } };
   return { ledger: { directory, runGit }, pr, rows: () => remote.trim().split("\n").map((l) => JSON.parse(l)) };
