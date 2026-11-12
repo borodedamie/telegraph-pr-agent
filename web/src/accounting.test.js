@@ -181,6 +181,14 @@ test("quotes commas, quotes and newlines, and defuses spreadsheet formulas", () 
   assert.ok(csv.endsWith("\r\n"));
 });
 
+test("keeps scoped npm package names intact while still guarding external text", () => {
+  const rows = [{ status: "settled", receiptHash: "r", timestamp: "2026-11-11T00:00:00.000Z", amountUsdc: 0.02,
+    package: "@renovatebot/pep440", minerName: "@evil" }];
+  const [line] = asObjects(evidenceCsv(rows));
+  assert.equal(line.package, "@renovatebot/pep440");
+  assert.equal(line.miner_name, "'@evil");
+});
+
 test("has only the header for a ledger with nothing to export", () => {
   assert.equal(parseCsv(evidenceCsv([])).length, 1);
 });
