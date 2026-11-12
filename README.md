@@ -267,7 +267,8 @@ merge or close it.
 
 **7. See the spend.** `https://telegraph-pr-agent.vercel.app/?repo=OWNER/REPO` reads your
 repository's `ledger` branch: every purchase with its receipt, signal and transaction, and
-cost per merged PR once a dependency PR has merged.
+cost per merged PR once a dependency PR has merged. You don't need to build the URL: each
+run that buys prints it on the run page, and every draft PR ends with it.
 
 Limits by default: 0.10 USDC per call and 2 USDC per run (`max-price-per-call-usdc`,
 `budget-cap-usdc` inputs). A payment stuck mid-flight blocks a repeat purchase for that

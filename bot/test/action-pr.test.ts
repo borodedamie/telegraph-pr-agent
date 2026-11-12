@@ -216,6 +216,7 @@ describe("draft dependency PR publication", () => {
     ]);
     expect(pr.body.body).toContain("receipt");
     expect(pr.body.body).toContain("https://example.org/releases");
+    expect(pr.body.body).toContain("Spend and receipts for this repository: https://telegraph-pr-agent.vercel.app/?repo=team/repo");
     expect(fixture.calls.some((call) => call.method === "PATCH")).toBe(false);
   });
   it("creates distinct fix branches for the same update on different target branches", async () => {

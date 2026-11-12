@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { dirname, join, sep } from "node:path";
+import { dashboardLink } from "./config.js";
 import type { Purchase } from "./x402.js";
 import type { PreparedUpdate } from "./updates.js";
 import { readRepositoryFile, updateManifest } from "./updates.js";
@@ -116,7 +117,7 @@ export const createDependencyPr = async (options: {
     currentVersion: finding.currentVersion, targetVersion: finding.targetVersion,
     issue: finding.issue, reason: finding.reason, cves: finding.cves, sources: finding.sources,
     purchase };
-  const body = `Updates ${finding.package} from ${finding.currentVersion} to ${finding.targetVersion}.\n\nMiner finding and purchase evidence:\n\n${JSON.stringify(detail, null, 2).split("\n").map((line) => `    ${line}`).join("\n")}\n\nDraft for human review. Registry version availability was checked. CVE claims and migration compatibility require independent review and repository CI. No repository tests were executed by the payment or publication jobs.`;
+  const body = `Updates ${finding.package} from ${finding.currentVersion} to ${finding.targetVersion}.\n\nMiner finding and purchase evidence:\n\n${JSON.stringify(detail, null, 2).split("\n").map((line) => `    ${line}`).join("\n")}\n\nDraft for human review. Registry version availability was checked. CVE claims and migration compatibility require independent review and repository CI. No repository tests were executed by the payment or publication jobs.\n\nSpend and receipts for this repository: ${dashboardLink(repository)}`;
   const pr = await request<{ html_url: string }>("/pulls", "POST", { title, head: branch, base: baseBranch, draft: true, body });
   return pr.html_url;
 };

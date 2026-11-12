@@ -1,4 +1,4 @@
-import { readModelProvenance } from "./config.js";
+import { dashboardLink, readModelProvenance } from "./config.js";
 import * as core from "@actions/core";
 import { recordMerge, fetchMergedPr } from "./accounting.js";
 import { readFileSync, rmSync } from "node:fs";
@@ -139,6 +139,7 @@ const run = async (): Promise<void> => {
       core.setOutput("has-findings", String(urls.size > 0));
       core.setOutput("pull-requests", JSON.stringify([...urls]));
       for (const url of urls) core.info(`Dependency pull request: ${url}`);
+      core.notice(`Spend dashboard: ${dashboardLink(repository)}`);
     }
     if (registryFailures) failures.push(`Registry lookups failed for ${registryFailures} dependencies`);
     if (failures.length) throw new Error(`Assessment run failed: ${failures.join("; ")}`);

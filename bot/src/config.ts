@@ -18,3 +18,7 @@ export function readModelProvenance(env: NodeJS.ProcessEnv, cutoff: Date): Model
     status: configuration.MODEL_CUTOFF_STATUS,
     configuredAt: configuration.MODEL_CONFIGURED_AT ?? new Date().toISOString() };
 }
+
+/** Public spend dashboard; it reads the repository's own `ledger` branch, so any public repository works. */
+export const DASHBOARD_URL = "https://telegraph-pr-agent.vercel.app";
+export const dashboardLink = (repository: string): string => `${DASHBOARD_URL}/?repo=${repository}`;

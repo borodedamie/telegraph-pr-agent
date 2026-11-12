@@ -149,6 +149,7 @@ it("records each published PR on the ledger with its number, purchase and findin
     repo: "team/repo", prNumber: 51, prUrl: "https://github.com/team/repo/pull/51",
     assessmentId: "assess-1", attemptId: "assess-1:1", receiptHash: "0xreceipt", ...finding,
   });
+  expect(mocks.notice).toHaveBeenCalledWith("Spend dashboard: https://telegraph-pr-agent.vercel.app/?repo=team/repo");
 });
 
 it("fails the run when a published PR cannot be recorded", async () => {
