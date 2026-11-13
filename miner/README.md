@@ -50,10 +50,10 @@ Name the package, then the installed version, then the target, oldest first: "Wh
 | `outcome` | Meaning | Billed |
 | --- | --- | --- |
 | `found` | changes listed with quotes and sources; `coverage` says which releases were read | yes |
-| `not_found` | no usable release material, or the version does not exist (the closest published ones are named) | yes |
+| `not_found` | no usable release material, the version does not exist (the closest published ones are named), or the range is larger than one answer reads (every release listed as not covered, `budget`; ask about a smaller range) | yes |
 | `needs_clarification` | the package or versions are unclear | yes |
 | `out_of_scope` | not a question about an npm package | yes |
-| `temporarily_unavailable` | a required source was down; declared to Telegraph as a failure | no |
+| `temporarily_unavailable` | a required source was down; declared to Telegraph as a failure. Not used when only our own limits cut the answer short | no |
 
 The answer text starts with a one-line count; from processing version `p8` (deployed 9 Nov) a `found` answer adds a "Key changes" line with the first five changes. The full list, coverage notes, advisories and sources follow. The JSON also carries `changes`, `security`, `coverage`, `sources` and `confidence`.
 
