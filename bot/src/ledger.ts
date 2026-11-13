@@ -140,7 +140,12 @@ export interface ClosedRow {
   timestamp: string;
 }
 
-export type LedgerEntry = LedgerRow | AttemptRow | MergeRow | ProposalRow | ClosedRow;
+export type LedgerEntry =
+  | LedgerRow
+  | AttemptRow
+  | MergeRow
+  | ProposalRow
+  | ClosedRow;
 
 export type Preflight =
   | { action: "buy"; nextAttempt: number }
@@ -154,7 +159,9 @@ export function appendLedgerRow(existing: string, row: LedgerEntry): string {
   return `${existing}${JSON.stringify(row)}\n`;
 }
 
-function* parseRows(existing: string): Generator<Partial<LedgerEntry> & { kind?: string }> {
+function* parseRows(
+  existing: string,
+): Generator<Partial<LedgerEntry> & { kind?: string }> {
   for (const line of existing.split("\n")) {
     if (!line.trim()) continue;
     try {
@@ -166,11 +173,20 @@ function* parseRows(existing: string): Generator<Partial<LedgerEntry> & { kind?:
 }
 
 /** True when a purchase row (not an attempt row) exists for this PR and head SHA. */
-export function hasLedgerRow(existing: string, prNumber: number | undefined, headSha: string): boolean {
+export function hasLedgerRow(
+  existing: string,
+  prNumber: number | undefined,
+  headSha: string,
+): boolean {
   if (prNumber === undefined) return false;
   for (const row of parseRows(existing)) {
     // kind undefined means a purchase row, which always has headSha.
-    if (row.kind === undefined && row.prNumber === prNumber && (row as Partial<LedgerRow>).headSha === headSha) return true;
+    if (
+      row.kind === undefined &&
+      row.prNumber === prNumber &&
+      (row as Partial<LedgerRow>).headSha === headSha
+    )
+      return true;
   }
   return false;
 }
@@ -183,7 +199,12 @@ export class DuplicateReceiptError extends Error {}
 function receiptHashes(existing: string): Set<string> {
   const hashes = new Set<string>();
   for (const row of parseRows(existing)) {
-    if (row.kind !== "attempt" && typeof row.receiptHash === "string" && row.receiptHash) hashes.add(row.receiptHash);
+    if (
+      row.kind !== "attempt" &&
+      typeof row.receiptHash === "string" &&
+      row.receiptHash
+    )
+      hashes.add(row.receiptHash);
   }
   return hashes;
 }
@@ -194,22 +215,32 @@ function latestAttempts(existing: string, key: AttemptKey): AttemptRow[] {
   for (const row of parseRows(existing)) {
     if (row.kind !== "attempt") continue;
     const a = row as AttemptRow;
-    if (a.repo === key.repo && a.step === key.step && (key.assessmentId
-      ? a.assessmentId === key.assessmentId
-      : a.assessmentId === undefined && a.prNumber === key.prNumber && a.headSha === key.headSha)) {
+    if (
+      a.repo === key.repo &&
+      a.step === key.step &&
+      (key.assessmentId
+        ? a.assessmentId === key.assessmentId
+        : a.assessmentId === undefined &&
+          a.prNumber === key.prNumber &&
+          a.headSha === key.headSha)
+    ) {
       latest.set(a.attemptId, a);
     }
   }
   return [...latest.values()];
 }
 
-const isOpen = (a: AttemptRow) => a.state === "request_sent" || a.state === "unknown_needs_reconciliation";
+const isOpen = (a: AttemptRow) =>
+  a.state === "request_sent" || a.state === "unknown_needs_reconciliation";
 
 /** Decides, before any money moves, whether this key may be bought now. */
 export function preflight(existing: string, key: AttemptKey): Preflight {
   // Pre-attempt purchase rows carry no repo or step; matching PR + SHA is the old rule.
   if (hasLedgerRow(existing, key.prNumber, key.headSha)) {
-    return { action: "skip", reason: `PR #${key.prNumber} @ ${key.headSha} already has a purchase` };
+    return {
+      action: "skip",
+      reason: `PR #${key.prNumber} @ ${key.headSha} already has a purchase`,
+    };
   }
   const attempts = latestAttempts(existing, key);
   const open = attempts.filter(isOpen);
@@ -222,24 +253,37 @@ export function preflight(existing: string, key: AttemptKey): Preflight {
     };
   }
   const delivered = attempts.find((a) => a.state === "delivered");
-  if (delivered) return { action: "skip", reason: `attempt ${delivered.attemptId} already delivered` };
-  return { action: "buy", nextAttempt: Math.max(0, ...attempts.map((a) => a.attempt)) + 1 };
+  if (delivered)
+    return {
+      action: "skip",
+      reason: `attempt ${delivered.attemptId} already delivered`,
+    };
+  return {
+    action: "buy",
+    nextAttempt: Math.max(0, ...attempts.map((a) => a.attempt)) + 1,
+  };
 }
 
 /**
  * Run on the freshly fetched ledger right before recording request_sent: another run
  * for the same key may have started paying since this run's own check.
  */
-export function checkMayPay(existing: string, key: AttemptKey, attemptId: string): void {
+export function checkMayPay(
+  existing: string,
+  key: AttemptKey,
+  attemptId: string,
+): void {
   if (hasLedgerRow(existing, key.prNumber, key.headSha)) {
-    throw new AttemptConflictError(`PR #${key.prNumber} @ ${key.headSha} already has a purchase`);
+    throw new AttemptConflictError(
+      `PR #${key.prNumber} @ ${key.headSha} already has a purchase`,
+    );
   }
   const others = latestAttempts(existing, key).filter(
-    (a) => a.attemptId !== attemptId && (a.state === "delivered" || isOpen(a))
+    (a) => a.attemptId !== attemptId && (a.state === "delivered" || isOpen(a)),
   );
   if (others.length > 0) {
     throw new AttemptConflictError(
-      `another run is paying or has paid: ${others.map((a) => `${a.attemptId} (${a.state})`).join(", ")}`
+      `another run is paying or has paid: ${others.map((a) => `${a.attemptId} (${a.state})`).join(", ")}`,
     );
   }
 }
@@ -251,38 +295,59 @@ export function checkMayPay(existing: string, key: AttemptKey, attemptId: string
  * may have been charged, so it counts at `worstCaseUsdc` (the signer's per-call cap).
  * A reconciled failed_and_charged attempt counts at its recorded charged amount.
  */
-export function monthToDateSpendUsdc(existing: string, now: Date, worstCaseUsdc: number): number {
-  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-  const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();
-  const inMonth = (timestamp: unknown) => typeof timestamp === "string" && timestamp >= from && timestamp < to;
+export function monthToDateSpendUsdc(
+  existing: string,
+  now: Date,
+  worstCaseUsdc: number,
+): number {
+  const from = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+  ).toISOString();
+  const to = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+  ).toISOString();
+  const inMonth = (timestamp: unknown) =>
+    typeof timestamp === "string" && timestamp >= from && timestamp < to;
   let spent = 0;
   const latest = new Map<string, AttemptRow>();
   for (const row of parseRows(existing)) {
     if (row.kind === undefined) {
       const purchase = row as Partial<LedgerRow>;
-      if (purchase.status === "settled" && inMonth(purchase.timestamp) && typeof purchase.amountUsdc === "number") {
+      if (
+        purchase.status === "settled" &&
+        inMonth(purchase.timestamp) &&
+        typeof purchase.amountUsdc === "number"
+      ) {
         spent += purchase.amountUsdc;
       }
-    } else if (row.kind === "attempt" && typeof (row as AttemptRow).attemptId === "string") {
+    } else if (
+      row.kind === "attempt" &&
+      typeof (row as AttemptRow).attemptId === "string"
+    ) {
       latest.set((row as AttemptRow).attemptId, row as AttemptRow);
     }
   }
   for (const attempt of latest.values()) {
     if (isOpen(attempt) && inMonth(attempt.timestamp)) spent += worstCaseUsdc;
     // Charged with no purchase row: the reconciled amount is real spend.
-    if (attempt.state === "failed_and_charged" && inMonth(attempt.timestamp)) spent += attempt.chargedAmountUsdc ?? worstCaseUsdc;
+    if (attempt.state === "failed_and_charged" && inMonth(attempt.timestamp))
+      spent += attempt.chargedAmountUsdc ?? worstCaseUsdc;
   }
   return spent;
 }
 
 const describeRow = (r: LedgerEntry) =>
-  "kind" in r && r.kind === "merge" ? `PR #${r.prNumber} merged ${r.mergeSha}` :
-  "kind" in r && r.kind === "proposal" ? `PR #${r.prNumber} proposed ${r.package} ${r.targetVersion}` :
-  "kind" in r && r.kind === "closed" ? `PR #${r.prNumber} closed unmerged` :
-  "kind" in r && r.kind === "attempt" && r.reconciledBy ? `${r.attemptId} reconciled ${r.state} by ${r.reconciledBy}` :
-  "kind" in r && r.kind === "attempt"
-    ? `${r.prNumber === undefined ? "assessment" : `PR #${r.prNumber}`} ${r.attemptId} ${r.state}`
-    : `${r.prNumber === undefined ? "assessment" : `PR #${r.prNumber}`} ${(r as LedgerRow).intent} ${(r as LedgerRow).txHash}`;
+  "kind" in r && r.kind === "merge"
+    ? `PR #${r.prNumber} merged ${r.mergeSha}`
+    : "kind" in r && r.kind === "proposal"
+      ? `PR #${r.prNumber} proposed ${r.package} ${r.targetVersion}`
+      : "kind" in r && r.kind === "closed"
+        ? `PR #${r.prNumber} closed unmerged`
+        : "kind" in r && r.kind === "attempt" && r.reconciledBy
+          ? `${r.attemptId} reconciled ${r.state} by ${r.reconciledBy}`
+          : "kind" in r && r.kind === "attempt"
+            ? `${r.prNumber === undefined ? "assessment" : `PR #${r.prNumber}`} ${r.attemptId} ${r.state}`
+            : `${r.prNumber === undefined ? "assessment" : `PR #${r.prNumber}`} ${(r as LedgerRow).intent} ${(r as LedgerRow).txHash}`;
 
 type RowsToWrite = LedgerEntry | LedgerEntry[];
 
@@ -294,11 +359,12 @@ type RowsToWrite = LedgerEntry | LedgerEntry[];
 export async function commitLedgerRow(
   repoDir: string,
   rowsOrBuild: RowsToWrite | ((existing: string) => RowsToWrite),
-  deps: LedgerDeps = {}
+  deps: LedgerDeps = {},
 ): Promise<void> {
   const runGit =
     deps.runGit ??
-    ((args: string[]) => execFileAsync("git", args, { cwd: repoDir }).then(() => undefined));
+    ((args: string[]) =>
+      execFileAsync("git", args, { cwd: repoDir }).then(() => undefined));
   const ledgerPath = join(repoDir, LEDGER_FILE);
 
   let lastError: unknown;
@@ -309,20 +375,29 @@ export async function commitLedgerRow(
     if (ledgerFile && !ledgerFile.isFile()) {
       throw new Error("Ledger must be a regular file");
     }
-    const existing = existsSync(ledgerPath) ? readFileSync(ledgerPath, "utf8") : "";
-    const built = typeof rowsOrBuild === "function" ? rowsOrBuild(existing) : rowsOrBuild;
+    const existing = existsSync(ledgerPath)
+      ? readFileSync(ledgerPath, "utf8")
+      : "";
+    const built =
+      typeof rowsOrBuild === "function" ? rowsOrBuild(existing) : rowsOrBuild;
     const rows = Array.isArray(built) ? built : [built];
     if (rows.length === 0) return;
     // receipt_hash identifies a delivered purchase (SPEC §4.2): one row per receipt.
     const recorded = receiptHashes(existing);
     for (const r of rows) {
       if (!("kind" in r) && r.receiptHash && recorded.has(r.receiptHash)) {
-        throw new DuplicateReceiptError(`receipt ${r.receiptHash} is already on the ledger`);
+        throw new DuplicateReceiptError(
+          `receipt ${r.receiptHash} is already on the ledger`,
+        );
       }
     }
     writeFileSync(ledgerPath, rows.reduce(appendLedgerRow, existing));
     await runGit(["add", LEDGER_FILE]);
-    await runGit(["commit", "-m", `ledger: ${rows.map(describeRow).join("; ")}`]);
+    await runGit([
+      "commit",
+      "-m",
+      `ledger: ${rows.map(describeRow).join("; ")}`,
+    ]);
     try {
       await runGit(["push", "origin", LEDGER_BRANCH]);
       return;
@@ -331,6 +406,6 @@ export async function commitLedgerRow(
     }
   }
   throw new Error(
-    `ledger push failed after ${MAX_PUSH_ATTEMPTS} attempts: ${String(lastError)}`
+    `ledger push failed after ${MAX_PUSH_ATTEMPTS} attempts: ${String(lastError)}`,
   );
 }

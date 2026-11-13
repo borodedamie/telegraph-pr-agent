@@ -70,7 +70,10 @@ export interface IntelligenceClientDeps {
   /** Tried before the leaderboard when the node lists it for the intent (SPEC §2.4 manual policy). */
   preferredMinerId?: string | null;
   fetchImpl?: typeof fetch;
-  paymentFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+  paymentFetch?: (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ) => Promise<Response>;
 }
 
 interface ApiMiner {
@@ -114,23 +117,38 @@ interface QuotedAccept {
 
 // accepts[] also lists `escrow` and non-EVM entries; we only quote the one the
 // payment client is allowed to pay: `exact` on our network in our USDC.
-function quotedAccept(res: Response, network: string, asset: string): QuotedAccept | null {
-  const parsed = decodeB64Json<{ accepts?: unknown }>(res.headers.get("payment-required"));
+function quotedAccept(
+  res: Response,
+  network: string,
+  asset: string,
+): QuotedAccept | null {
+  const parsed = decodeB64Json<{ accepts?: unknown }>(
+    res.headers.get("payment-required"),
+  );
   if (!Array.isArray(parsed?.accepts)) return null;
   const match = (parsed.accepts as Accept[]).find(
     (a) =>
       a?.scheme === "exact" &&
       a.network === network &&
       typeof a.asset === "string" &&
-      a.asset.toLowerCase() === asset.toLowerCase()
+      a.asset.toLowerCase() === asset.toLowerCase(),
   );
   return typeof match?.amount === "string"
-    ? { amount: match.amount, network: match.network as string, asset: match.asset as string }
+    ? {
+        amount: match.amount,
+        network: match.network as string,
+        asset: match.asset as string,
+      }
     : null;
 }
 
-function settleHeader(res: Response): { success?: boolean; transaction?: string } | null {
-  return decodeB64Json(res.headers.get("payment-response") || res.headers.get("x-payment-response"));
+function settleHeader(
+  res: Response,
+): { success?: boolean; transaction?: string } | null {
+  return decodeB64Json(
+    res.headers.get("payment-response") ||
+      res.headers.get("x-payment-response"),
+  );
 }
 
 function answerText(result: unknown): string {
@@ -144,8 +162,11 @@ export function rankMiners(intent: string, miners: ApiMiner[]): RankedMiner[] {
   for (const m of miners) {
     const s = m.scores?.find((x) => x.intent_id === intent);
     const eps = m.endpoints ?? [];
-    const ep = eps.find((e) => (e.description ?? "").includes(intent)) ?? (eps.length === 1 ? eps[0] : undefined);
-    if (!s || typeof s.rank !== "number" || !ep?.path || m.id === undefined) continue;
+    const ep =
+      eps.find((e) => (e.description ?? "").includes(intent)) ??
+      (eps.length === 1 ? eps[0] : undefined);
+    if (!s || typeof s.rank !== "number" || !ep?.path || m.id === undefined)
+      continue;
     ranked.push({
       id: String(m.id),
       name: m.name ?? String(m.id),
@@ -163,10 +184,16 @@ export function rankMiners(intent: string, miners: ApiMiner[]): RankedMiner[] {
  * The miner we chose ourselves, if the node lists it for this intent: it need not be ranked yet. Rank and score
  * are its leaderboard values when it has them, else null (SPEC §2.4: "rank unavailable").
  */
-export function preferredMiner(intent: string, miners: ApiMiner[], id: string): RankedMiner | null {
+export function preferredMiner(
+  intent: string,
+  miners: ApiMiner[],
+  id: string,
+): RankedMiner | null {
   const m = miners.find((x) => String(x.id) === id);
   const eps = m?.endpoints ?? [];
-  const ep = eps.find((e) => (e.description ?? "").includes(intent)) ?? (eps.length === 1 ? eps[0] : undefined);
+  const ep =
+    eps.find((e) => (e.description ?? "").includes(intent)) ??
+    (eps.length === 1 ? eps[0] : undefined);
   if (!m || !ep?.path) return null;
   const s = m.scores?.find((x) => x.intent_id === intent);
   return {
@@ -175,7 +202,7 @@ export function preferredMiner(intent: string, miners: ApiMiner[], id: string): 
     method: ep.method ?? "GET",
     path: ep.path,
     rank: typeof s?.rank === "number" ? s.rank : null,
-    score: typeof s?.rank === "number" ? s.score ?? null : null,
+    score: typeof s?.rank === "number" ? (s.score ?? null) : null,
     selectedBy: "our_choice",
   };
 }
@@ -183,16 +210,30 @@ export function preferredMiner(intent: string, miners: ApiMiner[], id: string): 
 // The testnet USDC isn't one of @x402's built-in assets, so it must be allow-listed
 // or the client refuses to sign. The per-payment cap re-checks MAX_PRICE inside the
 // signer, covering a price change between our quote request and the paid one.
-export function paymentConfig(deps: Pick<IntelligenceClientDeps, "evmPrivateKey" | "chainId" | "usdcAddress" | "maxPricePerCallUsdc">) {
+export function paymentConfig(
+  deps: Pick<
+    IntelligenceClientDeps,
+    "evmPrivateKey" | "chainId" | "usdcAddress" | "maxPricePerCallUsdc"
+  >,
+) {
   const network = `eip155:${deps.chainId}` as const;
   return {
-    schemes: [{ network, client: new ExactEvmScheme(toClientEvmSigner(privateKeyToAccount(deps.evmPrivateKey))) }],
+    schemes: [
+      {
+        network,
+        client: new ExactEvmScheme(
+          toClientEvmSigner(privateKeyToAccount(deps.evmPrivateKey)),
+        ),
+      },
+    ],
     spendControls: {
       allowedAssets: [
         {
           network,
           asset: deps.usdcAddress,
-          maxAmountPerPayment: String(Math.round(deps.maxPricePerCallUsdc * USDC_DECIMALS)),
+          maxAmountPerPayment: String(
+            Math.round(deps.maxPricePerCallUsdc * USDC_DECIMALS),
+          ),
         },
       ],
     },
@@ -209,7 +250,10 @@ export class IntelligenceClient {
   private readonly budgetCapUsdc: number;
   private readonly preferredMinerId: string | null;
   private readonly fetchImpl: typeof fetch;
-  private readonly paymentFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+  private readonly paymentFetch: (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ) => Promise<Response>;
 
   constructor(deps: IntelligenceClientDeps) {
     this.nodeUrl = deps.nodeUrl.replace(/\/$/, "");
@@ -219,19 +263,26 @@ export class IntelligenceClient {
     this.budgetCapUsdc = deps.budgetCapUsdc;
     this.preferredMinerId = deps.preferredMinerId ?? null;
     this.fetchImpl = deps.fetchImpl ?? fetch;
-    this.paymentFetch = deps.paymentFetch ?? wrapFetchWithPaymentFromConfig(this.fetchImpl, paymentConfig(deps));
+    this.paymentFetch =
+      deps.paymentFetch ??
+      wrapFetchWithPaymentFromConfig(this.fetchImpl, paymentConfig(deps));
   }
 
   async rankedMiners(intent: string): Promise<RankedMiner[]> {
     const res = await this.fetchImpl(
-      `${this.nodeUrl}/api/miners?intent=${encodeURIComponent(intent)}&status=active&limit=100`
+      `${this.nodeUrl}/api/miners?intent=${encodeURIComponent(intent)}&status=active&limit=100`,
     );
-    if (!res.ok) throw new AskFailedError(`${intent}: miner list HTTP ${res.status}`);
+    if (!res.ok)
+      throw new AskFailedError(`${intent}: miner list HTTP ${res.status}`);
     const body = (await res.json()) as ApiMiner[] | { miners?: ApiMiner[] };
-    const miners = Array.isArray(body) ? body : body.miners ?? [];
+    const miners = Array.isArray(body) ? body : (body.miners ?? []);
     const ranked = rankMiners(intent, miners);
-    const preferred = this.preferredMinerId ? preferredMiner(intent, miners, this.preferredMinerId) : null;
-    return preferred ? [preferred, ...ranked.filter((m) => m.id !== preferred.id)] : ranked;
+    const preferred = this.preferredMinerId
+      ? preferredMiner(intent, miners, this.preferredMinerId)
+      : null;
+    return preferred
+      ? [preferred, ...ranked.filter((m) => m.id !== preferred.id)]
+      : ranked;
   }
 
   // The routed /engine/v1/ask re-classifies a free-form query and can ignore
@@ -240,43 +291,74 @@ export class IntelligenceClient {
   // stepping down a rank only when a call fails (failed calls are credited to escrow).
   // onAttempt is awaited at each stage, so a stage that can't be recorded stops
   // the purchase before the next one starts.
-  async buy(intent: string, query: string | ((minerId: string) => string), onAttempt: OnAttempt = async () => {}): Promise<Purchase> {
+  async buy(
+    intent: string,
+    query: string | ((minerId: string) => string),
+    onAttempt: OnAttempt = async () => {},
+  ): Promise<Purchase> {
     const miners = (await this.rankedMiners(intent)).slice(0, MAX_MINERS_TRIED);
     const failures: string[] = [];
     for (const miner of miners) {
       try {
-        return await this.buyFrom(intent, typeof query === "string" ? query : query(miner.id), miner, onAttempt);
+        return await this.buyFrom(
+          intent,
+          typeof query === "string" ? query : query(miner.id),
+          miner,
+          onAttempt,
+        );
       } catch (err) {
         if (!(err instanceof AskFailedError)) throw err;
-        failures.push(`#${miner.rank ?? "unranked"} ${miner.id}: ${err.message}`);
+        failures.push(
+          `#${miner.rank ?? "unranked"} ${miner.id}: ${err.message}`,
+        );
       }
     }
-    throw new AskFailedError(`${intent}: no ranked miner answered — ${failures.join(" | ") || "none ranked"}`);
+    throw new AskFailedError(
+      `${intent}: no ranked miner answered — ${failures.join(" | ") || "none ranked"}`,
+    );
   }
 
-  private async buyFrom(intent: string, query: string, miner: RankedMiner, onAttempt: OnAttempt): Promise<Purchase> {
+  private async buyFrom(
+    intent: string,
+    query: string,
+    miner: RankedMiner,
+    onAttempt: OnAttempt,
+  ): Promise<Purchase> {
     await onAttempt({ state: "reserved", minerId: miner.id });
     const url = `${this.nodeUrl}/engine/v1/ask/${encodeURIComponent(miner.id)}`;
     const init: RequestInit = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ method: miner.method, endpoint: miner.path, payload: { query } }),
+      body: JSON.stringify({
+        method: miner.method,
+        endpoint: miner.path,
+        payload: { query },
+      }),
     };
 
     // Quote: unsigned request → 402 challenge carries the live price.
     const quoteRes = await this.fetchImpl(url, init);
     if (quoteRes.status !== 402) {
-      throw new AskFailedError(`expected a 402 quote, got HTTP ${quoteRes.status}`);
+      throw new AskFailedError(
+        `expected a 402 quote, got HTTP ${quoteRes.status}`,
+      );
     }
     const accept = quotedAccept(quoteRes, this.network, this.usdcAddress);
     if (accept === null) {
-      throw new AskFailedError(`402 offers no exact payment on ${this.network} in ${this.usdcAddress}`);
+      throw new AskFailedError(
+        `402 offers no exact payment on ${this.network} in ${this.usdcAddress}`,
+      );
     }
     const amountUsdc = Number(accept.amount) / USDC_DECIMALS;
 
     if (amountUsdc > this.maxPricePerCallUsdc) {
       const reason = `quote ${amountUsdc} USDC exceeds maxPricePerCallUsdc ${this.maxPricePerCallUsdc} (${intent}, miner ${miner.id})`;
-      await onAttempt({ state: "quote_refused", minerId: miner.id, quotedAmountUsdc: amountUsdc, reason });
+      await onAttempt({
+        state: "quote_refused",
+        minerId: miner.id,
+        quotedAmountUsdc: amountUsdc,
+        reason,
+      });
       throw new PriceGuardError(reason);
     }
     // The signer may settle anything up to maxPricePerCallUsdc (a repriced call),
@@ -284,18 +366,31 @@ export class IntelligenceClient {
     const worstCaseUsdc = Math.max(amountUsdc, this.maxPricePerCallUsdc);
     if (this.spentUsdc + worstCaseUsdc > this.budgetCapUsdc) {
       const reason = `spend ${this.spentUsdc} + worst-case ${worstCaseUsdc} USDC (quote ${amountUsdc}) exceeds budgetCapUsdc ${this.budgetCapUsdc}`;
-      await onAttempt({ state: "quote_refused", minerId: miner.id, quotedAmountUsdc: amountUsdc, reason });
+      await onAttempt({
+        state: "quote_refused",
+        minerId: miner.id,
+        quotedAmountUsdc: amountUsdc,
+        reason,
+      });
       throw new BudgetCapError(reason);
     }
 
-    await onAttempt({ state: "request_sent", minerId: miner.id, quotedAmountUsdc: amountUsdc });
+    await onAttempt({
+      state: "request_sent",
+      minerId: miner.id,
+      quotedAmountUsdc: amountUsdc,
+    });
     let res: Response;
     try {
       res = await this.paymentFetch(url, init);
     } catch (err) {
       // No response: the payment may or may not have settled.
       const reason = `no response: ${String(err)}`.slice(0, 300);
-      await onAttempt({ state: "unknown_needs_reconciliation", minerId: miner.id, reason });
+      await onAttempt({
+        state: "unknown_needs_reconciliation",
+        minerId: miner.id,
+        reason,
+      });
       throw new PaymentUnknownError(`${miner.id}: ${reason}`);
     }
     // https://anjoman.ai/docs/using/x402-inference (Step 3): a payload that does not
@@ -303,29 +398,45 @@ export class IntelligenceClient {
     // was paid. A valid payment settles before the miner is called; if the call then
     // fails, the amount is credited to our escrow balance and never charged.
     if (!res.ok) {
-      const reason = `HTTP ${res.status} ${(await res.text().catch(() => "")).slice(0, 300)}`.trim();
-      const notPaid = res.status === 402 || (res.status === 400 && /invalid payment/i.test(reason));
-      await onAttempt({ state: notPaid ? "failed_not_charged" : "failed_and_credited", minerId: miner.id, reason });
+      const reason =
+        `HTTP ${res.status} ${(await res.text().catch(() => "")).slice(0, 300)}`.trim();
+      const notPaid =
+        res.status === 402 ||
+        (res.status === 400 && /invalid payment/i.test(reason));
+      await onAttempt({
+        state: notPaid ? "failed_not_charged" : "failed_and_credited",
+        minerId: miner.id,
+        reason,
+      });
       throw new AskFailedError(reason);
     }
     const settle = settleHeader(res);
     if (settle?.success === false) {
       // An explicit "not settled": nothing was charged, so the next miner may be tried.
       const reason = "settlement reported success: false";
-      await onAttempt({ state: "failed_not_charged", minerId: miner.id, reason });
+      await onAttempt({
+        state: "failed_not_charged",
+        minerId: miner.id,
+        reason,
+      });
       throw new AskFailedError(reason);
     }
     if (settle?.success !== true || typeof settle.transaction !== "string") {
       // No readable settlement proof: we can't tell whether we paid.
       const reason = "answered without a readable settlement proof";
-      await onAttempt({ state: "unknown_needs_reconciliation", minerId: miner.id, reason });
+      await onAttempt({
+        state: "unknown_needs_reconciliation",
+        minerId: miner.id,
+        reason,
+      });
       throw new PaymentUnknownError(`${miner.id}: ${reason}`);
     }
     // Dynamic pricing can make the settled amount differ from the quote; the
     // receipt carries what was actually charged, so the record must use it.
-    const receipt = decodeB64Json<{ receipt_hash?: string; amount_uusdc?: string | number }>(
-      res.headers.get("x-telegraph-receipt")
-    );
+    const receipt = decodeB64Json<{
+      receipt_hash?: string;
+      amount_uusdc?: string | number;
+    }>(res.headers.get("x-telegraph-receipt"));
     const rawSettled = receipt?.amount_uusdc;
     const settledAtomic =
       typeof rawSettled === "number"
@@ -333,7 +444,9 @@ export class IntelligenceClient {
         : typeof rawSettled === "string" && rawSettled !== ""
           ? Number(rawSettled)
           : NaN;
-    const settledUsdc = Number.isFinite(settledAtomic) ? settledAtomic / USDC_DECIMALS : amountUsdc;
+    const settledUsdc = Number.isFinite(settledAtomic)
+      ? settledAtomic / USDC_DECIMALS
+      : amountUsdc;
     this.spentUsdc += settledUsdc;
 
     const body = (await res.json().catch(() => ({}))) as EngineAnswer;

@@ -1,53 +1,100 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, lstatSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  lstatSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, isAbsolute, join, matchesGlob, relative, sep } from "node:path";
+import {
+  dirname,
+  isAbsolute,
+  join,
+  matchesGlob,
+  relative,
+  sep,
+} from "node:path";
 import type { Finding } from "./assessment.js";
 
 export type ChangedFile = { path: string; content: string };
 export type PreparedUpdate = { finding: Finding; files: ChangedFile[] };
 
 export const readRepositoryFile = (root: string, source: string): string => {
-  if (isAbsolute(source) || source.split(/[\\/]/).includes("..") || source.includes("\\")) {
+  if (
+    isAbsolute(source) ||
+    source.split(/[\\/]/).includes("..") ||
+    source.includes("\\")
+  ) {
     throw new Error(`Unsafe dependency path: ${source}`);
   }
   const path = join(root, source);
   const location = relative(realpathSync(root), realpathSync(path));
-  if (!lstatSync(path).isFile() || location === ".." || location.startsWith(`..${sep}`) || isAbsolute(location)) {
-    throw new Error(`Dependency file is outside the repository or is not a regular file: ${source}`);
+  if (
+    !lstatSync(path).isFile() ||
+    location === ".." ||
+    location.startsWith(`..${sep}`) ||
+    isAbsolute(location)
+  ) {
+    throw new Error(
+      `Dependency file is outside the repository or is not a regular file: ${source}`,
+    );
   }
   return readFileSync(path, "utf8");
 };
 
-export const updateManifest = (content: string, finding: Pick<Finding, "ecosystem" | "package" | "currentVersion" | "targetVersion">): string => {
+export const updateManifest = (
+  content: string,
+  finding: Pick<
+    Finding,
+    "ecosystem" | "package" | "currentVersion" | "targetVersion"
+  >,
+): string => {
   if (finding.ecosystem === "npm") {
     const manifest = JSON.parse(content);
     let changed = false;
     for (const section of ["dependencies", "devDependencies"]) {
       const declared: unknown = manifest[section]?.[finding.package];
       if (typeof declared !== "string") continue;
-      if (!/^[~^]?\d/.test(declared)) throw new Error(`Unsupported npm declaration: ${finding.package}`);
-      const prefix = declared.startsWith("^") || declared.startsWith("~") ? declared[0] : "";
+      if (!/^[~^]?\d/.test(declared))
+        throw new Error(`Unsupported npm declaration: ${finding.package}`);
+      const prefix =
+        declared.startsWith("^") || declared.startsWith("~") ? declared[0] : "";
       manifest[section][finding.package] = `${prefix}${finding.targetVersion}`;
       changed = true;
     }
-    if (!changed) throw new Error(`Dependency no longer exists: ${finding.package}`);
+    if (!changed)
+      throw new Error(`Dependency no longer exists: ${finding.package}`);
     const indent = content.match(/\n([ \t]+)"/)?.[1] ?? "  ";
     return `${JSON.stringify(manifest, null, indent)}${content.endsWith("\n") ? "\n" : ""}`;
   }
   let changes = 0;
-  const updated = content.split(/(?<=\n)/).map((line) => {
-    const pin = line.match(/^(\s*)([A-Za-z0-9][A-Za-z0-9._-]*)(\[[^\]]+\])?(\s*==\s*)([^\s;]+)(.*)$/s);
-    if (!pin || pin[2].toLowerCase().replace(/[-_.]+/g, "-") !== finding.package
-      || pin[5] !== finding.currentVersion) return line;
-    // shortcut: hashed exports need regenerated hashes, support them when a Python lock updater exists.
-    if (pin[6].includes("--hash") || /\\\s*$/.test(line.trimEnd())) {
-      throw new Error(`Hashed or continued Python pins require lock regeneration: ${finding.package}`);
-    }
-    changes += 1;
-    return `${pin[1]}${pin[2]}${pin[3] ?? ""}${pin[4]}${finding.targetVersion}${pin[6]}`;
-  }).join("");
-  if (!changes) throw new Error(`Python pin no longer matches: ${finding.package}`);
+  const updated = content
+    .split(/(?<=\n)/)
+    .map((line) => {
+      const pin = line.match(
+        /^(\s*)([A-Za-z0-9][A-Za-z0-9._-]*)(\[[^\]]+\])?(\s*==\s*)([^\s;]+)(.*)$/s,
+      );
+      if (
+        !pin ||
+        pin[2].toLowerCase().replace(/[-_.]+/g, "-") !== finding.package ||
+        pin[5] !== finding.currentVersion
+      )
+        return line;
+      // shortcut: hashed exports need regenerated hashes, support them when a Python lock updater exists.
+      if (pin[6].includes("--hash") || /\\\s*$/.test(line.trimEnd())) {
+        throw new Error(
+          `Hashed or continued Python pins require lock regeneration: ${finding.package}`,
+        );
+      }
+      changes += 1;
+      return `${pin[1]}${pin[2]}${pin[3] ?? ""}${pin[4]}${finding.targetVersion}${pin[6]}`;
+    })
+    .join("");
+  if (!changes)
+    throw new Error(`Python pin no longer matches: ${finding.package}`);
   return updated;
 };
 
@@ -57,48 +104,108 @@ export const readNpmLock = (root: string, source: string): string => {
   const lockPath = join(project, "package-lock.json").split(sep).join("/");
   // shortcut: workspace and pnpm lock updates need their own resolver; never publish stale locks.
   if (manifest.workspaces || !existsSync(join(root, lockPath))) {
-    throw new Error(`Automatic npm updates require a standalone package-lock.json: ${source}`);
+    throw new Error(
+      `Automatic npm updates require a standalone package-lock.json: ${source}`,
+    );
   }
   let ancestor = join(root, project);
   while (ancestor.startsWith(`${root}${sep}`) || ancestor === root) {
     const workspace = join(ancestor, "pnpm-workspace.yaml");
     if (existsSync(workspace)) {
-      const configuration = readRepositoryFile(root, relative(root, workspace).split(sep).join("/"));
-      const block = configuration.match(/^packages:[ \t]*\r?\n((?:[ \t]+[^\n]*(?:\n|$)|#[^\n]*(?:\n|$)|\r?\n)*)/m)?.[1];
+      const configuration = readRepositoryFile(
+        root,
+        relative(root, workspace).split(sep).join("/"),
+      );
+      const block = configuration.match(
+        /^packages:[ \t]*\r?\n((?:[ \t]+[^\n]*(?:\n|$)|#[^\n]*(?:\n|$)|\r?\n)*)/m,
+      )?.[1];
       const patterns: string[] = [];
-      for (const line of (block ?? "").split(/\r?\n/).filter((line) => line.trim() && !line.trim().startsWith("#"))) {
-        const pattern = line.match(/^\s+-\s+(['"]?)([A-Za-z0-9_./!*?{}@()+,-]+)\1\s*(?:#.*)?$/)?.[2];
-        if (!pattern) throw new Error("Unsupported pnpm workspace configuration; skip automatic npm updates");
+      for (const line of (block ?? "")
+        .split(/\r?\n/)
+        .filter((line) => line.trim() && !line.trim().startsWith("#"))) {
+        const pattern = line.match(
+          /^\s+-\s+(['"]?)([A-Za-z0-9_./!*?{}@()+,-]+)\1\s*(?:#.*)?$/,
+        )?.[2];
+        if (!pattern)
+          throw new Error(
+            "Unsupported pnpm workspace configuration; skip automatic npm updates",
+          );
         patterns.push(pattern);
       }
       // shortcut: parse block-style pnpm package globs only; fail closed on other YAML forms.
-      if (!patterns.some((pattern) => !pattern.startsWith("!"))) throw new Error("Unsupported pnpm workspace configuration; skip automatic npm updates");
-      const member = relative(ancestor, join(root, project)).split(sep).join("/");
-      if (!member || (patterns.some((pattern) => !pattern.startsWith("!") && matchesGlob(member, pattern))
-        && !patterns.some((pattern) => pattern.startsWith("!") && matchesGlob(member, pattern.slice(1))))) {
-        throw new Error(`Automatic npm updates do not support pnpm workspace members: ${source}`);
+      if (!patterns.some((pattern) => !pattern.startsWith("!")))
+        throw new Error(
+          "Unsupported pnpm workspace configuration; skip automatic npm updates",
+        );
+      const member = relative(ancestor, join(root, project))
+        .split(sep)
+        .join("/");
+      if (
+        !member ||
+        (patterns.some(
+          (pattern) => !pattern.startsWith("!") && matchesGlob(member, pattern),
+        ) &&
+          !patterns.some(
+            (pattern) =>
+              pattern.startsWith("!") && matchesGlob(member, pattern.slice(1)),
+          ))
+      ) {
+        throw new Error(
+          `Automatic npm updates do not support pnpm workspace members: ${source}`,
+        );
       }
     }
     const ancestorManifest = join(ancestor, "package.json");
     // Conservatively reject descendants of workspace roots, including members with local locks.
-    if (existsSync(ancestorManifest) && JSON.parse(readRepositoryFile(root,
-      relative(root, ancestorManifest).split(sep).join("/"))).workspaces) {
-      throw new Error(`Automatic npm updates do not support workspace members: ${source}`);
+    if (
+      existsSync(ancestorManifest) &&
+      JSON.parse(
+        readRepositoryFile(
+          root,
+          relative(root, ancestorManifest).split(sep).join("/"),
+        ),
+      ).workspaces
+    ) {
+      throw new Error(
+        `Automatic npm updates do not support workspace members: ${source}`,
+      );
     }
     if (ancestor === root) break;
     ancestor = dirname(ancestor);
   }
   const lockContent = readRepositoryFile(root, lockPath);
   const lock = JSON.parse(lockContent);
-  if (![2, 3].includes(lock.lockfileVersion)) throw new Error("Only npm lockfile v2/v3 updates are supported");
-  for (const entry of Object.values(lock.packages ?? {}) as { resolved?: string; link?: boolean }[]) {
-    if (entry.link || (entry.resolved && !entry.resolved.startsWith("https://registry.npmjs.org/"))) {
-      throw new Error("Lock regeneration only supports public npm registry packages");
+  if (![2, 3].includes(lock.lockfileVersion))
+    throw new Error("Only npm lockfile v2/v3 updates are supported");
+  for (const entry of Object.values(lock.packages ?? {}) as {
+    resolved?: string;
+    link?: boolean;
+  }[]) {
+    if (
+      entry.link ||
+      (entry.resolved &&
+        !entry.resolved.startsWith("https://registry.npmjs.org/"))
+    ) {
+      throw new Error(
+        "Lock regeneration only supports public npm registry packages",
+      );
     }
   }
-  for (const section of ["dependencies", "devDependencies", "optionalDependencies"]) {
-    if (Object.values(manifest[section] ?? {}).some((value) => typeof value !== "string" || /^(?:file:|link:|git|https?:|npm:|workspace:)/.test(value))) {
-      throw new Error("Lock regeneration does not support local, URL, Git or alias dependencies");
+  for (const section of [
+    "dependencies",
+    "devDependencies",
+    "optionalDependencies",
+  ]) {
+    if (
+      Object.values(manifest[section] ?? {}).some(
+        (value) =>
+          typeof value !== "string" ||
+          /^(?:file:|link:|git|https?:|npm:|workspace:)/.test(value),
+      )
+    ) {
+      throw new Error(
+        "Lock regeneration does not support local, URL, Git or alias dependencies",
+      );
     }
   }
   return lockContent;
@@ -109,52 +216,108 @@ export const prepareUpdate = async (
   finding: Finding,
   fetchImpl: typeof fetch = fetch,
   runNpm: (directory: string) => void = (directory) => {
-    execFileSync("npm", ["install", "--package-lock-only", "--ignore-scripts", "--no-audit", "--no-fund",
-      "--registry=https://registry.npmjs.org", `--userconfig=${join(directory, "user.npmrc")}`, `--globalconfig=${join(directory, "global.npmrc")}`], {
-      cwd: directory,
-      env: { PATH: process.env.PATH, HOME: directory, TMPDIR: directory,
-        npm_config_cache: join(directory, ".npm-cache") },
-      timeout: 120_000, stdio: "pipe",
-    });
+    execFileSync(
+      "npm",
+      [
+        "install",
+        "--package-lock-only",
+        "--ignore-scripts",
+        "--no-audit",
+        "--no-fund",
+        "--registry=https://registry.npmjs.org",
+        `--userconfig=${join(directory, "user.npmrc")}`,
+        `--globalconfig=${join(directory, "global.npmrc")}`,
+      ],
+      {
+        cwd: directory,
+        env: {
+          PATH: process.env.PATH,
+          HOME: directory,
+          TMPDIR: directory,
+          npm_config_cache: join(directory, ".npm-cache"),
+        },
+        timeout: 120_000,
+        stdio: "pipe",
+      },
+    );
   },
 ): Promise<PreparedUpdate> => {
-  const metadataUrl = finding.ecosystem === "npm"
-    ? `https://registry.npmjs.org/${encodeURIComponent(finding.package)}/${finding.targetVersion}`
-    : `https://pypi.org/pypi/${encodeURIComponent(finding.package)}/${finding.targetVersion}/json`;
-  const response = await fetchImpl(metadataUrl, { redirect: "error", signal: AbortSignal.timeout(30_000) });
-  if (!response.ok) throw new Error(`Target version lookup failed: HTTP ${response.status} for ${finding.package}`);
-  const metadata = await response.json() as { name?: string; version?: string; info?: { name?: string; version?: string }; urls?: { yanked?: boolean }[] };
-  const name = finding.ecosystem === "npm" ? metadata.name : metadata.info?.name?.toLowerCase().replace(/[-_.]+/g, "-");
-  const version = finding.ecosystem === "npm" ? metadata.version : metadata.info?.version;
-  if (name !== finding.package || version !== finding.targetVersion
-    || (finding.ecosystem === "PyPI" && (!metadata.urls?.length || metadata.urls.every((file) => file.yanked)))) {
-    throw new Error(`Target is missing, mismatched or yanked: ${finding.package}@${finding.targetVersion}`);
+  const metadataUrl =
+    finding.ecosystem === "npm"
+      ? `https://registry.npmjs.org/${encodeURIComponent(finding.package)}/${finding.targetVersion}`
+      : `https://pypi.org/pypi/${encodeURIComponent(finding.package)}/${finding.targetVersion}/json`;
+  const response = await fetchImpl(metadataUrl, {
+    redirect: "error",
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok)
+    throw new Error(
+      `Target version lookup failed: HTTP ${response.status} for ${finding.package}`,
+    );
+  const metadata = (await response.json()) as {
+    name?: string;
+    version?: string;
+    info?: { name?: string; version?: string };
+    urls?: { yanked?: boolean }[];
+  };
+  const name =
+    finding.ecosystem === "npm"
+      ? metadata.name
+      : metadata.info?.name?.toLowerCase().replace(/[-_.]+/g, "-");
+  const version =
+    finding.ecosystem === "npm" ? metadata.version : metadata.info?.version;
+  if (
+    name !== finding.package ||
+    version !== finding.targetVersion ||
+    (finding.ecosystem === "PyPI" &&
+      (!metadata.urls?.length || metadata.urls.every((file) => file.yanked)))
+  ) {
+    throw new Error(
+      `Target is missing, mismatched or yanked: ${finding.package}@${finding.targetVersion}`,
+    );
   }
   const content = readRepositoryFile(root, finding.source);
   const updated = updateManifest(content, finding);
   const files = [{ path: finding.source, content: updated }];
   if (finding.ecosystem === "npm") {
-    const lockPath = join(dirname(finding.source), "package-lock.json").split(sep).join("/");
+    const lockPath = join(dirname(finding.source), "package-lock.json")
+      .split(sep)
+      .join("/");
     const lockContent = readNpmLock(root, finding.source);
     const directory = mkdtempSync(join(tmpdir(), "telegraph-lock-"));
     try {
       const pinnedManifest = JSON.parse(updated);
       for (const section of ["dependencies", "devDependencies"]) {
-        if (pinnedManifest[section]?.[finding.package]) pinnedManifest[section][finding.package] = finding.targetVersion;
+        if (pinnedManifest[section]?.[finding.package])
+          pinnedManifest[section][finding.package] = finding.targetVersion;
       }
-      writeFileSync(join(directory, "package.json"), JSON.stringify(pinnedManifest));
+      writeFileSync(
+        join(directory, "package.json"),
+        JSON.stringify(pinnedManifest),
+      );
       writeFileSync(join(directory, "package-lock.json"), lockContent);
       runNpm(directory);
-      const regenerated = JSON.parse(readFileSync(join(directory, "package-lock.json"), "utf8"));
-      if (regenerated.packages?.[`node_modules/${finding.package}`]?.version !== finding.targetVersion) {
-        throw new Error("Regenerated lockfile did not resolve the recommended version");
+      const regenerated = JSON.parse(
+        readFileSync(join(directory, "package-lock.json"), "utf8"),
+      );
+      if (
+        regenerated.packages?.[`node_modules/${finding.package}`]?.version !==
+        finding.targetVersion
+      ) {
+        throw new Error(
+          "Regenerated lockfile did not resolve the recommended version",
+        );
       }
       for (const section of ["dependencies", "devDependencies"]) {
         if (regenerated.packages[""]?.[section]?.[finding.package]) {
-          regenerated.packages[""][section][finding.package] = JSON.parse(updated)[section][finding.package];
+          regenerated.packages[""][section][finding.package] =
+            JSON.parse(updated)[section][finding.package];
         }
       }
-      files.push({ path: lockPath, content: `${JSON.stringify(regenerated, null, 2)}\n` });
+      files.push({
+        path: lockPath,
+        content: `${JSON.stringify(regenerated, null, 2)}\n`,
+      });
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
