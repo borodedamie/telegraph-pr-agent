@@ -193,11 +193,17 @@ describe("US1: zod 3.23.8 → 4.0.0", () => {
     expect(answer.changes).toEqual([]);
   });
 
-  it("does not answer not_found when the budget ran out before any release was read", async () => {
+  it("says the range was too large, not that a source is down, when the budget ran out before any release was read", async () => {
+    // @types/node 22.20.4 → 26.6.6 on 13 Nov: 25 source requests into DefinitelyTyped, nothing read. A retry hits the
+    // same limit, so declaring an outage only sent the buyer to other miners.
     const store = new MemoryStore();
     const tight = { ...deps(store, stubModel().caller), limits: limitsFromEnv({ MAX_SOURCE_REQUESTS: "1" }) };
     const { answer } = await answerQuestion(QUESTION, tight);
-    expect(answer.outcome).toBe("temporarily_unavailable");
+    expect(answer.outcome).toBe("not_found");
+    expect(answer.coverage!.covered).toEqual([]);
+    expect(answer.coverage!.notCovered.every((gap) => gap.reason === "budget")).toBe(true);
+    expect(answer.summary).toMatch(/^No release material read for zod 3\.23\.8 → 4\.0\.0: the range is larger than one answer reads/);
+    expect(answer.confidence).toBeLessThanOrEqual(0.6);
   });
 
   it("answers instead of failing when a source is over its size cap", async () => {
