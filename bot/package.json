@@ -8,7 +8,7 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "build": "tsc --noEmit && esbuild src/action.ts --bundle --platform=node --target=node24 --format=cjs --minify --outfile=dist/index.js"
+    "build": "tsc --noEmit && esbuild src/action.ts --bundle --platform=node --target=node24 --format=cjs --minify --outfile=dist/index.cjs"
   },
   "dependencies": {
     "@actions/core": "^3.0.1",

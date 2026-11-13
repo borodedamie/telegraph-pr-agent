@@ -29,7 +29,18 @@ jobs:
         run: npm run build --prefix bot
 
       - name: Check packaged action matches its source
-        run: git diff --exit-code -- bot/dist/index.js
+        run: git diff --exit-code -- bot/dist/index.cjs
+
+      # Executes the bundle the way the runner does. With no environment it must reach its
+      # first check; a module-format error (e.g. CommonJS loaded as ESM) fails here instead.
+      - name: Smoke-run the packaged action
+        run: |
+          out=$(env -i PATH="$PATH" node bot/dist/index.cjs 2>&1 || true)
+          if ! printf '%s' "$out" | grep -q "::error::GITHUB_TOKEN is required"; then
+            printf '%s\n' "$out" | cut -c1-300 | tail -20
+            echo "The packaged action did not start"
+            exit 1
+          fi
 
       - name: Run bot tests without payment or write credentials
         run: npm test --prefix bot
