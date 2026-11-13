@@ -137,6 +137,21 @@ it("rejects an invalid monthly budget before opening the ledger", async () => {
   expect(mocks.open).not.toHaveBeenCalled();
 });
 
+it("rejects an invalid draft-prs value before opening the ledger", async () => {
+  mocks.inputs["draft-prs"] = "yes";
+  await run("failed");
+  expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("draft-prs"));
+  expect(mocks.open).not.toHaveBeenCalled();
+});
+
+it.each([["", false], ["false", false], ["true", true]])("passes draft-prs=%j to publication as draft %s", async (value, draft) => {
+  mocks.inputs["draft-prs"] = value;
+  mocks.buy.mockResolvedValue({ answer: "{}", assessmentId: "assess-1", attemptId: "assess-1:1", receiptHash: "0xreceipt" });
+  mocks.apply.mockResolvedValueOnce([]);
+  await run();
+  expect(mocks.apply).toHaveBeenCalledWith(expect.objectContaining({ draft }));
+});
+
 it("records each published PR on the ledger with its number, purchase and finding", async () => {
   mocks.buy.mockResolvedValue({ answer: "{}", assessmentId: "assess-1", attemptId: "assess-1:1", receiptHash: "0xreceipt" });
   const finding = { ecosystem: "npm", package: "zod", source: "package.json", currentVersion: "3.25.0", targetVersion: "4.6.7" };

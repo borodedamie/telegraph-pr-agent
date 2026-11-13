@@ -10,7 +10,7 @@ A GitHub Action, installed with one workflow file. It finds dependencies with a 
 
 1. **Scan (free).** Read the installed version A from `package-lock.json` and the latest stable version B from npm. Eligible when B > A and B was released after `MODEL_CUTOFF` (SPEC §2.3). Known vulnerabilities in A come from OSV.
 2. **Learn (paid, automatic).** One Q&A purchase on Telegraph (routing policy still open, SPEC §2.4) on the live canonical intent (`QUESTION_ANSWERING_GENERAL` on 2 Nov): "what changed from A to B: breaking changes, renamed or removed functions, migration steps, sources". This is the one mandatory paid operation.
-3. **Report (free).** Open or update one draft PR per package and target: why upgrade, vulnerabilities in A, which symbols changed, which files in this repo use them (local search), what to change, spend so far, estimated fix cost, and "add the label `telegraph:fix` to continue". Closing the PR stops all spend.
+3. **Report (free).** Open or update one PR per package and target (a draft once the fix stage below exists; ready for review until then): why upgrade, vulnerabilities in A, which symbols changed, which files in this repo use them (local search), what to change, spend so far, estimated fix cost, and "add the label `telegraph:fix` to continue". Closing the PR stops all spend.
 4. **Fix (after the label).** The installer's LLM writes the patch with the purchased answer as a material input. The repository's install, typecheck and tests run in a job with no secrets. All pass: push and mark ready for review. Otherwise nothing is pushed; comment with the diff and what failed. Telegraph `CODE_GENERATION` and paid verification are optional experiments until a provider passes our tests (SPEC §2.9).
 5. **Merge.** A human reviews and merges.
 6. **Account.** Merge → ledger → dashboard. Cost per merged PR = all net spend (Telegraph, LLM, declined proposals) ÷ merged bot PRs, shown with counts, merge rate and a testnet label; also cost per useful answer.
@@ -21,7 +21,7 @@ A GitHub Action, installed with one workflow file. It finds dependencies with a 
 - Two spend caps, one for step 2 and one for step 4. Every payment is re-quoted; the 402 challenge sets the price. Any cost figure here is an illustrative estimate, not a price.
 - The installer's own low-balance wallet in repo secrets pays; jobs that run repo code never see any key.
 - Durable attempt records before each paid call; an ambiguous attempt blocks automatic retry until reconciled (SPEC §2.6).
-- One draft PR per package and version, updated, never duplicated.
+- One PR per package and version, updated, never duplicated. Ready for review by default (`draft-prs: true` for drafts) until the label-gated fix stage exists.
 - Miner answers are untrusted text: PR body and LLM prompt input only.
 - Hackathon purchases, transactions, usage, demos and adoption evidence claimed for Season II fall in 1 Nov–1 Dec 2026. Package release notes and registry records keep their original dates, including dates before the event.
 - Both wallets, our own miner and any self-purchases are disclosed; self-purchases never count as adoption.

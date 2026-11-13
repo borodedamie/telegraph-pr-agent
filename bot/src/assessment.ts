@@ -136,6 +136,8 @@ export const applyAssessment = async (options: {
   token: string;
   dependencies: Dependency[];
   purchase: Purchase;
+  /** Open PRs as drafts; ready for review when absent or false. */
+  draft?: boolean;
   onPublished?: (urls: string[]) => void;
   /** Awaited after each PR opens, so the ledger records it before the next one. */
   onProposal?: (url: string, finding: Finding) => Promise<void>;
@@ -186,6 +188,7 @@ export const applyAssessment = async (options: {
       token: options.token,
       update,
       purchase,
+      draft: options.draft,
     });
     urls.push(url);
     options.onPublished?.([...urls]);

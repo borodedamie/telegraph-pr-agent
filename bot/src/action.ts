@@ -105,6 +105,12 @@ const run = async (): Promise<void> => {
         "monthly-budget-usdc must be a positive finite number when set",
       );
     }
+    // Off unless set: PRs open ready for review; "true" opens them as drafts instead.
+    const draftInput = core.getInput("draft-prs");
+    if (!["", "true", "false"].includes(draftInput)) {
+      throw new Error('draft-prs must be "true" or "false" when set');
+    }
+    const draftPrs = draftInput === "true";
     const preferredMinerId =
       core.getInput("preferred-miner-id") ||
       process.env.PREFERRED_MINER_ID ||
@@ -213,6 +219,7 @@ const run = async (): Promise<void> => {
             token,
             dependencies: [dependency],
             purchase,
+            draft: draftPrs,
             onPublished: (published) => {
               for (const url of published) urls.add(url);
               core.setOutput("has-findings", String(urls.size > 0));
