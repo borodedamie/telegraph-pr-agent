@@ -59,7 +59,8 @@ bot/                TypeScript, Node 22.20+, vitest
   src/trigger.ts      post-cutoff release-date checks against the npm registry
   src/x402.ts         Telegraph client: provider list, x402 payment, receipt capture
   src/ledger.ts       ledger.jsonl on the `ledger` branch: attempts, purchases, PR outcomes
-  actions/            the GitHub Action (source in src/, packaged dist/index.js)
+  src/action.ts       the GitHub Action entry point (with scan, purchase, PR and ledger modules)
+  dist/index.cjs      the packaged Action that runners execute (CommonJS)
   test/               unit tests; no network, no payments
 web/                static dashboard (Vite); reads ledger.jsonl from GitHub raw
 .github/workflows/  dependency updates, merge accounting, attempt reconciliation, tests
@@ -312,7 +313,7 @@ jobs:
 ```
 
 Checkout makes the repository available; the dependency automation is a single step.
-The packaged `bot/dist/index.js` is included so callers need no install or
+The packaged `bot/dist/index.cjs` is included so callers need no install or
 build steps. `action.yml` sits at the repository root, so another repository uses
 `OWNER/REPO@IMMUTABLE_SHA` after publishing a commit containing the bundle, rather than
 the local `./` path.
@@ -391,7 +392,7 @@ proving what is installed in a running interpreter. Unresolved versions are repo
 - Run **Telegraph dependency updates** on the branch you want to update. A named
   branch must be checked out; detached HEAD is rejected instead of guessing a target.
 - After editing bot source, run `pnpm --filter @telegraph-pr-agent/bot build` (or
-  `npm run build --prefix bot`) and include the updated `bot/dist/index.js` in the same
+  `npm run build --prefix bot`) and include the updated `bot/dist/index.cjs` in the same
   change; CI fails when the committed bundle differs from a fresh build. Building needs
   the bot's dependencies; callers do not.
 

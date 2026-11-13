@@ -8,4 +8,4 @@ dist/
 # GitHub's Node action runs the packaged bundle directly.
 !bot/dist/
 bot/dist/*
-!bot/dist/index.js
+!bot/dist/index.cjs
