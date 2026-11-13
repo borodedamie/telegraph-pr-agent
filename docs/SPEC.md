@@ -51,7 +51,7 @@ Two separate gates. The App never waits on the Miner gate.
 **Implementation status, 8 Nov 2026.** The action prototype now scans current
 npm and pinned Python requirements, purchases a structured assessment from a
 preferred miner when configured, then the ranked list (with fallback after
-a classified failure), and prepares draft dependency PRs for validated
+a classified failure), and prepares dependency PRs (ready for review by default; drafts with the `draft-prs` input) for validated
 CVE/outdated findings. The action chooses newer stable npm/PyPI targets with
 verified release dates strictly after the configured model cutoff; no candidate
 means no payment or PR. Findings must preserve that verified target. At the user's request, a single action invocation now performs
@@ -134,7 +134,7 @@ purchase or hosted ledger write is claimed. See README for configuration.
 
 ### 2.1 Architecture
 
-- [PRODUCT] GitHub Action with draft PR and human label approval. The automatic first Q&A purchase followed by approval for the fix stage satisfies the autonomy requirement provided: the first purchase is initiated by the agent with no human approving that transaction; it is paid through Telegraph; the answer is used to complete a meaningful task, not merely displayed. It must not be a disguised manual or pre-funded demonstration.
+- [PRODUCT] GitHub Action with draft PR and human label approval (target design; until the label-gated fix stage exists, PRs open ready for review by default and `draft-prs: true` restores drafts). The automatic first Q&A purchase followed by approval for the fix stage satisfies the autonomy requirement provided: the first purchase is initiated by the agent with no human approving that transaction; it is paid through Telegraph; the answer is used to complete a meaningful task, not merely displayed. It must not be a disguised manual or pre-funded demonstration.
 
 ### 2.2 Installation and trigger
 

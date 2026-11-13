@@ -24,7 +24,7 @@ Status is a snapshot, not a promise.
 | Buy an answer on Telegraph with x402; record receipt hash, signal hash, tx hash | Historical integration test only: one pre-event payment succeeded on 28 Oct 2026; the returned content was unrelated to package releases. The current client is not compatible with the 2 Nov live intent contract until it sends the canonical intent id and request shape and is retested. |
 | Append-only purchase ledger on a `ledger` git branch | Shared attempts and per-receipt records are wired into the action. Pre-PR assessments use dependency/version/query identity across commits; rows written by the removed CLI keep their PR/commit keys. Failure and concurrency behavior is covered by offline tests; hosted writes remain unverified. |
 | Purchase dashboard | Works locally: `pnpm install`, then `pnpm --filter @telegraph-pr-agent/web dev`; it reads `ledger.jsonl` from GitHub raw for a public repository. Not deployed to a public URL yet. Shows purchases, cost per merged PR (all-time and for the 1 Nov – 1 Dec event window), PRs proposed, merged, closed and open with the merge rate and sample size, closed-PR spend, cost per useful answer, and escrow credits and refused quotes as non-spend. Add `?repo=owner/name` to view another public repository's ledger. **Download evidence CSV** exports, for 1 Nov – 1 Dec 2026, one line per settled purchase and per attempt reconciled as charged with no answer: date, repo, package and versions, miner and how it was selected (`rank` or `our_choice`), amount, network, receipt hash, signal and transaction links, answer quality and PR outcome. It is built in the browser from the public ledger; the raw `ledger.jsonl` is linked beside it. Hosted merge capture remains unverified. |
-| GitHub Action, draft dependency PRs, migration and merge accounting | Packaged action with cutoff gating, attempt ledger and draft dependency PR preparation; validated locally. `telegraph:fix` and migration execution remain planned. Receipt-linked merge accounting is implemented and tested offline. |
+| GitHub Action, dependency PRs, migration and merge accounting | Packaged action with cutoff gating, attempt ledger and dependency PR preparation (ready for review; drafts with `draft-prs: true`); validated locally. `telegraph:fix` and migration execution remain planned. Receipt-linked merge accounting is implemented and tested offline. |
 | Package-release Q&A miner | Working, in production at `https://telegraph-pr-miner-n30sk.vercel.app` and registered on Telegraph since 6 Nov as miner 7314 (`package-release-intel`, `QUESTION_ANSWERING_GENERAL`, 0.02 USDC). It answers what changed in an npm package between two versions from npm, GitHub release material, migration guides and OSV, each change with a verbatim quote and its source. A paid direct call through Telegraph was served and settled on 6 Nov; Engine routing sent the same kind of question to another intent (`WEB_SEARCH_GENERAL`), so buyers ask it by id. Benchmark: 67.1% of reviewed breaking changes by word matching, 82.6% with an LLM judge (target 80%), every quote checked. Scored by the intent's general-purpose judge: rank 6 of 17 on 9 Nov (11 of 17 on 8 Nov), measured with our own 30 questions in the pool (1 of 6 contributors), so it is not independent evidence of quality; the benchmark is the quality evidence. Details: [miner/README.md](miner/README.md). |
 
 **About the one purchase so far.** On 28 Oct 2026 the CLI prototype (since removed) paid 0.01 testnet USDC through the devnode to Crossref QA, which was third in the provider list the old client read for question answering on that date (the client's ordering, not a saved Telegraph ranking snapshot), and recorded the tx hash, receipt hash and signal hash. The returned answer was academic search results unrelated to the package. That run is a pre-event integration test: it shows the payment flow was exercised. It is not event-period hackathon evidence and not a successful package-release answer. It also used the node interface as it stood on that date; the request shape and intent ids have to be rechecked against the live node before any new run.
@@ -153,8 +153,10 @@ Runs on testnet: payments are Ethereum Sepolia test USDC. Nothing here spends re
   exact pins (`name==1.2.3`) in `requirements*.txt` or `requirements/*.txt`. pnpm, yarn
   and npm workspaces are skipped, with a warning per skipped package.
 
-**2. Repository settings.** Settings → Actions → General → Workflow permissions: tick
-**Allow GitHub Actions to create and approve pull requests**. The Action creates a
+**2. Repository settings (the step most often missed).** Settings → Actions → General →
+Workflow permissions: tick **Allow GitHub Actions to create and approve pull requests** and
+click **Save**. Without it the run buys its answers and then fails with a 403 when opening
+PRs; tick it and re-run, and the saved answers are reused with nothing bought again. The Action creates a
 `ledger` branch on first use; a branch protection rule covering every branch would block it.
 
 **3. One secret.** Settings → Secrets and variables → Actions → New repository secret:
@@ -180,7 +182,7 @@ training cutoff: only dependency releases published after it are bought.
 `borodedamie/telegraph-pr-agent@v1` is published when the Action's restructure merges; until
 then, replace `@v1` with the full commit SHA of `main`.
 
-`.github/workflows/telegraph-dependency-updates.yml`, scans and opens draft PRs (change
+`.github/workflows/telegraph-dependency-updates.yml`, scans and opens PRs (change
 `main` if your default branch has another name):
 
 ```yaml
@@ -263,13 +265,14 @@ jobs:
 
 **6. Run it.** Actions → Telegraph dependency updates → Run workflow. With no dependency
 released after your cutoff it ends with "no purchase made" and spends nothing. Otherwise
-it buys one answer per package and opens one draft PR per update; review it, run your CI,
+it buys one answer per package and opens one PR per update, ready for review (add
+`draft-prs: "true"` under `with:` to open drafts instead); review it, run your CI,
 merge or close it.
 
 **7. See the spend.** `https://telegraph-pr-agent.vercel.app/?repo=OWNER/REPO` reads your
 repository's `ledger` branch: every purchase with its receipt, signal and transaction, and
 cost per merged PR once a dependency PR has merged. You don't need to build the URL: each
-run that buys prints it on the run page, and every draft PR ends with it.
+run that buys prints it on the run page, and every dependency PR ends with it.
 
 Limits by default: 0.10 USDC per call and 2 USDC per run (`max-price-per-call-usdc`,
 `budget-cap-usdc` inputs). A payment stuck mid-flight blocks a repeat purchase for that
@@ -282,7 +285,7 @@ The workflow in `.github/workflows/dependency-updates.yml` runs automatically on
 on pushes to `main` that change `**/package.json`, `**/package-lock.json`,
 `**/requirements*.txt`, or `requirements/**`. Manual dispatch remains available
 for a selected branch. Branch-deletion events do not run it. One action invocation scans dependencies, purchases an assessment,
-prepares updates, and opens draft PRs; no stage inputs, intermediate artifact files,
+prepares updates, and opens PRs (drafts with `draft-prs: true`); no stage inputs, intermediate artifact files,
 or separate caller jobs are needed.
 
 ```yaml
@@ -328,7 +331,7 @@ identify a scanned ecosystem, package, source and current version, a newer targe
 Invalid/prose answers fail; no findings means no updates or PRs.
 
 Recommended targets are checked against npm/PyPI. Existing dependency files are
-updated on `fix/telegraph-dependency-*` branches, with a draft PR per finding back
+updated on `fix/telegraph-dependency-*` branches, with a PR per finding back
 to the checked-out branch. Standalone public npm projects get a regenerated
 package-lock v2/v3 alongside package.json. Plain Python pins retain extras, markers
 and comments. Matching PRs are reused, and existing branches are never force-updated.
@@ -437,7 +440,7 @@ accepted and ordered using their ecosystem rules. Recommended targets remain
 stable versions; npm targets require major.minor.patch. The action uses
 `semver` and `@renovatebot/pep440` for version validation and ordering. Unsupported findings fail preparation before publication.
 Registry checks confirm target availability, not the truth of CVE claims or migration
-compatibility. Repository tests and code migrations are not run automatically; draft
+compatibility. Repository tests and code migrations are not run automatically; dependency
 PRs must be independently checked. GitHub's behavior for workflows triggered by a
 `GITHUB_TOKEN` PR can require human approval before checks run; check the PR's Actions
 status rather than assuming CI ran ([GitHub token behavior](https://docs.github.com/en/actions/concepts/security/github_token)).

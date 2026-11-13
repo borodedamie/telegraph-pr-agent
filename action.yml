@@ -38,6 +38,8 @@ inputs:
   budget-cap-usdc:
     description: "Maximum USDC spend per action run"
     default: "2"
+  draft-prs:
+    description: "Open dependency PRs as drafts. Off when empty: PRs open ready for review."
   monthly-budget-usdc:
     description: "Optional cap on all purchases in a calendar month (UTC), across runs. Off when empty."
 outputs:

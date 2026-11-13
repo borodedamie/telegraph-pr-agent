@@ -62,6 +62,8 @@ export const createDependencyPr = async (options: {
   token: string;
   update: PreparedUpdate;
   purchase: PurchaseEvidence;
+  /** Open the PR as a draft; ready for review when absent or false. */
+  draft?: boolean;
   fetchImpl?: typeof fetch;
 }): Promise<string> => {
   const { root, repository, baseSha, baseBranch, token, update, purchase } =
@@ -148,8 +150,26 @@ export const createDependencyPr = async (options: {
         signal: AbortSignal.timeout(30_000),
       },
     );
-    if (!response.ok)
-      throw new Error(`GitHub ${method} ${path}: HTTP ${response.status}`);
+    if (!response.ok) {
+      // GitHub explains a refusal in the body's `message`; fall back to the raw text.
+      const text = await response.text();
+      let reason = text;
+      try {
+        reason = String(JSON.parse(text).message ?? text);
+      } catch {
+        // Not JSON: keep the raw text as the reason.
+      }
+      if (method === "POST" && path === "/pulls" && response.status === 403) {
+        throw new Error(
+          "GitHub Actions is not allowed to create pull requests in this repository. Enable Settings → Actions → General → " +
+            '"Allow GitHub Actions to create and approve pull requests", save, and re-run: paid answers are reused, ' +
+            `nothing is bought again. (GitHub: ${reason.slice(0, 200)})`,
+        );
+      }
+      throw new Error(
+        `GitHub ${method} ${path}: HTTP ${response.status}${reason ? `: ${reason.slice(0, 200)}` : ""}`,
+      );
+    }
     return response.json() as Promise<T>;
   };
   const identity = createHash("sha256")
@@ -249,12 +269,12 @@ export const createDependencyPr = async (options: {
     .map((line) => `    ${line}`)
     .join(
       "\n",
-    )}\n\nDraft for human review. Registry version availability was checked. CVE claims and migration compatibility require independent review and repository CI. No repository tests were executed by the payment or publication jobs.\n\nSpend and receipts for this repository: ${dashboardLink(repository)}`;
+    )}\n\nFor human review before merging. Registry version availability was checked. CVE claims and migration compatibility require independent review and repository CI. No repository tests were executed by the payment or publication jobs.\n\nSpend and receipts for this repository: ${dashboardLink(repository)}`;
   const pr = await request<{ html_url: string }>("/pulls", "POST", {
     title,
     head: branch,
     base: baseBranch,
-    draft: true,
+    draft: options.draft ?? false,
     body,
   });
   return pr.html_url;

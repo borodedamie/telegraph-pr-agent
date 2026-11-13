@@ -199,8 +199,8 @@ const publisherFixture = (baseBranch = "feature/current") => {
     update: { finding: pythonFinding, files: [{ path: "requirements.txt", content: "requests==2.32.3\n" }] } };
 };
 
-describe("draft dependency PR publication", () => {
-  it("creates a feature branch and draft PR with issue, sources, and receipt", async () => {
+describe("dependency PR publication", () => {
+  it("creates a feature branch and a ready-for-review PR with issue, sources, and receipt", async () => {
     const fixture = publisherFixture();
     expect(await createDependencyPr(fixture)).toBe("https://github.com/team/repo/pull/1");
     const commit = fixture.calls.find((call) => call.path === "/git/commits" && call.method === "POST")!;
@@ -208,7 +208,7 @@ describe("draft dependency PR publication", () => {
     const ref = fixture.calls.find((call) => call.path === "/git/refs")!;
     expect(ref.body.ref).toMatch(/^refs\/heads\/fix\/telegraph-dependency-/);
     const pr = fixture.calls.find((call) => call.path === "/pulls" && call.method === "POST")!;
-    expect(pr.body.draft).toBe(true);
+    expect(pr.body.draft).toBe(false);
     expect(pr.body.base).toBe("feature/current");
     expect(new URL(String(fixture.fetchImpl.mock.calls[0][0])).searchParams.get("base")).toBe("feature/current");
     expect(fixture.calls.find((call) => call.path === "/git/trees")!.body.tree).toEqual([
@@ -219,6 +219,32 @@ describe("draft dependency PR publication", () => {
     expect(pr.body.body).toContain("Spend and receipts for this repository: https://telegraph-pr-agent.vercel.app/?repo=team/repo");
     expect(fixture.calls.some((call) => call.method === "PATCH")).toBe(false);
   });
+  it("opens the PR as a draft when asked", async () => {
+    const fixture = publisherFixture();
+    await createDependencyPr({ ...fixture, draft: true });
+    const pr = fixture.calls.find((call) => call.path === "/pulls" && call.method === "POST")!;
+    expect(pr.body.draft).toBe(true);
+  });
+
+  it("explains a refused PR with the setting to enable, and keeps GitHub's reason", async () => {
+    const fixture = publisherFixture();
+    const answer = fixture.fetchImpl.getMockImplementation()!;
+    fixture.fetchImpl.mockImplementation(async (input, init) =>
+      new URL(String(input)).pathname.endsWith("/pulls") && init?.method === "POST"
+        ? new Response(JSON.stringify({ message: "GitHub Actions is not permitted to create or approve pull requests." }), { status: 403 })
+        : answer(input, init));
+    await expect(createDependencyPr(fixture)).rejects.toThrow(
+      /Allow GitHub Actions to create and approve pull requests.*nothing is bought again.*not permitted to create/s);
+  });
+
+  it("includes GitHub's reason in other API failures", async () => {
+    const fixture = publisherFixture();
+    fixture.fetchImpl.mockImplementationOnce(async () => new Response("rate limited", { status: 429 }));
+    await expect(createDependencyPr(fixture)).rejects.toThrow("GitHub GET /pulls");
+    fixture.fetchImpl.mockImplementationOnce(async () => new Response("rate limited", { status: 429 }));
+    await expect(createDependencyPr(fixture)).rejects.toThrow(/HTTP 429: rate limited/);
+  });
+
   it("creates distinct fix branches for the same update on different target branches", async () => {
     const first = publisherFixture("release/one");
     const second = publisherFixture("release/two");
