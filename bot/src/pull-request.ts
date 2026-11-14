@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { dirname, join, sep } from "node:path";
+import { lockedVersions, readPackageLock } from "./lockfiles.js";
 import { dashboardLink } from "./config.js";
 import type { Purchase } from "./x402.js";
 import type { PreparedUpdate } from "./updates.js";
@@ -92,9 +92,11 @@ export const createDependencyPr = async (options: {
       "Prepared manifest does not match the validated dependency update",
     );
   }
-  const lockPath = join(dirname(finding.source), "package-lock.json")
-    .split(sep)
-    .join("/");
+  const selectedLock =
+    finding.ecosystem === "npm"
+      ? readPackageLock(root, finding.source)
+      : undefined;
+  const lockPath = selectedLock?.path ?? "";
   const allowed =
     finding.ecosystem === "npm" ? [finding.source, lockPath] : [finding.source];
   if (
@@ -104,29 +106,30 @@ export const createDependencyPr = async (options: {
     throw new Error("Prepared changes contain unexpected or missing files");
   }
   if (finding.ecosystem === "npm") {
-    const lock = JSON.parse(
-      files.find((file) => file.path === lockPath)!.content,
-    );
+    const lockContent = files.find((file) => file.path === lockPath)!.content;
+    const expectedManifest = JSON.parse(expected);
     if (
-      ![2, 3].includes(lock.lockfileVersion) ||
-      lock.packages?.[`node_modules/${finding.package}`]?.version !==
-        finding.targetVersion
+      lockedVersions(lockPath, lockContent, expectedManifest)[
+        finding.package
+      ] !== finding.targetVersion
     ) {
       throw new Error(
         "Prepared lockfile does not resolve the recommended version",
       );
     }
-    const expectedManifest = JSON.parse(expected);
-    for (const section of ["dependencies", "devDependencies"]) {
-      if (
-        JSON.stringify(
-          Object.entries(lock.packages?.[""]?.[section] ?? {}).sort(),
-        ) !==
-        JSON.stringify(Object.entries(expectedManifest[section] ?? {}).sort())
-      ) {
-        throw new Error(
-          "Prepared lockfile declarations differ from the manifest",
-        );
+    if (selectedLock!.manager === "npm") {
+      const lock = JSON.parse(lockContent);
+      for (const section of ["dependencies", "devDependencies"]) {
+        if (
+          JSON.stringify(
+            Object.entries(lock.packages?.[""]?.[section] ?? {}).sort(),
+          ) !==
+          JSON.stringify(Object.entries(expectedManifest[section] ?? {}).sort())
+        ) {
+          throw new Error(
+            "Prepared lockfile declarations differ from the manifest",
+          );
+        }
       }
     }
   }

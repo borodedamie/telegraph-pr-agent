@@ -23,7 +23,7 @@ Status is a snapshot, not a promise.
 | Detect a dependency upgrade released after the cutoff | The action resolves supported installed versions and selects newer stable npm/PyPI releases strictly after `MODEL_CUTOFF`, reusing `bot/src/trigger.ts` for npm date checks. Covered by offline tests; hosted operation remains unverified. |
 | Buy an answer on Telegraph with x402; record receipt hash, signal hash, tx hash | Historical integration test only: one pre-event payment succeeded on 28 Oct 2026; the returned content was unrelated to package releases. The current client is not compatible with the 2 Nov live intent contract until it sends the canonical intent id and request shape and is retested. |
 | Append-only purchase ledger on a `ledger` git branch | Shared attempts and per-receipt records are wired into the action. Pre-PR assessments use dependency/version/query identity across commits; rows written by the removed CLI keep their PR/commit keys. Failure and concurrency behavior is covered by offline tests; hosted writes remain unverified. |
-| Purchase dashboard | Works locally: `pnpm install`, then `pnpm --filter @telegraph-pr-agent/web dev`; it reads `ledger.jsonl` from GitHub raw for a public repository. Not deployed to a public URL yet. Shows purchases, cost per merged PR (all-time and for the 1 Nov – 1 Dec event window), PRs proposed, merged, closed and open with the merge rate and sample size, closed-PR spend, cost per useful answer, and escrow credits and refused quotes as non-spend. Add `?repo=owner/name` to view another public repository's ledger. **Download evidence CSV** exports, for 1 Nov – 1 Dec 2026, one line per settled purchase and per attempt reconciled as charged with no answer: date, repo, package and versions, miner and how it was selected (`rank` or `our_choice`), amount, network, receipt hash, signal and transaction links, answer quality and PR outcome. It is built in the browser from the public ledger; the raw `ledger.jsonl` is linked beside it. Hosted merge capture remains unverified. |
+| Purchase dashboard | Works locally: `npm install --prefix web --ignore-scripts`, then `npm run dev --prefix web`; it reads `ledger.jsonl` from GitHub raw for a public repository. Not deployed to a public URL yet. Shows purchases, cost per merged PR (all-time and for the 1 Nov – 1 Dec event window), PRs proposed, merged, closed and open with the merge rate and sample size, closed-PR spend, cost per useful answer, and escrow credits and refused quotes as non-spend. Add `?repo=owner/name` to view another public repository's ledger. **Download evidence CSV** exports, for 1 Nov – 1 Dec 2026, one line per settled purchase and per attempt reconciled as charged with no answer: date, repo, package and versions, miner and how it was selected (`rank` or `our_choice`), amount, network, receipt hash, signal and transaction links, answer quality and PR outcome. It is built in the browser from the public ledger; the raw `ledger.jsonl` is linked beside it. Hosted merge capture remains unverified. |
 | GitHub Action, dependency PRs, migration and merge accounting | Packaged action with cutoff gating, attempt ledger and dependency PR preparation (ready for review; drafts with `draft-prs: true`); validated locally. `telegraph:fix` and migration execution remain planned. Receipt-linked merge accounting is implemented and tested offline. |
 | Package-release Q&A miner | Working, in production at `https://telegraph-pr-miner-n30sk.vercel.app` and registered on Telegraph since 6 Nov as miner 7314 (`package-release-intel`, `QUESTION_ANSWERING_GENERAL`, 0.02 USDC). It answers what changed in an npm package between two versions from npm, GitHub release material, migration guides and OSV, each change with a verbatim quote and its source. A paid direct call through Telegraph was served and settled on 6 Nov; Engine routing sent the same kind of question to another intent (`WEB_SEARCH_GENERAL`), so buyers ask it by id. Benchmark: 67.1% of reviewed breaking changes by word matching, 82.6% with an LLM judge (target 80%), every quote checked. Scored by the intent's general-purpose judge: rank 6 of 17 on 9 Nov (11 of 17 on 8 Nov), measured with our own 30 questions in the pool (1 of 6 contributors), so it is not independent evidence of quality; the benchmark is the quality evidence. Details: [miner/README.md](miner/README.md). |
 
@@ -33,7 +33,7 @@ Status is a snapshot, not a promise.
 
 Each stage is marked current or planned.
 
-1. **Scan** (planned): on a schedule the developer sets in the workflow (the example uses weekly) or a manual run, read the installed version A of each direct dependency from `package-lock.json`, look up the latest stable version B on npm, and query OSV for known advisories in A.
+1. **Scan** (planned): on a schedule the developer sets in the workflow (the example uses weekly) or a manual run, read the installed version A of each direct JavaScript dependency from its supported lockfile, look up the latest stable version B on npm, and query OSV for known advisories in A.
 2. **Learn** (current, partly): when B is newer than A *and* B was released after the configured cutoff, buy one question-answering request on Telegraph on the live canonical intent (`QUESTION_ANSWERING_GENERAL` on 2 Nov). The current client calls a chosen miner directly; whether the Action uses Engine routing instead is still open ([SPEC §2.4](docs/SPEC.md)). The quote comes from the 402 challenge and can vary; 0.01 USDC is an observed example, not a price.
 3. **Report** (planned): open one draft PR per package and target version, updated on later runs, never duplicated. It lists why to upgrade, known advisories, which changed symbols the repository uses (found by a local search, not by the miner), what to change, spend so far and an estimated fix cost. If the answer is `not_found`, the purchase and receipt are kept, the PR is report-only, and no migration is invented.
 4. **Fix** (planned, after a maintainer with write access adds `telegraph:fix`): generate a patch with the purchased answer as input. Paid `CODE_GENERATION`, `CODE_PATCH_VERIFY` and `REGRESSION_VERIFY` calls are conditional on a provider passing our quality tests; until then the installer's own LLM writes the patch. The repository's install, typecheck and tests run in a job with no secrets. Nothing is pushed unless they pass.
@@ -75,10 +75,11 @@ No public fixture repository for reviewers exists yet ([TEAM.md](docs/TEAM.md)).
 Offline checks (no network, no payment), from the repository root:
 
 ```bash
-pnpm install
-pnpm --filter ./bot test
+npm ci --prefix bot --ignore-scripts
+npm test --prefix bot
+npm install --prefix web --ignore-scripts
 npm test --prefix web
-pnpm --filter @telegraph-pr-agent/web dev    # dashboard; add ?repo=owner/name for another public repository
+npm run dev --prefix web    # dashboard; add ?repo=owner/name for another public repository
 ```
 
 To make a purchase, install the workflow on a public repository: see [Enable the workflow](#enable-the-workflow). It spends testnet USDC from the wallet you configure and writes to that repository's `ledger` branch.
@@ -149,9 +150,10 @@ Runs on testnet: payments are Ethereum Sepolia test USDC. Nothing here spends re
 **1. Check your repository fits.**
 
 - Public repository. Private ones fail closed before any purchase.
-- npm projects with a standalone `package-lock.json` (lockfile v2 or v3), and/or Python
-  exact pins (`name==1.2.3`) in `requirements*.txt` or `requirements/*.txt`. pnpm, yarn
-  and npm workspaces are skipped, with a warning per skipped package.
+- Standalone projects with npm `package-lock.json` v2/v3, pnpm `pnpm-lock.yaml` v6/v9,
+  Yarn Classic/modern `yarn.lock`, or Bun text `bun.lock`; and/or Python exact pins
+  (`name==1.2.3`) in `requirements*.txt` or `requirements/*.txt`. Workspaces remain
+  excluded. Install the matching package manager on the action runner first.
 
 **2. Repository settings (the step most often missed).** Settings → Actions → General →
 Workflow permissions: tick **Allow GitHub Actions to create and approve pull requests** and
@@ -332,20 +334,22 @@ Invalid/prose answers fail; no findings means no updates or PRs.
 
 Recommended targets are checked against npm/PyPI. Existing dependency files are
 updated on `fix/telegraph-dependency-*` branches, with a PR per finding back
-to the checked-out branch. Standalone public npm projects get a regenerated
-package-lock v2/v3 alongside package.json. Plain Python pins retain extras, markers
+to the checked-out branch. Standalone JavaScript projects get a regenerated lockfile
+alongside package.json using their matching npm, pnpm, Yarn or Bun executable. Plain Python pins retain extras, markers
 and comments. Matching PRs are reused, and existing branches are never force-updated.
 No assessment or prepared-update files are added to the repository.
 
 All orchestration now runs in one job with wallet and GitHub credentials. It never
-executes repository scripts or tests. npm lock generation runs in a temporary
-directory with `--package-lock-only --ignore-scripts`, a minimal environment without
-inherited wallet/GitHub credentials, and no repository npm configuration. Human
+executes repository scripts or tests. Lock generation runs in a temporary directory
+with scripts disabled, no inherited wallet/GitHub credentials, and no repository
+package-manager configuration. pnpm hooks are disabled as well. npm, pnpm and Bun
+use lockfile-only mode; modern Yarn uses update-lockfile mode. Yarn Classic performs
+an install with scripts disabled. Human
 review and merge remain required; this does not provide separate-runner isolation.
 
 `bot/src/scan.ts` detects the repository from the current working directory
 using Git; no workspace environment variable is required. It reads npm dependencies
-and devDependencies from standalone npm package-lock v2/v3 entries, and
+and devDependencies from the supported standalone npm, pnpm, Yarn and Bun lockfiles, and
 Python exact pins from requirements.txt, requirements-*.txt and requirements/*.txt.
 The scanner performs no registry requests. It checks npm resolved versions against
 manifest ranges using SemVer and validates Python pins using PEP 440; invalid or
@@ -405,8 +409,8 @@ action-defined defaults; the wallet remains a secret. Outputs are `has-findings`
 validation fails), and `status`. Repository visibility is checked before assessment;
 private or unknown visibility fails closed. The `pull-requests` output retains earlier
 URLs if a later publication fails. The agent does not update its own dependencies:
-the bot lives in the pnpm workspace, whose lockfile the updater does not support, so
-its dependency upgrades are made by hand.
+the bot remains a workspace member, and automatic workspace updates are excluded,
+so its dependency upgrades are made by hand.
 
 ### Workflow checks
 
@@ -430,10 +434,22 @@ execute repository test scripts. No chain or USDC repository variables are neede
 Automated tests mock Telegraph, registry and GitHub responses. They cover findings,
 manifest updates, lock-generation orchestration, offline mixed-language scanning,
 branch/PR creation and duplicate suppression. Typechecks and the action bundle build
-run locally. No live payment, GitHub PR or hosted workflow execution is claimed.
+run locally. Unpaid live updater/publisher tests produced four draft fixture PRs:
+[npm #35](https://github.com/borodedamie/telegraph-pr-agent/pull/35),
+[pnpm #36](https://github.com/borodedamie/telegraph-pr-agent/pull/36),
+[Yarn #37](https://github.com/borodedamie/telegraph-pr-agent/pull/37), and
+[Python #38](https://github.com/borodedamie/telegraph-pr-agent/pull/38).
+Their changed paths and published contents were verified against prepared updates;
+all target an isolated `test/` branch. No Telegraph assessment, payment or purchase
+ledger row was produced by these component tests. They do not verify the full paid
+bot flow or hosted workflow. Details: [dated test report](docs/telegraph/four-package-pr-tests-2026-11-14.json).
 
-PR preparation currently rejects pnpm/workspace updates, non-public npm registry
+PR preparation rejects workspace updates, conflicting lockfiles, non-public registry
 sources and hashed/continued Python pins rather than publish stale lock data.
+Binary `bun.lockb` needs migration to text `bun.lock` first. Custom pnpm settings,
+overrides and resolutions remain unsupported for the additional managers. A declared
+pnpm/Yarn/Bun `packageManager` release must match the installed executable; otherwise
+preparation fails. Regenerated lockfiles must resolve the exact recommended target.
 Python ranges, includes and pyproject/Pipfile/setup manifests need exported exact pins.
 Current npm prereleases and valid PEP 440 Python pins (including `==1`) are
 accepted and ordered using their ecosystem rules. Recommended targets remain

@@ -1,0 +1,100 @@
+{
+  "startedAt": "2026-11-14T09:30:58.190Z",
+  "repository": "borodedamie/telegraph-pr-agent",
+  "baseBranch": "test/package-managers-live-1794646653024",
+  "testType": "unpaid-registry-updater-publisher-integration",
+  "assessmentRun": false,
+  "paymentSigned": false,
+  "spentUsdc": 0,
+  "results": [
+    {
+      "kind": "npm",
+      "package": "zod",
+      "currentVersion": "3.25.76",
+      "targetVersion": "4.6.7",
+      "url": "https://github.com/borodedamie/telegraph-pr-agent/pull/35",
+      "number": 35,
+      "draft": true,
+      "baseBranch": "test/package-managers-live-1794646653024",
+      "headBranch": "fix/telegraph-dependency-0322bec344e66f43ef137506",
+      "changedFiles": [
+        "01-npm/package.json",
+        "01-npm/package-lock.json"
+      ],
+      "publishedContentVerified": true
+    },
+    {
+      "kind": "pnpm",
+      "package": "zod",
+      "currentVersion": "3.25.76",
+      "targetVersion": "4.6.7",
+      "url": "https://github.com/borodedamie/telegraph-pr-agent/pull/36",
+      "number": 36,
+      "draft": true,
+      "baseBranch": "test/package-managers-live-1794646653024",
+      "headBranch": "fix/telegraph-dependency-a2bdc40f2b6860edc34c3b21",
+      "changedFiles": [
+        "02-pnpm/package.json",
+        "02-pnpm/pnpm-lock.yaml"
+      ],
+      "publishedContentVerified": true
+    },
+    {
+      "kind": "yarn",
+      "package": "zod",
+      "currentVersion": "3.25.76",
+      "targetVersion": "4.6.7",
+      "url": "https://github.com/borodedamie/telegraph-pr-agent/pull/37",
+      "number": 37,
+      "draft": true,
+      "baseBranch": "test/package-managers-live-1794646653024",
+      "headBranch": "fix/telegraph-dependency-358fe18cee7f3d1c01dc19fd",
+      "changedFiles": [
+        "03-yarn/package.json",
+        "03-yarn/yarn.lock"
+      ],
+      "publishedContentVerified": true
+    },
+    {
+      "kind": "python",
+      "package": "requests",
+      "currentVersion": "2.31.0",
+      "targetVersion": "2.34.2",
+      "url": "https://github.com/borodedamie/telegraph-pr-agent/pull/38",
+      "number": 38,
+      "draft": true,
+      "baseBranch": "test/package-managers-live-1794646653024",
+      "headBranch": "fix/telegraph-dependency-652313764d532537e2ec8cc0",
+      "changedFiles": [
+        "04-python/requirements.txt"
+      ],
+      "publishedContentVerified": true
+    }
+  ],
+  "errors": [],
+  "baseSha": "73f6517e2ef1eee15dc435e1dbfe915ce721e4b0",
+  "fixtureBranchPublished": true,
+  "previousErrors": [
+    {
+      "kind": "npm",
+      "error": "The expression evaluated to a falsy value:\n\n  ok(url2.pathname.startsWith(`/repos/${repository}/`))\n"
+    },
+    {
+      "kind": "pnpm",
+      "error": "The expression evaluated to a falsy value:\n\n  ok(url2.pathname.startsWith(`/repos/${repository}/`))\n"
+    },
+    {
+      "kind": "yarn",
+      "error": "The expression evaluated to a falsy value:\n\n  ok(url2.pathname.startsWith(`/repos/${repository}/`))\n"
+    },
+    {
+      "kind": "python",
+      "error": "The expression evaluated to a falsy value:\n\n  ok(url2.pathname.startsWith(`/repos/${repository}/`))\n"
+    },
+    {
+      "stage": "setup-or-final-check",
+      "error": "Only 0/4 sample PRs succeeded\n\n0 !== 4\n"
+    }
+  ],
+  "completedAt": "2026-11-14T09:31:39.058Z"
+}

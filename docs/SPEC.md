@@ -62,8 +62,14 @@ isolation remains a production requirement below. Public node/spending settings
 now default in action metadata (devnode URL, 0.10 USDC per call, 2 USDC per run,
 and overridable chain/token allowlist defaults backed by the dated unpaid snapshot);
 the wallet key remains secret-backed and is never bundled. Supported automatic edits are standalone public npm
-package-lock v2/v3 projects and plain Python `==` requirements; pnpm/workspace lock
-updates and hashed/continued Python pins are skipped before assessment. Repository visibility is checked
+package-lock v2/v3, pnpm-lock.yaml v6/v9, Yarn Classic/modern yarn.lock and Bun
+text bun.lock projects, plus plain Python `==` requirements. The lockfile selects
+the matching installed manager for regeneration in a credential-free temporary
+directory with lifecycle scripts and pnpm hooks disabled. Workspaces, conflicting
+lockfiles, binary bun.lockb, and custom pnpm/override/resolution configuration for
+the additional managers remain unsupported, as do hashed/continued Python pins.
+Regeneration must resolve the exact recommended version. pnpm/Yarn/Bun executables
+must match any declared packageManager release. Repository visibility is checked
 before assessment, and successful PR URLs survive later publication failures.
 Action dependency updates include the rebuilt runtime bundle, checked for
 reproducibility without executing repository scripts. npm resolved versions must satisfy their manifest ranges; invalid npm or Python
@@ -167,10 +173,20 @@ model identity and source. Miner `7314` is the default; an explicit miner `0` sk
 | `peerDependencies` | Exclude |
 | Transitive dependencies | Exclude |
 | npm workspaces | Exclude initially |
-| npm lockfile v2/v3 | Support and test |
+| npm lockfile v2/v3 | Support and test; regenerate with npm |
+| pnpm-lock.yaml v6/v9 | Support and test; regenerate with pnpm |
+| Yarn Classic/modern yarn.lock | Support and test; regenerate with matching Yarn |
+| Bun text bun.lock | Support and test; regenerate with Bun |
+| Binary bun.lockb / conflicting lockfiles | Fail closed; migrate Bun binary locks first |
 | Missing or unsupported lockfile | Fail closed with a clear diagnostic |
 
 Never scan incomplete dependency information silently.
+
+Unpaid live scanner/updater/publisher integration tests on 14 Nov 2026 created
+four draft PRs against an isolated `test/` fixture branch (npm #35, pnpm #36,
+Yarn #37, Python #38). Published file paths and contents were checked. These tests
+made no Telegraph assessment or payment and do not establish the complete paid
+workflow. Evidence: [four-package PR test report](telegraph/four-package-pr-tests-2026-11-14.json).
 
 ### 2.4 Telegraph purchase and provider selection
 

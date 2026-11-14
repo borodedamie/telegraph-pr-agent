@@ -1,4 +1,9 @@
-import { readNpmLock, readRepositoryFile, updateManifest } from "./updates.js";
+import { updateManifest } from "./updates.js";
+import {
+  lockedVersions,
+  readPackageLock,
+  readRepositoryFile,
+} from "./lockfiles.js";
 import semver from "semver";
 import * as pep440 from "@renovatebot/pep440";
 import { execFileSync } from "node:child_process";
@@ -97,11 +102,10 @@ export const scanRepository = async (
         ...asObject(manifest.dependencies ?? {}),
         ...asObject(manifest.devDependencies ?? {}),
       };
-      let packages: JsonObject;
+      let versions: Record<string, string>;
       try {
-        packages = asObject(
-          JSON.parse(readNpmLock(root, source)).packages ?? {},
-        );
+        const lock = readPackageLock(root, source);
+        versions = lockedVersions(lock.path, lock.content, manifest);
       } catch (error) {
         for (const name of Object.keys(entries))
           skipped.push({
@@ -124,16 +128,13 @@ export const scanRepository = async (
           });
           continue;
         }
-        const locked = packages[`node_modules/${name}`];
-        const current =
-          locked !== undefined ? asObject(locked).version : undefined;
+        const current = versions[name];
         // A manifest range is never evidence of an installed version.
         if (typeof current !== "string" || semver.valid(current) === null) {
           skipped.push({
             project,
             package: name,
-            reason:
-              "Current version unavailable in the supported package-lock.json.",
+            reason: "Current version unavailable in the selected lockfile.",
           });
           continue;
         }
