@@ -1,49 +1,20 @@
 import { execFileSync } from "node:child_process";
-import {
-  existsSync,
-  lstatSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { basename, join } from "node:path";
+import { parseSyml } from "@yarnpkg/parsers";
 import {
-  dirname,
-  isAbsolute,
-  join,
-  matchesGlob,
-  relative,
-  sep,
-} from "node:path";
+  lockedVersions,
+  readPackageLock,
+  readRepositoryFile,
+  type PackageLock,
+} from "./lockfiles.js";
 import type { Finding } from "./assessment.js";
+
+export { readRepositoryFile } from "./lockfiles.js";
 
 export type ChangedFile = { path: string; content: string };
 export type PreparedUpdate = { finding: Finding; files: ChangedFile[] };
-
-export const readRepositoryFile = (root: string, source: string): string => {
-  if (
-    isAbsolute(source) ||
-    source.split(/[\\/]/).includes("..") ||
-    source.includes("\\")
-  ) {
-    throw new Error(`Unsafe dependency path: ${source}`);
-  }
-  const path = join(root, source);
-  const location = relative(realpathSync(root), realpathSync(path));
-  if (
-    !lstatSync(path).isFile() ||
-    location === ".." ||
-    location.startsWith(`..${sep}`) ||
-    isAbsolute(location)
-  ) {
-    throw new Error(
-      `Dependency file is outside the repository or is not a regular file: ${source}`,
-    );
-  }
-  return readFileSync(path, "utf8");
-};
 
 export const updateManifest = (
   content: string,
@@ -98,117 +69,90 @@ export const updateManifest = (
   return updated;
 };
 
-export const readNpmLock = (root: string, source: string): string => {
-  const project = dirname(source);
-  const manifest = JSON.parse(readRepositoryFile(root, source));
-  const lockPath = join(project, "package-lock.json").split(sep).join("/");
-  // shortcut: workspace and pnpm lock updates need their own resolver; never publish stale locks.
-  if (manifest.workspaces || !existsSync(join(root, lockPath))) {
+const runPackageManager = (directory: string, lock: PackageLock): void => {
+  const env = {
+    PATH: process.env.PATH,
+    HOME: directory,
+    TMPDIR: directory,
+    XDG_CONFIG_HOME: directory,
+    XDG_CACHE_HOME: join(directory, ".cache"),
+    CI: "true",
+    COREPACK_ENABLE_PROJECT_SPEC: "0",
+    COREPACK_ENABLE_AUTO_PIN: "0",
+    npm_config_manage_package_manager_versions: "false",
+    npm_config_userconfig: join(directory, "user.npmrc"),
+    npm_config_globalconfig: join(directory, "global.npmrc"),
+    YARN_IGNORE_PATH: "1",
+    YARN_ENABLE_SCRIPTS: "false",
+    YARN_ENABLE_IMMUTABLE_INSTALLS: "false",
+    YARN_ENABLE_GLOBAL_CACHE: "false",
+    YARN_NPM_REGISTRY_SERVER: "https://registry.npmjs.org",
+    YARN_RC_FILENAME: ".telegraph-yarnrc.yml",
+  };
+  const options = {
+    cwd: directory,
+    env,
+    timeout: 120_000,
+    stdio: "pipe" as const,
+  };
+  const installed = execFileSync(lock.manager, ["--version"], {
+    ...options,
+    encoding: "utf8",
+  }).trim();
+  if (!/^\d+\.\d+\.\d+$/.test(installed))
+    throw new Error(`Cannot identify installed ${lock.manager} version`);
+  const manifest = JSON.parse(
+    readFileSync(join(directory, "package.json"), "utf8"),
+  );
+  if (
+    manifest.packageManager &&
+    manifest.packageManager.split("@")[1].split("+")[0] !== installed
+  ) {
     throw new Error(
-      `Automatic npm updates require a standalone package-lock.json: ${source}`,
+      `Install ${manifest.packageManager} before preparing this update; found ${lock.manager}@${installed}`,
     );
   }
-  let ancestor = join(root, project);
-  while (ancestor.startsWith(`${root}${sep}`) || ancestor === root) {
-    const workspace = join(ancestor, "pnpm-workspace.yaml");
-    if (existsSync(workspace)) {
-      const configuration = readRepositoryFile(
-        root,
-        relative(root, workspace).split(sep).join("/"),
-      );
-      const block = configuration.match(
-        /^packages:[ \t]*\r?\n((?:[ \t]+[^\n]*(?:\n|$)|#[^\n]*(?:\n|$)|\r?\n)*)/m,
-      )?.[1];
-      const patterns: string[] = [];
-      for (const line of (block ?? "")
-        .split(/\r?\n/)
-        .filter((line) => line.trim() && !line.trim().startsWith("#"))) {
-        const pattern = line.match(
-          /^\s+-\s+(['"]?)([A-Za-z0-9_./!*?{}@()+,-]+)\1\s*(?:#.*)?$/,
-        )?.[2];
-        if (!pattern)
-          throw new Error(
-            "Unsupported pnpm workspace configuration; skip automatic npm updates",
-          );
-        patterns.push(pattern);
-      }
-      // shortcut: parse block-style pnpm package globs only; fail closed on other YAML forms.
-      if (!patterns.some((pattern) => !pattern.startsWith("!")))
-        throw new Error(
-          "Unsupported pnpm workspace configuration; skip automatic npm updates",
-        );
-      const member = relative(ancestor, join(root, project))
-        .split(sep)
-        .join("/");
-      if (
-        !member ||
-        (patterns.some(
-          (pattern) => !pattern.startsWith("!") && matchesGlob(member, pattern),
-        ) &&
-          !patterns.some(
-            (pattern) =>
-              pattern.startsWith("!") && matchesGlob(member, pattern.slice(1)),
-          ))
-      ) {
-        throw new Error(
-          `Automatic npm updates do not support pnpm workspace members: ${source}`,
-        );
-      }
-    }
-    const ancestorManifest = join(ancestor, "package.json");
-    // Conservatively reject descendants of workspace roots, including members with local locks.
+  let args: string[];
+  if (lock.manager === "pnpm") {
+    const version = Number(parseSyml(lock.content).lockfileVersion);
+    const major = Number(installed.split(".")[0]);
     if (
-      existsSync(ancestorManifest) &&
-      JSON.parse(
-        readRepositoryFile(
-          root,
-          relative(root, ancestorManifest).split(sep).join("/"),
-        ),
-      ).workspaces
+      (version === 6 && major !== 8) ||
+      (version === 9 && ![9, 10, 11].includes(major))
     ) {
-      throw new Error(
-        `Automatic npm updates do not support workspace members: ${source}`,
-      );
+      throw new Error("Installed pnpm does not match the lockfile format");
     }
-    if (ancestor === root) break;
-    ancestor = dirname(ancestor);
+    args = [
+      "install",
+      "--lockfile-only",
+      "--ignore-scripts",
+      "--ignore-pnpmfile",
+      "--no-frozen-lockfile",
+      "--config.manage-package-manager-versions=false",
+      "--registry=https://registry.npmjs.org",
+    ];
+  } else if (lock.manager === "yarn") {
+    const modern = Object.hasOwn(parseSyml(lock.content), "__metadata");
+    const installedModern = Number(installed.split(".")[0]) >= 2;
+    if (modern !== installedModern)
+      throw new Error("Installed Yarn does not match the lockfile format");
+    args = modern
+      ? ["install", "--mode=update-lockfile"]
+      : [
+          "install",
+          "--ignore-scripts",
+          "--non-interactive",
+          "--registry=https://registry.npmjs.org",
+        ];
+  } else {
+    args = [
+      "install",
+      "--lockfile-only",
+      "--ignore-scripts",
+      "--registry=https://registry.npmjs.org",
+    ];
   }
-  const lockContent = readRepositoryFile(root, lockPath);
-  const lock = JSON.parse(lockContent);
-  if (![2, 3].includes(lock.lockfileVersion))
-    throw new Error("Only npm lockfile v2/v3 updates are supported");
-  for (const entry of Object.values(lock.packages ?? {}) as {
-    resolved?: string;
-    link?: boolean;
-  }[]) {
-    if (
-      entry.link ||
-      (entry.resolved &&
-        !entry.resolved.startsWith("https://registry.npmjs.org/"))
-    ) {
-      throw new Error(
-        "Lock regeneration only supports public npm registry packages",
-      );
-    }
-  }
-  for (const section of [
-    "dependencies",
-    "devDependencies",
-    "optionalDependencies",
-  ]) {
-    if (
-      Object.values(manifest[section] ?? {}).some(
-        (value) =>
-          typeof value !== "string" ||
-          /^(?:file:|link:|git|https?:|npm:|workspace:)/.test(value),
-      )
-    ) {
-      throw new Error(
-        "Lock regeneration does not support local, URL, Git or alias dependencies",
-      );
-    }
-  }
-  return lockContent;
+  execFileSync(lock.manager, args, options);
 };
 
 export const prepareUpdate = async (
@@ -280,44 +224,62 @@ export const prepareUpdate = async (
   const updated = updateManifest(content, finding);
   const files = [{ path: finding.source, content: updated }];
   if (finding.ecosystem === "npm") {
-    const lockPath = join(dirname(finding.source), "package-lock.json")
-      .split(sep)
-      .join("/");
-    const lockContent = readNpmLock(root, finding.source);
+    const lock = readPackageLock(root, finding.source);
+    const lockPath = lock.path;
+    const lockContent = lock.content;
+    const lockName = basename(lockPath);
     const directory = mkdtempSync(join(tmpdir(), "telegraph-lock-"));
     try {
       const pinnedManifest = JSON.parse(updated);
       for (const section of ["dependencies", "devDependencies"]) {
-        if (pinnedManifest[section]?.[finding.package])
+        if (
+          lock.manager === "npm" &&
+          pinnedManifest[section]?.[finding.package]
+        )
           pinnedManifest[section][finding.package] = finding.targetVersion;
       }
       writeFileSync(
         join(directory, "package.json"),
         JSON.stringify(pinnedManifest),
       );
-      writeFileSync(join(directory, "package-lock.json"), lockContent);
-      runNpm(directory);
-      const regenerated = JSON.parse(
-        readFileSync(join(directory, "package-lock.json"), "utf8"),
-      );
-      if (
-        regenerated.packages?.[`node_modules/${finding.package}`]?.version !==
-        finding.targetVersion
-      ) {
-        throw new Error(
-          "Regenerated lockfile did not resolve the recommended version",
-        );
-      }
-      for (const section of ["dependencies", "devDependencies"]) {
-        if (regenerated.packages[""]?.[section]?.[finding.package]) {
-          regenerated.packages[""][section][finding.package] =
-            JSON.parse(updated)[section][finding.package];
+      writeFileSync(join(directory, lockName), lockContent);
+      if (lock.manager !== "npm") {
+        runPackageManager(directory, lock);
+        const regenerated = readFileSync(join(directory, lockName), "utf8");
+        if (
+          lockedVersions(lockPath, regenerated, JSON.parse(updated))[
+            finding.package
+          ] !== finding.targetVersion
+        ) {
+          throw new Error(
+            "Regenerated lockfile did not resolve the recommended version",
+          );
         }
+        files.push({ path: lockPath, content: regenerated });
+      } else {
+        runNpm(directory);
+        const regenerated = JSON.parse(
+          readFileSync(join(directory, "package-lock.json"), "utf8"),
+        );
+        if (
+          regenerated.packages?.[`node_modules/${finding.package}`]?.version !==
+          finding.targetVersion
+        ) {
+          throw new Error(
+            "Regenerated lockfile did not resolve the recommended version",
+          );
+        }
+        for (const section of ["dependencies", "devDependencies"]) {
+          if (regenerated.packages[""]?.[section]?.[finding.package]) {
+            regenerated.packages[""][section][finding.package] =
+              JSON.parse(updated)[section][finding.package];
+          }
+        }
+        files.push({
+          path: lockPath,
+          content: `${JSON.stringify(regenerated, null, 2)}\n`,
+        });
       }
-      files.push({
-        path: lockPath,
-        content: `${JSON.stringify(regenerated, null, 2)}\n`,
-      });
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
