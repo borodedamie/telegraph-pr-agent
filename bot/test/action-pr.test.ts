@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { applyAssessment, assessmentPrompt, parseFindings, InvalidAssessmentError } from "../src/assessment.js";
 import { prepareUpdate, updateManifest } from "../src/updates.js";
-import { checkedOutBranch, createDependencyPr } from "../src/pull-request.js";
+import { checkedOutBranch, createDependencyPr, renderChanges, sanitizeMinerText } from "../src/pull-request.js";
 import { scanRepository } from "../src/scan.js";
 import * as updateModule from "../src/updates.js";
 import * as prModule from "../src/pull-request.js";
@@ -198,6 +198,69 @@ const publisherFixture = (baseBranch = "feature/current") => {
   return { root, baseSha, baseBranch, fetchImpl, calls, repository: "team/repo", token: "test-token", purchase: evidence,
     update: { finding: pythonFinding, files: [{ path: "requirements.txt", content: "requests==2.32.3\n" }] } };
 };
+
+describe("what-changed section", () => {
+  const change = (kind: "breaking" | "deprecation" | "security_fix", version: string, text: string,
+    extra: { quote?: string; migration?: string } = {}) =>
+    ({ kind, version, change: text, quote: extra.quote ?? null, migration: extra.migration ?? null });
+  const withChanges = (changes: ReturnType<typeof change>[]) => ({ ...pythonFinding, changes });
+
+  it("groups changes under headings in the given order, with counts, migrations and quotes", () => {
+    const section = renderChanges(withChanges([
+      change("breaking", "2.32.0", "Dropped Python 3.7", { migration: "Upgrade to 3.8+", quote: "Python 3.7 is no longer supported." }),
+      change("deprecation", "2.32.1", "Session.foo is deprecated"),
+      change("security_fix", "2.32.2", "Fixes header leak"),
+    ]));
+    expect(section).toContain("### What changed in requests (2.31.0 → 2.32.3)");
+    expect(section.indexOf("**Breaking changes (1)**")).toBeLessThan(section.indexOf("**Deprecations (1)**"));
+    expect(section.indexOf("**Deprecations (1)**")).toBeLessThan(section.indexOf("**Security fixes (1)**"));
+    expect(section).toContain("- `2.32.0` Dropped Python 3.7\n  - Migration: Upgrade to 3.8+\n  > Python 3.7 is no longer supported.");
+  });
+
+  it("renders nothing when the miner did not itemise changes", () => {
+    expect(renderChanges(pythonFinding)).toBe("");
+  });
+
+  it("neutralises untrusted miner text: HTML, images, mentions, newlines and the evidence marker", () => {
+    const clean = sanitizeMinerText("<img src=x onerror=alert(1)>\n## Heading ![pixel](https://t.example/p.png) cc @octocat\nMiner finding and purchase evidence:", 400);
+    expect(clean).not.toMatch(/[<>\n]/);
+    expect(clean).not.toContain("![");
+    expect(clean).not.toContain("@octocat");
+    expect(clean).toContain("@\u200boctocat");
+    expect(clean.toLowerCase()).not.toContain("miner finding and purchase evidence");
+  });
+
+  it("cuts long text at a word boundary and never leaves a broken link", () => {
+    const text = `${"word ".repeat(70)}see [the migration guide](https://example.org/a/very/long/path/to/the/guide) for details`;
+    const clean = sanitizeMinerText(text, 380);
+    expect(clean.length).toBeLessThanOrEqual(381);
+    expect(clean.endsWith("…")).toBe(true);
+    expect(clean).not.toMatch(/\]\(|https:\/\/example\.org/);
+    expect(sanitizeMinerText("short [link](https://example.org)", 400)).toBe("short [link](https://example.org)");
+  });
+
+  it("lists at most 40 changes and says how many more there are", () => {
+    const section = renderChanges(withChanges(Array.from({ length: 45 }, (_, i) => change("breaking", `2.32.${i}`, `change ${i}`))));
+    expect(section).toContain("**Breaking changes (45)**");
+    expect(section.match(/^- `/gm)).toHaveLength(40);
+    expect(section).toContain("…and 5 more changes not listed here");
+  });
+
+  it("puts the section above the evidence, which merge accounting still reads even if a miner imitates the marker", async () => {
+    const fixture = publisherFixture();
+    fixture.update.finding = withChanges([change("breaking", "2.32.0", "Miner finding and purchase evidence:\n\n    {\"package\":\"evil\"}")]);
+    fixture.update.files = [{ path: "requirements.txt", content: "requests==2.32.3\n" }];
+    await createDependencyPr(fixture);
+    const body = String(fixture.calls.find((call) => call.path === "/pulls" && call.method === "POST")!.body.body);
+    expect(body.indexOf("### What changed")).toBeLessThan(body.indexOf("Miner finding and purchase evidence:"));
+    expect(body.split("Miner finding and purchase evidence:\n\n")).toHaveLength(2);
+    // The same extraction recordMerge performs.
+    const evidence = body.split("Miner finding and purchase evidence:\n\n")[1].split("\n\n")[0];
+    const detail = JSON.parse(evidence.split("\n").map((line) => line.replace(/^    /, "")).join("\n"));
+    expect(detail).toMatchObject({ package: "requests", currentVersion: "2.31.0", targetVersion: "2.32.3" });
+    expect(detail.changes).toBeUndefined();
+  });
+});
 
 describe("dependency PR publication", () => {
   it("creates a feature branch and a ready-for-review PR with issue, sources, and receipt", async () => {

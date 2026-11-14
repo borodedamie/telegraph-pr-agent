@@ -23,6 +23,12 @@ export const cutoffCandidates = async (
     console.warn(
       `${dependency.package}: ${error instanceof Error ? error.message : String(error)}`,
     ),
+  /** A newer stable release exists but is not past the cutoff (or is dated in the future): no purchase. */
+  onSkip: (
+    dependency: Dependency,
+    targetVersion: string,
+    releaseDate: string | null,
+  ) => void = () => {},
 ): Promise<Dependency[]> => {
   if (!Number.isFinite(cutoff.getTime()))
     throw new Error("MODEL_CUTOFF must be a valid date");
@@ -84,6 +90,15 @@ export const cutoffCandidates = async (
         releaseDate =
           triggers.find((t) => t.status === "past-cutoff")?.releaseDate ??
           undefined;
+        if (!releaseDate) {
+          const published = asObject(metadata.time ?? {})[targetVersion];
+          onSkip(
+            dependency,
+            targetVersion,
+            typeof published === "string" ? published : null,
+          );
+          continue;
+        }
       } else {
         const releases = asObject(metadata.releases ?? {});
         targetVersion = Object.keys(releases)
@@ -119,6 +134,8 @@ export const cutoffCandidates = async (
         Date.parse(releaseDate) <= Date.now()
       ) {
         candidates.push({ ...dependency, targetVersion, releaseDate });
+      } else {
+        onSkip(dependency, targetVersion, releaseDate ?? null);
       }
     } catch (error) {
       report(dependency, error);
