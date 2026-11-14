@@ -182,6 +182,10 @@ model identity and source. Miner `7314` is the default; an explicit miner `0` sk
 
 Never scan incomplete dependency information silently.
 
+Local bot dependencies are installed with npm. The workspace `pnpm-lock.yaml`
+keeps the same resolved parser dependencies as `bot/package-lock.json` for the
+existing frozen-lockfile CI/deployment installation; no workflow settings change.
+
 Unpaid live scanner/updater/publisher integration tests on 14 Nov 2026 created
 four draft PRs against an isolated `test/` fixture branch (npm #35, pnpm #36,
 Yarn #37, Python #38). Published file paths and contents were checked. These tests

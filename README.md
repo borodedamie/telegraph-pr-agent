@@ -415,10 +415,13 @@ so its dependency upgrades are made by hand.
 ### Workflow checks
 
 `.github/workflows/test.yml` runs on pushes, pull requests and manual dispatch.
-It installs action dependencies from their npm lockfile and shared bot dependencies
-from the workspace pnpm lockfile without lifecycle scripts, typechecks the bot/tests,
-builds the action, checks that the checked-in bundle matches its source, and runs
+It installs bot dependencies from the workspace pnpm lockfile without lifecycle
+scripts, typechecks the bot/tests, builds the action, checks that the checked-in
+bundle matches its source, and runs
 the offline bot/action test suite. The standalone `cli/` package has been removed. It receives no wallet or write credentials.
+Local bot installations use npm and `bot/package-lock.json`; dependency changes
+keep that npm lockfile and the workspace pnpm lockfile synchronized so the existing
+CI and deployment configuration can stay unchanged.
 
 `.github/workflows/dependency-updates.yml` runs on dependency-file pushes to
 `main` and manual dispatch, excluding generated fix branches and branch deletions. It checks out
