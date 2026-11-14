@@ -1,0 +1,8 @@
+{
+  "name": "live-pnpm-fixture",
+  "private": true,
+  "packageManager": "pnpm@10.18.3",
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}
