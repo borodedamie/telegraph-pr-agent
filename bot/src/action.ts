@@ -143,6 +143,8 @@ const run = async (): Promise<void> => {
       core.warning(`${skipped.project}: ${skipped.package}: ${skipped.reason}`);
     core.setOutput("pull-requests", "[]");
     let registryFailures = 0;
+    let skippedBeforeCutoff = 0;
+    const cutoffDay = cutoff.toISOString().slice(0, 10);
     const candidates = await cutoffCandidates(
       scan.dependencies,
       cutoff,
@@ -153,7 +155,17 @@ const run = async (): Promise<void> => {
           `${dependency.package}: ${error instanceof Error ? error.message : String(error)}`,
         );
       },
+      (dependency, targetVersion, releaseDate) => {
+        skippedBeforeCutoff++;
+        core.info(
+          `${dependency.package} ${dependency.currentVersion} → ${targetVersion}: released ${releaseDate?.slice(0, 10) ?? "on an unknown date"}, not after the model cutoff ${cutoffDay}; skipped, no purchase`,
+        );
+      },
     );
+    if (skippedBeforeCutoff)
+      core.notice(
+        `${skippedBeforeCutoff} newer release${skippedBeforeCutoff === 1 ? "" : "s"} not after the model cutoff ${cutoffDay}: skipped without purchase (listed in the log)`,
+      );
     const urls = new Set<string>();
     const failures: string[] = [];
     core.setOutput("has-findings", "false");

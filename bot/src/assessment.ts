@@ -1,4 +1,5 @@
 import {
+  CHANGE_KINDS,
   migrationFindings,
   MIGRATION_MINER_ID,
   NotFoundAssessmentError,
@@ -19,6 +20,19 @@ const source = z
     return url.protocol === "https:" && !url.username && !url.password;
   }, "Sources must be HTTPS URLs without credentials");
 
+/** One documented change between the installed and target versions, as the miner reported it. */
+export const changeSchema = z
+  .object({
+    kind: z.enum(CHANGE_KINDS),
+    version: z.string().min(1).max(64),
+    change: z.string().min(1).max(2000),
+    quote: z.string().min(1).max(2000).nullable(),
+    migration: z.string().min(1).max(2000).nullable(),
+  })
+  .strict();
+
+export type Change = z.infer<typeof changeSchema>;
+
 export const findingSchema = z
   .object({
     ecosystem: z.enum(["npm", "PyPI"]),
@@ -30,6 +44,8 @@ export const findingSchema = z
     reason: z.string().min(1).max(4000),
     cves: z.array(z.string().regex(/^CVE-\d{4}-\d{4,}$/)).max(50),
     sources: z.array(source).min(1).max(20),
+    /** Present when the miner itemised the changes; ordered breaking, deprecation, security fix. */
+    changes: z.array(changeSchema).max(200).optional(),
   })
   .strict();
 
