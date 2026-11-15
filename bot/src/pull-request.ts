@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { dirname, join, sep } from "node:path";
 import { dashboardLink } from "./config.js";
 import type { Purchase } from "./x402.js";
+import type { Change, Finding } from "./assessment.js";
 import type { PreparedUpdate } from "./updates.js";
 import { readRepositoryFile, updateManifest } from "./updates.js";
 
@@ -13,6 +14,67 @@ export type PurchaseEvidence = Pick<
   Purchase,
   "minerId" | "intent" | "receiptHash" | "signalHash" | "txHash" | "amountUsdc"
 >;
+
+const CHANGE_HEADINGS: Record<Change["kind"], string> = {
+  breaking: "Breaking changes",
+  deprecation: "Deprecations",
+  security_fix: "Security fixes",
+};
+/** Items shown in the PR body; the rest are counted and left to the full answer. */
+const MAX_LISTED_CHANGES = 40;
+
+/**
+ * Miner text is untrusted: keep it on one line, inert (no HTML, images or @mention pings),
+ * unable to imitate the evidence block that merge accounting reads, and cut at a word boundary
+ * with link targets dropped first, so a cut never leaves a broken link.
+ */
+export const sanitizeMinerText = (text: string, limit: number): string => {
+  let clean = text
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/!\[/g, "[")
+    .replace(/@(?=[A-Za-z0-9])/g, "@\u200b")
+    .replace(/miner finding and purchase evidence/gi, "miner finding and purchase\u200b evidence");
+  if (clean.length <= limit) return clean;
+  clean = clean.replace(/\[([^\]]*)\]\((?:[^()\s]|\([^()\s]*\))*\)/g, "$1");
+  if (clean.length <= limit) return clean;
+  const cut = clean.slice(0, limit);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > limit * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`;
+};
+
+/** The "what changed" section of a dependency PR, grouped and ordered as the finding lists them. */
+export const renderChanges = (finding: Finding): string => {
+  const changes = finding.changes ?? [];
+  if (!changes.length) return "";
+  const shown = changes.slice(0, MAX_LISTED_CHANGES);
+  const lines = [
+    `### What changed in ${finding.package} (${finding.currentVersion} → ${finding.targetVersion})`,
+  ];
+  for (const kind of Object.keys(CHANGE_HEADINGS) as Change["kind"][]) {
+    const items = shown.filter((change) => change.kind === kind);
+    const total = changes.filter((change) => change.kind === kind).length;
+    if (!total) continue;
+    lines.push("", `**${CHANGE_HEADINGS[kind]} (${total})**`, "");
+    for (const change of items) {
+      lines.push(
+        `- \`${change.version.replace(/`/g, "")}\` ${sanitizeMinerText(change.change, 400)}`,
+      );
+      if (change.migration)
+        lines.push(`  - Migration: ${sanitizeMinerText(change.migration, 300)}`);
+      if (change.quote) lines.push(`  > ${sanitizeMinerText(change.quote, 300)}`);
+    }
+  }
+  if (changes.length > shown.length) {
+    lines.push(
+      "",
+      `_…and ${changes.length - shown.length} more changes not listed here; the full answer is linked from the spend dashboard below._`,
+    );
+  }
+  return `${lines.join("\n")}\n\n`;
+};
 
 export const checkedOutBranch = (root: string): string => {
   try {
@@ -260,7 +322,7 @@ export const createDependencyPr = async (options: {
     sources: finding.sources,
     purchase,
   };
-  const body = `Updates ${finding.package} from ${finding.currentVersion} to ${finding.targetVersion}.\n\nMiner finding and purchase evidence:\n\n${JSON.stringify(
+  const body = `Updates ${finding.package} from ${finding.currentVersion} to ${finding.targetVersion}.\n\n${renderChanges(finding)}Miner finding and purchase evidence:\n\n${JSON.stringify(
     detail,
     null,
     2,

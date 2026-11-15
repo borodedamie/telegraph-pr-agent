@@ -22,8 +22,28 @@ it("adapts quoted changes and fixed advisories into validated findings with cove
   expect(findings[0]).toMatchObject({ package: "express", issue: "cve", cves: ["CVE-2025-12345"],
     sources: response().sources.map((source) => source.url) });
   expect(findings[0].reason).toContain("Release coverage: partial");
-  expect(findings[0].reason).toContain("Quote: The old API is removed.");
-  expect(findings[0].reason).toContain("Migration: Use the new API.");
+  expect(findings[0].reason).toContain("Documented changes: 1 breaking, 0 deprecation, 0 security fix.");
+  expect(findings[0].changes).toEqual([{ kind: "breaking", version: "5.0.0", change: "Removed old API",
+    quote: "The old API is removed.", migration: "Use the new API." }]);
+});
+
+it("lists every documented change, breaking first, then deprecations, then security fixes, oldest version first", () => {
+  const answer = response();
+  const change = (kind: string, version: string, text: string) => ({ kind, version, evidenceType: "documented",
+    change: text, excerpt: `${text}.`, sourceId: "s1", migration: null });
+  answer.changes = [change("security_fix", "4.21.2", "sec"), change("deprecation", "4.22.0", "dep"),
+    change("breaking", "5.0.0", "b2"), change("breaking", "4.22.0", "b1"), change("deprecation", "4.21.1", "dep0"),
+    change("breaking", "4.21.1", "b0"), change("breaking", "4.21.3", "b0b")] as unknown as typeof answer.changes;
+  const { changes } = migrationFindings(answer, [dependency])[0];
+  expect(changes!.map((entry) => `${entry.kind}:${entry.version}`)).toEqual([
+    "breaking:4.21.1", "breaking:4.21.3", "breaking:4.22.0", "breaking:5.0.0",
+    "deprecation:4.21.1", "deprecation:4.22.0", "security_fix:4.21.2"]);
+});
+
+it("drops a quote or migration that only repeats the change text", () => {
+  const answer = response();
+  answer.changes[0] = { ...answer.changes[0], change: "Removed old API", excerpt: "Removed old API", migration: "Removed old API" };
+  expect(migrationFindings(answer, [dependency])[0].changes![0]).toMatchObject({ quote: null, migration: null });
 });
 
 it.each(["needs_clarification", "temporarily_unavailable"])("rejects %s without inventing findings", (outcome) => {

@@ -267,7 +267,11 @@ jobs:
 released after your cutoff it ends with "no purchase made" and spends nothing. Otherwise
 it buys one answer per package and opens one PR per update, ready for review (add
 `draft-prs: "true"` under `with:` to open drafts instead); review it, run your CI,
-merge or close it.
+merge or close it. Each PR starts with **What changed**: the documented breaking changes,
+deprecations and security fixes between your version and the target, breaking changes
+first, each with its migration step and a quote from the release notes. Newer releases that
+are not after your cutoff are listed in the run log as skipped, with their release date;
+nothing is bought for them.
 
 **7. See the spend.** `https://telegraph-pr-agent.vercel.app/?repo=OWNER/REPO` reads your
 repository's `ledger` branch: every purchase with its receipt, signal and transaction, and
