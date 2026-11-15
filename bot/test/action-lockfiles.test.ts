@@ -133,7 +133,7 @@ const targetMetadata = async () =>
 const fakeManager = (
   root: string,
   format: (typeof formats)[number],
-  next = lockText(format.format, "4.0.0", "^4.0.0"),
+  next = lockText(format.format, "4.0.0", "4.0.0"),
 ) => {
   const bin = directory();
   const observed = join(root, "invocation.json");
@@ -141,6 +141,7 @@ const fakeManager = (
     join(bin, format.manager),
     `#!${process.execPath}\nconst fs = require("node:fs");
 if (process.argv.includes("--version")) { console.log(${JSON.stringify(format.version)}); process.exit(0); }
+if (fs.existsSync(${JSON.stringify(observed)})) { process.exit(0); }
 fs.writeFileSync(${JSON.stringify(observed)}, JSON.stringify({ args: process.argv.slice(2), env: process.env, cwd: process.cwd(), manifest: JSON.parse(fs.readFileSync("package.json", "utf8")) }));
 fs.writeFileSync(${JSON.stringify(format.filename)}, ${JSON.stringify(next)});\n`,
   );
@@ -203,7 +204,7 @@ describe.each(formats)("$format lockfiles", (format) => {
     expect(invocation.args[0]).toBe("install");
     expect(invocation.env).not.toHaveProperty("TELEGRAPH_EVM_PRIVATE_KEY");
     expect(invocation.env).not.toHaveProperty("GITHUB_TOKEN");
-    expect(invocation.manifest.dependencies.zod).toBe("^4.0.0");
+    expect(invocation.manifest.dependencies.zod).toBe("4.0.0");
     if (format.format === "modern") {
       expect(invocation.args).toContain("--mode=update-lockfile");
       expect(invocation.env.YARN_ENABLE_SCRIPTS).toBe("false");
@@ -214,7 +215,7 @@ describe.each(formats)("$format lockfiles", (format) => {
   });
   it("rejects regeneration that resolves a different target", async () => {
     const root = fixture(format);
-    fakeManager(root, format, lockText(format.format, "4.0.1", "^4.0.0"));
+    fakeManager(root, format, lockText(format.format, "4.0.1", "4.0.0"));
     await expect(prepareUpdate(root, finding, targetMetadata)).rejects.toThrow(
       /recommended version/,
     );
@@ -448,4 +449,114 @@ it("rejects Yarn locators that redirect archives away from the registry", () => 
   expect(() => lockedVersions("yarn.lock", content, manifest)).toThrow(
     /public registry/,
   );
+});
+
+describe.each(formats)("$format exact targets", (format) => {
+  it.each(["^", "~", ""])(
+    "pins the target and restores the %s declaration",
+    async (prefix) => {
+      const root = fixture(format);
+      writeFileSync(
+        join(root, "package.json"),
+        JSON.stringify({
+          ...manifest,
+          dependencies: { zod: `${prefix}3.23.8` },
+        }),
+      );
+      writeFileSync(
+        join(root, format.filename),
+        lockText(format.format, "3.23.8", `${prefix}3.23.8`),
+      );
+      const observed = fakeManager(root, format);
+      const update = await prepareUpdate(root, finding, targetMetadata);
+      expect(
+        JSON.parse(readFileSync(observed, "utf8")).manifest.dependencies.zod,
+      ).toBe("4.0.0");
+      const published = JSON.parse(update.files[0].content);
+      expect(published.dependencies.zod).toBe(`${prefix}4.0.0`);
+      expect(
+        lockedVersions(format.filename, update.files[1].content, published).zod,
+      ).toBe("4.0.0");
+    },
+  );
+});
+it.each(["typescript", "resolve", "fsevents"])(
+  "scans Yarn's built-in %s compatibility patch",
+  async (name) => {
+    const root = directory();
+    execFileSync("git", ["init", "-q", root]);
+    writeFileSync(
+      join(root, "package.json"),
+      JSON.stringify({ dependencies: { [name]: "^1.0.0" } }),
+    );
+    writeFileSync(
+      join(root, "yarn.lock"),
+      JSON.stringify({
+        __metadata: { version: 8 },
+        [`${name}@npm:^1.0.0`]: {
+          version: "1.0.0",
+          resolution: `${name}@npm:1.0.0`,
+        },
+        [`${name}@patch:${name}@npm%3A^1.0.0#optional!builtin<compat/${name}>`]:
+          {
+            version: "1.0.0",
+            resolution: `${name}@patch:${name}@npm%3A1.0.0#optional!builtin<compat/${name}>::version=1.0.0&hash=abcdef`,
+          },
+      }),
+    );
+    const scan = await scanRepository(root);
+    expect(scan.skipped).toEqual([]);
+    expect(scan.dependencies[0].package).toBe(name);
+  },
+);
+it.each([
+  "typescript@patch:typescript@npm%3A5.7.3#./patches/typescript.patch",
+  "typescript@patch:typescript@npm%3A5.7.3#https://evil.example/patch",
+  "typescript@patch:typescript@npm%3A5.7.3#optional!builtin<compat/resolve>",
+  "typescript@patch:typescript@npm%3A5.7.3#optional!builtin<compat/typescript>::version=5.7.3&locator=../../outside",
+  "typescript@patch:typescript@https%3A%2F%2Fevil.example%2Farchive#optional!builtin<compat/typescript>",
+])("rejects untrusted Yarn patches: %s", (resolution) => {
+  const lock = {
+    __metadata: { version: 8 },
+    typescript: { version: "5.7.3", resolution },
+  };
+  expect(() => lockedVersions("yarn.lock", JSON.stringify(lock), {})).toThrow(
+    /public registry/,
+  );
+});
+describe.each(["npm", "pnpm", "yarn", "bun"])("%s Corepack pins", (manager) => {
+  it.each([
+    ["sha1", 40],
+    ["sha224", 56],
+    ["sha256", 64],
+    ["sha384", 96],
+    ["sha512", 128],
+  ])("accepts a %s hash", (algorithm, length) => {
+    const format = formats.find((entry) => entry.manager === manager) ?? {
+      manager: "npm",
+      version: "10.9.9",
+      filename: "package-lock.json",
+      format: "npm",
+    };
+    const root = directory();
+    writeFileSync(
+      join(root, "package.json"),
+      JSON.stringify({
+        ...manifest,
+        packageManager: `${manager}@${format.version}+${algorithm}.${"a".repeat(Number(length))}`,
+      }),
+    );
+    const content =
+      manager === "npm"
+        ? JSON.stringify({
+            lockfileVersion: 3,
+            packages: {
+              "node_modules/zod": { version: "3.23.8" },
+              "node_modules/@scope/pkg": { version: "1.0.0" },
+            },
+          })
+        : lockText(format.format);
+    writeFileSync(join(root, format.filename), content);
+    expect(readPackageLock(root, "package.json").manager).toBe(manager);
+  });
 });

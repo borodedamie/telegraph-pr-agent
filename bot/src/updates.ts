@@ -7,6 +7,7 @@ import {
   lockedVersions,
   readPackageLock,
   readRepositoryFile,
+  restoreLockDeclarations,
   type PackageLock,
 } from "./lockfiles.js";
 import type { Finding } from "./assessment.js";
@@ -232,10 +233,7 @@ export const prepareUpdate = async (
     try {
       const pinnedManifest = JSON.parse(updated);
       for (const section of ["dependencies", "devDependencies"]) {
-        if (
-          lock.manager === "npm" &&
-          pinnedManifest[section]?.[finding.package]
-        )
+        if (pinnedManifest[section]?.[finding.package])
           pinnedManifest[section][finding.package] = finding.targetVersion;
       }
       writeFileSync(
@@ -245,14 +243,33 @@ export const prepareUpdate = async (
       writeFileSync(join(directory, lockName), lockContent);
       if (lock.manager !== "npm") {
         runPackageManager(directory, lock);
-        const regenerated = readFileSync(join(directory, lockName), "utf8");
+        let regenerated = readFileSync(join(directory, lockName), "utf8");
+        if (
+          lockedVersions(lockPath, regenerated, pinnedManifest)[
+            finding.package
+          ] !== finding.targetVersion
+        ) {
+          throw new Error(
+            "Regenerated lockfile did not resolve the recommended version",
+          );
+        }
+        regenerated = restoreLockDeclarations(
+          lock,
+          regenerated,
+          JSON.parse(updated),
+          finding,
+        );
+        writeFileSync(join(directory, "package.json"), updated);
+        writeFileSync(join(directory, lockName), regenerated);
+        runPackageManager(directory, lock);
+        regenerated = readFileSync(join(directory, lockName), "utf8");
         if (
           lockedVersions(lockPath, regenerated, JSON.parse(updated))[
             finding.package
           ] !== finding.targetVersion
         ) {
           throw new Error(
-            "Regenerated lockfile did not resolve the recommended version",
+            "Restored lockfile did not retain the recommended version",
           );
         }
         files.push({ path: lockPath, content: regenerated });

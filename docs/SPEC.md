@@ -68,7 +68,11 @@ the matching installed manager for regeneration in a credential-free temporary
 directory with lifecycle scripts and pnpm hooks disabled. Workspaces, conflicting
 lockfiles, binary bun.lockb, and custom pnpm/override/resolution configuration for
 the additional managers remain unsupported, as do hashed/continued Python pins.
-Regeneration must resolve the exact recommended version. pnpm/Yarn/Bun executables
+Regeneration pins the exact recommendation temporarily, restores the original
+range style, and finalizes with the same native manager while checking that the
+locked version remains the recommendation. Yarn's built-in TypeScript, resolve and
+fsevents compatibility patches are allowed; arbitrary patches are rejected.
+Corepack SHA-1/224/256/384/512 packageManager hashes are accepted. pnpm/Yarn/Bun executables
 must match any declared packageManager release. Repository visibility is checked
 before assessment, and successful PR URLs survive later publication failures.
 Action dependency updates include the rebuilt runtime bundle, checked for
@@ -188,7 +192,7 @@ existing frozen-lockfile CI/deployment installation; no workflow settings change
 
 Unpaid live scanner/updater/publisher integration tests on 14 Nov 2026 created
 four draft PRs against an isolated `test/` fixture branch (npm #35, pnpm #36,
-Yarn #37, Python #38). Published file paths and contents were checked. These tests
+Yarn #37, Python #38), now closed after review verification. Published file paths and contents were checked. These tests
 made no Telegraph assessment or payment and do not establish the complete paid
 workflow. Evidence: [four-package PR test report](telegraph/four-package-pr-tests-2026-11-14.json).
 

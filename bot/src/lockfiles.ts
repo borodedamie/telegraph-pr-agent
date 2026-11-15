@@ -10,9 +10,11 @@ import {
 import semver from "semver";
 import {
   parse as parseJsonc,
+  modify,
+  applyEdits,
   type ParseError,
 } from "jsonc-parser/lib/esm/main.js";
-import { parseSyml } from "@yarnpkg/parsers";
+import { parseSyml, stringifySyml } from "@yarnpkg/parsers";
 
 export type PackageManager = "npm" | "pnpm" | "yarn" | "bun";
 export type PackageLock = {
@@ -154,7 +156,7 @@ export const readPackageLock = (root: string, source: string): PackageLock => {
   if (
     manifest.packageManager &&
     !new RegExp(
-      `^${manager}@[0-9]+\\.[0-9]+\\.[0-9]+(?:\\+sha(?:224|512)\\.[a-f0-9]+)?$`,
+      `^${manager}@[0-9]+\\.[0-9]+\\.[0-9]+(?:\\+sha(?:1|224|256|384|512)\\.[a-f0-9]+)?$`,
     ).test(manifest.packageManager)
   ) {
     throw new Error(
@@ -204,6 +206,27 @@ const publicTarball = (url: unknown): boolean => {
   } catch {
     return false;
   }
+};
+
+const isBuiltinYarnPatch = (resolution: string, version: string): boolean => {
+  const match = resolution.match(
+    /^(typescript|resolve|fsevents)@patch:([^#]+)#(?:optional!)?~?builtin<compat\/\1>(?:::(.*))?$/,
+  );
+  if (!match) return false;
+  try {
+    if (decodeURIComponent(match[2]) !== `${match[1]}@npm:${version}`)
+      return false;
+  } catch {
+    return false;
+  }
+  const parameters = new URLSearchParams(match[3]);
+  return (
+    [...parameters].every(
+      ([key, value]) =>
+        (key === "version" && value === version) ||
+        (key === "hash" && /^[a-f0-9]{1,128}$/.test(value)),
+    ) && new Set(parameters.keys()).size === [...parameters].length
+  );
 };
 
 export const lockedVersions = (
@@ -314,7 +337,8 @@ export const lockedVersions = (
         (entry.resolved && !publicTarball(entry.resolved)) ||
         (entry.resolution &&
           (resolutionVersion !== entry.version ||
-            semver.valid(resolutionVersion ?? "") === null))
+            semver.valid(resolutionVersion ?? "") === null) &&
+          !isBuiltinYarnPatch(entry.resolution, entry.version ?? ""))
       ) {
         throw new Error(
           "Yarn locks must contain public registry packages only",
@@ -372,4 +396,132 @@ export const lockedVersions = (
       }
   } else throw new Error(`Unsupported lockfile: ${filename}`);
   return versions;
+};
+
+/** Restore declaration ranges after the native manager resolves an exact temporary pin. */
+export const restoreLockDeclarations = (
+  lock: PackageLock,
+  content: string,
+  manifest: Manifest,
+  finding: { package: string; targetVersion: string },
+): string => {
+  const name = finding.package;
+  const sections = ["dependencies", "devDependencies"] as const;
+  if (lock.manager === "bun") {
+    for (const section of sections)
+      if (manifest[section]?.[name]) {
+        content = applyEdits(
+          content,
+          modify(
+            content,
+            ["workspaces", "", section, name],
+            manifest[section][name],
+            {},
+          ),
+        );
+      }
+    return content;
+  }
+  const parsed = parseSyml(content);
+  if (lock.manager === "pnpm") {
+    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const declared =
+      manifest.dependencies?.[name] ?? manifest.devDependencies?.[name];
+    if (content.trimStart().startsWith("{")) {
+      const json = JSON.parse(content);
+      const importer = json.importers?.["."] ?? json;
+      for (const section of sections)
+        if (manifest[section]?.[name])
+          importer[section][name].specifier = manifest[section][name];
+      return JSON.stringify(json, null, 2) + "\n";
+    }
+    return content.replace(
+      new RegExp(
+        `^([ \t]+)(?:"${escapedName}"|'${escapedName}'|${escapedName}):\\r?\\n\\1  specifier:.*$`,
+        "gm",
+      ),
+      (_entry, indent) =>
+        `${indent}${name}:\n${indent}  specifier: ${JSON.stringify(declared)}`,
+    );
+  }
+  const declarations = [
+    ...new Set(
+      sections.flatMap((section) =>
+        manifest[section]?.[name] ? [manifest[section][name]] : [],
+      ),
+    ),
+  ];
+  const modern = Object.hasOwn(parsed, "__metadata");
+  const exact = `${name}@${modern ? "npm:" : ""}${finding.targetVersion}`;
+  const entry = Object.entries(parsed).find(([key]) =>
+    key.split(/,\s*/).includes(exact),
+  )?.[1];
+  if (!entry) throw new Error(`Missing exact Yarn resolution: ${name}`);
+  const aliases = new Map(
+    declarations.map((declared) => [
+      `${name}@${modern ? "npm:" : ""}${declared}`,
+      entry,
+    ]),
+  );
+  if (!modern) {
+    // Preserve native Classic entry bodies; only selector headers need range aliases.
+    return content.replace(
+      /^([^\s#][^\n]*):\r?\n((?:[ \t].*(?:\r?\n|$)|\r?\n)*)/gm,
+      (_block, header, body) => {
+        const selectors = Object.keys(
+          parseSyml(`# yarn lockfile v1\n${header}:\n  version "0.0.0"\n`),
+        ).flatMap((selector) => selector.split(/,\s*/));
+        const retained = selectors.filter((selector) => !aliases.has(selector));
+        if (selectors.includes(exact)) retained.push(...aliases.keys());
+        return retained.length
+          ? `${[...new Set(retained)].map((selector) => JSON.stringify(selector)).join(", ")}:\n${body}`
+          : "";
+      },
+    );
+  }
+  for (const [key, patched] of Object.entries(parsed)) {
+    if (
+      patched.resolution?.endsWith("@workspace:.") &&
+      patched.dependencies?.[name]
+    ) {
+      patched.dependencies[name] =
+        `npm:${manifest.dependencies?.[name] ?? manifest.devDependencies?.[name]}`;
+    }
+    if (
+      !patched.resolution ||
+      !isBuiltinYarnPatch(patched.resolution, finding.targetVersion)
+    )
+      continue;
+    for (const selector of key.split(/,\s*/)) {
+      const patch = selector.match(
+        /^(?:typescript|resolve|fsevents)@patch:([^#]+)#/,
+      );
+      if (
+        !patch ||
+        decodeURIComponent(patch[1]) !== `${name}@npm:${finding.targetVersion}`
+      )
+        continue;
+      for (const declared of declarations)
+        aliases.set(
+          selector.replace(
+            patch[1],
+            patch[1].slice(0, -finding.targetVersion.length) + declared,
+          ),
+          patched,
+        );
+    }
+  }
+  for (const [selector, resolved] of aliases) {
+    for (const key of Object.keys(parsed))
+      if (key.split(/,\s*/).includes(selector)) {
+        const remaining = key
+          .split(/,\s*/)
+          .filter((value) => value !== selector);
+        const value = parsed[key];
+        delete parsed[key];
+        if (remaining.length) parsed[remaining.join(", ")] = value;
+      }
+    parsed[selector] = resolved;
+  }
+  return stringifySyml(parsed);
 };

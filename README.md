@@ -432,6 +432,21 @@ sets up Node 24 for npm lockfile generation and exposes `status`, `has-findings`
 `pull-requests`, and `message` job outputs. It does not install, build, or
 execute repository test scripts. No chain or USDC repository variables are needed.
 
+### Package-manager tools on consumer runners
+
+Install the executable matching the target repository's `packageManager` release
+before invoking the action. Keep wallet secrets on the action step only. For example,
+these optional setup commands install tools with npm in a temporary directory:
+
+```sh
+npm install --prefix "$RUNNER_TEMP/telegraph-tools" --no-audit --no-fund pnpm@10.18.3 @yarnpkg/cli-dist@4.9.2 bun@1.3.3
+echo "$RUNNER_TEMP/telegraph-tools/node_modules/.bin" >> "$GITHUB_PATH"
+```
+
+Choose versions matching your target repository; use `yarn@1.22.22` instead of
+`@yarnpkg/cli-dist` for Yarn Classic. These are consumer setup examples; the project's
+CI/CD workflows are unchanged. Bot project dependencies continue to use npm.
+
 ### Verified scope and limits
 
 Automated tests mock Telegraph, registry and GitHub responses. They cover findings,
@@ -443,7 +458,7 @@ run locally. Unpaid live updater/publisher tests produced four draft fixture PRs
 [Yarn #37](https://github.com/borodedamie/telegraph-pr-agent/pull/37), and
 [Python #38](https://github.com/borodedamie/telegraph-pr-agent/pull/38).
 Their changed paths and published contents were verified against prepared updates;
-all target an isolated `test/` branch. No Telegraph assessment, payment or purchase
+all target an isolated `test/` branch and were closed after review verification. No Telegraph assessment, payment or purchase
 ledger row was produced by these component tests. They do not verify the full paid
 bot flow or hosted workflow. Details: [dated test report](docs/telegraph/four-package-pr-tests-2026-11-14.json).
 
@@ -452,7 +467,14 @@ sources and hashed/continued Python pins rather than publish stale lock data.
 Binary `bun.lockb` needs migration to text `bun.lock` first. Custom pnpm settings,
 overrides and resolutions remain unsupported for the additional managers. A declared
 pnpm/Yarn/Bun `packageManager` release must match the installed executable; otherwise
-preparation fails. Regenerated lockfiles must resolve the exact recommended target.
+preparation fails. Valid Corepack SHA-1/224/256/384/512 suffixes are accepted.
+Updates temporarily pin the exact recommendation, restore the original range style,
+and finalize with the same native manager; the resulting lock must retain that target.
+Yarn's built-in TypeScript, resolve and fsevents compatibility patches are accepted;
+custom local or remote patches remain unsupported.
+`@yarnpkg/parsers` handles Yarn and pnpm parsing; `jsonc-parser` handles Bun's
+comments and trailing commas. Both are retained for these formats, with no new
+dependencies introduced by the review fixes. A test detects npm/workspace lock drift.
 Python ranges, includes and pyproject/Pipfile/setup manifests need exported exact pins.
 Current npm prereleases and valid PEP 440 Python pins (including `==1`) are
 accepted and ordered using their ecosystem rules. Recommended targets remain
