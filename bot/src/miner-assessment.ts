@@ -2,6 +2,9 @@ import semver from "semver";
 import { z } from "zod";
 import type { Dependency } from "./scan.js";
 
+/** Change kinds in display order: the most consequential first. */
+export const CHANGE_KINDS = ["breaking", "deprecation", "security_fix"] as const;
+
 export class NotFoundAssessmentError extends Error {}
 
 export const MIGRATION_MINER_ID = "7314";
@@ -128,19 +131,41 @@ export const migrationFindings = (
   ]
     .filter((id) => /^CVE-\d{4}-\d{4,}$/.test(id))
     .slice(0, 50);
+  const counts = CHANGE_KINDS.map(
+    (kind) =>
+      `${changes.filter((change) => change.kind === kind).length} ${kind.replace("_", " ")}`,
+  ).join(", ");
   const reason = [
     `Release coverage: ${answer.coverage.complete ? "complete" : "partial"}; security check: ${answer.security.status}. Manual migration review required.`,
+    `Documented changes: ${counts}.`,
     `Advisories still affecting the target: ${answer.security.advisories.filter((advisory) => advisory.targetAffected === "yes").length}.`,
-    ...changes
-      .slice(0, 3)
-      .map(
-        (change) =>
-          `${change.kind}: ${change.change.slice(0, 300)} Quote: ${change.excerpt!.slice(0, 300)}${change.migration ? ` Migration: ${change.migration.slice(0, 300)}` : ""}`,
-      ),
     `Advisories: ${answer.security.advisories.map((advisory) => `${advisory.id}: ${advisory.conclusion}`).join("; ") || "none reported"}.`,
   ]
     .join("\n")
     .slice(0, 4000);
+  // Most consequential first: breaking, then deprecations, then security fixes; oldest version first within each.
+  const ordered = [...changes]
+    .sort(
+      (a, b) =>
+        CHANGE_KINDS.indexOf(a.kind) - CHANGE_KINDS.indexOf(b.kind) ||
+        semver.compare(a.version, b.version),
+    )
+    .slice(0, 200)
+    .map((change) => {
+      const quote = change.excerpt!.trim();
+      const migration = change.migration?.trim() || null;
+      return {
+        kind: change.kind,
+        version: change.version,
+        change: change.change.trim().slice(0, 2000),
+        // Shown only when it adds something beyond the change text itself.
+        quote: quote === change.change.trim() ? null : quote.slice(0, 2000),
+        migration:
+          migration && migration !== change.change.trim() && migration !== quote
+            ? migration.slice(0, 2000)
+            : null,
+      };
+    });
   return [
     {
       ecosystem: dependency.ecosystem,
@@ -152,6 +177,7 @@ export const migrationFindings = (
       reason,
       cves,
       sources,
+      changes: ordered,
     },
   ];
 };

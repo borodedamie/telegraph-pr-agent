@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  NotFoundAssessmentError: class extends Error {}, fetchPr: vi.fn(), InvalidAssessmentError: class extends Error {}, unusable: vi.fn(), notice: vi.fn(), merge: vi.fn(), read: vi.fn(), visibility: vi.fn(), candidates: vi.fn(), open: vi.fn(), purchase: vi.fn(),
+  info: vi.fn(), NotFoundAssessmentError: class extends Error {}, fetchPr: vi.fn(), InvalidAssessmentError: class extends Error {}, unusable: vi.fn(), notice: vi.fn(), merge: vi.fn(), read: vi.fn(), visibility: vi.fn(), candidates: vi.fn(), open: vi.fn(), purchase: vi.fn(),
   buy: vi.fn(), client: vi.fn(), apply: vi.fn(), failed: vi.fn(), output: vi.fn(),
   inputs: {} as Record<string, string>, proposal: vi.fn(), reconcile: vi.fn(), checkReconciliation: vi.fn(),
 }));
 vi.mock("@actions/core", () => ({
   setSecret: vi.fn(), setFailed: mocks.failed, setOutput: mocks.output,
-  notice: mocks.notice, warning: vi.fn(), info: vi.fn(), getInput: (name: string) => mocks.inputs[name] ?? "",
+  notice: mocks.notice, warning: vi.fn(), info: mocks.info, getInput: (name: string) => mocks.inputs[name] ?? "",
 }));
 vi.mock("node:child_process", () => ({ execFileSync: () => "a".repeat(40) }));
 vi.mock("node:fs", () => ({ rmSync: vi.fn(), readFileSync: mocks.read }));
@@ -134,6 +134,19 @@ it("rejects an invalid monthly budget before opening the ledger", async () => {
   mocks.inputs["monthly-budget-usdc"] = "-1";
   await run("failed");
   expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("monthly-budget-usdc"));
+  expect(mocks.open).not.toHaveBeenCalled();
+});
+
+it("logs each upgrade skipped as not after the cutoff and sums them up once, without buying", async () => {
+  mocks.candidates.mockImplementationOnce(async (_deps, _cutoff, _fetch, _report, onSkip) => {
+    onSkip({ package: "lodash", currentVersion: "4.17.21" }, "4.18.1", "2026-04-01T00:00:00Z");
+    onSkip({ package: "left-pad", currentVersion: "1.0.0" }, "1.3.0", null);
+    return [];
+  });
+  await run();
+  expect(mocks.info).toHaveBeenCalledWith(expect.stringMatching(/^lodash 4\.17\.21 → 4\.18\.1: released 2026-04-01, not after the model cutoff \d{4}-\d{2}-\d{2}; skipped, no purchase$/));
+  expect(mocks.info).toHaveBeenCalledWith(expect.stringContaining("left-pad 1.0.0 → 1.3.0: released on an unknown date"));
+  expect(mocks.notice).toHaveBeenCalledWith(expect.stringMatching(/^2 newer releases not after the model cutoff .*skipped without purchase/));
   expect(mocks.open).not.toHaveBeenCalled();
 });
 

@@ -17,6 +17,25 @@ it.each(["2024-12-31", "2025-01-01", "invalid", "2999-01-01", undefined])("does 
   expect(await cutoffCandidates([dependency], cutoff, response({ ...npm, time: { "2.0.0": date } }))).toEqual([]);
 });
 
+it("reports a newer release that is not after the cutoff, with its date, and buys nothing", async () => {
+  const onSkip = vi.fn();
+  const report = vi.fn();
+  expect(await cutoffCandidates([dependency], cutoff,
+    response({ ...npm, time: { "2.0.0": "2024-06-01T00:00:00Z" } }), report, onSkip)).toEqual([]);
+  expect(onSkip).toHaveBeenCalledWith(dependency, "2.0.0", "2024-06-01T00:00:00Z");
+  expect(report).not.toHaveBeenCalled();
+  const python = { ...dependency, ecosystem: "PyPI" as const, source: "requirements.txt", currentVersion: "1" };
+  await cutoffCandidates([python], cutoff, response({ info: { name: "foo" },
+    releases: { "2.0": [{ yanked: false, upload_time_iso_8601: "2024-06-01T00:00:00Z" }] } }), report, onSkip);
+  expect(onSkip).toHaveBeenLastCalledWith(python, "2.0", "2024-06-01T00:00:00.000Z");
+});
+
+it("does not report a skip when the installed version is already the latest", async () => {
+  const onSkip = vi.fn();
+  await cutoffCandidates([{ ...dependency, currentVersion: "2.0.0" }], cutoff, response(npm), undefined, onSkip);
+  expect(onSkip).not.toHaveBeenCalled();
+});
+
 it("excludes unchanged and older targets, missing packages, and registry mismatches", async () => {
   for (const currentVersion of ["2.0.0", "3.0.0"]) {
     expect(await cutoffCandidates([{ ...dependency, currentVersion }], cutoff, response(npm))).toEqual([]);
