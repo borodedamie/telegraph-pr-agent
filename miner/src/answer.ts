@@ -252,8 +252,10 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
     metrics.upstreamRequests = retrieval.upstreamRequests;
     metrics.conditionalHits = retrieval.conditionalHits;
 
-    // Nothing read because GitHub failed or the budget ran out is not evidence that nothing exists.
-    if ((upstreamFailed || retrievalCut) && tracker.result().covered.length === 0) {
+    // Nothing read because GitHub failed is not evidence that nothing exists: the buyer is not charged and may retry.
+    // Our own budget running out is not an outage, and a retry would hit the same limit: that answer goes on, with
+    // its releases listed as not covered ("budget"), so it says how far it got (spec: huge histories).
+    if (upstreamFailed && tracker.result().covered.length === 0) {
       return finish(simple(selectOutcome({ stage: "upstream_unavailable" }), request, [registrySource]));
     }
 
@@ -282,7 +284,7 @@ export async function answerQuestion(query: string, deps: PipelineDeps): Promise
       if (deps.enterCompute) leave = await deps.enterCompute();
       const { answer, complete } = await compute(request, resolved.targetReleasedAt, registrySource, material, tracker, budget, deps, metrics, processingBase, {
         // Both lower the confidence band; only an outage (retried next time) also keeps the answer out of the cache.
-        optionalSourceFailed: tooLargeFor.size > 0 || material.optionalSourceFailed === true,
+        optionalSourceFailed: tooLargeFor.size > 0 || material.optionalSourceFailed === true || retrievalCut,
         // The advisory check has its own line; these lists name the release material looked up.
         lookups: {
           checked: retrieval.checked.filter((url) => url !== OSV_QUERY_URL),

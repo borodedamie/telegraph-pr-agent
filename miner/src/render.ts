@@ -232,10 +232,16 @@ function summaryFor(answer: Renderable): string {
       const coverage = answer.coverage!.complete ? "coverage complete" : "coverage partial";
       return `Upgrading ${request!.package} ${request!.fromResolved} → ${request!.toResolved}: ${counts(answer.changes)} found in the release material; ${coverage}.`;
     }
-    case "not_found":
-      return request
-        ? `No release material found for ${request.package} ${request.fromResolved ?? request.fromRequested ?? "?"} → ${request.toResolved ?? request.toRequested ?? "?"}.`
-        : "Nothing was found for this question.";
+    case "not_found": {
+      if (!request) return "Nothing was found for this question.";
+      const range = `${request.package} ${request.fromResolved ?? request.fromRequested ?? "?"} → ${request.toResolved ?? request.toRequested ?? "?"}`;
+      // Every release cut by this answer's own limits: nothing was read, which is not the same as nothing existing.
+      const notCovered = answer.coverage?.notCovered ?? [];
+      if (notCovered.length > 0 && notCovered.every((gap) => gap.reason === "budget")) {
+        return `No release material read for ${range}: the range is larger than one answer reads. Ask about a smaller range.`;
+      }
+      return `No release material found for ${range}.`;
+    }
     case "needs_clarification":
       return "The question needs a clearer package or version.";
     case "out_of_scope":

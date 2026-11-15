@@ -34,7 +34,7 @@ The call is paid with x402, like any Telegraph ask.
 | `outcome` | Meaning | Charged |
 | --- | --- | --- |
 | `found` | changes listed with quotes and sources | yes |
-| `not_found` | no usable release notes, or the version does not exist (the closest published ones are named) | yes |
+| `not_found` | no usable release notes, the version does not exist (the closest published ones are named), or the range is too large for one answer (ask about a smaller range) | yes |
 | `needs_clarification` | the package or versions are unclear | yes |
 | `out_of_scope` | not a question about an npm package | yes |
 | `temporarily_unavailable` | a source it needs was down | no |
