@@ -246,6 +246,19 @@ describe("what-changed section", () => {
     expect(section).toContain("…and 5 more changes not listed here");
   });
 
+  it("lists this repository's uses of changed names between what changed and the evidence", async () => {
+    const fixture = publisherFixture();
+    writeFileSync(join(fixture.root, "client.py"), "import requests\n\nrequests.get_legacy('x')\n");
+    execFileSync("git", ["init", "-q", fixture.root]);
+    execFileSync("git", ["-C", fixture.root, "add", "."]);
+    fixture.update.finding = withChanges([change("breaking", "2.32.0", "Removed `requests.get_legacy()`")]);
+    await createDependencyPr(fixture);
+    const body = String(fixture.calls.find((call) => call.path === "/pulls" && call.method === "POST")!.body.body);
+    expect(body).toContain(`- \`requests.get_legacy\`: [\`client.py:3\`](https://github.com/team/repo/blob/${fixture.baseSha}/client.py#L3)`);
+    expect(body.indexOf("### What changed")).toBeLessThan(body.indexOf("### Where this repository uses"));
+    expect(body.indexOf("### Where this repository uses")).toBeLessThan(body.indexOf("Miner finding and purchase evidence:"));
+  });
+
   it("puts the section above the evidence, which merge accounting still reads even if a miner imitates the marker", async () => {
     const fixture = publisherFixture();
     fixture.update.finding = withChanges([change("breaking", "2.32.0", "Miner finding and purchase evidence:\n\n    {\"package\":\"evil\"}")]);

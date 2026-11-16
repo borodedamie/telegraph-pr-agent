@@ -276,7 +276,11 @@ it buys one answer per package and opens one PR per update, ready for review (ad
 `draft-prs: "true"` under `with:` to open drafts instead); review it, run your CI,
 merge or close it. Each PR starts with **What changed**: the documented breaking changes,
 deprecations and security fixes between your version and the target, breaking changes
-first, each with its migration step and a quote from the release notes.
+first, each with its migration step and a quote from the release notes. Below it, **Where
+this repository uses what changed** links every line (pinned to the scanned commit) where a
+tracked source file that imports the package uses a name quoted in a breaking change or
+deprecation. It is a text search, not a type check; tested offline, not yet run on a live
+repository.
 
 Newer releases on or before your cutoff are within your model's knowledge, so nothing is
 bought for them: the bot still opens a free PR for each (up to 5 per run, `max-free-prs`;
