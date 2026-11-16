@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { matchesGlob } from "node:path";
 import {
   commitLedgerRow,
   type ClosedRow,
@@ -14,23 +15,45 @@ export interface MergedPr {
   merge_commit_sha: string | null;
   closed_at?: string | null;
   body: string;
-  base: { ref: string; repo: { full_name: string } };
+  base: { ref: string; repo: { full_name: string; default_branch?: string } };
   head: { ref: string; sha: string; repo: { full_name: string } };
 }
 
-/** Record how a generated dependency PR ended: merged, or closed without merging. */
+export type PrOutcome =
+  | "merged"
+  | "merged_outside_default_branch"
+  | "closed"
+  | "ignored";
+
+/**
+ * Record how a generated dependency PR ended. A merge counts only into the repository's default
+ * branch or a branch matching `countedBranches` (globs such as "release/*", for teams that ship
+ * from release branches). A merge anywhere else (a test or feature branch) is recorded as closed,
+ * so its spend stays unmerged and cost per merged PR is never inflated by it.
+ */
 export const recordMerge = async (
   ledger: Ledger,
   repository: string,
   pr: MergedPr,
-): Promise<void> => {
+  countedBranches: string[] = [],
+): Promise<PrOutcome> => {
   if (
     pr.base.repo.full_name !== repository ||
     pr.head.repo.full_name !== repository ||
     !pr.head.ref.startsWith("fix/telegraph-dependency-")
   )
-    return;
-  if (!pr.merged && !pr.closed_at) return; // still open: nothing to record yet
+    return "ignored";
+  if (!pr.merged && !pr.closed_at) return "ignored"; // still open: nothing to record yet
+  const listed = countedBranches.some((pattern) =>
+    matchesGlob(pr.base.ref, pattern),
+  );
+  const defaultBranch = pr.base.repo.default_branch;
+  if (pr.merged && !listed && !defaultBranch)
+    throw new Error(
+      `Cannot confirm the default branch for PR #${pr.number}; merge not recorded`,
+    );
+  const counted = pr.merged && (listed || pr.base.ref === defaultBranch);
+  const closedAt = pr.closed_at ?? pr.merged_at;
   const evidence = pr.body
     ?.split("Miner finding and purchase evidence:\n\n")[1]
     ?.split("\n\n")[0];
@@ -56,13 +79,13 @@ export const recordMerge = async (
     !Number.isSafeInteger(pr.number) ||
     pr.number <= 0 ||
     !/^[a-f0-9]{40}$/.test(pr.head.sha) ||
-    (pr.merged
+    (counted
       ? !/^[a-f0-9]{40}$/.test(pr.merge_commit_sha ?? "") ||
         !Number.isFinite(Date.parse(pr.merged_at ?? ""))
-      : !Number.isFinite(Date.parse(pr.closed_at ?? "")))
+      : !Number.isFinite(Date.parse(closedAt ?? "")))
   ) {
     throw new Error(
-      pr.merged ? "Invalid merged PR event" : "Invalid closed PR event",
+      counted ? "Invalid merged PR event" : "Invalid closed PR event",
     );
   }
   await commitLedgerRow(
@@ -106,7 +129,7 @@ export const recordMerge = async (
           row.repo === repository &&
           (row.prNumber === pr.number || row.receiptHash === paid.receiptHash),
       );
-      if (!pr.merged) {
+      if (!counted) {
         // A merge outranks a close; the same close seen twice (a rerun) is recorded once.
         if (
           merged ||
@@ -125,7 +148,8 @@ export const recordMerge = async (
           prNumber: pr.number,
           headSha: pr.head.sha,
           receiptHash: paid.receiptHash,
-          closedAt: pr.closed_at!,
+          closedAt: closedAt!,
+          ...(pr.merged ? { mergedInto: pr.base.ref } : {}),
           timestamp: new Date().toISOString(),
         };
         return row;
@@ -139,12 +163,18 @@ export const recordMerge = async (
         mergeSha: pr.merge_commit_sha!,
         receiptHash: paid.receiptHash,
         mergedAt: pr.merged_at!,
+        baseRef: pr.base.ref,
         timestamp: new Date().toISOString(),
       };
       return row;
     },
     ledger,
   );
+  return counted
+    ? "merged"
+    : pr.merged
+      ? "merged_outside_default_branch"
+      : "closed";
 };
 
 /** Fetch current evidence so an edited PR body is recoverable on a workflow rerun. */

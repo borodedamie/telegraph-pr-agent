@@ -376,7 +376,7 @@ The miner's detailed spec, plan and tasks are in [miner/specs/001-package-releas
 
 ### 4.3 Cost per merged PR
 
-Cost per merged PR = total net automation expenditure ÷ number of merged bot PRs. Default window: cumulative over the repository's whole ledger; a dated reporting window (for example the event period) is shown as a separate figure with its dates.
+Cost per merged PR = total net automation expenditure ÷ number of merged bot PRs. A bot PR counts as merged only when it merges into the repository's default branch or a branch matching the optional `merge-branches` globs (for example `release/*`); a merge into any other branch, such as a test branch, is recorded as `closed` with `mergedInto`, so its spend stays in the numerator but it never enters the denominator. Default window: cumulative over the repository's whole ledger; a dated reporting window (for example the event period) is shown as a separate figure with its dates.
 
 | Item | Treatment |
 | --- | --- |
