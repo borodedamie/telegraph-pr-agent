@@ -12,6 +12,46 @@ const asObject = (value: unknown): Record<string, unknown> => {
 
 type PythonFile = { yanked?: boolean; upload_time_iso_8601?: string };
 
+const safeHttps = (value: unknown): string | undefined => {
+  if (typeof value !== "string") return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password ? url.href : undefined;
+  } catch {
+    return undefined; // not a URL: no link rather than a broken one
+  }
+};
+
+const githubReleases = (value: unknown): string | undefined => {
+  const match =
+    typeof value === "string" &&
+    /github\.com[/:]([\w.-]+)\/([\w.-]+?)(?:\.git)?(?:[#/?].*)?$/.exec(value);
+  return match ? `https://github.com/${match[1]}/${match[2]}/releases` : undefined;
+};
+
+/** Where a reader finds this package's release notes, from registry metadata only. */
+export const releaseNotesUrl = (
+  metadata: Record<string, unknown>,
+  ecosystem: Dependency["ecosystem"],
+): string | undefined => {
+  if (ecosystem === "npm") {
+    const repository = metadata.repository;
+    return githubReleases(
+      typeof repository === "object" && repository !== null
+        ? (repository as { url?: unknown }).url
+        : repository,
+    );
+  }
+  const links = (metadata.info as { project_urls?: Record<string, unknown> } | undefined)?.project_urls ?? {};
+  const named = Object.entries(links).find(([label]) =>
+    /changelog|release notes|changes|history/i.test(label),
+  );
+  return (
+    safeHttps(named?.[1]) ??
+    Object.values(links).map(githubReleases).find(Boolean)
+  );
+};
+
 export const cutoffCandidates = async (
   dependencies: Dependency[],
   cutoff: Date,
@@ -28,6 +68,7 @@ export const cutoffCandidates = async (
     dependency: Dependency,
     targetVersion: string,
     releaseDate: string | null,
+    notesUrl: string | undefined,
   ) => void = () => {},
 ): Promise<Dependency[]> => {
   if (!Number.isFinite(cutoff.getTime()))
@@ -96,6 +137,7 @@ export const cutoffCandidates = async (
             dependency,
             targetVersion,
             typeof published === "string" ? published : null,
+            releaseNotesUrl(metadata, "npm"),
           );
           continue;
         }
@@ -135,7 +177,12 @@ export const cutoffCandidates = async (
       ) {
         candidates.push({ ...dependency, targetVersion, releaseDate });
       } else {
-        onSkip(dependency, targetVersion, releaseDate ?? null);
+        onSkip(
+          dependency,
+          targetVersion,
+          releaseDate ?? null,
+          releaseNotesUrl(metadata, dependency.ecosystem),
+        );
       }
     } catch (error) {
       report(dependency, error);

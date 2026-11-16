@@ -282,6 +282,28 @@ describe("dependency PR publication", () => {
     expect(pr.body.body).toContain("Spend and receipts for this repository: https://telegraph-pr-agent.vercel.app/?repo=team/repo");
     expect(fixture.calls.some((call) => call.method === "PATCH")).toBe(false);
   });
+  it("opens a free PR with release date, cutoff, links and its own evidence, and no purchase", async () => {
+    const { purchase: _paid, ...fixture } = publisherFixture();
+    fixture.update.finding = { ...pythonFinding, sources: ["https://pypi.org/project/requests/2.32.3/"] };
+    await createDependencyPr({ ...fixture, free: { releaseDate: "2024-05-29T15:37:39Z", cutoff: "2025-01-01" } });
+    const body = String(fixture.calls.find((call) => call.path === "/pulls" && call.method === "POST")!.body.body);
+    expect(body).toContain("released on 2024-05-29, before the model cutoff 2025-01-01, so no intelligence was bought");
+    expect(body).toContain("- https://pypi.org/project/requests/2.32.3/");
+    expect(body).not.toContain("Miner finding and purchase evidence");
+    const evidence = body.split("Upgrade evidence (no purchase):\n\n")[1].split("\n\n")[0];
+    const detail = JSON.parse(evidence.split("\n").map((line) => line.replace(/^    /, "")).join("\n"));
+    expect(detail).toEqual({ ecosystem: "PyPI", package: "requests", source: "requirements.txt", currentVersion: "2.31.0",
+      targetVersion: "2.32.3", releaseDate: "2024-05-29T15:37:39Z", cutoff: "2025-01-01", free: true });
+  });
+
+  it("needs exactly one of purchase evidence or a free reason", async () => {
+    const fixture = publisherFixture();
+    await expect(createDependencyPr({ ...fixture, purchase: undefined })).rejects.toThrow(/either purchase evidence/);
+    await expect(createDependencyPr({ ...fixture, free: { releaseDate: "2024-01-01", cutoff: "2025-01-01" } }))
+      .rejects.toThrow(/either purchase evidence/);
+    expect(fixture.calls).toHaveLength(0);
+  });
+
   it("opens the PR as a draft when asked", async () => {
     const fixture = publisherFixture();
     await createDependencyPr({ ...fixture, draft: true });

@@ -221,6 +221,7 @@ function outcomesLine(o) {
   const useful = o.costPerUsefulAnswer === null ? "cost per useful answer N/A"
     : `${usdc(o.costPerUsefulAnswer)} USDC per useful answer (${o.useful} useful)`;
   return `${o.proposed} PRs proposed · ${o.merged} merged · ${o.closed} closed unmerged (${usdc(o.closedSpend)} USDC) · ${o.open} open · ${rate} · ${useful}`
+    + (o.free.proposed ? ` · free pre-cutoff PRs (no purchase): ${o.free.proposed} proposed, ${o.free.merged} merged, ${o.free.closed} closed, ${o.free.open} open` : "")
     + ` · escrow credits ${usdc(o.escrowCredits.amountUsdc)} USDC (${o.escrowCredits.count}, not spend)`
     + ` · refused quotes ${usdc(o.refusedQuotes.amountUsdc)} USDC (${o.refusedQuotes.count}, not spend)`
     + (o.chargedWithoutAnswer.count

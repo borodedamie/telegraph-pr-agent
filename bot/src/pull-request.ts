@@ -15,6 +15,23 @@ export type PurchaseEvidence = Pick<
   "minerId" | "intent" | "receiptHash" | "signalHash" | "txHash" | "amountUsdc"
 >;
 
+/** Marks the machine-readable block that merge accounting reads back out of a PR body. */
+export const PAID_EVIDENCE_MARKER = "Miner finding and purchase evidence:\n\n";
+export const FREE_EVIDENCE_MARKER = "Upgrade evidence (no purchase):\n\n";
+
+/** Why a free PR bought nothing: its target release is within the model's knowledge. */
+export interface FreeUpgrade {
+  releaseDate: string;
+  /** The model cutoff, YYYY-MM-DD. */
+  cutoff: string;
+}
+
+const indentBlock = (value: unknown): string =>
+  JSON.stringify(value, null, 2)
+    .split("\n")
+    .map((line) => `    ${line}`)
+    .join("\n");
+
 const CHANGE_HEADINGS: Record<Change["kind"], string> = {
   breaking: "Breaking changes",
   deprecation: "Deprecations",
@@ -123,13 +140,17 @@ export const createDependencyPr = async (options: {
   baseBranch: string;
   token: string;
   update: PreparedUpdate;
-  purchase: PurchaseEvidence;
+  /** Exactly one of these: the paid answer behind the update, or why none was bought. */
+  purchase?: PurchaseEvidence;
+  free?: FreeUpgrade;
   /** Open the PR as a draft; ready for review when absent or false. */
   draft?: boolean;
   fetchImpl?: typeof fetch;
 }): Promise<string> => {
-  const { root, repository, baseSha, baseBranch, token, update, purchase } =
+  const { root, repository, baseSha, baseBranch, token, update, purchase, free } =
     options;
+  if (!purchase === !free)
+    throw new Error("A dependency PR needs either purchase evidence or a free-upgrade reason");
   if (
     !/^[\w.-]+\/[\w.-]+$/.test(repository) ||
     !/^[a-f0-9]{40}$/.test(baseSha)
@@ -310,28 +331,30 @@ export const createDependencyPr = async (options: {
       sha: updatedCommit.sha,
     });
   }
-  const detail = {
+  const identityFields = {
     ecosystem: finding.ecosystem,
     package: finding.package,
     source: finding.source,
     currentVersion: finding.currentVersion,
     targetVersion: finding.targetVersion,
-    issue: finding.issue,
-    reason: finding.reason,
-    cves: finding.cves,
-    sources: finding.sources,
-    purchase,
   };
-  const body = `Updates ${finding.package} from ${finding.currentVersion} to ${finding.targetVersion}.\n\n${renderChanges(finding)}Miner finding and purchase evidence:\n\n${JSON.stringify(
-    detail,
-    null,
-    2,
-  )
-    .split("\n")
-    .map((line) => `    ${line}`)
-    .join(
-      "\n",
-    )}\n\nFor human review before merging. Registry version availability was checked. CVE claims and migration compatibility require independent review and repository CI. No repository tests were executed by the payment or publication jobs.\n\nSpend and receipts for this repository: ${dashboardLink(repository)}`;
+  const header = `Updates ${finding.package} from ${finding.currentVersion} to ${finding.targetVersion}.\n\n`;
+  const footer = `\n\nFor human review before merging. Registry version availability was checked. CVE claims and migration compatibility require independent review and repository CI. No repository tests were executed by the payment or publication jobs.\n\nSpend and receipts for this repository: ${dashboardLink(repository)}`;
+  const body = free
+    ? `${header}### Within the model's knowledge\n\n${finding.package} ${finding.targetVersion} was released on ${free.releaseDate.slice(0, 10)}, before the model cutoff ${free.cutoff}, so no intelligence was bought for this upgrade. Read the release notes before merging:\n\n${finding.sources.map((url) => `- ${url}`).join("\n")}\n\n${FREE_EVIDENCE_MARKER}${indentBlock({
+        ...identityFields,
+        releaseDate: free.releaseDate,
+        cutoff: free.cutoff,
+        free: true,
+      })}${footer}`
+    : `${header}${renderChanges(finding)}${PAID_EVIDENCE_MARKER}${indentBlock({
+        ...identityFields,
+        issue: finding.issue,
+        reason: finding.reason,
+        cves: finding.cves,
+        sources: finding.sources,
+        purchase,
+      })}${footer}`;
   const pr = await request<{ html_url: string }>("/pulls", "POST", {
     title,
     head: branch,

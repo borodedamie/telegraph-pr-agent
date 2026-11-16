@@ -58,11 +58,18 @@ export const inWindow = (rows, { from, to }) =>
  * Proposed PRs count every PR seen in a proposal, merge or close row, so PRs opened
  * before proposal rows existed still count. A merge outranks a close.
  */
-export const outcomeSummary = (rows) => {
+const prOutcomes = (rows) => {
   const pr = (row) => `${row.repo}#${row.prNumber}`;
   const merged = new Set(rows.filter((row) => row.kind === "merge").map(pr));
   const closed = new Set(rows.filter((row) => row.kind === "closed").map(pr).filter((key) => !merged.has(key)));
   const proposed = new Set([...rows.filter((row) => row.kind === "proposal").map(pr), ...merged, ...closed]);
+  return { pr, merged, closed, proposed };
+};
+
+export const outcomeSummary = (rows) => {
+  // Free PRs (pre-cutoff upgrades, nothing bought) are counted apart: they never enter paid rates or spend.
+  const free = prOutcomes(rows.filter((row) => row.free === true));
+  const { pr, merged, closed, proposed } = prOutcomes(rows.filter((row) => row.free !== true));
 
   const purchases = new Map(rows.filter((row) => !row.kind && row.status === "settled" && row.receiptHash)
     .map((row) => [row.receiptHash, row]));
@@ -88,6 +95,8 @@ export const outcomeSummary = (rows) => {
     proposed: proposed.size, merged: merged.size, closed: closed.size, open: proposed.size - merged.size - closed.size,
     mergeRate: proposed.size ? merged.size / proposed.size : null,
     closedSpend,
+    free: { proposed: free.proposed.size, merged: free.merged.size, closed: free.closed.size,
+      open: free.proposed.size - free.merged.size - free.closed.size },
     useful, costPerUsefulAnswer: useful ? netSpend / useful : null,
     escrowCredits: { count: credited.length, amountUsdc: sum(credited) },
     refusedQuotes: { count: refused.length, amountUsdc: sum(refused) },
@@ -117,10 +126,10 @@ const csvCell = (value, external) => {
  */
 export const evidenceCsv = (rows) => {
   const outcomes = new Map();
-  for (const row of rows.filter((row) => row.kind === "proposal")) outcomes.set(row.receiptHash, { pr: row.prNumber, outcome: "open" });
-  for (const row of rows.filter((row) => row.kind === "closed")) outcomes.set(row.receiptHash, { pr: row.prNumber, outcome: "closed_unmerged" });
+  for (const row of rows.filter((row) => row.kind === "proposal" && row.receiptHash)) outcomes.set(row.receiptHash, { pr: row.prNumber, outcome: "open" });
+  for (const row of rows.filter((row) => row.kind === "closed" && row.receiptHash)) outcomes.set(row.receiptHash, { pr: row.prNumber, outcome: "closed_unmerged" });
   // Applied last: a merge outranks an earlier close.
-  for (const row of rows.filter((row) => row.kind === "merge")) outcomes.set(row.receiptHash, { pr: row.prNumber, outcome: "merged" });
+  for (const row of rows.filter((row) => row.kind === "merge" && row.receiptHash)) outcomes.set(row.receiptHash, { pr: row.prNumber, outcome: "merged" });
   const tx = (row) => (row.txHash && explorerBase(row) ? `${explorerBase(row)}/tx/${row.txHash}` : "");
   const lines = purchaseRows(rows).filter((row) => row.status === "settled").map((row) => {
     const pr = outcomes.get(row.receiptHash);

@@ -107,10 +107,12 @@ export interface MergeRow {
   prNumber: number;
   headSha: string;
   mergeSha: string;
-  receiptHash: string;
+  /** Absent on a free PR's merge. */
+  receiptHash?: string;
   mergedAt: string;
-  /** Branch the PR merged into: always the default branch. Absent on rows written before 16 Nov 2026. */
+  /** Branch the PR merged into: the default branch or a merge-branches match. Absent on rows written before 16 Nov 2026. */
   baseRef?: string;
+  free?: true;
   timestamp: string;
 }
 
@@ -120,9 +122,12 @@ export interface ProposalRow {
   repo: string;
   prNumber: number;
   prUrl: string;
-  assessmentId: string;
-  attemptId: string;
-  receiptHash: string;
+  /** Absent on a free proposal: nothing was bought. */
+  assessmentId?: string;
+  attemptId?: string;
+  receiptHash?: string;
+  /** A pre-cutoff upgrade proposed without a purchase; never part of cost per merged PR. */
+  free?: true;
   ecosystem: string;
   package: string;
   source: string;
@@ -137,8 +142,10 @@ export interface ClosedRow {
   repo: string;
   prNumber: number;
   headSha: string;
-  receiptHash: string;
+  /** Absent on a free PR's close. */
+  receiptHash?: string;
   closedAt: string;
+  free?: true;
   /** Set when the PR was merged into a branch other than the default branch: not counted as a merge. */
   mergedInto?: string;
   timestamp: string;

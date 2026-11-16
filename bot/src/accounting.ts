@@ -6,6 +6,7 @@ import {
   type LedgerRow,
   type MergeRow,
 } from "./ledger.js";
+import { FREE_EVIDENCE_MARKER, PAID_EVIDENCE_MARKER } from "./pull-request.js";
 import type { Ledger } from "./purchase.js";
 
 export interface MergedPr {
@@ -54,8 +55,11 @@ export const recordMerge = async (
     );
   const counted = pr.merged && (listed || pr.base.ref === defaultBranch);
   const closedAt = pr.closed_at ?? pr.merged_at;
+  // A free PR (pre-cutoff upgrade, nothing bought) carries its own marker and is anchored to its
+  // proposal row instead of a purchase; it never joins cost per merged PR.
+  const free = !pr.body?.includes(PAID_EVIDENCE_MARKER) && !!pr.body?.includes(FREE_EVIDENCE_MARKER);
   const evidence = pr.body
-    ?.split("Miner finding and purchase evidence:\n\n")[1]
+    ?.split(free ? FREE_EVIDENCE_MARKER : PAID_EVIDENCE_MARKER)[1]
     ?.split("\n\n")[0];
   if (!evidence)
     throw new Error(
@@ -68,8 +72,9 @@ export const recordMerge = async (
       .join("\n"),
   );
   if (
-    typeof detail.purchase?.receiptHash !== "string" ||
-    !detail.purchase.receiptHash
+    !free &&
+    (typeof detail.purchase?.receiptHash !== "string" ||
+      !detail.purchase.receiptHash)
   ) {
     throw new Error(
       "Purchase receipt is missing; reconcile the paid assessment before merge accounting",
@@ -95,28 +100,43 @@ export const recordMerge = async (
         .split("\n")
         .filter((line) => line.trim())
         .map((line) => JSON.parse(line));
-      const paid: LedgerRow | undefined = rows.find(
-        (row) =>
-          !row.kind &&
-          row.repo === repository &&
-          row.receiptHash === detail.purchase?.receiptHash &&
-          row.status === "settled" &&
-          row.package === detail.package &&
-          row.source === detail.source &&
-          row.currentVersion === detail.currentVersion &&
-          row.targetVersion === detail.targetVersion,
-      );
-      if (!paid)
-        throw new Error("PR evidence does not match a recorded purchase");
+      const sameUpgrade = (row: Record<string, unknown>) =>
+        row.repo === repository &&
+        row.package === detail.package &&
+        row.source === detail.source &&
+        row.currentVersion === detail.currentVersion &&
+        row.targetVersion === detail.targetVersion;
+      const anchor: LedgerRow | undefined = free
+        ? rows.find(
+            (row) =>
+              row.kind === "proposal" &&
+              row.free === true &&
+              row.prNumber === pr.number &&
+              sameUpgrade(row),
+          )
+        : rows.find(
+            (row) =>
+              !row.kind &&
+              row.receiptHash === detail.purchase?.receiptHash &&
+              row.status === "settled" &&
+              sameUpgrade(row),
+          );
+      if (!anchor)
+        throw new Error(
+          free
+            ? "PR evidence does not match a recorded free proposal"
+            : "PR evidence does not match a recorded purchase",
+        );
+      const receipt = free ? { free: true as const } : { receiptHash: anchor.receiptHash };
       const identity = createHash("sha256")
         .update(
           JSON.stringify([
             pr.base.ref,
             detail.ecosystem,
-            paid.source,
-            paid.package,
-            paid.currentVersion,
-            paid.targetVersion,
+            anchor.source,
+            anchor.package,
+            anchor.currentVersion,
+            anchor.targetVersion,
           ]),
         )
         .digest("hex")
@@ -127,7 +147,8 @@ export const recordMerge = async (
         (row) =>
           row.kind === "merge" &&
           row.repo === repository &&
-          (row.prNumber === pr.number || row.receiptHash === paid.receiptHash),
+          (row.prNumber === pr.number ||
+            (!free && row.receiptHash === anchor.receiptHash)),
       );
       if (!counted) {
         // A merge outranks a close; the same close seen twice (a rerun) is recorded once.
@@ -147,7 +168,7 @@ export const recordMerge = async (
           repo: repository,
           prNumber: pr.number,
           headSha: pr.head.sha,
-          receiptHash: paid.receiptHash,
+          ...receipt,
           closedAt: closedAt!,
           ...(pr.merged ? { mergedInto: pr.base.ref } : {}),
           timestamp: new Date().toISOString(),
@@ -161,7 +182,7 @@ export const recordMerge = async (
         prNumber: pr.number,
         headSha: pr.head.sha,
         mergeSha: pr.merge_commit_sha!,
-        receiptHash: paid.receiptHash,
+        ...receipt,
         mergedAt: pr.merged_at!,
         baseRef: pr.base.ref,
         timestamp: new Date().toISOString(),

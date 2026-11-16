@@ -53,9 +53,24 @@ test("counts proposed, merged, closed and open PRs, and the merge rate", () => {
   const summary = outcomeSummary(rows);
   assert.deepEqual({ ...summary, escrowCredits: undefined, refusedQuotes: undefined, chargedWithoutAnswer: undefined }, {
     proposed: 4, merged: 2, closed: 1, open: 1, mergeRate: 0.5, closedSpend: 0.5,
+    free: { proposed: 0, merged: 0, closed: 0, open: 0 },
     useful: 0, costPerUsefulAnswer: null, escrowCredits: undefined, refusedQuotes: undefined, chargedWithoutAnswer: undefined,
   });
   assert.equal(outcomeSummary([]).mergeRate, null);
+});
+
+test("counts free PRs apart, outside paid rates, spend and cost per merged PR", () => {
+  const paid = [{ repo: "r", status: "settled", receiptHash: "a", amountUsdc: 0.1 },
+    { kind: "proposal", repo: "r", prNumber: 1, receiptHash: "a" }, { kind: "merge", repo: "r", prNumber: 1, receiptHash: "a" }];
+  const free = [{ kind: "proposal", repo: "r", prNumber: 2, free: true }, { kind: "merge", repo: "r", prNumber: 2, free: true },
+    { kind: "proposal", repo: "r", prNumber: 3, free: true }, { kind: "closed", repo: "r", prNumber: 3, free: true },
+    { kind: "proposal", repo: "r", prNumber: 4, free: true }];
+  const summary = outcomeSummary([...paid, ...free]);
+  assert.deepEqual({ proposed: summary.proposed, merged: summary.merged, mergeRate: summary.mergeRate },
+    { proposed: 1, merged: 1, mergeRate: 1 });
+  assert.deepEqual(summary.free, { proposed: 3, merged: 1, closed: 1, open: 1 });
+  assert.equal(mergedCosts([...paid, ...free]).costPerMergedPr, 0.1);
+  assert.equal(mergedCosts([...paid, ...free]).count, 1);
 });
 
 test("counts a merge from before proposal rows existed as a proposed PR", () => {

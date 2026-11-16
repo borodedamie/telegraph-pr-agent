@@ -393,6 +393,10 @@ export const recordProposal = async (
     },
     ledger,
   );
+  // A free proposal bought nothing, so there is no answer to mark useful.
+  if (proposal.free) return;
+  if (!proposal.attemptId)
+    throw new Error(`Paid proposal PR #${proposal.prNumber} has no attempt to mark useful`);
   await markAssessmentResult(
     ledger,
     proposal.attemptId,

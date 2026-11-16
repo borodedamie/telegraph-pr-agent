@@ -276,9 +276,15 @@ it buys one answer per package and opens one PR per update, ready for review (ad
 `draft-prs: "true"` under `with:` to open drafts instead); review it, run your CI,
 merge or close it. Each PR starts with **What changed**: the documented breaking changes,
 deprecations and security fixes between your version and the target, breaking changes
-first, each with its migration step and a quote from the release notes. Newer releases that
-are not after your cutoff are listed in the run log as skipped, with their release date;
-nothing is bought for them.
+first, each with its migration step and a quote from the release notes.
+
+Newer releases on or before your cutoff are within your model's knowledge, so nothing is
+bought for them: the bot still opens a free PR for each (up to 5 per run, `max-free-prs`;
+`"0"` turns them off), stating the release date and the cutoff and linking the registry page
+and the release notes. An upgrade already proposed is not proposed again. Releases with an
+unknown date are only listed in the run log as skipped. Free PRs and their merges are marked
+`free` on the ledger and the dashboard counts them on their own line; they never enter cost
+per merged PR. Tested offline; not yet run on a live repository.
 
 **7. See the spend.** `https://telegraph-pr-agent.vercel.app/?repo=OWNER/REPO` reads your
 repository's `ledger` branch: every purchase with its receipt, signal and transaction, and
