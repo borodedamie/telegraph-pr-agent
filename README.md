@@ -471,7 +471,9 @@ sources and hashed/continued Python pins rather than publish stale lock data.
 Binary `bun.lockb` needs migration to text `bun.lock` first. Custom pnpm settings,
 overrides and resolutions remain unsupported for the additional managers. A declared
 pnpm/Yarn/Bun `packageManager` release must match the installed executable; otherwise
-preparation fails. Valid Corepack SHA-1/224/256/384/512 suffixes are accepted.
+the dependency is skipped with a warning before any assessment purchase. The same
+version and lock-format checks run again during preparation. Valid Corepack
+SHA-1/224/256/384/512 suffixes are accepted.
 Updates temporarily pin the exact recommendation, restore the original range style,
 and finalize with the same native manager; the resulting lock must retain that target.
 Yarn's built-in TypeScript, resolve and fsevents compatibility patches are accepted;

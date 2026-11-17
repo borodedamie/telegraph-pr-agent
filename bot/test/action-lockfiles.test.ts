@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { lockedVersions, readPackageLock } from "../src/lockfiles.js";
 import { scanRepository } from "../src/scan.js";
-import { prepareUpdate, updateManifest } from "../src/updates.js";
+import { checkPackageManager, prepareUpdate, updateManifest } from "../src/updates.js";
 import { createDependencyPr } from "../src/pull-request.js";
 
 const directories: string[] = [];
@@ -177,6 +177,17 @@ describe.each(formats)("$format lockfiles", (format) => {
       scan.dependencies.some((dependency) => dependency.package === "zod"),
     ).toBe(false);
     expect(scan.skipped.some((entry) => entry.package === "zod")).toBe(true);
+  });
+  it("checks the manager without installing or modifying the checkout", () => {
+    const root = fixture(format);
+    const observed = fakeManager(root, format);
+    checkPackageManager(root, finding);
+    expect(existsSync(observed)).toBe(false);
+    writeFileSync(join(root, "package.json"), JSON.stringify({ ...manifest, packageManager: `${format.manager}@99.0.0` }));
+    expect(() => checkPackageManager(root, finding)).toThrow(/Install/);
+    expect(existsSync(observed)).toBe(false);
+    vi.stubEnv("PATH", directory());
+    expect(() => checkPackageManager(root, finding)).toThrow();
   });
   it("uses the native manager without credentials and preserves the checkout", async () => {
     const root = fixture(format);

@@ -70,7 +70,11 @@ export const updateManifest = (
   return updated;
 };
 
-const runPackageManager = (directory: string, lock: PackageLock): void => {
+const runPackageManager = (
+  directory: string,
+  lock: PackageLock,
+  checkOnly = false,
+): void => {
   const env = {
     PATH: process.env.PATH,
     HOME: directory,
@@ -153,7 +157,26 @@ const runPackageManager = (directory: string, lock: PackageLock): void => {
       "--registry=https://registry.npmjs.org",
     ];
   }
-  execFileSync(lock.manager, args, options);
+  if (!checkOnly) execFileSync(lock.manager, args, options);
+};
+
+export const checkPackageManager = (
+  root: string,
+  dependency: { ecosystem: string; source: string },
+): void => {
+  if (dependency.ecosystem !== "npm") return;
+  const lock = readPackageLock(root, dependency.source);
+  if (lock.manager === "npm") return;
+  const directory = mkdtempSync(join(tmpdir(), "telegraph-manager-"));
+  try {
+    writeFileSync(
+      join(directory, "package.json"),
+      readRepositoryFile(root, dependency.source),
+    );
+    runPackageManager(directory, lock, true);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 };
 
 export const prepareUpdate = async (
