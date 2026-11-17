@@ -54,7 +54,8 @@ preferred miner when configured, then the ranked list (with fallback after
 a classified failure), and prepares dependency PRs (ready for review by default; drafts with the `draft-prs` input) for validated
 CVE/outdated findings. The action chooses newer stable npm/PyPI targets with
 verified release dates strictly after the configured model cutoff; no candidate
-means no payment or PR. Findings must preserve that verified target. At the user's request, a single action invocation now performs
+means no payment. Newer stable releases with a verified date on or before the cutoff get a
+free PR with no purchase (§2.3). Findings must preserve that verified target. At the user's request, a single action invocation now performs
 payment, preparation and publication in one job, without stage inputs or artifact
 files. It executes no repository scripts. npm lock generation receives a minimal
 credential-free subprocess environment and uses `--ignore-scripts`; separate-runner
@@ -165,6 +166,7 @@ model identity and source. Miner `7314` is the default; an explicit miner `0` sk
 - [PRODUCT] A comes from the lockfile, never from stripping `^`/`~` off a `package.json` range.
 - [PRODUCT] Edge cases, MVP behaviour: B is the registry `latest` dist-tag when it is stable, otherwise the highest stable version; aliases (`npm:`), Git URLs, `file:`, `link:` and `workspace:` specifiers are skipped with a diagnostic; invalid or non-semver ranges are skipped; scoped packages are supported; lockfile and `package.json` disagreeing (lockfile out of date) fails closed for that package; a version missing from the registry is skipped; release timestamp missing fails closed.
 - [PRODUCT] Multi-major jumps: if B is more than one major version above A, the question and report cover every intervening major release (or the PR targets the next major only); asking only "A to B" may miss intermediate deprecations. The target stays B, the eligible post-cutoff version; the question and report cover every intervening major release. Never retarget a PR to an intermediate version released before the cutoff: that would pay for something the model already knows. Splitting large jumps into steps is open.
+- [PRODUCT] Pre-cutoff upgrades (added 16 Nov): when B > A and B's verified release date is on or before `MODEL_CUTOFF`, the model already knows B, so nothing is bought. The Action opens a free PR instead, up to `max-free-prs` per run (default 5, `0` turns them off), stating the release date and the cutoff and linking the registry page and the release notes found in registry metadata (npm `repository`, PyPI `project_urls`). An upgrade already proposed on the ledger is not proposed again. Unknown release dates get no PR. The PR body carries its own evidence block ("Upgrade evidence (no purchase)"); the ledger records the proposal, merge and close rows with `free: true` and no receipt. Merge accounting anchors a free PR to its free proposal row and applies the same branch-identity and default-branch rules as a paid PR. Vulnerabilities (OSV) for free PRs are not checked yet.
 - [PRODUCT] Internal classification is `post_cutoff_candidate`, not `unknown_to_model`: a published cutoff is a heuristic, not proof the model cannot know later information.
 - [PRODUCT] Config records provider, exact model identifier, cutoff date, cutoff source URL, whether the cutoff is provider-documented or team-assumed, and configuration timestamp. The cutoff belongs to the installer's configured model; there is no project-wide universal cutoff. If the provider documents none, the date is labelled team-assumed.
 - [PRODUCT] Do not require unused credentials: either the LLM call is implemented or `LLM_API_KEY` is not required.
@@ -400,7 +402,7 @@ The miner's detailed spec, plan and tasks are in [miner/specs/001-package-releas
 
 ### 4.3 Cost per merged PR
 
-Cost per merged PR = total net automation expenditure ÷ number of merged bot PRs. A bot PR counts as merged only when it merges into the repository's default branch or a branch matching the optional `merge-branches` globs (for example `release/*`); a merge into any other branch, such as a test branch, is recorded as `closed` with `mergedInto`, so its spend stays in the numerator but it never enters the denominator. Default window: cumulative over the repository's whole ledger; a dated reporting window (for example the event period) is shown as a separate figure with its dates.
+Cost per merged PR = total net automation expenditure ÷ number of merged bot PRs. A bot PR counts as merged only when it merges into the repository's default branch or a branch matching the optional `merge-branches` globs (for example `release/*`); a merge into any other branch, such as a test branch, is recorded as `closed` with `mergedInto`, so its spend stays in the numerator but it never enters the denominator. Free PRs (pre-cutoff upgrades, §2.3) cost nothing and are excluded from both: the dashboard counts their proposals, merges and closes on a separate line. Default window: cumulative over the repository's whole ledger; a dated reporting window (for example the event period) is shown as a separate figure with its dates.
 
 | Item | Treatment |
 | --- | --- |

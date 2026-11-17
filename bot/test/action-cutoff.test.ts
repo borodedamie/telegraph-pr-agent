@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { cutoffCandidates } from "../src/cutoff.js";
+import { cutoffCandidates, releaseNotesUrl } from "../src/cutoff.js";
 import { parseFindings } from "../src/assessment.js";
 
 const dependency = { ecosystem: "npm" as const, package: "foo", currentVersion: "1.0.0", source: "package.json", declared: "^1.0.0" };
@@ -22,12 +22,23 @@ it("reports a newer release that is not after the cutoff, with its date, and buy
   const report = vi.fn();
   expect(await cutoffCandidates([dependency], cutoff,
     response({ ...npm, time: { "2.0.0": "2024-06-01T00:00:00Z" } }), report, onSkip)).toEqual([]);
-  expect(onSkip).toHaveBeenCalledWith(dependency, "2.0.0", "2024-06-01T00:00:00Z");
+  expect(onSkip).toHaveBeenCalledWith(dependency, "2.0.0", "2024-06-01T00:00:00Z", undefined);
   expect(report).not.toHaveBeenCalled();
   const python = { ...dependency, ecosystem: "PyPI" as const, source: "requirements.txt", currentVersion: "1" };
   await cutoffCandidates([python], cutoff, response({ info: { name: "foo" },
     releases: { "2.0": [{ yanked: false, upload_time_iso_8601: "2024-06-01T00:00:00Z" }] } }), report, onSkip);
-  expect(onSkip).toHaveBeenLastCalledWith(python, "2.0", "2024-06-01T00:00:00.000Z");
+  expect(onSkip).toHaveBeenLastCalledWith(python, "2.0", "2024-06-01T00:00:00.000Z", undefined);
+});
+
+it("links release notes from registry metadata only", () => {
+  expect(releaseNotesUrl({ repository: { url: "git+https://github.com/lodash/lodash.git" } }, "npm"))
+    .toBe("https://github.com/lodash/lodash/releases");
+  expect(releaseNotesUrl({ repository: "https://example.com/repo" }, "npm")).toBeUndefined();
+  expect(releaseNotesUrl({ info: { project_urls: {
+    Source: "https://github.com/psf/requests", Changelog: "https://requests.readthedocs.io/en/latest/community/updates/",
+  } } }, "PyPI")).toBe("https://requests.readthedocs.io/en/latest/community/updates/");
+  expect(releaseNotesUrl({ info: { project_urls: { Changelog: "javascript:alert(1)", Source: "https://github.com/a/b" } } }, "PyPI"))
+    .toBe("https://github.com/a/b/releases");
 });
 
 it("does not report a skip when the installed version is already the latest", async () => {

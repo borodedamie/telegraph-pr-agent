@@ -212,3 +212,53 @@ export const applyAssessment = async (options: {
   }
   return urls;
 };
+
+/** Registry page for one release: what a reviewer checks the version against. */
+export const registryUrl = (dependency: Dependency, version: string): string =>
+  dependency.ecosystem === "npm"
+    ? `https://www.npmjs.com/package/${dependency.package}/v/${encodeURIComponent(version)}`
+    : `https://pypi.org/project/${encodeURIComponent(dependency.package)}/${encodeURIComponent(version)}/`;
+
+/**
+ * Open a PR for an upgrade released on or before the model cutoff, without buying anything: the
+ * model already knows that release, so the PR links its registry page and release notes instead.
+ */
+export const applyFreeUpgrade = async (options: {
+  root: string;
+  repository: string;
+  baseBranch: string;
+  baseSha: string;
+  token: string;
+  dependency: Dependency;
+  targetVersion: string;
+  releaseDate: string;
+  /** The model cutoff, YYYY-MM-DD. */
+  cutoff: string;
+  notesUrl?: string;
+  draft?: boolean;
+}): Promise<{ url: string; finding: Finding }> => {
+  const { dependency, targetVersion } = options;
+  const finding = findingSchema.parse({
+    ecosystem: dependency.ecosystem,
+    package: dependency.package,
+    source: dependency.source,
+    currentVersion: dependency.currentVersion,
+    targetVersion,
+    issue: "outdated",
+    reason: `Released ${options.releaseDate.slice(0, 10)}, on or before the model cutoff ${options.cutoff}`,
+    cves: [],
+    sources: [registryUrl(dependency, targetVersion), ...(options.notesUrl ? [options.notesUrl] : [])],
+  });
+  const update = await prepareUpdate(options.root, finding);
+  const url = await createDependencyPr({
+    root: options.root,
+    repository: options.repository,
+    baseBranch: options.baseBranch,
+    baseSha: options.baseSha,
+    token: options.token,
+    update,
+    free: { releaseDate: options.releaseDate, cutoff: options.cutoff },
+    draft: options.draft,
+  });
+  return { url, finding };
+};

@@ -1,8 +1,9 @@
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   checkManager: vi.fn(), warning: vi.fn(), info: vi.fn(), NotFoundAssessmentError: class extends Error {}, fetchPr: vi.fn(), InvalidAssessmentError: class extends Error {}, unusable: vi.fn(), notice: vi.fn(), merge: vi.fn(), read: vi.fn(), visibility: vi.fn(), candidates: vi.fn(), open: vi.fn(), purchase: vi.fn(),
   buy: vi.fn(), client: vi.fn(), apply: vi.fn(), failed: vi.fn(), output: vi.fn(),
+  free: vi.fn(),
   inputs: {} as Record<string, string>, proposal: vi.fn(), reconcile: vi.fn(), checkReconciliation: vi.fn(),
 }));
 vi.mock("@actions/core", () => ({
@@ -11,6 +12,7 @@ vi.mock("@actions/core", () => ({
 }));
 vi.mock("node:child_process", () => ({ execFileSync: () => "a".repeat(40) }));
 vi.mock("node:fs", () => ({ rmSync: vi.fn(), readFileSync: mocks.read }));
+vi.mock("../src/ledger.js", () => ({ LEDGER_FILE: "ledger.jsonl" }));
 vi.mock("../src/accounting.js", () => ({ recordMerge: mocks.merge, fetchMergedPr: mocks.fetchPr }));
 vi.mock("../src/scan.js", () => ({ scanRepository: async () => ({
   root: "/repo", skipped: [], dependencies: [{ package: "zod" }],
@@ -19,7 +21,7 @@ vi.mock("../src/updates.js", () => ({ checkPackageManager: mocks.checkManager })
 vi.mock("../src/cutoff.js", () => ({ cutoffCandidates: mocks.candidates }));
 vi.mock("../src/purchase.js", () => ({ openLedger: mocks.open, purchaseAssessment: mocks.purchase, markAssessmentResult: mocks.unusable, recordProposal: mocks.proposal }));
 vi.mock("../src/pull-request.js", () => ({ checkedOutBranch: () => "feature", assertPublicRepository: mocks.visibility }));
-vi.mock("../src/assessment.js", () => ({ NotFoundAssessmentError: mocks.NotFoundAssessmentError, InvalidAssessmentError: mocks.InvalidAssessmentError, assessmentPrompt: () => "assess dependencies", applyAssessment: mocks.apply }));
+vi.mock("../src/assessment.js", () => ({ NotFoundAssessmentError: mocks.NotFoundAssessmentError, InvalidAssessmentError: mocks.InvalidAssessmentError, assessmentPrompt: () => "assess dependencies", applyAssessment: mocks.apply, applyFreeUpgrade: mocks.free }));
 vi.mock("../src/reconcile.js", () => ({ checkReconciliation: mocks.checkReconciliation, reconcileAttempt: mocks.reconcile }));
 vi.mock("../src/x402.js", () => ({ IntelligenceClient: function (options: unknown) {
   mocks.client(options);
@@ -331,6 +333,83 @@ it.each(["MODEL_PROVIDER", "MODEL_ID"])("blocks placeholder %s before opening th
   await run("failed");
   expect(mocks.open).not.toHaveBeenCalled();
   expect(mocks.buy).not.toHaveBeenCalled();
+});
+
+describe("pre-cutoff upgrades", () => {
+  const zod = { package: "zod", ecosystem: "npm", source: "package.json", currentVersion: "3.0.0" };
+  const skips = (count: number, releaseDate: string | null = "2024-06-01T00:00:00Z") =>
+    mocks.candidates.mockImplementation(async (_deps, _cutoff, _fetch, _report, onSkip) => {
+      for (let i = 0; i < count; i++)
+        onSkip({ ...zod, package: `pkg-${i}` }, "4.0.0", releaseDate, "https://github.com/colinhacks/zod/releases");
+      return [];
+    });
+  beforeEach(() => {
+    mocks.read.mockReturnValue("");
+    mocks.free.mockImplementation(async ({ dependency, targetVersion }) => ({
+      url: `https://github.com/team/repo/pull/${7 + Number(dependency.package.split("-")[1])}`,
+      finding: { ...dependency, targetVersion },
+    }));
+  });
+
+  it("opens a free PR and records it as a free proposal, buying nothing", async () => {
+    skips(1);
+    await run();
+    expect(mocks.buy).not.toHaveBeenCalled();
+    expect(mocks.free).toHaveBeenCalledWith(expect.objectContaining({
+      targetVersion: "4.0.0", releaseDate: "2024-06-01T00:00:00Z", cutoff: "2025-01-01",
+      notesUrl: "https://github.com/colinhacks/zod/releases",
+    }));
+    expect(mocks.proposal).toHaveBeenCalledWith({ directory: "/mock-ledger" }, expect.objectContaining({
+      prNumber: 7, free: true, package: "pkg-0", targetVersion: "4.0.0",
+    }));
+    expect(mocks.proposal.mock.calls[0][1]).not.toHaveProperty("receiptHash");
+    expect(mocks.output).toHaveBeenCalledWith("pull-requests", JSON.stringify(["https://github.com/team/repo/pull/7"]));
+  });
+
+  it("caps free PRs per run with max-free-prs, and 0 turns them off", async () => {
+    skips(4);
+    mocks.inputs["max-free-prs"] = "2";
+    await run();
+    expect(mocks.free).toHaveBeenCalledTimes(2);
+    vi.resetModules();
+    mocks.free.mockClear();
+    mocks.output.mockClear();
+    mocks.inputs["max-free-prs"] = "0";
+    await run();
+    expect(mocks.free).not.toHaveBeenCalled();
+    expect(mocks.open).toHaveBeenCalledOnce();
+  });
+
+  it("does not propose an upgrade already on the ledger or with an unknown release date", async () => {
+    skips(1);
+    mocks.read.mockReturnValue(`${JSON.stringify({ kind: "proposal", repo: "team/repo", ...zod, package: "pkg-0", targetVersion: "4.0.0", free: true })}\n`);
+    await run();
+    expect(mocks.free).not.toHaveBeenCalled();
+    vi.resetModules();
+    mocks.open.mockClear();
+    mocks.output.mockClear();
+    skips(1, null);
+    await run();
+    expect(mocks.free).not.toHaveBeenCalled();
+    expect(mocks.open).not.toHaveBeenCalled();
+  });
+
+  it("skips a free PR whose package manager is unusable, without failing the run", async () => {
+    skips(2);
+    mocks.checkManager.mockImplementationOnce(() => { throw new Error("pnpm not found"); });
+    await run();
+    expect(mocks.warning).toHaveBeenCalledWith("pkg-0: pnpm not found; skipped, no free PR opened");
+    expect(mocks.free).toHaveBeenCalledOnce();
+    expect(mocks.free.mock.calls[0][0].dependency.package).toBe("pkg-1");
+  });
+
+  it("rejects an invalid max-free-prs before anything runs", async () => {
+    skips(1);
+    mocks.inputs["max-free-prs"] = "-1";
+    await run("failed");
+    expect(mocks.free).not.toHaveBeenCalled();
+    expect(mocks.open).not.toHaveBeenCalled();
+  });
 });
 
 it.each(["pnpm not found", "Install yarn@4.9.2 before preparing this update; found yarn@1.22.22", "Installed pnpm does not match the lockfile format"])(

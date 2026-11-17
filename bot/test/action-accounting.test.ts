@@ -131,3 +131,39 @@ it("fetches corrected evidence on rerun and rejects lookup failures", async () =
   await expect(fetchMergedPr("team/repo", 42, "token", async () => new Response("", { status: 503 }))).rejects.toThrow(/HTTP 503/);
   await expect(fetchMergedPr("team/repo", 43, "token", fetchImpl)).rejects.toThrow(/different PR/);
 });
+
+const freeFixture = (proposed = true) => {
+  const f = fixture();
+  const upgrade = { ecosystem: "npm", package: "foo", source: "package.json", currentVersion: "1.0.0", targetVersion: "2.0.0" };
+  const proposal = { kind: "proposal", repo: "team/repo", prNumber: 42, prUrl: "https://github.com/team/repo/pull/42", free: true, ...upgrade };
+  // Only the free proposal is on the ledger: no purchase backs this PR.
+  const ledgerPath = join(f.ledger.directory, "ledger.jsonl");
+  writeFileSync(ledgerPath, proposed ? `${JSON.stringify(proposal)}\n` : "");
+  f.ledger.runGit.mockImplementation(async () => {});
+  const body = `Upgrade evidence (no purchase):\n\n${JSON.stringify({ ...upgrade, releaseDate: "2024-01-01T00:00:00Z", cutoff: "2025-01-01", free: true }, null, 2)
+    .split("\n").map((l) => `    ${l}`).join("\n")}\n\nFor human review.`;
+  return { ...f, pr: { ...f.pr, body }, rows: () => readFileSync(ledgerPath, "utf8").trim().split("\n").map((l) => JSON.parse(l)) };
+};
+
+it("records a free PR's merge and close against its proposal, with no receipt", async () => {
+  const f = freeFixture();
+  expect(await recordMerge(f.ledger, "team/repo", f.pr)).toBe("merged");
+  await recordMerge(f.ledger, "team/repo", f.pr);
+  expect(f.rows()).toHaveLength(2);
+  expect(f.rows()[1]).toMatchObject({ kind: "merge", prNumber: 42, free: true, baseRef: "main" });
+  expect(f.rows()[1]).not.toHaveProperty("receiptHash");
+
+  const c = freeFixture();
+  expect(await recordMerge(c.ledger, "team/repo", closed(c.pr))).toBe("closed");
+  expect(c.rows()[1]).toMatchObject({ kind: "closed", prNumber: 42, free: true });
+});
+
+it("rejects a free PR without a matching free proposal or with a forged branch", async () => {
+  const f = freeFixture(false);
+  await expect(recordMerge(f.ledger, "team/repo", f.pr)).rejects.toThrow(/recorded free proposal/);
+  const g = freeFixture();
+  await expect(recordMerge(g.ledger, "team/repo", { ...g.pr, body: g.pr.body.replace('"2.0.0"', '"3.0.0"') }))
+    .rejects.toThrow(/recorded free proposal/);
+  await expect(recordMerge(g.ledger, "team/repo", { ...g.pr, head: { ...g.pr.head, ref: "fix/telegraph-dependency-wrong" } }))
+    .rejects.toThrow(/branch differs/);
+});

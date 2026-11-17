@@ -2,7 +2,10 @@ import { dashboardLink, readModelProvenance } from "./config.js";
 import * as core from "@actions/core";
 import { recordMerge, fetchMergedPr } from "./accounting.js";
 import { readFileSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { LEDGER_FILE } from "./ledger.js";
 import { cutoffCandidates } from "./cutoff.js";
+import type { Dependency } from "./scan.js";
 import {
   openLedger,
   purchaseAssessment,
@@ -14,6 +17,7 @@ import { scanRepository } from "./scan.js";
 import { IntelligenceClient } from "./x402.js";
 import {
   applyAssessment,
+  applyFreeUpgrade,
   assessmentPrompt,
   InvalidAssessmentError,
   NotFoundAssessmentError,
@@ -128,6 +132,11 @@ const run = async (): Promise<void> => {
       throw new Error('draft-prs must be "true" or "false" when set');
     }
     const draftPrs = draftInput === "true";
+    // PRs per run for upgrades released on or before the cutoff: nothing is bought for them.
+    const maxFreeInput = core.getInput("max-free-prs");
+    const maxFreePrs = maxFreeInput === "" ? 5 : Number(maxFreeInput);
+    if (!Number.isSafeInteger(maxFreePrs) || maxFreePrs < 0)
+      throw new Error("max-free-prs must be a whole number, 0 to turn free PRs off");
     const preferredMinerId =
       core.getInput("preferred-miner-id") ||
       process.env.PREFERRED_MINER_ID ||
@@ -161,6 +170,12 @@ const run = async (): Promise<void> => {
     core.setOutput("pull-requests", "[]");
     let registryFailures = 0;
     let skippedBeforeCutoff = 0;
+    const freeUpgrades: {
+      dependency: Dependency;
+      targetVersion: string;
+      releaseDate: string;
+      notesUrl?: string;
+    }[] = [];
     const cutoffDay = cutoff.toISOString().slice(0, 10);
     const candidates = await cutoffCandidates(
       scan.dependencies,
@@ -172,11 +187,14 @@ const run = async (): Promise<void> => {
           `${dependency.package}: ${error instanceof Error ? error.message : String(error)}`,
         );
       },
-      (dependency, targetVersion, releaseDate) => {
+      (dependency, targetVersion, releaseDate, notesUrl) => {
         skippedBeforeCutoff++;
         core.info(
           `${dependency.package} ${dependency.currentVersion} → ${targetVersion}: released ${releaseDate?.slice(0, 10) ?? "on an unknown date"}, not after the model cutoff ${cutoffDay}; skipped, no purchase`,
         );
+        // Only a known release date on or before the cutoff is within the model's knowledge.
+        if (releaseDate && Date.parse(releaseDate) <= cutoff.getTime())
+          freeUpgrades.push({ dependency, targetVersion, releaseDate, notesUrl });
       },
     );
     if (skippedBeforeCutoff)
@@ -186,6 +204,76 @@ const run = async (): Promise<void> => {
     const urls = new Set<string>();
     const failures: string[] = [];
     core.setOutput("has-findings", "false");
+    if (freeUpgrades.length && maxFreePrs > 0) {
+      ledger = await openLedger(repository, token);
+      const ledgerRows = readFileSync(join(ledger.directory, LEDGER_FILE), "utf8")
+        .split("\n")
+        .filter((line) => line.trim())
+        .map((line) => JSON.parse(line));
+      let opened = 0;
+      for (const free of freeUpgrades) {
+        if (opened >= maxFreePrs) {
+          core.info(`max-free-prs (${maxFreePrs}) reached; remaining pre-cutoff upgrades wait for a later run`);
+          break;
+        }
+        const { dependency, targetVersion } = free;
+        // An upgrade already proposed (open, merged or closed) is not proposed again, nor counted.
+        if (
+          ledgerRows.some(
+            (row) =>
+              row.kind === "proposal" &&
+              row.repo === repository &&
+              row.package === dependency.package &&
+              row.source === dependency.source &&
+              row.currentVersion === dependency.currentVersion &&
+              row.targetVersion === targetVersion,
+          )
+        )
+          continue;
+        try {
+          checkPackageManager(scan.root, dependency);
+        } catch (error) {
+          core.warning(
+            `${dependency.package}: ${error instanceof Error ? error.message : String(error)}; skipped, no free PR opened`,
+          );
+          continue;
+        }
+        try {
+          const { url, finding } = await applyFreeUpgrade({
+            root: scan.root,
+            repository,
+            baseBranch,
+            baseSha,
+            token,
+            ...free,
+            cutoff: cutoffDay,
+            draft: draftPrs,
+          });
+          opened++;
+          urls.add(url);
+          const prNumber = Number(/\/pull\/(\d+)$/.exec(url)?.[1]);
+          if (!Number.isSafeInteger(prNumber) || prNumber <= 0)
+            throw new Error(`Cannot read the PR number from ${url}`);
+          await recordProposal(ledger, {
+            repo: repository,
+            prNumber,
+            prUrl: url,
+            free: true,
+            ecosystem: finding.ecosystem,
+            package: finding.package,
+            source: finding.source,
+            currentVersion: finding.currentVersion,
+            targetVersion: finding.targetVersion,
+          });
+        } catch (error) {
+          failures.push(
+            `${dependency.package}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
+      core.setOutput("has-findings", String(urls.size > 0));
+      core.setOutput("pull-requests", JSON.stringify([...urls]));
+    }
     core.setOutput(
       "message",
       registryFailures
@@ -199,14 +287,16 @@ const run = async (): Promise<void> => {
         core.notice(message);
         core.setOutput("message", message);
         if (registryFailures)
-          throw new Error(
+          failures.push(
             `Registry lookups failed for ${registryFailures} dependencies`,
           );
+        if (failures.length)
+          throw new Error(`Assessment run failed: ${failures.join("; ")}`);
         core.setOutput("status", "success");
         return;
       }
       const provenance = readModelProvenance(process.env, cutoff);
-      ledger = await openLedger(repository, token);
+      ledger ??= await openLedger(repository, token);
       const client = new IntelligenceClient({
         nodeUrl,
         evmPrivateKey: privateKey as `0x${string}`,
@@ -306,9 +396,9 @@ const run = async (): Promise<void> => {
       }
       core.setOutput("has-findings", String(urls.size > 0));
       core.setOutput("pull-requests", JSON.stringify([...urls]));
-      for (const url of urls) core.info(`Dependency pull request: ${url}`);
-      core.notice(`Spend dashboard: ${dashboardLink(repository)}`);
     }
+    for (const url of urls) core.info(`Dependency pull request: ${url}`);
+    if (ledger) core.notice(`Spend dashboard: ${dashboardLink(repository)}`);
     if (registryFailures)
       failures.push(
         `Registry lookups failed for ${registryFailures} dependencies`,

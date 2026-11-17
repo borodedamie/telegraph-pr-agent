@@ -42,6 +42,9 @@ inputs:
     default: "2"
   draft-prs:
     description: "Open dependency PRs as drafts. Off when empty: PRs open ready for review."
+  max-free-prs:
+    description: "PRs per run for upgrades released on or before the model cutoff; nothing is bought for them. 0 turns them off."
+    default: "5"
   monthly-budget-usdc:
     description: "Optional cap on all purchases in a calendar month (UTC), across runs. Off when empty."
 outputs:

@@ -180,6 +180,14 @@ it("records a published PR once per PR number and marks its paid answer useful",
   expect(f.payments()).toBe(1);
 });
 
+it("records a free proposal without touching any paid answer", async () => {
+  const f = fixture();
+  await recordProposal(f.options.ledger, { repo: "team/repo", prNumber: 52, prUrl: "https://github.com/team/repo/pull/52",
+    free: true, ecosystem: "npm", package: "zod", source: "package.json", currentVersion: "3.25.0", targetVersion: "3.25.76" });
+  expect(f.rows()).toEqual([expect.objectContaining({ kind: "proposal", prNumber: 52, free: true })]);
+  expect(f.payments()).toBe(0);
+});
+
 // A settled purchase from another assessment, dated now so it falls in this month.
 const priorSpend = (amountUsdc: number) => `${JSON.stringify({ repo: "team/repo", status: "settled", amountUsdc,
   receiptHash: "earlier", timestamp: new Date().toISOString() })}\n`;
