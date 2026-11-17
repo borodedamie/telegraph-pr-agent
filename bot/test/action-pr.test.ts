@@ -309,6 +309,18 @@ describe("dependency PR publication", () => {
       targetVersion: "2.32.3", releaseDate: "2024-05-29T15:37:39Z", cutoff: "2025-01-01", free: true });
   });
 
+  it("shows what changed in a free PR when the notes were read for free, above the free evidence", async () => {
+    const { purchase: _paid, ...fixture } = publisherFixture();
+    Object.assign(fixture.update, { finding: { ...pythonFinding, sources: ["https://pypi.org/project/requests/2.32.3/"],
+      changes: [{ kind: "breaking", version: "2.32.0", change: "Dropped Python 3.7", quote: null, migration: null }] } });
+    await createDependencyPr({ ...fixture, free: { releaseDate: "2024-05-29T15:37:39Z", cutoff: "2025-01-01" } });
+    const body = String(fixture.calls.find((call) => call.path === "/pulls" && call.method === "POST")!.body.body);
+    expect(body).toContain("read from the release notes by the bot itself, without a model or a purchase");
+    expect(body).toContain("### What changed in requests (2.31.0 → 2.32.3)");
+    expect(body.indexOf("### What changed")).toBeLessThan(body.indexOf("Upgrade evidence (no purchase):"));
+    expect(body).not.toContain("Miner finding and purchase evidence");
+  });
+
   it("needs exactly one of purchase evidence or a free reason", async () => {
     const fixture = publisherFixture();
     await expect(createDependencyPr({ ...fixture, purchase: undefined })).rejects.toThrow(/either purchase evidence/);

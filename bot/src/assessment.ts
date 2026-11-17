@@ -1,9 +1,12 @@
 import {
   CHANGE_KINDS,
   migrationFindings,
+  migrationPrompt,
   MIGRATION_MINER_ID,
   NotFoundAssessmentError,
 } from "./miner-assessment.js";
+import { answerQuestion } from "../../miner/src/answer.js";
+import { MemoryStore } from "../../miner/src/cache.js";
 import { z } from "zod";
 import semver from "semver";
 import * as pep440 from "@renovatebot/pep440";
@@ -220,8 +223,32 @@ export const registryUrl = (dependency: Dependency, version: string): string =>
     : `https://pypi.org/project/${encodeURIComponent(dependency.package)}/${encodeURIComponent(version)}/`;
 
 /**
+ * What changed between two npm versions, read from release notes by our miner's own pipeline run
+ * locally with no model (rules only), so nothing is bought. Undefined when nothing documented was
+ * found or the ecosystem is not npm; the PR then carries the links alone.
+ */
+export const readFreeChanges = async (
+  dependency: Dependency & { targetVersion: string },
+  token: string,
+  ask: typeof answerQuestion = answerQuestion,
+): Promise<Finding | undefined> => {
+  if (dependency.ecosystem !== "npm") return undefined;
+  const { answer } = await ask(migrationPrompt(dependency), {
+    store: new MemoryStore(),
+    // Only the token: no model miners, wallet or cache settings, so no call can cost anything.
+    env: { GITHUB_TOKEN: token },
+    caller: null,
+  });
+  if (answer.outcome !== "found") return undefined;
+  // Throws on a vulnerability introduced by the target: a free PR must not hide that either.
+  const [finding] = migrationFindings(answer, [dependency]);
+  return finding ? findingSchema.parse(finding) : undefined;
+};
+
+/**
  * Open a PR for an upgrade released on or before the model cutoff, without buying anything: the
- * model already knows that release, so the PR links its registry page and release notes instead.
+ * model already knows that release, so the PR lists what the release notes document (read for free)
+ * and links its registry page and release notes.
  */
 export const applyFreeUpgrade = async (options: {
   root: string;
@@ -236,18 +263,30 @@ export const applyFreeUpgrade = async (options: {
   cutoff: string;
   notesUrl?: string;
   draft?: boolean;
+  readChanges?: typeof readFreeChanges;
 }): Promise<{ url: string; finding: Finding }> => {
   const { dependency, targetVersion } = options;
+  const read = await (options.readChanges ?? readFreeChanges)(
+    { ...dependency, targetVersion },
+    options.token,
+  );
   const finding = findingSchema.parse({
     ecosystem: dependency.ecosystem,
     package: dependency.package,
     source: dependency.source,
     currentVersion: dependency.currentVersion,
     targetVersion,
-    issue: "outdated",
+    issue: read?.issue ?? "outdated",
     reason: `Released ${options.releaseDate.slice(0, 10)}, on or before the model cutoff ${options.cutoff}`,
-    cves: [],
-    sources: [registryUrl(dependency, targetVersion), ...(options.notesUrl ? [options.notesUrl] : [])],
+    cves: read?.cves ?? [],
+    sources: [
+      ...new Set([
+        registryUrl(dependency, targetVersion),
+        ...(options.notesUrl ? [options.notesUrl] : []),
+        ...(read?.sources ?? []),
+      ]),
+    ].slice(0, 20),
+    ...(read?.changes?.length ? { changes: read.changes } : {}),
   });
   const update = await prepareUpdate(options.root, finding);
   const url = await createDependencyPr({

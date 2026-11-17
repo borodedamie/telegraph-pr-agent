@@ -345,7 +345,7 @@ export const createDependencyPr = async (options: {
   const header = `Updates ${finding.package} from ${finding.currentVersion} to ${finding.targetVersion}.\n\n`;
   const footer = `\n\nFor human review before merging. Registry version availability was checked. CVE claims and migration compatibility require independent review and repository CI. No repository tests were executed by the payment or publication jobs.\n\nSpend and receipts for this repository: ${dashboardLink(repository)}`;
   const body = free
-    ? `${header}### Within the model's knowledge\n\n${finding.package} ${finding.targetVersion} was released on ${free.releaseDate.slice(0, 10)}, before the model cutoff ${free.cutoff}, so no intelligence was bought for this upgrade. Read the release notes before merging:\n\n${finding.sources.map((url) => `- ${url}`).join("\n")}\n\n${FREE_EVIDENCE_MARKER}${indentBlock({
+    ? `${header}### Within the model's knowledge\n\n${finding.package} ${finding.targetVersion} was released on ${free.releaseDate.slice(0, 10)}, before the model cutoff ${free.cutoff}, so no intelligence was bought for this upgrade.${finding.changes?.length ? " The changes below were read from the release notes by the bot itself, without a model or a purchase." : ""} Read the release notes before merging:\n\n${finding.sources.map((url) => `- ${url}`).join("\n")}\n\n${renderChanges(finding)}${renderCallSites(finding, findCallSites(root, finding), repository, baseSha)}${FREE_EVIDENCE_MARKER}${indentBlock({
         ...identityFields,
         releaseDate: free.releaseDate,
         cutoff: free.cutoff,
