@@ -1,3 +1,4 @@
+import { findCallSites, renderCallSites } from "./call-sites.js";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { lockedVersions, readPackageLock } from "./lockfiles.js";
@@ -350,7 +351,7 @@ export const createDependencyPr = async (options: {
         cutoff: free.cutoff,
         free: true,
       })}${footer}`
-    : `${header}${renderChanges(finding)}${PAID_EVIDENCE_MARKER}${indentBlock({
+    : `${header}${renderChanges(finding)}${renderCallSites(finding, findCallSites(root, finding), repository, baseSha)}${PAID_EVIDENCE_MARKER}${indentBlock({
         ...identityFields,
         issue: finding.issue,
         reason: finding.reason,
