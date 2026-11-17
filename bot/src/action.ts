@@ -67,13 +67,29 @@ const run = async (): Promise<void> => {
         ? Number(mergePrNumber)
         : JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH ?? "", "utf8"))
             .pull_request.number;
+      // Branches besides the default whose merges count, e.g. "release/*"; comma or newline separated.
+      const mergeBranches = core
+        .getInput("merge-branches")
+        .split(/[,\n]/)
+        .map((pattern) => pattern.trim())
+        .filter(Boolean);
+      if (mergeBranches.some((pattern) => !/^[\w./*-]+$/.test(pattern)))
+        throw new Error(
+          'merge-branches must be branch names or globs such as "release/*", separated by commas',
+        );
       await assertPublicRepository(repository, token);
       ledger = await openLedger(repository, token);
-      await recordMerge(
+      const merged = await fetchMergedPr(repository, number, token);
+      const outcome = await recordMerge(
         ledger,
         repository,
-        await fetchMergedPr(repository, number, token),
+        merged,
+        mergeBranches,
       );
+      if (outcome === "merged_outside_default_branch")
+        core.notice(
+          `PR #${number} merged into ${merged.base.ref}, not the default branch ${merged.base.repo.default_branch}${mergeBranches.length ? ` or merge-branches (${mergeBranches.join(", ")})` : ""}: recorded as closed, not counted in cost per merged PR`,
+        );
       core.setOutput("status", "success");
       return;
     }

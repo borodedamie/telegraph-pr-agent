@@ -221,9 +221,29 @@ it("records merge events without a wallet, miner selection or payment", async ()
   vi.stubEnv("TELEGRAPH_EVM_PRIVATE_KEY", "");
   vi.stubEnv("MODEL_CUTOFF", "");
   await run();
-  expect(mocks.merge).toHaveBeenCalledWith({ directory: "/mock-ledger" }, "team/repo", { number: 42 });
+  expect(mocks.merge).toHaveBeenCalledWith({ directory: "/mock-ledger" }, "team/repo", { number: 42 }, []);
   expect(mocks.client).not.toHaveBeenCalled();
   expect(mocks.buy).not.toHaveBeenCalled();
+});
+
+it("passes merge-branches through and says when a merge outside them is not counted", async () => {
+  vi.stubEnv("GITHUB_EVENT_NAME", "pull_request_target");
+  vi.stubEnv("GITHUB_EVENT_PATH", "/event.json");
+  mocks.inputs["merge-branches"] = "release/*, hotfix/*\nstable";
+  mocks.fetchPr.mockResolvedValueOnce({ number: 42, base: { ref: "test/x", repo: { default_branch: "main" } } });
+  mocks.merge.mockResolvedValueOnce("merged_outside_default_branch");
+  await run();
+  expect(mocks.merge).toHaveBeenCalledWith(expect.anything(), "team/repo", expect.anything(), ["release/*", "hotfix/*", "stable"]);
+  expect(mocks.notice).toHaveBeenCalledWith(expect.stringMatching(/^PR #42 merged into test\/x, not the default branch main or merge-branches .*not counted in cost per merged PR$/));
+});
+
+it("rejects an invalid merge-branches value before opening the ledger", async () => {
+  vi.stubEnv("GITHUB_EVENT_NAME", "pull_request_target");
+  vi.stubEnv("GITHUB_EVENT_PATH", "/event.json");
+  mocks.inputs["merge-branches"] = "release/*; rm -rf /";
+  await run("failed");
+  expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("merge-branches"));
+  expect(mocks.open).not.toHaveBeenCalled();
 });
 
 it("continues past a bad saved answer and keeps earlier partial PR outputs", async () => {
@@ -302,7 +322,7 @@ it("recovers merge accounting from a current PR lookup without payment configura
   vi.stubEnv("TELEGRAPH_EVM_PRIVATE_KEY", "");
   await run();
   expect(mocks.fetchPr).toHaveBeenCalledWith("team/repo", 42, "test-token");
-  expect(mocks.merge).toHaveBeenCalledWith({ directory: "/mock-ledger" }, "team/repo", { number: 42 });
+  expect(mocks.merge).toHaveBeenCalledWith({ directory: "/mock-ledger" }, "team/repo", { number: 42 }, []);
   expect(mocks.buy).not.toHaveBeenCalled();
 });
 

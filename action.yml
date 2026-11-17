@@ -15,6 +15,8 @@ inputs:
     description: "On-chain payment transaction; required for failed_and_charged"
   reconcile-amount-usdc:
     description: "Amount charged, for failed_and_charged; defaults to the attempt's quote"
+  merge-branches:
+    description: "Branches besides the default whose dependency PR merges count toward cost per merged PR, e.g. \"release/*\" (comma separated). A merge into any other branch is recorded as closed."
   merge-pr-number:
     description: "Merged PR number to recover accounting without making a purchase"
   node-url:

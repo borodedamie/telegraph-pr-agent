@@ -37,5 +37,7 @@ jobs:
       - uses: ./
         with:
           merge-pr-number: ${{ github.event.pull_request.number || inputs.pr-number }}
+          # Optional: branches besides the default whose merges count, e.g. "release/*".
+          merge-branches: ${{ vars.MERGE_BRANCHES }}
         env:
           GITHUB_TOKEN: ${{ github.token }}

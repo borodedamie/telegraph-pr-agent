@@ -24,7 +24,7 @@ const fixture = (status = "settled", baseBranch = "main") => {
   });
   const pr = { number: 42, merged: true, merged_at: "2026-11-08T00:00:00Z", merge_commit_sha: "b".repeat(40),
     body: `Miner finding and purchase evidence:\n\n${JSON.stringify(detail, null, 2).split("\n").map((l) => `    ${l}`).join("\n")}\n\nDraft for human review.\n\nSpend and receipts for this repository: https://telegraph-pr-agent.vercel.app/?repo=team/repo`,
-    base: { ref: baseBranch, repo: { full_name: "team/repo" } },
+    base: { ref: baseBranch, repo: { full_name: "team/repo", default_branch: "main" } },
     head: { ref: `fix/telegraph-dependency-${branch}`, sha: "a".repeat(40), repo: { full_name: "team/repo" } } };
   return { ledger: { directory, runGit }, pr, rows: () => remote.trim().split("\n").map((l) => JSON.parse(l)) };
 };
@@ -83,10 +83,31 @@ it("rejects forged receipt claims and mismatched generated branches without ledg
   expect(f.ledger.runGit.mock.calls.some(([args]) => args[0] === "push")).toBe(false);
 });
 
-it("records supported release-branch merges", async () => {
+it("records a default-branch merge with the branch it landed on", async () => {
+  const f = fixture();
+  expect(await recordMerge(f.ledger, "team/repo", f.pr)).toBe("merged");
+  expect(f.rows()[1]).toMatchObject({ kind: "merge", prNumber: 42, baseRef: "main" });
+});
+
+it("records release-branch merges when the branch matches merge-branches", async () => {
   const f = fixture("settled", "release/next");
-  await recordMerge(f.ledger, "team/repo", f.pr);
-  expect(f.rows()[1]).toMatchObject({ kind: "merge", prNumber: 42 });
+  expect(await recordMerge(f.ledger, "team/repo", f.pr, ["release/*"])).toBe("merged");
+  expect(f.rows()[1]).toMatchObject({ kind: "merge", prNumber: 42, baseRef: "release/next" });
+});
+
+it("records a merge into any other branch as closed, so it never counts as a merged PR", async () => {
+  const f = fixture("settled", "test/readable-changes");
+  expect(await recordMerge(f.ledger, "team/repo", f.pr, ["release/*"])).toBe("merged_outside_default_branch");
+  expect(f.rows()[1]).toMatchObject({ kind: "closed", prNumber: 42, mergedInto: "test/readable-changes",
+    closedAt: "2026-11-08T00:00:00Z" });
+  expect(f.rows().some((row) => row.kind === "merge")).toBe(false);
+});
+
+it("refuses to count a merge when the default branch is unknown", async () => {
+  const f = fixture();
+  const pr = { ...f.pr, base: { ref: "main", repo: { full_name: "team/repo" } } };
+  await expect(recordMerge(f.ledger, "team/repo", pr)).rejects.toThrow(/default branch/);
+  expect(f.ledger.runGit).not.toHaveBeenCalled();
 });
 
 it("rejects failed purchase evidence without writing a merge", async () => {

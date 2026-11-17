@@ -109,6 +109,8 @@ export interface MergeRow {
   mergeSha: string;
   receiptHash: string;
   mergedAt: string;
+  /** Branch the PR merged into: always the default branch. Absent on rows written before 16 Nov 2026. */
+  baseRef?: string;
   timestamp: string;
 }
 
@@ -137,6 +139,8 @@ export interface ClosedRow {
   headSha: string;
   receiptHash: string;
   closedAt: string;
+  /** Set when the PR was merged into a branch other than the default branch: not counted as a merge. */
+  mergedInto?: string;
   timestamp: string;
 }
 

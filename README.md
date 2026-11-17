@@ -178,6 +178,7 @@ training cutoff: only dependency releases published after it are bought.
 | `MODEL_CUTOFF_SOURCE_URL` | yes | HTTPS page that documents the cutoff |
 | `MODEL_CUTOFF_STATUS` | yes | `provider-documented` or `team-assumed` |
 | `PREFERRED_MINER_ID` | no | miner tried first; defaults to `7314` |
+| `MERGE_BRANCHES` | no | branches besides the default whose merges count, e.g. `release/*` |
 | `MONTHLY_BUDGET_USDC` | no | cap across all runs in a calendar month (UTC), e.g. `1` |
 
 **5. Two workflow files.** Copy both. They reference this Action by tag:
@@ -261,9 +262,15 @@ jobs:
       - uses: borodedamie/telegraph-pr-agent@v1
         with:
           merge-pr-number: ${{ github.event.pull_request.number }}
+          merge-branches: ${{ vars.MERGE_BRANCHES }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
 ```
+
+A merge counts toward cost per merged PR only when it lands on your default branch, or on a
+branch matching the optional `MERGE_BRANCHES` variable (e.g. `release/*`) if you ship from
+release branches. A dependency PR merged anywhere else, such as a test branch, is recorded as
+closed: its spend stays in the total but it is not counted as merged.
 
 **6. Run it.** Actions → Telegraph dependency updates → Run workflow. With no dependency
 released after your cutoff it ends with "no purchase made" and spends nothing. Otherwise
