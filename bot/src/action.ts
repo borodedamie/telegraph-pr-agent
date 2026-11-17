@@ -231,6 +231,14 @@ const run = async (): Promise<void> => {
         )
           continue;
         try {
+          checkPackageManager(scan.root, dependency);
+        } catch (error) {
+          core.warning(
+            `${dependency.package}: ${error instanceof Error ? error.message : String(error)}; skipped, no free PR opened`,
+          );
+          continue;
+        }
+        try {
           const { url, finding } = await applyFreeUpgrade({
             root: scan.root,
             repository,

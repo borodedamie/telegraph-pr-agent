@@ -394,6 +394,15 @@ describe("pre-cutoff upgrades", () => {
     expect(mocks.open).not.toHaveBeenCalled();
   });
 
+  it("skips a free PR whose package manager is unusable, without failing the run", async () => {
+    skips(2);
+    mocks.checkManager.mockImplementationOnce(() => { throw new Error("pnpm not found"); });
+    await run();
+    expect(mocks.warning).toHaveBeenCalledWith("pkg-0: pnpm not found; skipped, no free PR opened");
+    expect(mocks.free).toHaveBeenCalledOnce();
+    expect(mocks.free.mock.calls[0][0].dependency.package).toBe("pkg-1");
+  });
+
   it("rejects an invalid max-free-prs before anything runs", async () => {
     skips(1);
     mocks.inputs["max-free-prs"] = "-1";
