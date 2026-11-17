@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  info: vi.fn(), NotFoundAssessmentError: class extends Error {}, fetchPr: vi.fn(), InvalidAssessmentError: class extends Error {}, unusable: vi.fn(), notice: vi.fn(), merge: vi.fn(), read: vi.fn(), visibility: vi.fn(), candidates: vi.fn(), open: vi.fn(), purchase: vi.fn(),
+  checkManager: vi.fn(), warning: vi.fn(), info: vi.fn(), NotFoundAssessmentError: class extends Error {}, fetchPr: vi.fn(), InvalidAssessmentError: class extends Error {}, unusable: vi.fn(), notice: vi.fn(), merge: vi.fn(), read: vi.fn(), visibility: vi.fn(), candidates: vi.fn(), open: vi.fn(), purchase: vi.fn(),
   buy: vi.fn(), client: vi.fn(), apply: vi.fn(), failed: vi.fn(), output: vi.fn(),
   inputs: {} as Record<string, string>, proposal: vi.fn(), reconcile: vi.fn(), checkReconciliation: vi.fn(),
 }));
 vi.mock("@actions/core", () => ({
   setSecret: vi.fn(), setFailed: mocks.failed, setOutput: mocks.output,
-  notice: mocks.notice, warning: vi.fn(), info: mocks.info, getInput: (name: string) => mocks.inputs[name] ?? "",
+  notice: mocks.notice, warning: mocks.warning, info: mocks.info, getInput: (name: string) => mocks.inputs[name] ?? "",
 }));
 vi.mock("node:child_process", () => ({ execFileSync: () => "a".repeat(40) }));
 vi.mock("node:fs", () => ({ rmSync: vi.fn(), readFileSync: mocks.read }));
@@ -15,6 +15,7 @@ vi.mock("../src/accounting.js", () => ({ recordMerge: mocks.merge, fetchMergedPr
 vi.mock("../src/scan.js", () => ({ scanRepository: async () => ({
   root: "/repo", skipped: [], dependencies: [{ package: "zod" }],
 }) }));
+vi.mock("../src/updates.js", () => ({ checkPackageManager: mocks.checkManager }));
 vi.mock("../src/cutoff.js", () => ({ cutoffCandidates: mocks.candidates }));
 vi.mock("../src/purchase.js", () => ({ openLedger: mocks.open, purchaseAssessment: mocks.purchase, markAssessmentResult: mocks.unusable, recordProposal: mocks.proposal }));
 vi.mock("../src/pull-request.js", () => ({ checkedOutBranch: () => "feature", assertPublicRepository: mocks.visibility }));
@@ -330,4 +331,26 @@ it.each(["MODEL_PROVIDER", "MODEL_ID"])("blocks placeholder %s before opening th
   await run("failed");
   expect(mocks.open).not.toHaveBeenCalled();
   expect(mocks.buy).not.toHaveBeenCalled();
+});
+
+it.each(["pnpm not found", "Install yarn@4.9.2 before preparing this update; found yarn@1.22.22", "Installed pnpm does not match the lockfile format"])(
+  "skips an unusable package manager before purchase: %s", async (message) => {
+    mocks.checkManager.mockImplementationOnce(() => { throw new Error(message); });
+    await run();
+    expect(mocks.warning).toHaveBeenCalledWith(`zod: ${message}; skipped, no purchase made`);
+    expect(mocks.purchase).not.toHaveBeenCalled();
+    expect(mocks.apply).not.toHaveBeenCalled();
+  },
+);
+
+it("checks each manager before purchase and continues with usable dependencies", async () => {
+  mocks.candidates.mockResolvedValue([{ package: "blocked" }, { package: "usable" }]);
+  mocks.checkManager.mockImplementationOnce(() => { throw new Error("bun not found"); });
+  mocks.purchase.mockImplementation(async () => {
+    expect(mocks.checkManager).toHaveBeenCalledTimes(2);
+    return { answer: '{"findings":[]}' };
+  });
+  await run();
+  expect(mocks.purchase).toHaveBeenCalledOnce();
+  expect(mocks.purchase.mock.calls[0][0].dependency.package).toBe("usable");
 });

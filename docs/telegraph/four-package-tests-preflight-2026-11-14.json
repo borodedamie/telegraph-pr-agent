@@ -1,0 +1,290 @@
+{
+  "checkedAt": "2026-11-14T08:52:56.291Z",
+  "repository": "borodedamie/telegraph-pr-agent",
+  "signed": false,
+  "paid": false,
+  "walletKeyConfigured": true,
+  "tokenConfigured": true,
+  "localProvenance": {
+    "valid": false,
+    "errors": [
+      "Invalid URL",
+      "MODEL_PROVIDER must identify the coding model provider, not Telegraph",
+      "MODEL_ID must identify the coding model, not a miner"
+    ]
+  },
+  "github": {
+    "status": 200,
+    "public": true,
+    "mayPush": true
+  },
+  "githubProvenance": {
+    "http": 200,
+    "valid": false,
+    "errors": [
+      "MODEL_PROVIDER must identify the coding model provider, not Telegraph",
+      "MODEL_ID must identify the coding model, not a miner"
+    ]
+  },
+  "catalogue": {
+    "count": 17,
+    "ranked": [
+      {
+        "id": "148010",
+        "name": "HN Best QA",
+        "rank": 1
+      },
+      {
+        "id": "780031",
+        "name": "ZK Verbatim QA Proof Candidate",
+        "rank": 2
+      },
+      {
+        "id": "780019",
+        "name": "ZK Source-Excerpt QA Candidate",
+        "rank": 3
+      },
+      {
+        "id": "148004",
+        "name": "HN Ask QA",
+        "rank": 6
+      },
+      {
+        "id": "148001",
+        "name": "OpenAlex QA",
+        "rank": 7
+      },
+      {
+        "id": "148002",
+        "name": "Crossref QA",
+        "rank": 9
+      },
+      {
+        "id": "1900999019",
+        "name": "TextWire Question Answering",
+        "rank": 11
+      },
+      {
+        "id": "7310082",
+        "name": "ZK Structured Source QA",
+        "rank": 12
+      },
+      {
+        "id": "7314",
+        "name": "Package Release Intelligence",
+        "rank": 13
+      },
+      {
+        "id": "148006",
+        "name": "BBC QA Feed",
+        "rank": 14
+      },
+      {
+        "id": "148008",
+        "name": "IMF QA Indicators",
+        "rank": 15
+      },
+      {
+        "id": "148005",
+        "name": "HN Item QA",
+        "rank": 16
+      },
+      {
+        "id": "148007",
+        "name": "World Bank QA Data",
+        "rank": 17
+      }
+    ],
+    "preferred": {
+      "id": "7314",
+      "name": "Package Release Intelligence"
+    }
+  },
+  "quotes": [
+    {
+      "minerId": "7314",
+      "status": 402,
+      "request": {
+        "method": "GET",
+        "endpoint": "/answer",
+        "payload": {
+          "query": "What changed in zod from 3.25.76 to 4.6.7?"
+        }
+      },
+      "accepts": [
+        {
+          "amount": "20000",
+          "asset": "0xcc194e1a843B658526D0D5C431f670028582Ae17",
+          "extra": {
+            "name": "USD Coin",
+            "version": "2"
+          },
+          "maxTimeoutSeconds": 60,
+          "network": "eip155:11155111",
+          "payTo": "0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b",
+          "scheme": "exact"
+        },
+        {
+          "amount": "20000",
+          "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          "extra": {
+            "name": "USDC",
+            "version": "2"
+          },
+          "maxTimeoutSeconds": 60,
+          "network": "eip155:84532",
+          "payTo": "0xC0A3FB6d3F1f4B54617d29ffbdA4663Af5F96e2e",
+          "scheme": "exact"
+        },
+        {
+          "amount": "20000",
+          "asset": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+          "extra": {
+            "feePayer": "C7ckEzH4varMpBQsaD9bJZSCnWVyk4zAKYA85spuuNbR"
+          },
+          "maxTimeoutSeconds": 60,
+          "network": "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
+          "payTo": "G53EbeTZSNsAn7bj6iMFUQnq3zpDdEbHhKkPRywo8bix",
+          "scheme": "exact"
+        },
+        {
+          "amount": "20000",
+          "extra": {
+            "description": "Deduct from the caller's Telegraph escrow balance at the next epoch close. Fund it once with EscrowFacet.depositUSDC(amount); no per-request settlement.",
+            "message": "Telegraph Escrow Payment\n\nWallet: {from}\nPay To: 0x3624eb012b5e998bb57b6be6c9cfc9c4bc5eb99b\nNetwork: eip155:11155111\nAmount: 20000 uUSDC\nResource: /v1/ask/7314\nNonce: {nonce}\nValid After: {validAfter}\nValid Before: {validBefore}",
+            "resource": "/v1/ask/7314",
+            "signWith": "personal_sign (EIP-191)"
+          },
+          "network": "eip155:11155111",
+          "payTo": "0x3624eb012b5e998bb57b6be6c9cfc9c4bc5eb99b",
+          "scheme": "escrow"
+        }
+      ]
+    },
+    {
+      "minerId": "148010",
+      "status": 402,
+      "request": {
+        "method": "GET",
+        "endpoint": "/query",
+        "payload": {
+          "query": "Assess requests 2.31.0 for a supported stable Python package upgrade. Return structured findings."
+        }
+      },
+      "accepts": [
+        {
+          "amount": "10000",
+          "asset": "0xcc194e1a843B658526D0D5C431f670028582Ae17",
+          "extra": {
+            "name": "USD Coin",
+            "version": "2"
+          },
+          "maxTimeoutSeconds": 60,
+          "network": "eip155:11155111",
+          "payTo": "0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b",
+          "scheme": "exact"
+        },
+        {
+          "amount": "10000",
+          "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          "extra": {
+            "name": "USDC",
+            "version": "2"
+          },
+          "maxTimeoutSeconds": 60,
+          "network": "eip155:84532",
+          "payTo": "0xC0A3FB6d3F1f4B54617d29ffbdA4663Af5F96e2e",
+          "scheme": "exact"
+        },
+        {
+          "amount": "10000",
+          "asset": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+          "extra": {
+            "feePayer": "C7ckEzH4varMpBQsaD9bJZSCnWVyk4zAKYA85spuuNbR"
+          },
+          "maxTimeoutSeconds": 60,
+          "network": "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
+          "payTo": "G53EbeTZSNsAn7bj6iMFUQnq3zpDdEbHhKkPRywo8bix",
+          "scheme": "exact"
+        },
+        {
+          "amount": "10000",
+          "extra": {
+            "description": "Deduct from the caller's Telegraph escrow balance at the next epoch close. Fund it once with EscrowFacet.depositUSDC(amount); no per-request settlement.",
+            "message": "Telegraph Escrow Payment\n\nWallet: {from}\nPay To: 0x3624eb012b5e998bb57b6be6c9cfc9c4bc5eb99b\nNetwork: eip155:11155111\nAmount: 10000 uUSDC\nResource: /v1/ask/148010\nNonce: {nonce}\nValid After: {validAfter}\nValid Before: {validBefore}",
+            "resource": "/v1/ask/148010",
+            "signWith": "personal_sign (EIP-191)"
+          },
+          "network": "eip155:11155111",
+          "payTo": "0x3624eb012b5e998bb57b6be6c9cfc9c4bc5eb99b",
+          "scheme": "escrow"
+        }
+      ]
+    },
+    {
+      "minerId": "780031",
+      "status": 402,
+      "request": {
+        "method": "GET",
+        "endpoint": "/answer",
+        "payload": {
+          "query": "Assess requests 2.31.0 for a supported stable Python package upgrade. Return structured findings."
+        }
+      },
+      "accepts": [
+        {
+          "amount": "10000",
+          "asset": "0xcc194e1a843B658526D0D5C431f670028582Ae17",
+          "extra": {
+            "name": "USD Coin",
+            "version": "2"
+          },
+          "maxTimeoutSeconds": 60,
+          "network": "eip155:11155111",
+          "payTo": "0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b",
+          "scheme": "exact"
+        },
+        {
+          "amount": "10000",
+          "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          "extra": {
+            "name": "USDC",
+            "version": "2"
+          },
+          "maxTimeoutSeconds": 60,
+          "network": "eip155:84532",
+          "payTo": "0xC0A3FB6d3F1f4B54617d29ffbdA4663Af5F96e2e",
+          "scheme": "exact"
+        },
+        {
+          "amount": "10000",
+          "asset": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+          "extra": {
+            "feePayer": "C7ckEzH4varMpBQsaD9bJZSCnWVyk4zAKYA85spuuNbR"
+          },
+          "maxTimeoutSeconds": 60,
+          "network": "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
+          "payTo": "G53EbeTZSNsAn7bj6iMFUQnq3zpDdEbHhKkPRywo8bix",
+          "scheme": "exact"
+        },
+        {
+          "amount": "10000",
+          "extra": {
+            "description": "Deduct from the caller's Telegraph escrow balance at the next epoch close. Fund it once with EscrowFacet.depositUSDC(amount); no per-request settlement.",
+            "message": "Telegraph Escrow Payment\n\nWallet: {from}\nPay To: 0x3624eb012b5e998bb57b6be6c9cfc9c4bc5eb99b\nNetwork: eip155:11155111\nAmount: 10000 uUSDC\nResource: /v1/ask/780031\nNonce: {nonce}\nValid After: {validAfter}\nValid Before: {validBefore}",
+            "resource": "/v1/ask/780031",
+            "signWith": "personal_sign (EIP-191)"
+          },
+          "network": "eip155:11155111",
+          "payTo": "0x3624eb012b5e998bb57b6be6c9cfc9c4bc5eb99b",
+          "scheme": "escrow"
+        }
+      ]
+    }
+  ],
+  "wallet": {
+    "address": "0x30A33F953a9bCc9Aff927caC815984ab2Eab305f",
+    "sepoliaEth": 0.09999999999775562,
+    "testUsdc": 0.08
+  }
+}
