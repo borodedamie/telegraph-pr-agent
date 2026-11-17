@@ -28,6 +28,7 @@ import {
   reconcileAttempt,
   type ReconcileOutcome,
 } from "./reconcile.js";
+import { checkPackageManager } from "./updates.js";
 
 const INTENT_ID = "QUESTION_ANSWERING_GENERAL";
 
@@ -230,6 +231,14 @@ const run = async (): Promise<void> => {
         )
           continue;
         try {
+          checkPackageManager(scan.root, dependency);
+        } catch (error) {
+          core.warning(
+            `${dependency.package}: ${error instanceof Error ? error.message : String(error)}; skipped, no free PR opened`,
+          );
+          continue;
+        }
+        try {
           const { url, finding } = await applyFreeUpgrade({
             root: scan.root,
             repository,
@@ -298,6 +307,14 @@ const run = async (): Promise<void> => {
         budgetCapUsdc: budget,
       });
       for (const dependency of candidates) {
+        try {
+          checkPackageManager(scan.root, dependency);
+        } catch (error) {
+          core.warning(
+            `${dependency.package}: ${error instanceof Error ? error.message : String(error)}; skipped, no purchase made`,
+          );
+          continue;
+        }
         const purchase = await purchaseAssessment({
           ledger,
           repository,
