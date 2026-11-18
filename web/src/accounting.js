@@ -38,6 +38,25 @@ export const mergedCosts = (rows) => {
     netSpend, unmergedSpend: netSpend - total, costPerMergedPr: prs.size ? netSpend / prs.size : null };
 };
 
+/** Seconds from the paid request to the first delivered answer, per attempt. */
+export const answerLatency = (rows) => {
+  const requested = new Map(rows.filter((row) => row.kind === "attempt" && row.state === "request_sent" && row.attemptId)
+    .map((row) => [row.attemptId, Date.parse(row.timestamp)]));
+  const byAttempt = new Map();
+  for (const row of rows.filter((row) => row.kind === "attempt" && row.state === "delivered" && row.attemptId)) {
+    const start = requested.get(row.attemptId);
+    const end = Date.parse(row.timestamp);
+    // Later delivered rows only update answer quality; the first one is the delivery.
+    if (!Number.isFinite(start) || !Number.isFinite(end) || byAttempt.has(row.attemptId)) continue;
+    byAttempt.set(row.attemptId, (end - start) / 1000);
+  }
+  const values = [...byAttempt.values()].sort((a, b) => a - b);
+  const middle = Math.floor(values.length / 2);
+  const medianSeconds = values.length === 0 ? null
+    : values.length % 2 ? values[middle] : (values[middle - 1] + values[middle]) / 2;
+  return { medianSeconds, count: values.length, byAttempt };
+};
+
 /** Project the latest quality update only onto its matching payment attempt. */
 export const purchaseRows = (rows) => {
   const quality = new Map(rows.filter((row) => row.kind === "attempt" && row.attemptId && row.resultStatus)

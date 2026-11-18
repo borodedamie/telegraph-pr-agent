@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { chargedWithoutAnswer, EVENT_WINDOW, evidenceCsv, inWindow, mergedCosts, outcomeSummary, purchaseRows } from "./accounting.js";
+import { answerLatency, chargedWithoutAnswer, EVENT_WINDOW, evidenceCsv, inWindow, mergedCosts, outcomeSummary, purchaseRows } from "./accounting.js";
 
 test("allocates settled receipt costs once and excludes unmatched, failed and cross-repo records", () => {
   const purchase = { repo: "team/repo", status: "settled", receiptHash: "one", amountUsdc: 0.02 };
@@ -16,6 +16,25 @@ test("allocates settled receipt costs once and excludes unmatched, failed and cr
     { ...merge, repo: "other/repo", prNumber: 5 }];
   assert.deepEqual(mergedCosts(rows), { total: 0.06, count: 2, average: 0.03, netSpend: 99.06, unmergedSpend: 99, costPerMergedPr: 49.53 });
   assert.deepEqual(mergedCosts([purchase]), { total: 0, count: 0, average: null, netSpend: 0.02, unmergedSpend: 0.02, costPerMergedPr: null });
+});
+
+test("measures answer latency from the paid request to the first delivered answer", () => {
+  const attempt = (state, timestamp, attemptId = "a:1") => ({ kind: "attempt", attemptId, state, timestamp });
+  const latency = answerLatency([
+    attempt("request_sent", "2026-11-04T13:48:19.278Z"),
+    attempt("delivered", "2026-11-04T13:48:39.050Z"),
+    attempt("request_sent", "2026-11-11T23:46:44.895Z", "b:1"),
+    attempt("delivered", "2026-11-11T23:47:12.103Z", "b:1"),
+    attempt("delivered", "2026-11-11T23:47:27.659Z", "b:1"),
+    attempt("delivered", "2026-11-11T23:47:12.103Z", "no-quote"),
+    { kind: "attempt", attemptId: "malformed", state: "request_sent", timestamp: "not a date" },
+    attempt("delivered", "2026-11-11T23:47:12.103Z", "malformed"),
+  ]);
+  assert.equal(latency.count, 2);
+  assert.equal(latency.byAttempt.get("a:1"), 19.772);
+  assert.equal(latency.byAttempt.get("b:1"), 27.208);
+  assert.ok(Math.abs(latency.medianSeconds - 23.49) < 1e-9);
+  assert.equal(answerLatency([]).medianSeconds, null);
 });
 
 test("projects the latest assessment quality without altering purchase evidence", () => {
