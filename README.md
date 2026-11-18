@@ -452,7 +452,10 @@ keep that npm lockfile and the workspace pnpm lockfile synchronized so the exist
 CI and deployment configuration can stay unchanged. The bot imports the miner's
 source (`miner/src`) for free PRs, so building or testing the bot also needs the
 miner's dependencies: run `pnpm install` at the repository root (CI installs both
-packages from the workspace lockfile).
+packages from the workspace lockfile). The action bundle includes most of `miner/src`,
+so a change to `miner/src` also needs `npm run build --prefix bot` and a commit of
+`bot/dist/index.cjs`; CI fails until then. Such a change also changes the Action's
+behaviour from the next release tag, so miner PRs need a bot-side review too.
 
 `.github/workflows/dependency-updates.yml` runs on dependency-file pushes to
 `main` and manual dispatch, excluding generated fix branches and branch deletions. It checks out

@@ -30,7 +30,11 @@ jobs:
         run: npm run build --prefix bot
 
       - name: Check packaged action matches its source
-        run: git diff --exit-code -- bot/dist/index.cjs
+        run: |
+          if ! git diff --exit-code -- bot/dist/index.cjs; then
+            echo "::error::bot/dist/index.cjs is out of date. It bundles bot/src and most of miner/src, so a change to either needs: npm run build --prefix bot, then commit bot/dist/index.cjs"
+            exit 1
+          fi
 
       # Executes the bundle the way the runner does. With no environment it must reach its
       # first check; a module-format error (e.g. CommonJS loaded as ESM) fails here instead.

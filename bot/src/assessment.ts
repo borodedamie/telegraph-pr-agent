@@ -1,5 +1,6 @@
 import {
   CHANGE_KINDS,
+  IntroducedVulnerabilityError,
   migrationFindings,
   migrationPrompt,
   MIGRATION_MINER_ID,
@@ -263,13 +264,25 @@ export const applyFreeUpgrade = async (options: {
   cutoff: string;
   notesUrl?: string;
   draft?: boolean;
+  /** Told when the release notes could not be read and the PR keeps the links only. */
+  onWarning: (message: string) => void;
   readChanges?: typeof readFreeChanges;
 }): Promise<{ url: string; finding: Finding }> => {
   const { dependency, targetVersion } = options;
-  const read = await (options.readChanges ?? readFreeChanges)(
-    { ...dependency, targetVersion },
-    options.token,
-  );
+  let read: Finding | undefined;
+  try {
+    read = await (options.readChanges ?? readFreeChanges)(
+      { ...dependency, targetVersion },
+      options.token,
+    );
+  } catch (error) {
+    // A known vulnerability in the target stops the PR; any other failure to read the notes only
+    // costs the "what changed" section, as before free PRs read notes at all.
+    if (error instanceof IntroducedVulnerabilityError) throw error;
+    options.onWarning(
+      `${dependency.package} ${targetVersion}: release notes could not be read (${error instanceof Error ? error.message : String(error)}); the free PR links them instead`,
+    );
+  }
   const finding = findingSchema.parse({
     ecosystem: dependency.ecosystem,
     package: dependency.package,

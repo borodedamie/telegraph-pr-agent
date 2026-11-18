@@ -359,6 +359,8 @@ describe("pre-cutoff upgrades", () => {
       targetVersion: "4.0.0", releaseDate: "2024-06-01T00:00:00Z", cutoff: "2025-01-01",
       notesUrl: "https://github.com/colinhacks/zod/releases",
     }));
+    mocks.free.mock.calls[0][0].onWarning("zod 4.0.0: release notes could not be read");
+    expect(mocks.warning).toHaveBeenCalledWith("zod 4.0.0: release notes could not be read");
     expect(mocks.proposal).toHaveBeenCalledWith({ directory: "/mock-ledger" }, expect.objectContaining({
       prNumber: 7, free: true, package: "pkg-0", targetVersion: "4.0.0",
     }));
