@@ -4,7 +4,7 @@ A testnet prototype of a dependency-migration agent that is designed to buy rele
 
 Built for the Telegraph Hackathon Season II, mission [Model Economy](https://hackathon.telegraphprotocol.com/missions/model-economy). Specification (source of truth): [docs/SPEC.md](docs/SPEC.md). Milestones: [docs/HACKATHON-PLAN.md](docs/HACKATHON-PLAN.md). Who does what: [docs/TEAM.md](docs/TEAM.md). Live QA intent contract: [docs/telegraph/qa-intent-contract-2026-11-02.md](docs/telegraph/qa-intent-contract-2026-11-02.md).
 
-> **Testnet prototype.** The CLI prototype (since removed) completed one Telegraph x402 purchase on the devnode on 28 Oct 2026; the answer was unrelated to the package. The project has not yet demonstrated a useful package-release answer, a complete package migration or production customer usage. Testnet USDC is not revenue.
+> **Testnet prototype.** Since 1 Nov 2026 the agent has made 4 testnet purchases (0.06 USDC). Two answers from third-party QA miners (3 and 4 Nov, through the since-removed CLI prototype) were unrelated to the package. Two came from the team's own miner 7314, so they are self-purchases; one of them (11 Nov, `@renovatebot/pep440`) was used to open a draft PR, which was closed without merging to test merge accounting. No PR has been merged, no package migration has been completed, and there is no production or third-party usage. Testnet USDC is not revenue.
 
 ## Status
 
@@ -12,18 +12,18 @@ Status is a snapshot, not a promise.
 
 | Item | Value |
 | --- | --- |
-| Documentation revision | 2 Nov 2026 review update on top of `831b1ce` |
-| Last implementation snapshot whose unit tests were run | `9faf16a`, 2026-11-02 04:52 UTC |
-| Last successful live Telegraph purchase | 28 Oct 2026, pre-event, old client against the node interface of that date; answer not useful |
-| Last live contract check (no payment) | 2 Nov 2026, see [the contract snapshot](docs/telegraph/qa-intent-contract-2026-11-02.md) |
-| Event-period evidence (1 Nov to 1 Dec 2026) | None yet |
+| Documentation revision | 19 Nov 2026 status refresh on top of `633417b` |
+| Last implementation snapshot whose unit tests were run | `633417b`, 2026-11-18 17:04 UTC: bot 360, dashboard 15 and miner 235 tests pass; bot build passes |
+| Last successful live Telegraph purchase | 11 Nov 2026, from the Action: 0.02 USDC to the team's own miner 7314 (`our_choice`) for `@renovatebot/pep440` 4.2.4 → 6.0.0 ([tx](https://sepolia.etherscan.io/tx/0xa3c9d78b8183f499959a2c4ed138c7e358ffdefb0a97527d6c32ffef1955e954)). The answer was marked useful and opened draft PR #27, closed without merging to test merge accounting |
+| Last live contract check (no payment) | 14 Nov 2026, unsigned and unpaid catalogue and quote check: [preflight snapshot](docs/telegraph/four-package-tests-preflight-2026-11-14.json) |
+| Event-period evidence (1 Nov to 1 Dec 2026) | 4 purchases, 0.06 USDC; see the evidence row under [For reviewers](#for-reviewers-and-the-hackathon-submission) |
 
 | Part | State |
 | --- | --- |
 | Detect a dependency upgrade released after the cutoff | The action resolves supported installed versions and selects newer stable npm/PyPI releases strictly after `MODEL_CUTOFF`, reusing `bot/src/trigger.ts` for npm date checks. Covered by offline tests; hosted operation remains unverified. |
-| Buy an answer on Telegraph with x402; record receipt hash, signal hash, tx hash | Historical integration test only: one pre-event payment succeeded on 28 Oct 2026; the returned content was unrelated to package releases. The current client is not compatible with the 2 Nov live intent contract until it sends the canonical intent id and request shape and is retested. |
+| Buy an answer on Telegraph with x402; record receipt hash, signal hash, tx hash | Works in the Action: pays on Ethereum Sepolia with x402 and records the receipt, signal and transaction hashes on the ledger branch. Live purchases on 8 and 11 Nov 2026 (miner 7314, `our_choice`). The third-party answers bought on 3 and 4 Nov through the removed CLI were unrelated to the packages asked about. |
 | Append-only purchase ledger on a `ledger` git branch | Shared attempts and per-receipt records are wired into the action. Pre-PR assessments use dependency/version/query identity across commits; rows written by the removed CLI keep their PR/commit keys. Failure and concurrency behavior is covered by offline tests; hosted writes remain unverified. |
-| Purchase dashboard | Works locally: `npm install --prefix web --ignore-scripts`, then `npm run dev --prefix web`; it reads `ledger.jsonl` from GitHub raw for a public repository. Not deployed to a public URL yet. Shows purchases, cost per merged PR (all-time and for the 1 Nov – 1 Dec event window), PRs proposed, merged, closed and open with the merge rate and sample size, closed-PR spend, cost per useful answer, and escrow credits and refused quotes as non-spend. Add `?repo=owner/name` to view another public repository's ledger. **Download evidence CSV** exports, for 1 Nov – 1 Dec 2026, one line per settled purchase and per attempt reconciled as charged with no answer: date, repo, package and versions, miner and how it was selected (`rank` or `our_choice`), amount, network, receipt hash, signal and transaction links, answer quality and PR outcome. It is built in the browser from the public ledger; the raw `ledger.jsonl` is linked beside it. Hosted merge capture remains unverified. |
+| Purchase dashboard | Works locally: `npm install --prefix web --ignore-scripts`, then `npm run dev --prefix web`; it reads `ledger.jsonl` from GitHub raw for a public repository. Deployed at https://telegraph-pr-agent.vercel.app. Shows purchases, cost per merged PR (all-time and for the 1 Nov – 1 Dec event window), PRs proposed, merged, closed and open with the merge rate and sample size, closed-PR spend, cost per useful answer, and escrow credits and refused quotes as non-spend. Add `?repo=owner/name` to view another public repository's ledger. **Download evidence CSV** exports, for 1 Nov – 1 Dec 2026, one line per settled purchase and per attempt reconciled as charged with no answer: date, repo, package and versions, miner and how it was selected (`rank` or `our_choice`), amount, network, receipt hash, signal and transaction links, answer quality and PR outcome. It is built in the browser from the public ledger; the raw `ledger.jsonl` is linked beside it. Hosted capture of a PR closed without merging was verified on 11 Nov (PR #27); no PR has been merged yet, so cost per merged PR shows N/A. |
 | GitHub Action, dependency PRs, migration and merge accounting | Packaged action with cutoff gating, attempt ledger and dependency PR preparation (ready for review; drafts with `draft-prs: true`); validated locally. `telegraph:fix` and migration execution remain planned. Receipt-linked merge accounting is implemented and tested offline. |
 | Package-release Q&A miner | Working, in production at `https://telegraph-pr-miner-n30sk.vercel.app` and registered on Telegraph since 6 Nov as miner 7314 (`package-release-intel`, `QUESTION_ANSWERING_GENERAL`, 0.02 USDC). It answers what changed in an npm package between two versions from npm, GitHub release material, migration guides and OSV, each change with a verbatim quote and its source. A paid direct call through Telegraph was served and settled on 6 Nov; Engine routing sent the same kind of question to another intent (`WEB_SEARCH_GENERAL`), so buyers ask it by id. Benchmark: 67.1% of reviewed breaking changes by word matching, 82.6% with an LLM judge (target 80%), every quote checked. Scored by the intent's general-purpose judge: rank 6 of 17 on 9 Nov (11 of 17 on 8 Nov), measured with our own 30 questions in the pool (1 of 6 contributors), so it is not independent evidence of quality; the benchmark is the quality evidence. Details: [miner/README.md](miner/README.md). |
 
@@ -110,18 +110,17 @@ On the documented x402 path a valid payment may settle before the miner is calle
 
 - Package-release answer quality has not been demonstrated by existing providers.
 - The team's package-release miner is registered and scored, but the intent's test questions are mostly general, so its rank moves with the pool (6 of 17 on 9 Nov, 11 of 17 on 8 Nov).
-- GitHub Action, draft PR, label approval, patch generation, secretless CI and merge accounting are planned.
+- The `telegraph:fix` label stage is planned: patch generation, install/typecheck/tests in a job without secrets, and pushing only a validated patch. The Action, draft PRs and merge accounting exist.
 - `CODE_GENERATION`, `CODE_PATCH_VERIFY` and `REGRESSION_VERIFY` are conditional on providers passing quality tests.
-- The dashboard is not deployed publicly.
 - Public repositories only. Testnet only; no revenue or adoption claim.
 
 ## Disclosure
 
 - The same team controls the agent and the package-release miner (payout wallet `0x74f2840C8A564F791f50aD76c38EF078258588dC`). Any agent purchase from that miner is related-party testing, not independent demand, adoption or third-party validation.
-- Buyer wallet and miner wallet addresses, with explorer links, will be listed here before submission. Keys are never published.
+- Buyer wallets (both team-controlled): [`0x85Bb8c5Db7505a348af0C2aC03819827d4e435C8`](https://sepolia.etherscan.io/address/0x85Bb8c5Db7505a348af0C2aC03819827d4e435C8) paid on 3, 4 and 11 Nov 2026, and [`0x30A33F953a9bCc9Aff927caC815984ab2Eab305f`](https://sepolia.etherscan.io/address/0x30A33F953a9bCc9Aff927caC815984ab2Eab305f) paid on 8 Nov 2026. Payments go to Telegraph's payment contract [`0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b`](https://sepolia.etherscan.io/address/0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b), not directly to a miner. Purchases from miner 7314 by these wallets are related-party. Keys are never published.
 - Code written before 1 Nov 2026: the CLI vertical slice (commit `9faf16a` and earlier; removed on 11 Nov 2026). Work added during the event will be summarised here.
 - Event window: purchases, transactions, usage, demos and adoption evidence claimed for Season II fall between 1 Nov and 1 Dec 2026. Package release notes and registry records keep their original dates, including dates before the event.
-- Reused open source: `@x402/fetch` and `@x402/evm` (Apache-2.0), `viem` (MIT), `zod` (MIT), `vitest` (MIT), `vite` (MIT). Confirm each licence from the package before submission.
+- Reused open source, with licences read from each package on 19 Nov 2026. Runtime: `@x402/fetch`, `@x402/evm`, `@renovatebot/pep440` (Apache-2.0); `@actions/core`, `viem`, `zod`, `jsonc-parser`, `@upstash/redis` (MIT); `@yarnpkg/parsers` (BSD-2-Clause); `semver` (ISC). Development only: `typescript`, `@vercel/node` (Apache-2.0); `vitest`, `vite`, `esbuild`, `tsx`, `@types/node`, `@types/semver` (MIT).
 
 ## For reviewers and the hackathon submission
 
@@ -130,12 +129,12 @@ To be filled in as each item exists; nothing below is claimed yet.
 | Item | Status |
 | --- | --- |
 | Tested commit and public repository | this repository, commit listed under Status |
-| Public dashboard URL | not deployed |
+| Public dashboard URL | https://telegraph-pr-agent.vercel.app (add `?repo=owner/name` for another public repository) |
 | Testnet and token in use | from the live 402 challenge; Ethereum Sepolia test USDC as of 2 Nov 2026 |
 | One command for a new realistic input | planned: the Action on a public fixture repository ([TEAM.md](docs/TEAM.md)) |
 | No-post-cutoff, no-spend case | planned on the fixture repository; offline test: no purchase or PR when no dependency is past the cutoff |
-| Failing typecheck, no push case | planned with the Action |
-| Event-period receipts, signal links, transactions, ledger export | Dashboard **Download evidence CSV** plus the raw `ledger.jsonl`. As of 11 Nov 2026: 3 purchases (0.04 USDC): two CLI test buys (3 and 4 Nov, answers not useful) and one Action assessment from the team's own miner 7314 (`our_choice`, a self-purchase, not independent adoption) |
+| Failing typecheck, no push case | planned with the `telegraph:fix` stage |
+| Event-period receipts, signal links, transactions, ledger export | Dashboard **Download evidence CSV** plus the raw `ledger.jsonl`. As of 19 Nov 2026: 4 purchases (0.06 USDC): two CLI test buys from third-party miners (3 and 4 Nov, answers not useful) and two Action assessments from the team's own miner 7314 (8 and 11 Nov, `our_choice`, self-purchases, not independent adoption) |
 | 2–5 minute demo | not recorded |
 | Five-question commercial summary | not written |
 | Public updates (at least three, separate dates) | none yet |
