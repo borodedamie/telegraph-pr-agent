@@ -248,6 +248,7 @@ const run = async (): Promise<void> => {
             ...free,
             cutoff: cutoffDay,
             draft: draftPrs,
+            onWarning: (message) => core.warning(message),
           });
           opened++;
           urls.add(url);

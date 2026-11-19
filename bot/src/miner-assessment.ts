@@ -7,6 +7,9 @@ export const CHANGE_KINDS = ["breaking", "deprecation", "security_fix"] as const
 
 export class NotFoundAssessmentError extends Error {}
 
+/** The target version is reported to introduce a vulnerability: never published without manual review. */
+export class IntroducedVulnerabilityError extends Error {}
+
 export const MIGRATION_MINER_ID = "7314";
 export const migrationPrompt = (dependency: Dependency): string =>
   `What changed in ${dependency.package} from ${dependency.currentVersion} to ${dependency.targetVersion}?`;
@@ -87,7 +90,7 @@ export const migrationFindings = (
       (advisory) => advisory.conclusion === "introduced_by_upgrade",
     )
   ) {
-    throw new Error(
+    throw new IntroducedVulnerabilityError(
       "Miner reports a vulnerability introduced by the target version; manual review required",
     );
   }
