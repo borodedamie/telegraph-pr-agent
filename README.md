@@ -135,11 +135,25 @@ To be filled in as each item exists; nothing below is claimed yet.
 | One command for a new realistic input | planned: the Action on a public fixture repository ([TEAM.md](docs/TEAM.md)) |
 | No-post-cutoff, no-spend case | planned on the fixture repository; offline test: no purchase or PR when no dependency is past the cutoff |
 | Failing typecheck, no push case | planned with the `telegraph:fix` stage |
-| Event-period receipts, signal links, transactions, ledger export | Dashboard **Download evidence CSV** plus the raw `ledger.jsonl`. As of 19 Nov 2026: 4 purchases (0.06 USDC): two CLI test buys from third-party miners (3 and 4 Nov, answers not useful) and two Action assessments from the team's own miner 7314 (8 and 11 Nov, `our_choice`, self-purchases, not independent adoption) |
+| Event-period receipts, signal links, transactions, ledger export | Across all installations: see the [evidence index](#evidence-index-every-repository-running-the-bot) below. For this repository alone, the dashboard's **Download evidence CSV** plus the raw `ledger.jsonl`. As of 19 Nov 2026: 4 purchases (0.06 USDC): two CLI test buys from third-party miners (3 and 4 Nov, answers not useful) and two Action assessments from the team's own miner 7314 (8 and 11 Nov, `our_choice`, self-purchases, not independent adoption) |
 | 2–5 minute demo | not recorded |
 | Five-question commercial summary | not written |
 | Public updates (at least three, separate dates) | none yet |
 | Technical tutorial and independent reproduction evidence | none yet |
+
+### Evidence index: every repository running the bot
+
+Each installation keeps its own public ledger on its `ledger` branch, so evidence is spread across repositories. This index lists every installation we know of. Each repository is labelled **team** (owned by a team member, so related-party) or **outside**, and totals are split by that label. Figures cover the event window (1 Nov – 1 Dec 2026), as of 19 Nov 2026 12:09 UTC. Each purchase's receipt, Telegraph signal and on-chain transaction are linked from that repository's dashboard and its **Download evidence CSV**.
+
+| Repository | Owner | Evidence | Purchases (spend) | Paid PRs: merged / closed / open | Free PRs (merged) | Cost per merged PR |
+| --- | --- | --- | --- | --- | --- | --- |
+| [`borodedamie/telegraph-pr-agent`](https://github.com/borodedamie/telegraph-pr-agent) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=borodedamie/telegraph-pr-agent) · [ledger](https://raw.githubusercontent.com/borodedamie/telegraph-pr-agent/ledger/ledger.jsonl) | 4 (0.06 USDC) | 0 / 1 / 0 | 0 | N/A |
+| [`borodedamie/grpc-tutorial`](https://github.com/borodedamie/grpc-tutorial) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=borodedamie/grpc-tutorial) · [ledger](https://raw.githubusercontent.com/borodedamie/grpc-tutorial/ledger/ledger.jsonl) | 5 (0.10 USDC) | 1 / 3 / 0 | 3 (1) | 0.10 USDC (n=1) |
+| [`lemind/onewallet-radar`](https://github.com/lemind/onewallet-radar) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=lemind/onewallet-radar) · [ledger](https://raw.githubusercontent.com/lemind/onewallet-radar/ledger/ledger.jsonl) | 6 (0.11 USDC) | 0 / 0 / 3 | 0 | N/A |
+| **Team total** | | | **15 (0.27 USDC)** | **1 / 4 / 3** | **3 (1)** | **0.27 USDC (n=1)** |
+| **Outside total** | | | **0** | **0** | **0** | **N/A: no outside installation yet** |
+
+How the list is kept: installations are found with a GitHub code search for `borodedamie/telegraph-pr-agent@` in workflow files and from the repository's dependents page, rechecked weekly until 1 Dec. The search index lags: on 19 Nov it found only `borodedamie/grpc-tutorial`, although `lemind/onewallet-radar` also uses `@v1`. A repository that runs the bot without appearing here can open an issue to be added.
 
 If you try the Action, open an issue with what you ran, the signal hash and whether the answer was useful. That is the kind of independent test the project needs.
 
