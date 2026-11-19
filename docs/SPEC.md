@@ -156,11 +156,12 @@ purchase or hosted ledger write is claimed. See README for configuration.
 
 ### 2.3 Dependency eligibility and `MODEL_CUTOFF`
 
-**Required configuration:** cutoff, actual provider/model identity, cutoff source
-URL and documented-or-assumed status must be explicitly configured. The workflow
-has no cutoff/provenance fallbacks and rejects `assumed-provider` / `assumed-model`
-before payment. A genuinely team-assumed cutoff remains supported with explicit
-model identity and source. Miner `7314` is the default; an explicit miner `0` skips.
+**Required configuration:** the cutoff date, its source URL and its
+documented-or-assumed status must be explicitly configured. The installer's coding
+model (`MODEL_PROVIDER` and `MODEL_ID`) is optional; when set, both are set and they
+never name Telegraph or a miner. With no model named the cutoff must be
+`team-assumed`. The workflow has no cutoff/provenance fallbacks and rejects
+`assumed-provider` / `assumed-model` before payment. Miner `7314` is the default; an explicit miner `0` skips.
 
 - [PRODUCT] `Eligible(A, B) = semver(B) > semver(A) AND releaseDate(B) > MODEL_CUTOFF`, where A is the installed version from the lockfile and B the latest eligible stable version from the registry. Release timestamps come from registry metadata, never the LLM. Prereleases excluded. Missing or ambiguous dates fail closed. If B equals A, do nothing. This rule is our design, not a Telegraph or hackathon requirement; the eligibility requirement is the autonomous purchase and its meaningful use (§1).
 - [PRODUCT] A comes from the lockfile, never from stripping `^`/`~` off a `package.json` range.
@@ -168,7 +169,7 @@ model identity and source. Miner `7314` is the default; an explicit miner `0` sk
 - [PRODUCT] Multi-major jumps: if B is more than one major version above A, the question and report cover every intervening major release (or the PR targets the next major only); asking only "A to B" may miss intermediate deprecations. The target stays B, the eligible post-cutoff version; the question and report cover every intervening major release. Never retarget a PR to an intermediate version released before the cutoff: that would pay for something the model already knows. Splitting large jumps into steps is open.
 - [PRODUCT] Pre-cutoff upgrades (added 16 Nov): when B > A and B's verified release date is on or before `MODEL_CUTOFF`, the model already knows B, so nothing is bought. The Action opens a free PR instead, up to `max-free-prs` per run (default 5, `0` turns them off), stating the release date and the cutoff and linking the registry page and the release notes found in registry metadata (npm `repository`, PyPI `project_urls`). An upgrade already proposed on the ledger is not proposed again. Unknown release dates get no PR. The PR body carries its own evidence block ("Upgrade evidence (no purchase)"); the ledger records the proposal, merge and close rows with `free: true` and no receipt. Merge accounting anchors a free PR to its free proposal row and applies the same branch-identity and default-branch rules as a paid PR. Added 18 Nov: for npm, the free PR also lists what changed, read by our miner's own pipeline (`answerQuestion` from `miner/src`) run inside the Action with no model caller, an in-memory store and only the run's `GITHUB_TOKEN` (sent to `api.github.com` only), so nothing can be bought. The answer goes through the same `migrationFindings` adapter as a paid answer, so the PR gets the same "What changed" and call-site sections, plus OSV-fixed CVEs. A vulnerability introduced by the target fails the free PR, as it does a paid one; any other failure to read the notes (a refused address, unexpected registry data, a miner error) logs a warning and the PR opens with the links only. Rules-only coverage is lower than the paid answer's (no model pass); when nothing documented is found, or for PyPI, the PR keeps only the links.
 - [PRODUCT] Internal classification is `post_cutoff_candidate`, not `unknown_to_model`: a published cutoff is a heuristic, not proof the model cannot know later information.
-- [PRODUCT] Config records provider, exact model identifier, cutoff date, cutoff source URL, whether the cutoff is provider-documented or team-assumed, and configuration timestamp. The cutoff belongs to the installer's configured model; there is no project-wide universal cutoff. If the provider documents none, the date is labelled team-assumed.
+- [PRODUCT] Decision 20 Nov 2026 (team): **the bot uses no LLM**; it gets its knowledge from Telegraph miners. The cutoff belongs to the installer's coding model, not to the bot or to a miner. Config records the cutoff date, cutoff source URL, whether it is provider-documented or team-assumed, the configuration timestamp, and, when named, the coding model's provider and exact identifier. A provider-documented cutoff needs the model named; with none named it is team-assumed. There is no project-wide universal cutoff. Ledger rows from 8 and 11 Nov 2026 record `telegraph` / `7314` as the model; those values described the miner, not a coding model, and are left as written (README disclosure).
 - [PRODUCT] Do not require unused credentials: either the LLM call is implemented or `LLM_API_KEY` is not required.
 
 | Dependency type | MVP policy |
@@ -286,7 +287,7 @@ request_sent / unknown_needs_reconciliation → (person reconciles) → failed_a
 | Telegraph `REGRESSION_VERIFY` | [SCORE] SHOULD, validate live intent and provider first |
 | Local install, typecheck, tests | [PRODUCT] MUST |
 
-- [PRODUCT] Use the team's or installer's LLM for patch generation until a Telegraph `CODE_GENERATION` miner passes real tests. The paid Q&A is a material input to the patch. Never pay a provider only to increase receipt count.
+- [PRODUCT] Decision 20 Nov 2026 (team): patches come from Telegraph `CODE_GENERATION_GENERAL` miners, never from our own or the installer's LLM, and the fix stage is gated. Before it is built, 2–3 test patches are bought (approved spend) for a known breaking upgrade (zod 3 → 4 on the fixture repository) by about 22 Nov. If none passes the repository's tests, the fix stage is skipped for the submission and the call-site report (§2.8) is what the PR offers. Miner patches are untrusted: committed only to the PR branch, the repository's own CI must pass, never auto-merged. The paid Q&A is a material input to the patch request. Never pay a provider only to increase receipt count.
 - [PRODUCT] A usable code-generation response: valid patch/diff; applies against the expected base SHA; touches only permitted files; no out-of-scope modifications; passes subsequent independent verification.
 - [PRODUCT] A failed or unavailable paid verification provider never blocks the core workflow. Local CI remains mandatory. The fix stage has its own spend cap.
 
@@ -302,7 +303,7 @@ request_sent / unknown_needs_reconciliation → (person reconciles) → failed_a
 - [PRODUCT] The patch from the untrusted job is an artifact; the privileged job never trusts it blindly. Define provenance/integrity checks and an allowed-path policy before pushing.
 - [PRODUCT] Never execute repository code in a job holding wallet, LLM or write-token secrets. Never combine `pull_request_target` with checking out and executing PR code. Pin third-party Actions to full commit SHAs. Least-privilege job permissions. Do not persist credentials in checkout configuration.
 - [PRODUCT] Treat miner output, release notes, issue text and generated code as untrusted; resist prompt and shell injection; render no arbitrary HTML; trust no arbitrary URLs from provider output. A generated diff may not modify the workflow, the Action or privileged scripts unless explicitly allowed.
-- [PRODUCT] LLM payment ownership is explicit: the installer supplies their own LLM key in a separate repository secret and pays the provider directly. README and dashboard state that the installer pays both Telegraph and LLM costs. Central payment would be a different architecture and must be stated honestly.
+- [PRODUCT] No LLM key is needed: the bot uses no LLM (decision 20 Nov 2026). The installer pays Telegraph only, and README and dashboard say so. The LLM cost rows in §4.3–§4.4 stay at zero unless that decision changes.
 
 ### 2.11 Reviewer acceptance tests
 
@@ -472,8 +473,8 @@ Recorded separately, never inferred from one another: **payment delivered** (val
 | Miner track | Separate entry; go, decided 9 Nov | Never blocks the App |
 | Spend approval | Buy Q&A automatically; `telegraph:fix` label for patch work | Qualifying purchase stays autonomous; maintainers control spend |
 | Who pays Telegraph | Installer's dedicated low-balance wallet in repo secrets | No custody or relay; disclose testnet funding |
-| Who pays LLM | Installer's own key for MVP | Dashboard economics match the real payer |
-| Who writes the patch | Team/installer LLM with the purchased answer as input | Codegen provider quality unproven; switch after a provider passes tests |
+| Who pays LLM | No LLM in the bot (decision 20 Nov 2026) | The installer pays Telegraph only |
+| Who writes the patch | A Telegraph `CODE_GENERATION_GENERAL` miner, with the purchased answer as input, if the 22 Nov gate passes | No fallback to our own LLM; otherwise the PR offers the call-site report |
 | Paid verification | Optional until proven | Secretless local CI already verifies |
 | Dashboard | One public ledger per public repository | Small; aggregation later |
 | `MODEL_CUTOFF` | Tied to the exact model; documented vs assumed recorded | Transparent heuristic |
@@ -503,7 +504,7 @@ Recorded separately, never inferred from one another: **payment delivered** (val
 
 1. B and A jointly resolve exact intent ids, schemas, payment network and provider discovery (QA done 2 Nov).
 2. A proves whether the QA miner can be scored/ranked and answers package-release questions accurately, by the 9 Nov gate. This runs in parallel and never blocks steps 3–5.
-3. B proves one useful paid Q&A purchase and uses it in a real migration with the installer's LLM.
+3. B proves one useful paid Q&A purchase and uses it in a real migration with a patch bought from a `CODE_GENERATION_GENERAL` miner, if the 22 Nov gate passes.
 4. B completes the secure Action vertical slice and fixture failure cases.
 5. C finalises attempt/receipt accounting and the dashboard on real data structures.
 6. A continues miner-track work only while the scoring/registration path stays viable.

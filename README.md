@@ -117,6 +117,7 @@ On the documented x402 path a valid payment may settle before the miner is calle
 ## Disclosure
 
 - The same team controls the agent and the package-release miner (payout wallet `0x74f2840C8A564F791f50aD76c38EF078258588dC`). Any agent purchase from that miner is related-party testing, not independent demand, adoption or third-party validation.
+- Cutoff provenance on old rows (note added 20 Nov 2026): the Action purchases of 8 and 11 Nov 2026 record `MODEL_PROVIDER=telegraph` and `MODEL_ID=7314`. Those values named the miner, not a coding model; the cutoff (2026-01-01, team-assumed) belongs to the installer's coding model. The rows are left as written. From 20 Nov the Action rejects Telegraph or a miner id in these fields.
 - Buyer wallets (both team-controlled): [`0x85Bb8c5Db7505a348af0C2aC03819827d4e435C8`](https://sepolia.etherscan.io/address/0x85Bb8c5Db7505a348af0C2aC03819827d4e435C8) paid on 3, 4 and 11 Nov 2026, and [`0x30A33F953a9bCc9Aff927caC815984ab2Eab305f`](https://sepolia.etherscan.io/address/0x30A33F953a9bCc9Aff927caC815984ab2Eab305f) paid on 8 Nov 2026. Payments go to Telegraph's payment contract [`0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b`](https://sepolia.etherscan.io/address/0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b), not directly to a miner. Purchases from miner 7314 by these wallets are related-party. Keys are never published.
 - Code written before 1 Nov 2026: the CLI vertical slice (commit `9faf16a` and earlier; removed on 11 Nov 2026). Work added during the event will be summarised here.
 - Event window: purchases, transactions, usage, demos and adoption evidence claimed for Season II fall between 1 Nov and 1 Dec 2026. Package release notes and registry records keep their original dates, including dates before the event.
@@ -172,10 +173,10 @@ training cutoff: only dependency releases published after it are bought.
 | Variable | Required | Example |
 | --- | --- | --- |
 | `MODEL_CUTOFF` | yes | `2026-01-01` |
-| `MODEL_PROVIDER` | yes | `anthropic` |
-| `MODEL_ID` | yes | the exact model your team codes with |
-| `MODEL_CUTOFF_SOURCE_URL` | yes | HTTPS page that documents the cutoff |
+| `MODEL_CUTOFF_SOURCE_URL` | yes | HTTPS page that documents or explains the cutoff |
 | `MODEL_CUTOFF_STATUS` | yes | `provider-documented` or `team-assumed` |
+| `MODEL_PROVIDER` | no | your coding model's provider, e.g. `anthropic`; never `telegraph` |
+| `MODEL_ID` | no | the exact coding model your team uses; never a miner id. Set both or neither; with neither, the cutoff must be `team-assumed` |
 | `PREFERRED_MINER_ID` | no | miner tried first; defaults to `7314` |
 | `MERGE_BRANCHES` | no | branches besides the default whose merges count, e.g. `release/*` |
 | `MONTHLY_BUDGET_USDC` | no | cap across all runs in a calendar month (UTC), e.g. `1` |
@@ -398,8 +399,9 @@ proving what is installed in a running interpreter. Unresolved versions are repo
   retain the client's `selectedBy: "our_choice"`; an unranked choice has null rank/score.
 - Set repository variable `MODEL_CUTOFF` (or action input `model-cutoff`) to the model's
   training cutoff date, for example `2025-01-01`. Missing/invalid dates fail before payment.
-- Configure `MODEL_PROVIDER`, `MODEL_ID`, `MODEL_CUTOFF_SOURCE_URL` (HTTPS), and
-  `MODEL_CUTOFF_STATUS` (`provider-documented` or `team-assumed`) for provenance.
+- Configure `MODEL_CUTOFF_SOURCE_URL` (HTTPS) and `MODEL_CUTOFF_STATUS`
+  (`provider-documented` or `team-assumed`) for provenance. `MODEL_PROVIDER` and
+  `MODEL_ID` optionally name your coding model; the bot itself uses no LLM.
   `MODEL_CONFIGURED_AT` is optional; otherwise the configuration-load time is recorded.
   The workflow requires explicit cutoff and model provenance repository variables.
   Placeholder provider/model names are rejected before payment. A team-assumed

@@ -101,7 +101,7 @@ function fields(row) {
     ["Package", row.package],
     ["Target version", row.targetVersion],
     ["Selected by", row.selectedBy],
-    ["Model", row.model && `${row.model.provider} / ${row.model.model}`],
+    ["Coding model", row.model?.model && `${row.model.provider} / ${row.model.model}`],
     ["Model cutoff", row.model && `${row.model.cutoff} (${row.model.status})`],
     ["Cutoff source", row.model?.sourceUrl],
     ["Configured at", row.model?.configuredAt],
