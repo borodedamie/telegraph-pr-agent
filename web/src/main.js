@@ -1,8 +1,10 @@
-import { answerLatency, EVENT_WINDOW, evidenceCsv, explorerBase, inWindow, mergedCosts, outcomeSummary, purchaseRows, SIGNAL_URL } from "./accounting.js";
-// Any public repo running the Action can be viewed with ?repo=owner/name.
+import { answerLatency, EVENT_WINDOW, evidenceCsv, explorerBase, inWindow, KNOWN_INSTALLS, mergedCosts, outcomeSummary,
+  purchaseRows, repoSummary, SIGNAL_URL, tagRows } from "./accounting.js";
+// ?repo=owner/name views one public repository running the Action; ?repo=a/b,c/d views several together.
+// With no ?repo=, every known installation is shown.
 const REPO_PARAM = new URLSearchParams(location.search).get("repo");
-const REPO = REPO_PARAM ?? "borodedamie/telegraph-pr-agent";
-const LEDGER_URL = `https://raw.githubusercontent.com/${REPO}/ledger/ledger.jsonl`;
+const REPOS = REPO_PARAM ? REPO_PARAM.split(",").map((repo) => repo.trim()).filter(Boolean) : KNOWN_INSTALLS;
+const ledgerUrl = (repo) => `https://raw.githubusercontent.com/${repo}/ledger/ledger.jsonl`;
 
 const app = document.getElementById("app");
 const drawer = document.getElementById("drawer");
@@ -18,21 +20,57 @@ function el(tag, attrs = {}, ...children) {
   return node;
 }
 
-async function loadRows() {
-  if (!/^[\w.-]+\/[\w.-]+$/.test(REPO)) throw new Error(`?repo= must be owner/name, got "${REPO}"`);
-  const res = await fetch(`${LEDGER_URL}?ts=${Date.now()}`, { cache: "no-store" });
-  if (!res.ok) throw new Error(`ledger fetch failed: HTTP ${res.status}`);
-  return (await res.text())
-    .split("\n")
-    .filter((line) => line.trim())
-    .map((line) => JSON.parse(line));
+/** One repository's ledger: { repo, rows } when it loads, { repo, error } when it doesn't. Never throws. */
+async function loadLedger(repo) {
+  try {
+    if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) throw new Error(`must be owner/name, got "${repo}"`);
+    const res = await fetch(`${ledgerUrl(repo)}?ts=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`ledger fetch failed: HTTP ${res.status}`);
+    const rows = (await res.text()).split("\n").filter((line) => line.trim()).map((line) => JSON.parse(line));
+    return { repo, rows };
+  } catch (err) {
+    return { repo, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+// Team and outside are never mixed in one total, and a ledger that failed to load is listed, not dropped.
+// Figures cover the event window, like the README evidence index.
+function repositories({ perRepo, totals }) {
+  const total = (owner) => {
+    const t = totals[owner];
+    const incomplete = t.failed ? ` · INCOMPLETE: ${t.failed} of ${t.repos} ledgers failed to load` : "";
+    if (t.repos === 0) return `${owner === "team" ? "Team" : "Outside"}: no repositories`;
+    return `${owner === "team" ? "Team (related-party)" : "Outside"}, ${EVENT_WINDOW.label}: ${t.repos} ${t.repos === 1 ? "repository" : "repositories"} · `
+      + `${t.purchases} purchases · ${usdc(t.spendUsdc)} USDC · ${t.merged} merged PRs · `
+      + `cost per merged PR ${t.costPerMergedPr === null ? "N/A" : `${usdc(t.costPerMergedPr)} USDC (n=${t.merged})`}${incomplete}`;
+  };
+  const body = el("tbody", {}, ...perRepo.map((r) => el("tr", {},
+    el("td", {}, el("a", { href: `?repo=${r.repo}` }, r.repo)),
+    el("td", {}, r.owner),
+    ...(r.error !== undefined
+      ? [el("td", { colspan: "4" }, el("strong", {}, "Ledger failed to load: "), r.error)]
+      : [el("td", { class: "num" }, String(r.purchases)), el("td", { class: "num" }, `${usdc(r.spendUsdc)} USDC`),
+        el("td", { class: "num" }, `${r.merged} / ${r.closed} / ${r.open}`),
+        el("td", {}, el("a", { href: ledgerUrl(r.repo), target: "_blank", rel: "noopener" }, "ledger ↗"))]))));
+  return [
+    el("p", { class: "tally" }, total("team")),
+    el("p", { class: "tally" }, total("outside")),
+    el("div", { class: "ledger-wrap" }, el("table", { class: "ledger", "aria-label": "Repositories running the bot" },
+      el("thead", {}, el("tr", {}, ...["Repository", "Owner", "Purchases", "Spend", "PRs merged / closed / open", "Raw"]
+        .map((h, i) => el("th", { class: i >= 2 && i <= 4 ? "num" : "" }, h)))),
+      body)),
+  ];
 }
 
 const usdc = (n) =>
   n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
 const when = (ts) =>
   new Date(ts).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-const purchaseLabel = (row) => row.prNumber ? `PR #${row.prNumber}` : `${row.package ?? "Dependency"} assessment`;
+// With several repositories on screen, PR numbers repeat, so the label names the repository too.
+const purchaseLabel = (row) => {
+  const label = row.prNumber ? `PR #${row.prNumber}` : `${row.package ?? "Dependency"} assessment`;
+  return REPOS.length > 1 ? `${row.repo} · ${label}` : label;
+};
 const task = (intent) =>
   intent
     .toLowerCase()
@@ -210,7 +248,7 @@ function evidenceButton(entries) {
   button.addEventListener("click", () => {
     const csv = evidenceCsv(inWindow(entries, EVENT_WINDOW));
     const link = el("a", { href: URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })),
-      download: `telegraph-evidence-${REPO.replace("/", "-")}-2026-11-01_2026-12-01.csv` });
+      download: `telegraph-evidence-${REPOS.length === 1 ? REPOS[0].replace("/", "-") : `${REPOS.length}-repos`}-2026-11-01_2026-12-01.csv` });
     link.click();
     URL.revokeObjectURL(link.href);
   });
@@ -255,7 +293,7 @@ async function main() {
         el(
           "p",
           { class: "sub" },
-          `PR agent spend ledger · ${REPO} · Ethereum Sepolia `,
+          `PR agent spend ledger · ${REPOS.length === 1 ? REPOS[0] : `${REPOS.length} repositories`} · Ethereum Sepolia `,
           el("code", {}, "eip155:11155111")
         )
       ),
@@ -274,7 +312,10 @@ async function main() {
     )
   );
   try {
-    const entries = await loadRows();
+    const ledgers = await Promise.all(REPOS.map(loadLedger));
+    // The split matches the README evidence index: event window only.
+    const summary = repoSummary(ledgers.map((l) => (l.error === undefined ? { ...l, rows: inWindow(l.rows, EVENT_WINDOW) } : l)));
+    const entries = ledgers.filter((l) => l.error === undefined).flatMap((l) => tagRows(l.repo, l.rows));
     const costs = mergedCosts(entries);
     const outcomes = outcomeSummary(entries);
     const eventCosts = mergedCosts(inWindow(entries, EVENT_WINDOW));
@@ -311,8 +352,8 @@ async function main() {
       el("p", { class: "tally" }, `Event window ${EVENT_WINDOW.label}: `, eventCosts.count
         ? `${usdc(eventCosts.costPerMergedPr)} USDC per merged PR · ${eventCosts.count} merged · ${usdc(eventCosts.netSpend)} USDC spent`
         : `cost per merged PR N/A · ${usdc(eventCosts.netSpend)} USDC spent · no merged PRs`),
-      el("p", { class: "tally" }, evidenceButton(entries), el("span", { class: "dot" }, "·"),
-        el("a", { href: LEDGER_URL, target: "_blank", rel: "noopener" }, "Raw ledger (JSONL) ↗")),
+      ...repositories(summary),
+      el("p", { class: "tally" }, evidenceButton(entries)),
       table(rows)
     );
   } catch (err) {

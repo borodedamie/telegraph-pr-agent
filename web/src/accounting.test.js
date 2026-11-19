@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { answerLatency, chargedWithoutAnswer, EVENT_WINDOW, evidenceCsv, inWindow, mergedCosts, outcomeSummary, purchaseRows } from "./accounting.js";
+import { ownerLabel, repoSummary, tagRows, answerLatency, chargedWithoutAnswer, EVENT_WINDOW, evidenceCsv, inWindow, mergedCosts, outcomeSummary, purchaseRows } from "./accounting.js";
 
 test("allocates settled receipt costs once and excludes unmatched, failed and cross-repo records", () => {
   const purchase = { repo: "team/repo", status: "settled", receiptHash: "one", amountUsdc: 0.02 };
@@ -225,4 +225,38 @@ test("keeps scoped npm package names intact while still guarding external text",
 
 test("has only the header for a ledger with nothing to export", () => {
   assert.equal(parseCsv(evidenceCsv([])).length, 1);
+});
+
+test("labels a repository team when a team member owns it, outside otherwise", () => {
+  assert.equal(ownerLabel("borodedamie/grpc-tutorial"), "team");
+  assert.equal(ownerLabel("Lemind/onewallet-radar"), "team");
+  assert.equal(ownerLabel("codexempire/anything"), "team");
+  assert.equal(ownerLabel("someone-else/app"), "outside");
+});
+
+test("tags rows with their ledger and fills the repo on rows that predate the field", () => {
+  const [old, current] = tagRows("a/b", [{ status: "settled" }, { repo: "a/b", status: "settled" }]);
+  assert.deepEqual(old, { status: "settled", repo: "a/b", ledgerRepo: "a/b", owner: "outside" });
+  assert.equal(current.repo, "a/b");
+});
+
+test("splits totals into team and outside, and keeps a failed ledger listed and counted", () => {
+  const purchase = (repo, receiptHash, amountUsdc) => ({ repo, status: "settled", receiptHash, amountUsdc });
+  const { perRepo, totals } = repoSummary([
+    { repo: "borodedamie/one", rows: [purchase("borodedamie/one", "r1", 0.25), purchase("borodedamie/one", "r2", 0.25),
+      { kind: "merge", repo: "borodedamie/one", prNumber: 3, receiptHash: "r1" }] },
+    { repo: "lemind/two", error: "ledger fetch failed: HTTP 404" },
+    { repo: "stranger/app", rows: [purchase("stranger/app", "r3", 0.5)] },
+  ]);
+  assert.deepEqual(perRepo.map((r) => [r.repo, r.owner, r.error ?? r.purchases]),
+    [["borodedamie/one", "team", 2], ["lemind/two", "team", "ledger fetch failed: HTTP 404"], ["stranger/app", "outside", 1]]);
+  assert.deepEqual(totals.team, { repos: 2, failed: 1, purchases: 2, spendUsdc: 0.5, merged: 1, costPerMergedPr: 0.5 });
+  assert.deepEqual(totals.outside, { repos: 1, failed: 0, purchases: 1, spendUsdc: 0.5, merged: 0, costPerMergedPr: null });
+});
+
+test("adds the owner label to every evidence line", () => {
+  const rows = tagRows("borodedamie/one", [{ status: "settled", receiptHash: "r", timestamp: "2026-11-05T00:00:00.000Z", amountUsdc: 0.02 }]);
+  const [header, line] = evidenceCsv(rows).trim().split("\r\n").map((l) => l.split(","));
+  assert.deepEqual(header.slice(0, 4), ["record", "date", "repo", "owner"]);
+  assert.deepEqual(line.slice(0, 4), ["purchase", "2026-11-05T00:00:00.000Z", "borodedamie/one", "team"]);
 });

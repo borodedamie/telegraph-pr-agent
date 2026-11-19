@@ -2,6 +2,18 @@
 // don't, so their date decides: the devnode moved Base → Ethereum Sepolia on 1 Nov.
 export const explorerBase = (row) =>
   row.explorerBaseUrl ?? (row.timestamp < "2026-11-01" ? "https://sepolia.basescan.org" : "https://sepolia.etherscan.io");
+// GitHub accounts of the team (agreed 19 Nov 2026). A repository they own is "team" (related-party
+// evidence); any other owner is "outside".
+export const TEAM_OWNERS = ["borodedamie", "lemind", "codexempire"];
+// Known installations, shown when no ?repo= is given. See README "Evidence index".
+export const KNOWN_INSTALLS = ["borodedamie/telegraph-pr-agent", "borodedamie/grpc-tutorial", "lemind/onewallet-radar"];
+
+export const ownerLabel = (repo) => (TEAM_OWNERS.includes(repo.split("/")[0].toLowerCase()) ? "team" : "outside");
+
+/** Mark each row with the ledger it came from; early rows that predate the `repo` field get it here. */
+export const tagRows = (repo, rows) =>
+  rows.map((row) => ({ ...row, repo: row.repo ?? repo, ledgerRepo: repo, owner: ownerLabel(repo) }));
+
 export const SIGNAL_URL = "https://devnode.telegraphprotocol.com/engine/v1/signal/";
 
 /** The latest row of each attempt, keyed by attemptId. */
@@ -123,7 +135,7 @@ export const outcomeSummary = (rows) => {
   };
 };
 
-const EVIDENCE_COLUMNS = ["record", "date", "repo", "package", "current_version", "target_version", "intent",
+const EVIDENCE_COLUMNS = ["record", "date", "repo", "owner", "package", "current_version", "target_version", "intent",
   "miner_id", "miner_name", "selected_by", "miner_rank", "amount_usdc", "network", "receipt_hash", "signal_url",
   "tx_url", "answer_quality", "pr_number", "pr_outcome", "evidence_incomplete", "note"];
 
@@ -152,7 +164,7 @@ export const evidenceCsv = (rows) => {
   const tx = (row) => (row.txHash && explorerBase(row) ? `${explorerBase(row)}/tx/${row.txHash}` : "");
   const lines = purchaseRows(rows).filter((row) => row.status === "settled").map((row) => {
     const pr = outcomes.get(row.receiptHash);
-    return ["purchase", row.timestamp, row.repo, row.package, row.currentVersion, row.targetVersion, row.intent,
+    return ["purchase", row.timestamp, row.repo, row.owner, row.package, row.currentVersion, row.targetVersion, row.intent,
       row.minerId, row.minerName, row.selectedBy, row.minerRank, row.amountUsdc, row.network, row.receiptHash,
       row.signalHash ? `${SIGNAL_URL}${row.signalHash}` : "", tx(row), row.resultStatus, pr?.pr, pr?.outcome,
       row.evidenceIncomplete ? "yes" : "", ""];
@@ -160,11 +172,39 @@ export const evidenceCsv = (rows) => {
   const latest = new Map();
   for (const row of rows.filter((row) => row.kind === "attempt" && row.attemptId)) latest.set(row.attemptId, row);
   for (const row of [...latest.values()].filter((row) => row.state === "failed_and_charged")) {
-    lines.push(["charged_no_answer", row.timestamp, row.repo, "", "", "", "", row.minerId, "", "", "",
+    lines.push(["charged_no_answer", row.timestamp, row.repo, row.owner, "", "", "", "", row.minerId, "", "", "",
       row.chargedAmountUsdc, "", "", "", tx(row), "", "", "", "", `reconciled by ${row.reconciledBy}: ${row.reason ?? ""}`]);
   }
   lines.sort((a, b) => String(a[1]).localeCompare(String(b[1])));
   return [EVIDENCE_COLUMNS, ...lines]
     .map((line) => line.map((value, i) => csvCell(value, EXTERNAL_TEXT.has(EVIDENCE_COLUMNS[i]))).join(","))
     .join("\r\n") + "\r\n";
+};
+
+/**
+ * Per-repository figures and totals split into team and outside. `ledgers` holds
+ * { repo, rows } for a ledger that loaded and { repo, error } for one that did not. A failed
+ * ledger stays in the list with its error and is counted in its group's `failed`, so a total
+ * is never silently short.
+ */
+export const repoSummary = (ledgers) => {
+  const perRepo = ledgers.map(({ repo, rows, error }) => {
+    const owner = ownerLabel(repo);
+    if (error !== undefined) return { repo, owner, error };
+    const tagged = tagRows(repo, rows);
+    const costs = mergedCosts(tagged);
+    const outcomes = outcomeSummary(tagged);
+    return { repo, owner, purchases: purchaseRows(tagged).filter((row) => row.status === "settled").length,
+      spendUsdc: costs.netSpend, merged: outcomes.merged, closed: outcomes.closed, open: outcomes.open };
+  });
+  const totals = {};
+  for (const owner of ["team", "outside"]) {
+    const group = perRepo.filter((r) => r.owner === owner);
+    const loaded = group.filter((r) => r.error === undefined);
+    const add = (key) => loaded.reduce((sum, r) => sum + r[key], 0);
+    const merged = add("merged");
+    totals[owner] = { repos: group.length, failed: group.length - loaded.length, purchases: add("purchases"),
+      spendUsdc: add("spendUsdc"), merged, costPerMergedPr: merged ? add("spendUsdc") / merged : null };
+  }
+  return { perRepo, totals };
 };
