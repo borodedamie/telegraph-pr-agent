@@ -156,11 +156,12 @@ purchase or hosted ledger write is claimed. See README for configuration.
 
 ### 2.3 Dependency eligibility and `MODEL_CUTOFF`
 
-**Required configuration:** cutoff, actual provider/model identity, cutoff source
-URL and documented-or-assumed status must be explicitly configured. The workflow
-has no cutoff/provenance fallbacks and rejects `assumed-provider` / `assumed-model`
-before payment. A genuinely team-assumed cutoff remains supported with explicit
-model identity and source. Miner `7314` is the default; an explicit miner `0` skips.
+**Required configuration:** the cutoff date, its source URL and its
+documented-or-assumed status must be explicitly configured. The installer's coding
+model (`MODEL_PROVIDER` and `MODEL_ID`) is optional; when set, both are set and they
+never name Telegraph or a miner. With no model named the cutoff must be
+`team-assumed`. The workflow has no cutoff/provenance fallbacks and rejects
+`assumed-provider` / `assumed-model` before payment. Miner `7314` is the default; an explicit miner `0` skips.
 
 - [PRODUCT] `Eligible(A, B) = semver(B) > semver(A) AND releaseDate(B) > MODEL_CUTOFF`, where A is the installed version from the lockfile and B the latest eligible stable version from the registry. Release timestamps come from registry metadata, never the LLM. Prereleases excluded. Missing or ambiguous dates fail closed. If B equals A, do nothing. This rule is our design, not a Telegraph or hackathon requirement; the eligibility requirement is the autonomous purchase and its meaningful use (§1).
 - [PRODUCT] A comes from the lockfile, never from stripping `^`/`~` off a `package.json` range.
@@ -168,7 +169,7 @@ model identity and source. Miner `7314` is the default; an explicit miner `0` sk
 - [PRODUCT] Multi-major jumps: if B is more than one major version above A, the question and report cover every intervening major release (or the PR targets the next major only); asking only "A to B" may miss intermediate deprecations. The target stays B, the eligible post-cutoff version; the question and report cover every intervening major release. Never retarget a PR to an intermediate version released before the cutoff: that would pay for something the model already knows. Splitting large jumps into steps is open.
 - [PRODUCT] Pre-cutoff upgrades (added 16 Nov): when B > A and B's verified release date is on or before `MODEL_CUTOFF`, the model already knows B, so nothing is bought. The Action opens a free PR instead, up to `max-free-prs` per run (default 5, `0` turns them off), stating the release date and the cutoff and linking the registry page and the release notes found in registry metadata (npm `repository`, PyPI `project_urls`). An upgrade already proposed on the ledger is not proposed again. Unknown release dates get no PR. The PR body carries its own evidence block ("Upgrade evidence (no purchase)"); the ledger records the proposal, merge and close rows with `free: true` and no receipt. Merge accounting anchors a free PR to its free proposal row and applies the same branch-identity and default-branch rules as a paid PR. Vulnerabilities (OSV) for free PRs are not checked yet.
 - [PRODUCT] Internal classification is `post_cutoff_candidate`, not `unknown_to_model`: a published cutoff is a heuristic, not proof the model cannot know later information.
-- [PRODUCT] Config records provider, exact model identifier, cutoff date, cutoff source URL, whether the cutoff is provider-documented or team-assumed, and configuration timestamp. The cutoff belongs to the installer's configured model; there is no project-wide universal cutoff. If the provider documents none, the date is labelled team-assumed.
+- [PRODUCT] Decision 20 Nov 2026 (team): **the bot uses no LLM**; it gets its knowledge from Telegraph miners. The cutoff belongs to the installer's coding model, not to the bot or to a miner. Config records the cutoff date, cutoff source URL, whether it is provider-documented or team-assumed, the configuration timestamp, and, when named, the coding model's provider and exact identifier. A provider-documented cutoff needs the model named; with none named it is team-assumed. There is no project-wide universal cutoff. Ledger rows from 8 and 11 Nov 2026 record `telegraph` / `7314` as the model; those values described the miner, not a coding model, and are left as written (README disclosure).
 - [PRODUCT] Do not require unused credentials: either the LLM call is implemented or `LLM_API_KEY` is not required.
 
 | Dependency type | MVP policy |

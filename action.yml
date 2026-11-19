@@ -26,8 +26,9 @@ inputs:
     description: "Optional numeric miner ID tried before the ranked list; env fallback PREFERRED_MINER_ID"
   model-cutoff:
     description: "Model training cutoff date; required here or through MODEL_CUTOFF"
-  # Model provenance is supplied through MODEL_PROVIDER, MODEL_ID,
-  # MODEL_CUTOFF_SOURCE_URL, MODEL_CUTOFF_STATUS and optional MODEL_CONFIGURED_AT.
+  # Cutoff provenance: MODEL_CUTOFF_SOURCE_URL and MODEL_CUTOFF_STATUS are required. MODEL_PROVIDER
+  # and MODEL_ID optionally name the installer's coding model (never Telegraph or a miner); with
+  # neither set the cutoff must be team-assumed. The bot itself uses no LLM. Optional MODEL_CONFIGURED_AT.
   chain-id:
     description: "Allowed payment chain, default verified by the dated 2026-11-05 unpaid snapshot"
     default: "11155111"

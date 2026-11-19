@@ -9,9 +9,14 @@ export const LEDGER_FILE = "ledger.jsonl";
 const LEDGER_BRANCH = "ledger";
 const MAX_PUSH_ATTEMPTS = 3;
 
+/**
+ * Where the cutoff comes from. It is the installer's coding model's cutoff; provider and model are
+ * absent when no model is named (then status is team-assumed). Rows from 8 and 11 Nov 2026 record
+ * telegraph / 7314 here, which described the miner, not a coding model (see README disclosure).
+ */
 export interface ModelProvenance {
-  provider: string;
-  model: string;
+  provider?: string;
+  model?: string;
   cutoff: string;
   sourceUrl: string;
   status: "provider-documented" | "team-assumed";
