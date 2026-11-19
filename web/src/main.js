@@ -52,9 +52,12 @@ function repositories({ perRepo, totals }) {
       : [el("td", { class: "num" }, String(r.purchases)), el("td", { class: "num" }, `${usdc(r.spendUsdc)} USDC`),
         el("td", { class: "num" }, `${r.merged} / ${r.closed} / ${r.open}`),
         el("td", {}, el("a", { href: ledgerUrl(r.repo), target: "_blank", rel: "noopener" }, "ledger ↗"))]))));
+  // The team/outside split only means something when several repositories are on screen.
+  const split = REPOS.length > 1
+    ? [el("p", { class: "tally" }, total("team")), el("p", { class: "tally" }, total("outside"))]
+    : [];
   return [
-    el("p", { class: "tally" }, total("team")),
-    el("p", { class: "tally" }, total("outside")),
+    ...split,
     el("div", { class: "ledger-wrap" }, el("table", { class: "ledger", "aria-label": "Repositories running the bot" },
       el("thead", {}, el("tr", {}, ...["Repository", "Owner", "Purchases", "Spend", "PRs merged / closed / open", "Raw"]
         .map((h, i) => el("th", { class: i >= 2 && i <= 4 ? "num" : "" }, h)))),
