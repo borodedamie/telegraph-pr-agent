@@ -290,7 +290,14 @@ bought for them: the bot still opens a free PR for each (up to 5 per run, `max-f
 and the release notes. An upgrade already proposed is not proposed again. Releases with an
 unknown date are only listed in the run log as skipped. Free PRs and their merges are marked
 `free` on the ledger and the dashboard counts them on their own line; they never enter cost
-per merged PR. Tested offline; not yet run on a live repository.
+per merged PR. Live-tested on the gRPC-tutorial fixture repository (three free PRs, no purchase).
+
+For npm packages a free PR also shows **What changed** and **Where this repository uses what
+changed**, like a paid PR. The bot reads the release notes itself with our miner's rules pass
+(`miner/src`), run inside the Action with no model, no wallet and only the run's
+`GITHUB_TOKEN` for GitHub's API. Rules alone catch less than the paid answer, which adds a model
+pass: notes the rules can't parse are skipped, and the PR then keeps just the links. PyPI free
+PRs keep just the links. Tested offline against recorded zod release data; not yet run live.
 
 **7. See the spend.** `https://telegraph-pr-agent.vercel.app/?repo=OWNER/REPO` reads your
 repository's `ledger` branch: every purchase with its receipt, signal and transaction, and
@@ -443,7 +450,13 @@ bundle matches its source, and runs
 the offline bot/action test suite. The standalone `cli/` package has been removed. It receives no wallet or write credentials.
 Local bot installations use npm and `bot/package-lock.json`; dependency changes
 keep that npm lockfile and the workspace pnpm lockfile synchronized so the existing
-CI and deployment configuration can stay unchanged.
+CI and deployment configuration can stay unchanged. The bot imports the miner's
+source (`miner/src`) for free PRs, so building or testing the bot also needs the
+miner's dependencies: run `pnpm install` at the repository root (CI installs both
+packages from the workspace lockfile). The action bundle includes most of `miner/src`,
+so a change to `miner/src` also needs `npm run build --prefix bot` and a commit of
+`bot/dist/index.cjs`; CI fails until then. Such a change also changes the Action's
+behaviour from the next release tag, so miner PRs need a bot-side review too.
 
 `.github/workflows/dependency-updates.yml` runs on dependency-file pushes to
 `main` and manual dispatch, excluding generated fix branches and branch deletions. It checks out

@@ -1,4 +1,4 @@
-import { EVENT_WINDOW, evidenceCsv, explorerBase, inWindow, mergedCosts, outcomeSummary, purchaseRows, SIGNAL_URL } from "./accounting.js";
+import { answerLatency, EVENT_WINDOW, evidenceCsv, explorerBase, inWindow, mergedCosts, outcomeSummary, purchaseRows, SIGNAL_URL } from "./accounting.js";
 // Any public repo running the Action can be viewed with ?repo=owner/name.
 const REPO_PARAM = new URLSearchParams(location.search).get("repo");
 const REPO = REPO_PARAM ?? "borodedamie/telegraph-pr-agent";
@@ -111,6 +111,8 @@ function fields(row) {
     ["Miner", row.minerName],
     ["Amount", `${row.amountUsdc} USDC`],
     ["Answer quality", row.resultStatus],
+    ["No answer because", row.resultStatus !== "useful" && row.resultReason],
+    ["Answer latency", row.latencySeconds !== undefined && `${row.latencySeconds.toFixed(1)} s from recording the paid request`],
     ["Network", row.network],
     ["USDC contract", row.usdcContract],
     [
@@ -215,9 +217,22 @@ function evidenceButton(entries) {
   return button;
 }
 
+// Plain-English latency: a median of one or two purchases would be misleading,
+// so name the actual values instead of a statistic.
+// The times run from recording request_sent, which is pushed to the ledger before the
+// payment goes out, so they include a few seconds of ledger writing, not only the answer.
+function latencyLine({ count, medianSeconds, byAttempt }) {
+  if (count === 0) return "answer speed not measured yet";
+  if (count <= 2) {
+    const times = [...byAttempt.values()].sort((a, b) => a - b);
+    return `answer recorded ${times.map((t) => `~${t.toFixed(0)} s`).join(" and ")} after recording the paid request (${count === 1 ? "1 purchase" : "2 purchases"})`;
+  }
+  return `answer usually recorded ~${medianSeconds.toFixed(0)} s after recording the paid request (${count} purchases)`;
+}
+
 // SPEC §4.3: counts and sample size beside every rate, never a bare percentage.
 function outcomesLine(o) {
-  const rate = o.mergeRate === null ? "merge rate N/A" : `merge rate ${Math.round(o.mergeRate * 100)}% (n=${o.proposed})`;
+  const rate = o.mergeRate === null ? "merge rate N/A" : `merge rate ${Math.round(o.mergeRate * 100)}% (${o.merged} of ${o.proposed} PRs)`;
   const useful = o.costPerUsefulAnswer === null ? "cost per useful answer N/A"
     : `${usdc(o.costPerUsefulAnswer)} USDC per useful answer (${o.useful} useful)`;
   return `${o.proposed} PRs proposed · ${o.merged} merged · ${o.closed} closed unmerged (${usdc(o.closedSpend)} USDC) · ${o.open} open · ${rate} · ${useful}`
@@ -263,8 +278,13 @@ async function main() {
     const costs = mergedCosts(entries);
     const outcomes = outcomeSummary(entries);
     const eventCosts = mergedCosts(inWindow(entries, EVENT_WINDOW));
-    const rows = purchaseRows(entries).reverse(); // newest purchases first
+    const latency = answerLatency(entries);
+    const reasons = new Map(entries.filter((row) => row.kind === "attempt" && row.attemptId && row.reason)
+      .map((row) => [row.attemptId, row.reason]));
+    const rows = purchaseRows(entries).reverse() // newest purchases first
+      .map((row) => ({ ...row, latencySeconds: latency.byAttempt.get(row.attemptId), resultReason: reasons.get(row.attemptId) }));
     const settled = rows.filter((r) => r.status === "settled");
+    const notFound = settled.filter((r) => r.resultStatus === "not_found").length;
     const total = settled.reduce((sum, r) => sum + r.amountUsdc, 0);
     app.querySelector(".spend-total .figure").replaceChildren(
       usdc(total),
@@ -278,7 +298,11 @@ async function main() {
         el("span", { class: "dot" }, "·"),
         `${usdc(total)} USDC paid`,
         el("span", { class: "dot" }, "·"),
-        `${rows.length - settled.length} failed`
+        `${rows.length - settled.length} failed`,
+        el("span", { class: "dot" }, "·"),
+        notFound ? `${notFound} bought a dead end (not_found)` : "0 dead ends",
+        el("span", { class: "dot" }, "·"),
+        latencyLine(latency)
       ),
       el("p", { class: "tally" }, costs.count
         ? `${usdc(costs.costPerMergedPr)} USDC recorded net spend per merged PR · ${costs.count} merged PRs · ${usdc(costs.netSpend)} USDC total · ${usdc(costs.total)} USDC allocated to merges · ${usdc(costs.unmergedSpend)} USDC unmerged/unallocated`
