@@ -1,0 +1,56 @@
+name: Find installs of the Action
+
+# Every Monday until 1 Dec 2026: list repositories that use the Action (code search and the
+# dependents page) and post the report to one issue, so a new or outside installation is noticed.
+# No wallet key, no purchase. Code search can miss repositories; see scripts/find-installs.mjs.
+on:
+  schedule:
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Stop after the event window
+        id: window
+        run: |
+          if [ "$(date -u +%Y%m%d)" -gt 20261201 ]; then
+            echo "Past 1 Dec 2026: nothing to do. Remove this workflow."
+            echo "open=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "open=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        if: steps.window.outputs.open == 'true'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: steps.window.outputs.open == 'true'
+        with:
+          node-version: 24
+      - name: Find installs
+        if: steps.window.outputs.open == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/find-installs.mjs > report.md && cat report.md
+      - name: Post the report to the tracking issue
+        if: steps.window.outputs.open == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          title="Installs of the Action"
+          number=$(gh issue list --state open --search "\"$title\" in:title" --json number,title \
+            --jq ".[] | select(.title == \"$title\") | .number" | head -1)
+          if [ -z "$number" ]; then
+            gh issue create --title "$title" --body-file report.md
+          else
+            gh issue comment "$number" --body-file report.md
+          fi

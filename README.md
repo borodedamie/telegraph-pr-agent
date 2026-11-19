@@ -153,7 +153,7 @@ Each installation keeps its own public ledger on its `ledger` branch, so evidenc
 | **Team total** | | | **15 (0.27 USDC)** | **1 / 4 / 3** | **3 (1)** | **0.27 USDC (n=1)** |
 | **Outside total** | | | **0** | **0** | **0** | **N/A: no outside installation yet** |
 
-How the list is kept: installations are found with a GitHub code search for `borodedamie/telegraph-pr-agent@` in workflow files and from the repository's dependents page, rechecked weekly until 1 Dec. The search index lags: on 19 Nov it found only `borodedamie/grpc-tutorial`, although `lemind/onewallet-radar` also uses `@v1`. A repository that runs the bot without appearing here can open an issue to be added.
+How the list is kept: every Monday until 1 Dec, the **Find installs of the Action** workflow (`.github/workflows/find-installs.yml`) runs `scripts/find-installs.mjs`. The script uses a GitHub code search for `borodedamie/telegraph-pr-agent@` in workflow files and the repository's dependents page, then posts each repository's team or outside label, whether it has a ledger, and anything new to the issue "Installs of the Action". It can also be run by hand. The search index lags: on 19 Nov it found only `borodedamie/grpc-tutorial`, although `lemind/onewallet-radar` also uses `@v1`. A repository that runs the bot without appearing here can open an issue to be added.
 
 If you try the Action, open an issue with what you ran, the signal hash and whether the answer was useful. That is the kind of independent test the project needs.
 
