@@ -148,10 +148,12 @@ Each installation keeps its own public ledger on its `ledger` branch, so evidenc
 | Repository | Owner | Evidence | Purchases (spend) | Paid PRs: merged / closed / open | Free PRs (merged) | Cost per merged PR |
 | --- | --- | --- | --- | --- | --- | --- |
 | [`borodedamie/telegraph-pr-agent`](https://github.com/borodedamie/telegraph-pr-agent) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=borodedamie/telegraph-pr-agent) · [ledger](https://raw.githubusercontent.com/borodedamie/telegraph-pr-agent/ledger/ledger.jsonl) | 4 (0.06 USDC) | 0 / 1 / 0 | 0 | N/A |
-| [`borodedamie/grpc-tutorial`](https://github.com/borodedamie/grpc-tutorial) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=borodedamie/grpc-tutorial) · [ledger](https://raw.githubusercontent.com/borodedamie/grpc-tutorial/ledger/ledger.jsonl) | 5 (0.10 USDC) | 1 / 3 / 0 | 3 (1) | 0.10 USDC (n=1) |
+| [`borodedamie/grpc-tutorial`](https://github.com/borodedamie/grpc-tutorial) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=borodedamie/grpc-tutorial) · [ledger](https://raw.githubusercontent.com/borodedamie/grpc-tutorial/ledger/ledger.jsonl) | 5 (0.10 USDC) | 0 / 4 / 0 | 3 (1) | N/A¹ |
 | [`lemind/onewallet-radar`](https://github.com/lemind/onewallet-radar) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=lemind/onewallet-radar) · [ledger](https://raw.githubusercontent.com/lemind/onewallet-radar/ledger/ledger.jsonl) | 6 (0.11 USDC) | 0 / 0 / 3 | 0 | N/A |
-| **Team total** | | | **15 (0.27 USDC)** | **1 / 4 / 3** | **3 (1)** | **0.27 USDC (n=1)** |
+| **Team total** | | | **15 (0.27 USDC)** | **0 / 5 / 3** | **3 (1)** | **N/A: no paid PR merged yet** |
 | **Outside total** | | | **0** | **0** | **0** | **N/A: no outside installation yet** |
+
+¹ grpc-tutorial's PR #3 merged into `test/readable-changes`, a test branch, not the default branch. Its merge row was written before merge accounting checked the branch, so it carries no base reference. It is counted as closed, not merged, and never enters cost per merged PR.
 
 How the list is kept: installations are found with a GitHub code search for `borodedamie/telegraph-pr-agent@` in workflow files and from the repository's dependents page, rechecked weekly until 1 Dec. The search index lags: on 19 Nov it found only `borodedamie/grpc-tutorial`, although `lemind/onewallet-radar` also uses `@v1`. A repository that runs the bot without appearing here can open an issue to be added.
 
