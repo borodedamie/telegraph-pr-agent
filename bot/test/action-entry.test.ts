@@ -265,6 +265,16 @@ it("continues past a bad saved answer and keeps earlier partial PR outputs", asy
   expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("bad: Invalid answer"));
 });
 
+it("skips a saved answer an earlier run marked unusable, without failing the run or paying", async () => {
+  mocks.candidates.mockResolvedValue([{ package: "bad", targetVersion: "2.0.0" }, { package: "good" }]);
+  mocks.purchase.mockResolvedValueOnce({ answer: "[1,2]", assessmentId: "a", attemptId: "a:1", savedResultStatus: "unusable" });
+  await run();
+  expect(mocks.apply).toHaveBeenCalledOnce();
+  expect(mocks.unusable).not.toHaveBeenCalled();
+  expect(mocks.failed).not.toHaveBeenCalled();
+  expect(mocks.warning).toHaveBeenCalledWith(expect.stringContaining("bad: the saved answer for 2.0.0 was marked unusable"));
+});
+
 it("stops before later candidates when payment or ledger handling fails", async () => {
   mocks.candidates.mockResolvedValue([{ package: "first" }, { package: "second" }]);
   mocks.purchase.mockRejectedValueOnce(new Error("Payment outcome unknown"));

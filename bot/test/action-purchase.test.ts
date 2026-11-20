@@ -60,6 +60,16 @@ it("skips the same assessment across reruns and different base SHAs, allowing a 
   expect(f.payments()).toBe(2);
 });
 
+it("reports the saved answer's latest quality when reusing it", async () => {
+  const f = fixture();
+  const first = await purchaseAssessment(f.options);
+  expect(first.savedResultStatus).toBeUndefined();
+  expect((await purchaseAssessment(f.options)).savedResultStatus).toBeUndefined();
+  await markAssessmentResult(f.options.ledger, first.attemptId, "unusable", "Expected object, received array");
+  expect((await purchaseAssessment(f.options)).savedResultStatus).toBe("unusable");
+  expect(f.payments()).toBe(1);
+});
+
 it("blocks another purchase when the prior paid request has an uncertain outcome", async () => {
   const f = fixture();
   f.buy.mockImplementationOnce(async (_intent, _query, onAttempt) => {
