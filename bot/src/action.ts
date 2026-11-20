@@ -331,7 +331,11 @@ const run = async (): Promise<void> => {
               : { capUsdc: monthlyCap, worstCaseUsdc: maxPrice },
           onPurchase: (paid) => {
             core.setOutput("message", JSON.stringify(paid));
-            if (!paid.receiptHash || !paid.signalHash || !paid.txHash) {
+            if (
+              !paid.receiptHash ||
+              !paid.signalHash ||
+              (paid.rail !== "escrow" && !paid.txHash)
+            ) {
               core.warning(
                 `${dependency.package}: paid evidence is incomplete; reconcile missing hashes from the node or wallet`,
               );

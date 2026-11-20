@@ -11,8 +11,13 @@ export interface Purchase {
   minerRank: number | null;
   minerScore: number | null;
   amountUsdc: number;
+  /** Empty for an escrow payment: it is charged in the next ledger block, not in its own transaction. */
   txHash: string;
   receiptHash: string;
+  /** Set only for a payment from Telegraph escrow; absent means x402 `exact`, settled on-chain per call. */
+  rail?: "escrow";
+  /** The ledger epoch an escrow charge is billed in (GET /v1/blocks/{epochId}/deliveries/{receiptHash}). */
+  epochId?: number;
   signalHash: string;
   answer: string;
   /** Original structured miner response, retained alongside its display text. */
@@ -142,6 +147,75 @@ function quotedAccept(
     : null;
 }
 
+interface EscrowAccept {
+  amount: string;
+  network: string;
+  payTo: string;
+  /** The exact text to sign, with {from}, {nonce}, {validAfter} and {validBefore} placeholders. */
+  message: string;
+}
+
+// Telegraph escrow (https://anjoman.ai/docs/using/escrow-inference): the wallet deposits USDC
+// once, then signs one message per call; the charge is billed in the next ledger block.
+// Used when the node offers no `exact` option on our network (on 20 Nov 2026 it dropped
+// `exact` on Sepolia and kept only escrow there).
+function escrowAccept(res: Response, network: string): EscrowAccept | null {
+  const parsed = decodeB64Json<{ accepts?: unknown }>(
+    res.headers.get("payment-required"),
+  );
+  if (!Array.isArray(parsed?.accepts)) return null;
+  const match = (
+    parsed.accepts as (Accept & { payTo?: unknown; extra?: { message?: unknown } })[]
+  ).find((a) => a?.scheme === "escrow" && a.network === network);
+  if (
+    typeof match?.amount !== "string" ||
+    typeof match.payTo !== "string" ||
+    typeof match.extra?.message !== "string"
+  )
+    return null;
+  return {
+    amount: match.amount,
+    network,
+    payTo: match.payTo,
+    message: match.extra.message,
+  };
+}
+
+/** The X-PAYMENT header for one escrow call: the challenge message filled in and signed (EIP-191). */
+async function escrowPayment(
+  account: ReturnType<typeof privateKeyToAccount>,
+  escrow: EscrowAccept,
+): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  // The node accepts a validity window of at most 2 minutes.
+  const authorization = {
+    from: account.address.toLowerCase(),
+    to: escrow.payTo,
+    value: escrow.amount,
+    validAfter: String(now - 5),
+    validBefore: String(now + 100),
+    nonce: crypto.randomUUID(),
+  };
+  const message = escrow.message
+    .replace("{from}", authorization.from)
+    .replace("{nonce}", authorization.nonce)
+    .replace("{validAfter}", authorization.validAfter)
+    .replace("{validBefore}", authorization.validBefore);
+  if (!message.includes(`Amount: ${escrow.amount} uUSDC`))
+    throw new AskFailedError(
+      `escrow challenge amount does not match the quote ${escrow.amount}`,
+    );
+  const signature = await account.signMessage({ message });
+  return btoa(
+    JSON.stringify({
+      x402Version: 2,
+      scheme: "escrow",
+      network: escrow.network,
+      payload: { signature, authorization },
+    }),
+  );
+}
+
 function settleHeader(
   res: Response,
 ): { success?: boolean; transaction?: string } | null {
@@ -249,6 +323,7 @@ export class IntelligenceClient {
   private readonly maxPricePerCallUsdc: number;
   private readonly budgetCapUsdc: number;
   private readonly preferredMinerId: string | null;
+  private readonly account: ReturnType<typeof privateKeyToAccount>;
   private readonly fetchImpl: typeof fetch;
   private readonly paymentFetch: (
     input: RequestInfo | URL,
@@ -262,6 +337,7 @@ export class IntelligenceClient {
     this.maxPricePerCallUsdc = deps.maxPricePerCallUsdc;
     this.budgetCapUsdc = deps.budgetCapUsdc;
     this.preferredMinerId = deps.preferredMinerId ?? null;
+    this.account = privateKeyToAccount(deps.evmPrivateKey);
     this.fetchImpl = deps.fetchImpl ?? fetch;
     this.paymentFetch =
       deps.paymentFetch ??
@@ -344,12 +420,15 @@ export class IntelligenceClient {
       );
     }
     const accept = quotedAccept(quoteRes, this.network, this.usdcAddress);
-    if (accept === null) {
+    const escrow =
+      accept === null ? escrowAccept(quoteRes, this.network) : null;
+    if (accept === null && escrow === null) {
       throw new AskFailedError(
-        `402 offers no exact payment on ${this.network} in ${this.usdcAddress}`,
+        `402 offers neither exact payment in ${this.usdcAddress} nor escrow on ${this.network}`,
       );
     }
-    const amountUsdc = Number(accept.amount) / USDC_DECIMALS;
+    const amountUsdc =
+      Number((accept ?? escrow)!.amount) / USDC_DECIMALS;
 
     if (amountUsdc > this.maxPricePerCallUsdc) {
       const reason = `quote ${amountUsdc} USDC exceeds maxPricePerCallUsdc ${this.maxPricePerCallUsdc} (${intent}, miner ${miner.id})`;
@@ -375,6 +454,10 @@ export class IntelligenceClient {
       throw new BudgetCapError(reason);
     }
 
+    // Signed before request_sent: signing moves no money, and a malformed challenge
+    // then fails over to the next miner like a missing payment option.
+    const escrowHeader =
+      escrow === null ? null : await escrowPayment(this.account, escrow);
     await onAttempt({
       state: "request_sent",
       minerId: miner.id,
@@ -382,7 +465,16 @@ export class IntelligenceClient {
     });
     let res: Response;
     try {
-      res = await this.paymentFetch(url, init);
+      res =
+        escrowHeader === null
+          ? await this.paymentFetch(url, init)
+          : await this.fetchImpl(url, {
+              ...init,
+              headers: {
+                "Content-Type": "application/json",
+                "X-PAYMENT": escrowHeader,
+              },
+            });
     } catch (err) {
       // No response: the payment may or may not have settled.
       const reason = `no response: ${String(err)}`.slice(0, 300);
@@ -409,6 +501,10 @@ export class IntelligenceClient {
         reason,
       });
       throw new AskFailedError(reason);
+    }
+    if (accept === null) {
+      // No exact option means the escrow one was paid (checked right after the quote).
+      return this.escrowPurchase(intent, miner, res, escrow!, amountUsdc, onAttempt);
     }
     const settle = settleHeader(res);
     if (settle?.success === false) {
@@ -468,6 +564,64 @@ export class IntelligenceClient {
       chainId: Number(accept.network.split(":")[1]),
       usdcContract: accept.asset,
       explorerBaseUrl: EXPLORERS[Number(accept.network.split(":")[1])] ?? "",
+    };
+  }
+
+  // An escrow answer carries its receipt in X-PAYMENT-RESPONSE (rail "escrow", receipt_hash,
+  // amount_uusdc, epoch_id) and no transaction: the charge is billed in the next ledger block.
+  private async escrowPurchase(
+    intent: string,
+    miner: RankedMiner,
+    res: Response,
+    escrow: EscrowAccept,
+    quotedUsdc: number,
+    onAttempt: OnAttempt,
+  ): Promise<Purchase> {
+    const receipt = decodeB64Json<{
+      rail?: string;
+      receipt_hash?: string;
+      amount_uusdc?: string | number;
+      epoch_id?: number;
+    }>(res.headers.get("x-payment-response"));
+    if (receipt?.rail !== "escrow" || typeof receipt.receipt_hash !== "string") {
+      // No readable receipt: we can't tell whether the escrow was charged.
+      const reason = "answered without a readable escrow receipt";
+      await onAttempt({
+        state: "unknown_needs_reconciliation",
+        minerId: miner.id,
+        reason,
+      });
+      throw new PaymentUnknownError(`${miner.id}: ${reason}`);
+    }
+    const charged = Number(receipt.amount_uusdc);
+    const amountUsdc = Number.isFinite(charged)
+      ? charged / USDC_DECIMALS
+      : quotedUsdc;
+    this.spentUsdc += amountUsdc;
+
+    const body = (await res.json().catch(() => ({}))) as EngineAnswer;
+    const chainId = Number(escrow.network.split(":")[1]);
+    return {
+      intent,
+      minerId: String(body.miner_id ?? miner.id),
+      minerName: body.miner_name ?? miner.name,
+      minerRank: miner.rank,
+      minerScore: miner.score,
+      selectedBy: miner.selectedBy,
+      amountUsdc,
+      txHash: "",
+      receiptHash: receipt.receipt_hash,
+      rail: "escrow",
+      ...(typeof receipt.epoch_id === "number" ? { epochId: receipt.epoch_id } : {}),
+      signalHash: body.signal_hash ?? "",
+      answer: answerText(body.result),
+      result: body.result,
+      status: "settled",
+      network: escrow.network,
+      chainId,
+      // Escrow is funded in the USDC we are configured with; the challenge names no asset.
+      usdcContract: this.usdcAddress,
+      explorerBaseUrl: EXPLORERS[chainId] ?? "",
     };
   }
 }

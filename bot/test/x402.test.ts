@@ -273,7 +273,7 @@ describe("IntelligenceClient.buy", () => {
         : new Response("null", { status: 402, headers: { "payment-required": b64(body) } })
     ) as unknown as typeof fetch;
     const { client, paymentFetch } = makeClient({ fetchImpl });
-    await expect(client.buy("QUESTION_ANSWERING", "x")).rejects.toThrow(/no exact payment on eip155:11155111/);
+    await expect(client.buy("QUESTION_ANSWERING", "x")).rejects.toThrow(/neither exact payment in 0xcc194e1a843B658526D0D5C431f670028582Ae17 nor escrow on eip155:11155111/);
     expect(paymentFetch).not.toHaveBeenCalled();
   });
 
@@ -477,5 +477,112 @@ describe("canonical QA purchases", () => {
     expect(paymentFetch.mock.calls[0][0]).toBe("https://devnode.test/engine/v1/ask/148002");
     expect(purchase.intent).toBe(intent);
     expect(purchase.amountUsdc).toBe(0.01);
+  });
+});
+
+describe("IntelligenceClient.buy via Telegraph escrow", () => {
+  const DIAMOND = "0x72a70e949362670bf8bcead24efc5b8f950aa08b";
+  // Live shape of the escrow accept on 20 Nov 2026, when the node stopped offering `exact` on Sepolia.
+  const escrowChallenge = (amount = "20000") => ({
+    x402Version: 2,
+    accepts: [
+      { scheme: "exact", network: "eip155:84532", amount, asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", payTo: "0xPayTo" },
+      {
+        scheme: "escrow", network: CHAIN, amount, payTo: DIAMOND,
+        extra: {
+          message: `Telegraph Escrow Payment\n\nWallet: {from}\nPay To: ${DIAMOND}\nNetwork: ${CHAIN}\nAmount: ${amount} uUSDC\nResource: /v1/ask/148002\nNonce: {nonce}\nValid After: {validAfter}\nValid Before: {validBefore}`,
+          signWith: "personal_sign (EIP-191)",
+        },
+      },
+    ],
+  });
+  const escrowReceipt = { receipt_hash: "0xescrowreceipt", rail: "escrow", payer: "0xpayer", miner: "148002",
+    amount_uusdc: "20000", epoch_id: 18, settlement: "epoch", chain: "telegraph" };
+
+  function escrowFetch(paid: (init: RequestInit) => Response, amount?: string) {
+    return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).includes("/api/miners")) return new Response(JSON.stringify(API_MINERS));
+      const payment = (init?.headers as Record<string, string> | undefined)?.["X-PAYMENT"];
+      return payment
+        ? paid(init!)
+        : new Response("null", { status: 402, headers: { "payment-required": b64(escrowChallenge(amount)) } });
+    });
+  }
+  const answered = (receipt: unknown = escrowReceipt) =>
+    new Response(JSON.stringify({ miner_id: "148002", miner_name: "Crossref QA", result: { answer: "ok" }, signal_hash: "0xsignal" }),
+      { status: 200, headers: receipt === null ? {} : { "x-payment-response": b64(receipt) } });
+
+  it("signs the challenge, pays from escrow and records the receipt with no transaction", async () => {
+    let sent: { scheme: string; network: string; payload: { signature: string; authorization: Record<string, string> } } | undefined;
+    const fetchImpl = escrowFetch((init) => {
+      sent = JSON.parse(atob((init.headers as Record<string, string>)["X-PAYMENT"]));
+      return answered();
+    });
+    const { client, paymentFetch } = makeClient({ fetchImpl: fetchImpl as unknown as typeof fetch });
+    const p = await client.buy("QUESTION_ANSWERING", "x");
+
+    expect(paymentFetch).not.toHaveBeenCalled(); // the x402 `exact` client is not used
+    expect(sent?.scheme).toBe("escrow");
+    expect(sent?.network).toBe(CHAIN);
+    expect(sent?.payload.signature).toMatch(/^0x[0-9a-f]{130}$/);
+    const auth = sent!.payload.authorization;
+    expect(auth.to).toBe(DIAMOND);
+    expect(auth.value).toBe("20000");
+    expect(auth.from).toBe(auth.from.toLowerCase());
+    expect(Number(auth.validBefore) - Number(auth.validAfter)).toBeLessThanOrEqual(120);
+    expect(p).toMatchObject({
+      rail: "escrow", epochId: 18, txHash: "", receiptHash: "0xescrowreceipt", signalHash: "0xsignal",
+      amountUsdc: 0.02, network: CHAIN, chainId: CHAIN_ID, usdcContract: USDC, status: "settled",
+    });
+    expect(client.spentUsdc).toBeCloseTo(0.02);
+  });
+
+  it("uses a fresh nonce for every call", async () => {
+    const nonces: string[] = [];
+    const fetchImpl = escrowFetch((init) => {
+      nonces.push(JSON.parse(atob((init.headers as Record<string, string>)["X-PAYMENT"])).payload.authorization.nonce);
+      return answered();
+    });
+    const { client } = makeClient({ fetchImpl: fetchImpl as unknown as typeof fetch });
+    await client.buy("QUESTION_ANSWERING", "x");
+    await client.buy("QUESTION_ANSWERING", "x");
+    expect(new Set(nonces).size).toBe(2);
+  });
+
+  it("treats a refused escrow call (402, e.g. no deposit) as not charged and tries the next miner", async () => {
+    const rec: AttemptEvent[] = [];
+    const fetchImpl = escrowFetch(() =>
+      new Response(JSON.stringify({ reason: "insufficient escrow for delivery" }), { status: 402 }));
+    const { client } = makeClient({ fetchImpl: fetchImpl as unknown as typeof fetch });
+    await expect(client.buy("QUESTION_ANSWERING", "x", async (e) => void rec.push(e)))
+      .rejects.toThrow(/insufficient escrow for delivery/);
+    expect(rec.filter((e) => e.state === "failed_not_charged").map((e) => e.minerId)).toEqual(["148002", "148001"]);
+    expect(client.spentUsdc).toBe(0);
+  });
+
+  it("stops for reconciliation when an answer carries no escrow receipt", async () => {
+    const rec: AttemptEvent[] = [];
+    const fetchImpl = escrowFetch(() => answered(null));
+    const { client } = makeClient({ fetchImpl: fetchImpl as unknown as typeof fetch });
+    await expect(client.buy("QUESTION_ANSWERING", "x", async (e) => void rec.push(e))).rejects.toBeInstanceOf(PaymentUnknownError);
+    expect(rec.at(-1)?.state).toBe("unknown_needs_reconciliation");
+  });
+
+  it("records request_sent before the signed request goes out", async () => {
+    const states: string[] = [];
+    const fetchImpl = escrowFetch(() => {
+      expect(states).toEqual(["reserved", "request_sent"]);
+      return answered();
+    });
+    const { client } = makeClient({ fetchImpl: fetchImpl as unknown as typeof fetch });
+    await client.buy("QUESTION_ANSWERING", "x", async (e) => void states.push(e.state));
+  });
+
+  it("refuses an escrow quote above maxPricePerCallUsdc and signs nothing", async () => {
+    const paid = vi.fn(() => answered());
+    const fetchImpl = escrowFetch(paid, "60000");
+    const { client } = makeClient({ fetchImpl: fetchImpl as unknown as typeof fetch });
+    await expect(client.buy("QUESTION_ANSWERING", "x")).rejects.toBeInstanceOf(PriceGuardError);
+    expect(paid).not.toHaveBeenCalled();
   });
 });
