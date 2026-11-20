@@ -36,33 +36,45 @@ async function loadLedger(repo) {
 // Team and outside are never mixed in one total, and a ledger that failed to load is listed, not dropped.
 // Figures cover the event window, like the README evidence index.
 function repositories({ perRepo, totals }) {
-  const total = (owner) => {
+  const ownerCard = (owner) => {
     const t = totals[owner];
-    const incomplete = t.failed ? ` · INCOMPLETE: ${t.failed} of ${t.repos} ledgers failed to load` : "";
-    if (t.repos === 0) return `${owner === "team" ? "Team" : "Outside"}: no repositories`;
-    return `${owner === "team" ? "Team (related-party)" : "Outside"}, ${EVENT_WINDOW.label}: ${t.repos} ${t.repos === 1 ? "repository" : "repositories"} · `
-      + `${t.purchases} purchases · ${usdc(t.spendUsdc)} USDC · ${t.merged} merged PRs · `
-      + `cost per merged PR ${t.costPerMergedPr === null ? "N/A" : `${usdc(t.costPerMergedPr)} USDC (n=${t.merged})`}${incomplete}`;
+    const title = owner === "team" ? "Team (related-party)" : "Outside";
+    if (t.repos === 0) return stat(title, "0", "no repositories yet");
+    return stat(title, `${usdc(t.spendUsdc)} USDC`,
+      `${t.repos} ${t.repos === 1 ? "repo" : "repos"} · ${t.purchases} purchases · ${t.merged} merged PRs · cost per merged PR `
+        + (t.costPerMergedPr === null ? "N/A" : `${usdc(t.costPerMergedPr)} USDC (n=${t.merged})`)
+        + (t.failed ? ` · INCOMPLETE: ${t.failed} of ${t.repos} ledgers failed to load` : ""),
+      t.failed ? "warn" : "");
   };
   const body = el("tbody", {}, ...perRepo.map((r) => el("tr", {},
-    el("td", {}, el("a", { href: `?repo=${r.repo}` }, r.repo)),
-    el("td", {}, r.owner),
+    el("td", {}, el("a", { href: `?repo=${r.repo}` }, r.repo), " ", el("span", { class: `tag ${r.owner}` }, r.owner)),
     ...(r.error !== undefined
-      ? [el("td", { colspan: "4" }, el("strong", {}, "Ledger failed to load: "), r.error)]
-      : [el("td", { class: "num" }, String(r.purchases)), el("td", { class: "num" }, `${usdc(r.spendUsdc)} USDC`),
-        el("td", { class: "num" }, `${r.merged} / ${r.closed} / ${r.open}`),
-        el("td", {}, el("a", { href: ledgerUrl(r.repo), target: "_blank", rel: "noopener" }, "ledger ↗"))]))));
-  // The team/outside split only means something when several repositories are on screen.
-  const split = REPOS.length > 1
-    ? [el("p", { class: "tally" }, total("team")), el("p", { class: "tally" }, total("outside"))]
-    : [];
+      ? [el("td", { colspan: "3", class: "error" }, el("strong", {}, "Ledger failed to load: "), r.error)]
+      : [el("td", { class: "num" }, String(r.purchases)),
+        el("td", { class: "num" }, el("span", { class: "amount" }, usdc(r.spendUsdc), el("small", {}, "USDC"))),
+        el("td", { class: "num" }, `${r.merged} / ${r.closed} / ${r.open}`)]),
+    el("td", { class: "num" }, el("a", { href: ledgerUrl(r.repo), target: "_blank", rel: "noopener" }, "ledger ↗")))));
   return [
-    ...split,
-    el("div", { class: "ledger-wrap" }, el("table", { class: "ledger", "aria-label": "Repositories running the bot" },
-      el("thead", {}, el("tr", {}, ...["Repository", "Owner", "Purchases", "Spend", "PRs merged / closed / open", "Raw"]
-        .map((h, i) => el("th", { class: i >= 2 && i <= 4 ? "num" : "" }, h)))),
+    // The team/outside split only means something when several repositories are on screen.
+    ...(REPOS.length > 1
+      ? [el("h2", { class: "section" }, `Event window · ${EVENT_WINDOW.label}`),
+        el("div", { class: "stats two" }, ownerCard("team"), ownerCard("outside"))]
+      : []),
+    el("h2", { class: "section" }, "Repositories"),
+    el("div", { class: "ledger-wrap" }, el("table", { class: "ledger repos", "aria-label": "Repositories running the bot" },
+      el("thead", {}, el("tr", {}, el("th", {}, "Repository"), el("th", { class: "num" }, "Purchases"),
+        el("th", { class: "num" }, "Spend"),
+        el("th", { class: "num" }, el("span", { class: "long" }, "PRs merged / closed / open"),
+          el("span", { class: "short", title: "PRs merged / closed / open" }, "PRs m/c/o")),
+        el("th", {}, ""))),
       body)),
   ];
+}
+
+/** One headline figure: label, value, and the counts behind it. */
+function stat(label, value, note, tone = "") {
+  return el("div", { class: `stat ${tone}` },
+    el("span", { class: "k" }, label), el("span", { class: "v" }, value), el("span", { class: "s" }, note));
 }
 
 const usdc = (n) =>
@@ -209,17 +221,21 @@ function table(rows) {
       "View →"
     );
     view.addEventListener("click", () => openDrawer(r, view));
+    const label = r.prNumber ? `PR #${r.prNumber}` : (r.package ?? "Dependency");
     body.append(
       el(
         "tr",
         { class: "row-anim", style: `--i:${i}` },
-        el("td", {}, el("span", { class: "time" }, when(r.timestamp))),
-        el("td", {}, el("span", { class: "pr" }, purchaseLabel(r))),
-        el("td", {}, el("span", { class: "intent" }, task(r.intent))),
-        el("td", {}, el("span", { class: "miner", title: r.minerName }, r.minerName)),
-        el("td", { class: "num" }, el("span", { class: "amount" }, usdc(r.amountUsdc), el("small", {}, "USDC"))),
-        el("td", {}, el("span", { class: `status ${r.status}` }, r.status === "settled" ? "Settled" : "Failed")),
-        el("td", { class: "num" }, view)
+        el("td", { class: "c-what" },
+          el("span", { class: "pr" }, label),
+          el("span", { class: "repo" }, REPOS.length > 1 ? r.repo : (r.prNumber ? "" : "assessment"))),
+        el("td", { class: "c-miner" },
+          el("span", { class: "miner", title: r.minerName }, r.minerName),
+          el("span", { class: "intent" }, task(r.intent))),
+        el("td", { class: "c-time" }, el("time", { class: "time", datetime: r.timestamp }, when(r.timestamp))),
+        el("td", { class: "num c-amount" }, el("span", { class: "amount" }, usdc(r.amountUsdc), el("small", {}, "USDC"))),
+        el("td", { class: "c-status" }, el("span", { class: `status ${r.status}` }, r.status === "settled" ? "Settled" : "Failed")),
+        el("td", { class: "num c-view" }, view)
       )
     );
   });
@@ -228,15 +244,15 @@ function table(rows) {
     { class: "ledger-wrap" },
     el(
       "table",
-      { class: "ledger", "aria-label": "Purchases, newest first" },
+      { class: "ledger purchases", "aria-label": "Purchases, newest first" },
       el(
         "thead",
         {},
         el(
           "tr",
           {},
-          ...["Time", "PR", "Intent", "Miner", "Amount", "Status", ""].map((h, idx) =>
-            el("th", { class: idx === 4 || idx === 6 ? "num" : "" }, h)
+          ...["Purchase", "Miner", "Time", "Amount", "Status", ""].map((h, idx) =>
+            el("th", { class: idx === 3 || idx === 5 ? "num" : "" }, h)
           )
         )
       ),
@@ -292,25 +308,20 @@ async function main() {
       el(
         "div",
         {},
-        el("h1", {}, "Telegraph"),
+        el("p", { class: "eyebrow" }, "Telegraph PR Agent"),
+        el("h1", {}, "Spend ledger"),
         el(
           "p",
           { class: "sub" },
-          `PR agent spend ledger · ${REPOS.length === 1 ? REPOS[0] : `${REPOS.length} repositories`} · Ethereum Sepolia `,
+          `What the bot paid Telegraph miners for each dependency upgrade · ${REPOS.length === 1 ? REPOS[0] : `${REPOS.length} repositories`} · Ethereum Sepolia `,
           el("code", {}, "eip155:11155111")
         )
       ),
-      el(
-        "div",
-        { class: "spend-total" },
-        el("span", { class: "label" }, "Spend to date"),
-        el("span", { class: "figure" }, "0.000000 ", el("small", {}, "USDC"))
-      )
+      el("span", { class: "badge" }, "Testnet")
     ),
     el(
       "p",
       { class: "boundary" },
-      el("strong", {}, "Testnet build. "),
       "Routing, miners, verification and settlement are real; USDC is testnet-denominated. No revenue claim is made."
     )
   );
@@ -330,33 +341,36 @@ async function main() {
     const settled = rows.filter((r) => r.status === "settled");
     const notFound = settled.filter((r) => r.resultStatus === "not_found").length;
     const total = settled.reduce((sum, r) => sum + r.amountUsdc, 0);
-    app.querySelector(".spend-total .figure").replaceChildren(
-      usdc(total),
-      el("small", {}, " USDC")
-    );
+    const failed = rows.length - settled.length;
+    const freePrs = outcomes.free.proposed ? ` · +${outcomes.free.proposed} free (no purchase)` : "";
     app.append(
-      el(
-        "p",
-        { class: "tally" },
-        `${settled.length} settled`,
-        el("span", { class: "dot" }, "·"),
-        `${usdc(total)} USDC paid`,
-        el("span", { class: "dot" }, "·"),
-        `${rows.length - settled.length} failed`,
-        el("span", { class: "dot" }, "·"),
-        notFound ? `${notFound} bought a dead end (not_found)` : "0 dead ends",
-        el("span", { class: "dot" }, "·"),
-        latencyLine(latency)
-      ),
-      el("p", { class: "tally" }, costs.count
-        ? `${usdc(costs.costPerMergedPr)} USDC recorded net spend per merged PR · ${costs.count} merged PRs · ${usdc(costs.netSpend)} USDC total · ${usdc(costs.total)} USDC allocated to merges · ${usdc(costs.unmergedSpend)} USDC unmerged/unallocated`
-        : `Cost per merged PR: N/A · ${usdc(costs.netSpend)} USDC recorded spend · no merged PRs`),
-      el("p", { class: "tally" }, outcomesLine(outcomes)),
-      el("p", { class: "tally" }, `Event window ${EVENT_WINDOW.label}: `, eventCosts.count
-        ? `${usdc(eventCosts.costPerMergedPr)} USDC per merged PR · ${eventCosts.count} merged · ${usdc(eventCosts.netSpend)} USDC spent`
-        : `cost per merged PR N/A · ${usdc(eventCosts.netSpend)} USDC spent · no merged PRs`),
+      el("div", { class: "stats" },
+        stat("Spent", `${usdc(total)} USDC`, `${settled.length} paid answers${failed ? ` · ${failed} failed` : ""}`),
+        stat("Cost per merged PR", costs.count ? `${usdc(costs.costPerMergedPr)} USDC` : "N/A",
+          costs.count ? `${costs.count} merged PRs` : "no bot PR merged yet"),
+        stat("Bot PRs", String(outcomes.proposed),
+          `${outcomes.merged} merged · ${outcomes.closed} closed · ${outcomes.open} open${freePrs}`),
+        stat("Useful answers", `${outcomes.useful} of ${settled.length}`,
+          notFound ? `${notFound} bought a dead end (not_found)` : "no dead ends"),
+        stat("Answer speed", latency.count ? `~${(latency.count <= 2
+          ? Math.max(...latency.byAttempt.values()) : latency.medianSeconds).toFixed(0)} s` : "—",
+          latency.count ? `${latency.count <= 2 ? "slowest" : "median"} of ${latency.count} purchases` : "not measured yet")),
+      // Every count stays on the page (SPEC §4.3), one click away from the headline.
+      el("details", { class: "notes" },
+        el("summary", {}, "All counts and how they are measured"),
+        el("p", {}, `${settled.length} settled · ${usdc(total)} USDC paid · ${failed} failed · `
+          + `${notFound ? `${notFound} bought a dead end (not_found)` : "0 dead ends"} · ${latencyLine(latency)}`),
+        el("p", {}, costs.count
+          ? `${usdc(costs.costPerMergedPr)} USDC recorded net spend per merged PR · ${costs.count} merged PRs · ${usdc(costs.netSpend)} USDC total · ${usdc(costs.total)} USDC allocated to merges · ${usdc(costs.unmergedSpend)} USDC unmerged/unallocated`
+          : `Cost per merged PR: N/A · ${usdc(costs.netSpend)} USDC recorded spend · no merged PRs`),
+        el("p", {}, outcomesLine(outcomes)),
+        el("p", {}, `Event window ${EVENT_WINDOW.label}: `, eventCosts.count
+          ? `${usdc(eventCosts.costPerMergedPr)} USDC per merged PR · ${eventCosts.count} merged · ${usdc(eventCosts.netSpend)} USDC spent`
+          : `cost per merged PR N/A · ${usdc(eventCosts.netSpend)} USDC spent · no merged PRs`)),
       ...repositories(summary),
-      el("p", { class: "tally" }, evidenceButton(entries)),
+      el("div", { class: "section-row" },
+        el("h2", { class: "section" }, "Purchases"),
+        evidenceButton(entries)),
       table(rows)
     );
   } catch (err) {
