@@ -337,7 +337,7 @@ describe("parseReply", () => {
 });
 
 describe("telegraphCaller", () => {
-  const DIAMOND = "0x3624eb012b5e998bb57b6be6c9cfc9c4bc5eb99b";
+  const DIAMOND = "0x72a70e949362670bf8bcead24efc5b8f950aa08b";
   // The escrow accept as the live node sent it on 5 Nov (docs/telegraph snapshot, miner/bench/network.md).
   const escrowOffer = (overrides: Record<string, unknown> = {}) => ({
     scheme: "escrow",
@@ -346,7 +346,7 @@ describe("telegraphCaller", () => {
     payTo: DIAMOND,
     extra: {
       message:
-        "Telegraph Escrow Payment\n\nWallet: {from}\nPay To: 0x3624eb012b5e998bb57b6be6c9cfc9c4bc5eb99b\nNetwork: eip155:11155111\n" +
+        "Telegraph Escrow Payment\n\nWallet: {from}\nPay To: 0x72a70e949362670bf8bcead24efc5b8f950aa08b\nNetwork: eip155:11155111\n" +
         "Amount: 10000 uUSDC\nResource: /v1/ask/302\nNonce: {nonce}\nValid After: {validAfter}\nValid Before: {validBefore}",
     },
     ...overrides,
@@ -426,7 +426,7 @@ describe("telegraphCaller", () => {
   it.each([
     ["a payee other than the Diamond", { payTo: "0x000000000000000000000000000000000000dead" }],
     ["a template whose amount differs from the quote", { amount: "5000" }],
-    ["a quote over the cost cap", { amount: "20000", extra: { message: "Pay To: 0x3624eb012b5e998bb57b6be6c9cfc9c4bc5eb99b Network: eip155:11155111 Amount: 20000 uUSDC" } }],
+    ["a quote over the cost cap", { amount: "20000", extra: { message: "Pay To: 0x72a70e949362670bf8bcead24efc5b8f950aa08b Network: eip155:11155111 Amount: 20000 uUSDC" } }],
     ["no escrow accept", { scheme: "exact" }],
   ])("signs nothing for %s", async (_name, overrides) => {
     await withFetch([() => challenge([escrowOffer(overrides)])], async (sent) => {
