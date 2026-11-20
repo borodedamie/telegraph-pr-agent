@@ -212,33 +212,51 @@ drawer.addEventListener("click", (e) => {
   if (e.target.closest(".close-btn")) closeDrawer();
 });
 
+const PAGE_SIZE = 25;
+
+function purchaseRow(r, i) {
+  const view = el(
+    "button",
+    { class: "view-btn", type: "button", "aria-label": `View receipt for ${purchaseLabel(r)}` },
+    "View →"
+  );
+  view.addEventListener("click", () => openDrawer(r, view));
+  const label = r.prNumber ? `PR #${r.prNumber}` : (r.package ?? "Dependency");
+  return el(
+    "tr",
+    { class: "row-anim", style: `--i:${i}` },
+    el("td", { class: "c-what" },
+      el("span", { class: "pr" }, label),
+      el("span", { class: "repo" }, REPOS.length > 1 ? r.repo : (r.prNumber ? "" : "assessment"))),
+    el("td", { class: "c-miner" },
+      el("span", { class: "miner", title: r.minerName }, r.minerName),
+      el("span", { class: "intent" }, task(r.intent))),
+    el("td", { class: "c-time" }, el("time", { class: "time", datetime: r.timestamp }, when(r.timestamp))),
+    el("td", { class: "num c-amount" }, el("span", { class: "amount" }, usdc(r.amountUsdc), el("small", {}, "USDC"))),
+    el("td", { class: "c-status" }, el("span", { class: `status ${r.status}` }, r.status === "settled" ? "Settled" : "Failed")),
+    el("td", { class: "num c-view" }, view)
+  );
+}
+
+// Newest PAGE_SIZE rows first; "Show more" adds the next batch. Totals and CSV still cover every row.
 function table(rows) {
   const body = el("tbody", {});
-  rows.forEach((r, i) => {
-    const view = el(
-      "button",
-      { class: "view-btn", type: "button", "aria-label": `View receipt for ${purchaseLabel(r)}` },
-      "View →"
-    );
-    view.addEventListener("click", () => openDrawer(r, view));
-    const label = r.prNumber ? `PR #${r.prNumber}` : (r.package ?? "Dependency");
-    body.append(
-      el(
-        "tr",
-        { class: "row-anim", style: `--i:${i}` },
-        el("td", { class: "c-what" },
-          el("span", { class: "pr" }, label),
-          el("span", { class: "repo" }, REPOS.length > 1 ? r.repo : (r.prNumber ? "" : "assessment"))),
-        el("td", { class: "c-miner" },
-          el("span", { class: "miner", title: r.minerName }, r.minerName),
-          el("span", { class: "intent" }, task(r.intent))),
-        el("td", { class: "c-time" }, el("time", { class: "time", datetime: r.timestamp }, when(r.timestamp))),
-        el("td", { class: "num c-amount" }, el("span", { class: "amount" }, usdc(r.amountUsdc), el("small", {}, "USDC"))),
-        el("td", { class: "c-status" }, el("span", { class: `status ${r.status}` }, r.status === "settled" ? "Settled" : "Failed")),
-        el("td", { class: "num c-view" }, view)
-      )
-    );
+  let shown = 0;
+  const more = el("button", { type: "button", class: "export-btn more-btn" });
+  const showMore = () => {
+    const batch = rows.slice(shown, shown + PAGE_SIZE);
+    body.append(...batch.map((r, i) => purchaseRow(r, i)));
+    shown += batch.length;
+    more.hidden = shown >= rows.length;
+    more.textContent = `Show more (${rows.length - shown} left)`;
+  };
+  more.addEventListener("click", () => {
+    const firstNew = body.children.length;
+    showMore();
+    // The button hides itself after the last batch; keep keyboard focus on the new rows.
+    if (more.hidden) body.children[firstNew]?.querySelector(".view-btn")?.focus();
   });
+  showMore();
   return el(
     "div",
     { class: "ledger-wrap" },
@@ -257,7 +275,8 @@ function table(rows) {
         )
       ),
       body
-    )
+    ),
+    more
   );
 }
 
