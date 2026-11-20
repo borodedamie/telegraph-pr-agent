@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { answerLatency, chargedWithoutAnswer, EVENT_WINDOW, evidenceCsv, inWindow, mergedCosts, outcomeSummary, purchaseRows } from "./accounting.js";
+import { ownerLabel, repoSummary, tagRows, answerLatency, chargedWithoutAnswer, EVENT_WINDOW, evidenceCsv, inWindow, mergedCosts, outcomeSummary, purchaseRows } from "./accounting.js";
 
 test("allocates settled receipt costs once and excludes unmatched, failed and cross-repo records", () => {
   const purchase = { repo: "team/repo", status: "settled", receiptHash: "one", amountUsdc: 0.02 };
-  const merge = { kind: "merge", repo: "team/repo", prNumber: 1, receiptHash: "one" };
+  const merge = { kind: "merge", repo: "team/repo", prNumber: 1, receiptHash: "one", baseRef: "main" };
   const rows = [purchase, merge, merge,
     { ...purchase, receiptHash: "two", amountUsdc: 0.04 },
     { ...merge, prNumber: 2, receiptHash: "two" },
@@ -51,9 +51,23 @@ test("projects the latest assessment quality without altering purchase evidence"
 test("includes unmerged and not-found spending while keeping merge allocation separate", () => {
   const merged = { repo: "team/repo", status: "settled", receiptHash: "merged", amountUsdc: 0.02 };
   const unmerged = { ...merged, receiptHash: "unmerged", amountUsdc: 0.04, resultStatus: "not_found" };
-  const costs = mergedCosts([merged, merged, unmerged, { kind: "merge", repo: "team/repo", prNumber: 1, receiptHash: "merged" },
+  const costs = mergedCosts([merged, merged, unmerged, { kind: "merge", repo: "team/repo", prNumber: 1, receiptHash: "merged", baseRef: "main" },
     { kind: "attempt", state: "failed_and_credited", quotedAmountUsdc: 1 }]);
   assert.deepEqual(costs, { total: 0.02, count: 1, average: 0.02, netSpend: 0.06, unmergedSpend: 0.06 - 0.02, costPerMergedPr: 0.06 });
+});
+
+test("a merge row without baseRef (pre-branch-check) counts as closed, not merged", () => {
+  const rows = [
+    { repo: "r", status: "settled", receiptHash: "a", amountUsdc: 0.1 },
+    { kind: "proposal", repo: "r", prNumber: 1, receiptHash: "a" },
+    // Written before #40: merged into a test branch, recorded as a merge with no baseRef.
+    { kind: "merge", repo: "r", prNumber: 1, receiptHash: "a" },
+  ];
+  assert.equal(outcomeSummary(rows).merged, 0);
+  assert.equal(outcomeSummary(rows).closed, 1);
+  assert.equal(outcomeSummary(rows).open, 0);
+  assert.equal(mergedCosts(rows).count, 0);
+  assert.equal(mergedCosts(rows).costPerMergedPr, null);
 });
 
 test("counts proposed, merged, closed and open PRs, and the merge rate", () => {
@@ -63,11 +77,11 @@ test("counts proposed, merged, closed and open PRs, and the merge rate", () => {
     { kind: "proposal", repo: "r", prNumber: 1, receiptHash: "a" },
     { kind: "proposal", repo: "r", prNumber: 2, receiptHash: "b" },
     { kind: "proposal", repo: "r", prNumber: 3, receiptHash: "c" },
-    { kind: "merge", repo: "r", prNumber: 1, receiptHash: "a" },
+    { kind: "merge", repo: "r", prNumber: 1, receiptHash: "a", baseRef: "main" },
     { kind: "closed", repo: "r", prNumber: 2, receiptHash: "b" },
     // closed, then reopened and merged: counts as merged only
     { kind: "closed", repo: "r", prNumber: 4, receiptHash: "d" },
-    { kind: "merge", repo: "r", prNumber: 4, receiptHash: "d" },
+    { kind: "merge", repo: "r", prNumber: 4, receiptHash: "d", baseRef: "main" },
   ];
   const summary = outcomeSummary(rows);
   assert.deepEqual({ ...summary, escrowCredits: undefined, refusedQuotes: undefined, chargedWithoutAnswer: undefined }, {
@@ -80,8 +94,8 @@ test("counts proposed, merged, closed and open PRs, and the merge rate", () => {
 
 test("counts free PRs apart, outside paid rates, spend and cost per merged PR", () => {
   const paid = [{ repo: "r", status: "settled", receiptHash: "a", amountUsdc: 0.1 },
-    { kind: "proposal", repo: "r", prNumber: 1, receiptHash: "a" }, { kind: "merge", repo: "r", prNumber: 1, receiptHash: "a" }];
-  const free = [{ kind: "proposal", repo: "r", prNumber: 2, free: true }, { kind: "merge", repo: "r", prNumber: 2, free: true },
+    { kind: "proposal", repo: "r", prNumber: 1, receiptHash: "a" }, { kind: "merge", repo: "r", prNumber: 1, receiptHash: "a", baseRef: "main" }];
+  const free = [{ kind: "proposal", repo: "r", prNumber: 2, free: true }, { kind: "merge", repo: "r", prNumber: 2, free: true, baseRef: "main" },
     { kind: "proposal", repo: "r", prNumber: 3, free: true }, { kind: "closed", repo: "r", prNumber: 3, free: true },
     { kind: "proposal", repo: "r", prNumber: 4, free: true }];
   const summary = outcomeSummary([...paid, ...free]);
@@ -93,7 +107,7 @@ test("counts free PRs apart, outside paid rates, spend and cost per merged PR", 
 });
 
 test("counts a merge from before proposal rows existed as a proposed PR", () => {
-  const summary = outcomeSummary([{ kind: "merge", repo: "r", prNumber: 9, receiptHash: "x" }]);
+  const summary = outcomeSummary([{ kind: "merge", repo: "r", prNumber: 9, receiptHash: "x", baseRef: "main" }]);
   assert.equal(summary.proposed, 1);
   assert.equal(summary.mergeRate, 1);
 });
@@ -176,7 +190,7 @@ test("exports one line per settled purchase with its links, quality and PR outco
     { kind: "attempt", attemptId: "a:1", state: "delivered", resultStatus: "useful" },
     { kind: "proposal", repo: "team/repo", prNumber: 11, receiptHash: "a" },
     { kind: "closed", repo: "team/repo", prNumber: 11, receiptHash: "a" },
-    { kind: "merge", repo: "team/repo", prNumber: 11, receiptHash: "a" },
+    { kind: "merge", repo: "team/repo", prNumber: 11, receiptHash: "a", baseRef: "main" },
     { kind: "proposal", repo: "team/repo", prNumber: 12, receiptHash: "b" },
   ];
   const out = asObjects(evidenceCsv(rows));
@@ -225,4 +239,38 @@ test("keeps scoped npm package names intact while still guarding external text",
 
 test("has only the header for a ledger with nothing to export", () => {
   assert.equal(parseCsv(evidenceCsv([])).length, 1);
+});
+
+test("labels a repository team when a team member owns it, outside otherwise", () => {
+  assert.equal(ownerLabel("borodedamie/grpc-tutorial"), "team");
+  assert.equal(ownerLabel("Lemind/onewallet-radar"), "team");
+  assert.equal(ownerLabel("codexempire/anything"), "team");
+  assert.equal(ownerLabel("someone-else/app"), "outside");
+});
+
+test("tags rows with their ledger and fills the repo on rows that predate the field", () => {
+  const [old, current] = tagRows("a/b", [{ status: "settled" }, { repo: "a/b", status: "settled" }]);
+  assert.deepEqual(old, { status: "settled", repo: "a/b", ledgerRepo: "a/b", owner: "outside" });
+  assert.equal(current.repo, "a/b");
+});
+
+test("splits totals into team and outside, and keeps a failed ledger listed and counted", () => {
+  const purchase = (repo, receiptHash, amountUsdc) => ({ repo, status: "settled", receiptHash, amountUsdc });
+  const { perRepo, totals } = repoSummary([
+    { repo: "borodedamie/one", rows: [purchase("borodedamie/one", "r1", 0.25), purchase("borodedamie/one", "r2", 0.25),
+      { kind: "merge", repo: "borodedamie/one", prNumber: 3, receiptHash: "r1", baseRef: "main" }] },
+    { repo: "lemind/two", error: "ledger fetch failed: HTTP 404" },
+    { repo: "stranger/app", rows: [purchase("stranger/app", "r3", 0.5)] },
+  ]);
+  assert.deepEqual(perRepo.map((r) => [r.repo, r.owner, r.error ?? r.purchases]),
+    [["borodedamie/one", "team", 2], ["lemind/two", "team", "ledger fetch failed: HTTP 404"], ["stranger/app", "outside", 1]]);
+  assert.deepEqual(totals.team, { repos: 2, failed: 1, purchases: 2, spendUsdc: 0.5, merged: 1, costPerMergedPr: 0.5 });
+  assert.deepEqual(totals.outside, { repos: 1, failed: 0, purchases: 1, spendUsdc: 0.5, merged: 0, costPerMergedPr: null });
+});
+
+test("adds the owner label to every evidence line", () => {
+  const rows = tagRows("borodedamie/one", [{ status: "settled", receiptHash: "r", timestamp: "2026-11-05T00:00:00.000Z", amountUsdc: 0.02 }]);
+  const [header, line] = evidenceCsv(rows).trim().split("\r\n").map((l) => l.split(","));
+  assert.deepEqual(header.slice(0, 4), ["record", "date", "repo", "owner"]);
+  assert.deepEqual(line.slice(0, 4), ["purchase", "2026-11-05T00:00:00.000Z", "borodedamie/one", "team"]);
 });
