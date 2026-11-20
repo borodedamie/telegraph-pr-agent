@@ -342,6 +342,14 @@ const run = async (): Promise<void> => {
             }
           },
         });
+        // An earlier run already reported this saved answer as unusable; failing every later run on it again
+        // only hides new problems. A newer target version is a new assessment and is bought again.
+        if (purchase.savedResultStatus === "unusable") {
+          core.warning(
+            `${dependency.package}: the saved answer for ${dependency.targetVersion} was marked unusable in an earlier run; skipped, no purchase made`,
+          );
+          continue;
+        }
         try {
           await applyAssessment({
             root: scan.root,
