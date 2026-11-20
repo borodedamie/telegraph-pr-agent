@@ -5,13 +5,13 @@ Internal reference for the dependency update Action: configuration details, work
 ## Ledger behaviour and known gaps
 
 - The intent id `QUESTION_ANSWERING_GENERAL` is hardcoded; it was checked against `GET /engine/v1/intents` on 3 Nov 2026 and must be rechecked if the catalogue changes.
-- Each payment try is recorded on the ledger branch at every stage (`reserved`, then `quote_refused` or `request_sent`, then `delivered`, `failed_and_credited`, `failed_not_charged` or `unknown_needs_reconciliation`; definitions in [SPEC §2.6](docs/SPEC.md)) before the bot moves on. If a run dies or its push fails after `request_sent`, the next run for that PR and commit stops instead of paying again, and a person checks the wallet, escrow balance and signal. Before recording `reserved` and `request_sent`, the run re-checks the freshly fetched ledger, and a push loses if another run pushed first, so two runs for the same PR and commit can't both pay; the second stops. To clear a stuck attempt, check the wallet, escrow balance and signal, then run the **Reconcile a stuck payment attempt** workflow (`.github/workflows/reconcile-attempt.yml`, Actions tab, default branch) with the `attemptId`, the outcome (`failed_and_credited`, `failed_not_charged`, or `failed_and_charged` when the payment was charged but no answer was kept) and a note. `failed_and_charged` requires the payment's transaction hash and counts as spend. The workflow holds no wallet key; it refuses attempts that aren't stuck, and records who reconciled.
+- Each payment try is recorded on the ledger branch at every stage (`reserved`, then `quote_refused` or `request_sent`, then `delivered`, `failed_and_credited`, `failed_not_charged` or `unknown_needs_reconciliation`; definitions in [SPEC §2.6](SPEC.md)) before the bot moves on. If a run dies or its push fails after `request_sent`, the next run for that PR and commit stops instead of paying again, and a person checks the wallet, escrow balance and signal. Before recording `reserved` and `request_sent`, the run re-checks the freshly fetched ledger, and a push loses if another run pushed first, so two runs for the same PR and commit can't both pay; the second stops. To clear a stuck attempt, check the wallet, escrow balance and signal, then run the **Reconcile a stuck payment attempt** workflow (`.github/workflows/reconcile-attempt.yml`, Actions tab, default branch) with the `attemptId`, the outcome (`failed_and_credited`, `failed_not_charged`, or `failed_and_charged` when the payment was charged but no answer was kept) and a note. `failed_and_charged` requires the payment's transaction hash and counts as spend. The workflow holds no wallet key; it refuses attempts that aren't stuck, and records who reconciled.
 - A purchase is recorded once per `receipt_hash`; writing a receipt that is already on the ledger is refused. Each purchase row has a `resultStatus` for answer quality, kept apart from payment: new rows start `unchecked`, and `useful`, `unusable` or `not_found` can be recorded separately. The dependency action automatically appends `useful` when an answer produces a published PR and `unusable` for invalid findings; the dashboard uses the latest quality update.
 - Each purchase row stores the network, chain id, USDC contract and explorer URL of the 402 option it paid, and transaction links are built from that. Rows written before 5 Nov 2026 lack these fields; their links use the date (before 1 Nov: Basescan, Base Sepolia; after: Etherscan, Ethereum Sepolia). Escrow purchases (from 20 Nov 2026) have no transaction hash of their own; they record the receipt hash and the Telegraph ledger epoch.
 
 ## Verify a purchase
 
-Open `https://devnode.telegraphprotocol.com/engine/v1/signal/<signalHash>` to inspect the request and response Telegraph recorded, and the tx hash on the explorer for the chain named in the quote. The signal and receipt show what was bought and returned; they do not by themselves show the answer is factually correct. Package-release claims have to be checked against their linked registry and release-note sources, and migration correctness by the repository's tests.
+Open `https://devnode.telegraphprotocol.com/engine/v1/signal/<signalHash>` to inspect the request and response Telegraph recorded, and, for a per-call `exact` payment, the tx hash on the explorer for the chain named in the quote. An escrow purchase has no transaction of its own: check its delivery at `https://devnode.telegraphprotocol.com/v1/blocks/<epochId>/deliveries/<receiptHash>`. The signal and receipt show what was bought and returned; they do not by themselves show the answer is factually correct. Package-release claims have to be checked against their linked registry and release-note sources, and migration correctness by the repository's tests.
 
 ## Network and spending limits
 
@@ -25,11 +25,11 @@ On the documented x402 path a valid payment may settle before the miner is calle
 
 ## Security model (planned Action)
 
-- The payment and LLM job holds the wallet and LLM credentials and runs no repository scripts.
-- The install, typecheck and test job receives no wallet, LLM or write-token secret.
+- The payment job holds the wallet credentials and runs no repository scripts.
+- The install, typecheck and test job receives no wallet or write-token secret.
 - A separate commit job receives only a minimal short-lived write credential, validates the patch artifact, restricts it to permitted paths and the expected base SHA, and never executes repository code.
 - `pull_request_target` is never combined with checking out and running PR code. Third-party Actions are pinned to commit SHAs.
-- The installer supplies both the wallet and the LLM key in repository secrets and pays both Telegraph and the LLM provider.
+- The installer supplies the wallet in a repository secret and pays Telegraph only; the bot uses no LLM ([SPEC](SPEC.md), decision 19 Nov 2026).
 
 ## The workflow in this repository
 
@@ -132,7 +132,7 @@ proving what is installed in a running interpreter. Unresolved versions are repo
 - Inputs `chain-id` and `usdc-address` default the payment allowlist to Sepolia (`11155111`) and USDC
   `0xcc194e1a843B658526D0D5C431f670028582Ae17`. No chain or token variables
   are required; inputs can override the allowlist. These defaults were verified with an unsigned, unpaid devnode
-  [402 challenge on 5 Nov 2026](docs/telegraph/action-payment-2026-11-05.json).
+  [402 challenge on 5 Nov 2026](telegraph/action-payment-2026-11-05.json).
   The wallet must hold this token; quotes for other networks or assets are refused.
 - Public settings default in `action.yml`: `node-url` is
   `https://devnode.telegraphprotocol.com`, `max-price-per-call-usdc` is `0.10`,
@@ -217,7 +217,7 @@ run locally. Unpaid live updater/publisher tests produced four draft fixture PRs
 Their changed paths and published contents were verified against prepared updates;
 all target an isolated `test/` branch and were closed after review verification. No Telegraph assessment, payment or purchase
 ledger row was produced by these component tests. They do not verify the full paid
-bot flow or hosted workflow. Details: [dated test report](docs/telegraph/four-package-pr-tests-2026-11-14.json).
+bot flow or hosted workflow. Details: [dated test report](telegraph/four-package-pr-tests-2026-11-14.json).
 
 PR preparation rejects workspace updates, conflicting lockfiles, non-public registry
 sources and hashed/continued Python pins rather than publish stale lock data.

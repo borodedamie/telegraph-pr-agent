@@ -21,7 +21,7 @@ recorded with its receipt, and the dashboard shows the spend and the **cost per 
 | Stage | What happens | State |
 | --- | --- | --- |
 | Scan | On a push that changes dependency files, or a manual run, read installed versions from the lockfile (npm, pnpm, Yarn, Bun) or exact Python pins, and find newer stable releases on npm/PyPI | works |
-| Learn | For each release after `MODEL_CUTOFF`, buy one `QUESTION_ANSWERING_GENERAL` answer, from miner 7314 first, then ranked miners | works; pays from Telegraph escrow since 20 Nov 2026 |
+| Learn | For each release after `MODEL_CUTOFF`, buy one `QUESTION_ANSWERING_GENERAL` answer, from miner 7314 first, then ranked miners | works with per-call `exact` payment (live, 8 and 11 Nov 2026); escrow payment, needed since 20 Nov 2026, is covered by offline tests and its first hosted run is pending |
 | Report | Open one PR per package and target version (never duplicated), listing what changed and where the repository uses it. Releases on or before the cutoff get a free PR with links, no purchase | works |
 | Account | Record every attempt, purchase, PR proposal, merge and close on the repository's `ledger` branch; the dashboard computes cost per merged PR | works; no paid PR merged yet |
 | Fix | After a maintainer adds `telegraph:fix`, generate the migration patch and run the repository's tests in a job without secrets | planned |
@@ -203,7 +203,7 @@ pass: notes the rules can't parse are skipped, and the PR then keeps just the li
 PRs keep just the links. Tested offline against recorded zod release data; not yet run live.
 
 **7. See the spend.** `https://telegraph-pr-agent.vercel.app/?repo=OWNER/REPO` reads your
-repository's `ledger` branch: every purchase with its receipt, signal and transaction, and
+repository's `ledger` branch: every purchase with its receipt and signal (and its transaction for per-call `exact` payments; escrow purchases settle per Telegraph epoch and have no transaction of their own), and
 cost per merged PR once a dependency PR has merged. You don't need to build the URL: each
 run that buys prints it on the run page, and every dependency PR ends with it.
 
@@ -220,10 +220,12 @@ Status is a snapshot, not a promise.
 
 | Item | Value |
 | --- | --- |
-| Action release | v1.2.0 (`@v1`): pays from Telegraph escrow when the node offers no `exact` payment (#52, merged 20 Nov 2026). Covered by offline tests; the first hosted escrow run is pending |
+| Escrow payment in the Action | #52, merged 20 Nov 2026: pays from Telegraph escrow when the node offers no `exact` payment. `@v1` serves it once the `v1` tag is moved to release v1.2.0. Covered by offline tests; the first hosted escrow run is pending |
 | Escrow payment, live | 20 Nov 2026: a paid escrow call to miner 7314 from a script with the same signing as the Action returned HTTP 200 and was recorded by Telegraph in epoch 18 |
-| Last purchase from the Action | see each repository's dashboard in the [evidence index](#evidence-index-every-repository-running-the-bot) |
-| Package-release miner | Miner 7314 (`package-release-intel`, `QUESTION_ANSWERING_GENERAL`, 0.02 USDC), at `https://telegraph-pr-miner-n30sk.vercel.app`, registered since 6 Nov 2026. Answers what changed in an npm package between two versions, each change with a verbatim quote and its source. Benchmark: 82.6% of reviewed breaking changes with an LLM judge (67.1% by word matching), every quote checked. Details: [miner/README.md](miner/README.md) |
+| Last live purchase with a transaction (this repository) | 11 Nov 2026, from the Action: 0.02 USDC to the team's own miner 7314 (`our_choice`) for `@renovatebot/pep440` 4.2.4 → 6.0.0 ([tx](https://sepolia.etherscan.io/tx/0xa3c9d78b8183f499959a2c4ed138c7e358ffdefb0a97527d6c32ffef1955e954)). The answer was marked useful and opened draft PR #27, closed without merging to test merge accounting |
+| Last live contract check (no payment) | 14 Nov 2026, unsigned and unpaid catalogue and quote check: [preflight snapshot](docs/telegraph/four-package-tests-preflight-2026-11-14.json) |
+| Purchases in other installations | see each repository's dashboard in the [evidence index](#evidence-index-every-repository-running-the-bot) |
+| Package-release miner | Miner 7314 (`package-release-intel`, `QUESTION_ANSWERING_GENERAL`, 0.02 USDC), at `https://telegraph-pr-miner-n30sk.vercel.app`, registered since 6 Nov 2026. Engine routing sends this kind of question to another intent (`WEB_SEARCH_GENERAL`), so buyers ask it by id. Answers what changed in an npm package between two versions, each change with a verbatim quote and its source. Benchmark: 82.6% of reviewed breaking changes with an LLM judge (67.1% by word matching), every quote checked. Details: [miner/README.md](miner/README.md) |
 | Not done yet | the `telegraph:fix` stage; a merged paid PR; an installation outside the team; a public fixture repository for reviewers ([TEAM.md](docs/TEAM.md)) |
 
 ## For reviewers and the hackathon submission
@@ -232,7 +234,7 @@ To be filled in as each item exists; nothing below is claimed yet.
 
 | Item | Status |
 | --- | --- |
-| Tested commit and public repository | this repository, `main`; CI runs the offline tests and checks the Action bundle on every push |
+| Tested commit and public repository | this repository; CI (`test.yml`) runs the offline tests and checks the Action bundle on every push and PR, so any commit on `main` has a test run in the Actions tab |
 | Public dashboard URL | https://telegraph-pr-agent.vercel.app: all known installations, team and outside totals split (`?repo=owner/name` for one repository) |
 | Testnet and token in use | from the live 402 challenge; Ethereum Sepolia test USDC as of 2 Nov 2026 |
 | One command for a new realistic input | planned: the Action on a public fixture repository ([TEAM.md](docs/TEAM.md)) |
@@ -246,7 +248,7 @@ To be filled in as each item exists; nothing below is claimed yet.
 
 ### Evidence index: every repository running the bot
 
-Each installation keeps its own public ledger on its `ledger` branch, so evidence is spread across repositories. This index lists every installation we know of. Each repository is labelled **team** (owned by a team member, so related-party) or **outside**, and totals are split by that label. Figures cover the event window (1 Nov – 1 Dec 2026), as of 19 Nov 2026 12:09 UTC. Each purchase's receipt, Telegraph signal and on-chain transaction are linked from that repository's dashboard and its **Download evidence CSV**.
+Each installation keeps its own public ledger on its `ledger` branch, so evidence is spread across repositories. This index lists every installation we know of. Each repository is labelled **team** (owned by a team member, so related-party) or **outside**, and totals are split by that label. Figures cover the event window (1 Nov – 1 Dec 2026), as of 19 Nov 2026 12:09 UTC. Each purchase's receipt, Telegraph signal and, for per-call `exact` payments, on-chain transaction are linked from that repository's dashboard and its **Download evidence CSV**.
 
 | Repository | Owner | Evidence | Purchases (spend) | Paid PRs: merged / closed / open | Free PRs (merged) | Cost per merged PR |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -284,7 +286,8 @@ If you try the Action, open an issue with what you ran, the signal hash and whet
 
 Specification (source of truth): [docs/SPEC.md](docs/SPEC.md). Milestones:
 [docs/HACKATHON-PLAN.md](docs/HACKATHON-PLAN.md). Who does what: [docs/TEAM.md](docs/TEAM.md).
-How the Action works in detail: [docs/ACTION.md](docs/ACTION.md).
+How the Action works in detail: [docs/ACTION.md](docs/ACTION.md). Live QA intent contract:
+[docs/telegraph/qa-intent-contract-2026-11-02.md](docs/telegraph/qa-intent-contract-2026-11-02.md).
 
 ```
 bot/                TypeScript, Node 22.20+, vitest
