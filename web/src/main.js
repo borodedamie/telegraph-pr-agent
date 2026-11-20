@@ -250,7 +250,12 @@ function table(rows) {
     more.hidden = shown >= rows.length;
     more.textContent = `Show more (${rows.length - shown} left)`;
   };
-  more.addEventListener("click", showMore);
+  more.addEventListener("click", () => {
+    const firstNew = body.children.length;
+    showMore();
+    // The button hides itself after the last batch; keep keyboard focus on the new rows.
+    if (more.hidden) body.children[firstNew]?.querySelector(".view-btn")?.focus();
+  });
   showMore();
   return el(
     "div",
