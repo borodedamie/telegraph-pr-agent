@@ -92,7 +92,7 @@ Open `https://devnode.telegraphprotocol.com/engine/v1/signal/<signalHash>` to in
 
 The 402 challenge supplies the current quote and payment options. The client's local spending policy must allow the quoted network and token, and must reject a quote above the configured per-call maximum. The run budget is enforced separately across calls. The observed 0.01 USDC quote is an example; a provider's floor price, the quoted amount and the charged amount are different figures, and a demand multiplier can raise the quote.
 
-Invalid requests are rejected before payment (for example, `params` sent to an intent without an input schema returns 400). On 2 Nov the challenge offered two schemes on Ethereum Sepolia: `exact` (per-request x402) and `escrow` (deducted from a pre-funded Telegraph escrow balance at the next epoch close).
+Invalid requests are rejected before payment (for example, `params` sent to an intent without an input schema returns 400). On 2 Nov the challenge offered two schemes on Ethereum Sepolia: `exact` (per-request x402) and `escrow` (deducted from a pre-funded Telegraph escrow balance at the next epoch close). On 20 Nov the node stopped offering `exact` on Sepolia (it kept `exact` on Base Sepolia and Solana, and `escrow` on Sepolia). The bot pays `exact` when the challenge offers it on its chain in its USDC, and otherwise pays from escrow on its chain: it signs the challenge message (EIP-191) and records the receipt hash and ledger epoch; an escrow purchase has no transaction hash of its own.
 
 On the documented x402 path a valid payment may settle before the miner is called; if delivery then fails, the amount is credited to the caller's Telegraph escrow balance and is not consumed. A delivered 200 returns a Telegraph receipt. A 200 whose body contains an error is still treated as delivered, so the client checks the result itself (and `result_shape` and `field_status` when present), not only the HTTP status. The x402 guide and the protocol overview describe settlement timing differently; a controlled failed-delivery test against the current node is planned and will be linked here. Until then, do not read this as "failed calls cost nothing".
 
@@ -181,7 +181,7 @@ PRs; tick it and re-run, and the saved answers are reused with nothing bought ag
 
 | Secret | Value |
 | --- | --- |
-| `TELEGRAPH_EVM_PRIVATE_KEY` | Private key of a dedicated, low-balance wallet holding Sepolia test USDC (`0xcc194e1a843B658526D0D5C431f670028582Ae17`, chain `11155111`). Each answer costs about 0.02 USDC; the facilitator pays gas. |
+| `TELEGRAPH_EVM_PRIVATE_KEY` | Private key of a dedicated, low-balance wallet holding Sepolia test USDC (`0xcc194e1a843B658526D0D5C431f670028582Ae17`, chain `11155111`). Each answer costs about 0.02 USDC; the facilitator pays gas. Escrow payments (used since 20 Nov, when the node dropped `exact` on Sepolia) need a one-time deposit of this USDC into the Telegraph escrow contract with `depositUSDC` (https://anjoman.ai/docs/using/escrow-inference); a call with too little escrow is refused and not charged. |
 
 **4. Repository variables** (same page, Variables tab). The cutoff is your coding model's
 training cutoff: only dependency releases published after it are bought.
