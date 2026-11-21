@@ -54,9 +54,9 @@ export interface ModelReply {
 /** Buys one call from one LLM miner, refusing a quote above `maxCostMicroUsdc` when given. Throws ModelFailure. */
 export type ModelCaller = (miner: LlmMiner, prompt: string, signal: AbortSignal, maxCostMicroUsdc?: number) => Promise<ModelReply>;
 
-// Sepolia (docs/telegraph snapshot). The spend wallet pays only into the Telegraph Diamond's escrow.
+// Sepolia (docs/telegraph/escrow-quote-2026-11-20.json). The spend wallet pays only into the Telegraph Diamond's escrow.
 const SEPOLIA = "eip155:11155111";
-const DIAMOND = "0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b";
+const DIAMOND = "0x72a70e949362670Bf8bceAd24eFC5b8f950aa08b";
 /** Escrow authorizations are valid for at most 2 minutes; the docs' examples use now - 5 to now + 100. */
 const VALID_FOR_SEC = 100;
 
