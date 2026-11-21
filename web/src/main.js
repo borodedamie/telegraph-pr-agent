@@ -170,9 +170,20 @@ function fields(row) {
     ["USDC contract", row.usdcContract],
     [
       "Tx hash",
-      explorerBase(row)
-        ? el("a", { href: `${explorerBase(row)}/tx/${row.txHash}`, target: "_blank", rel: "noopener" }, `${row.txHash} ↗`)
-        : row.txHash,
+      row.txHash &&
+        (explorerBase(row)
+          ? el("a", { href: `${explorerBase(row)}/tx/${row.txHash}`, target: "_blank", rel: "noopener" }, `${row.txHash} ↗`)
+          : row.txHash),
+    ],
+    // Escrow purchases have no transaction of their own; Telegraph bills them at the close of an epoch.
+    [
+      "Paid from",
+      row.rail === "escrow" &&
+        el(
+          "a",
+          { href: `${new URL(SIGNAL_URL).origin}/v1/blocks/${row.epochId}/deliveries/${row.receiptHash}`, target: "_blank", rel: "noopener" },
+          `Telegraph escrow, epoch ${row.epochId} ↗`
+        ),
     ],
     ["Receipt hash", row.receiptHash],
     [

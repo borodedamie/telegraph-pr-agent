@@ -6,7 +6,8 @@ export const explorerBase = (row) =>
 // evidence); any other owner is "outside".
 export const TEAM_OWNERS = ["borodedamie", "lemind", "codexempire"];
 // Known installations, shown when no ?repo= is given. See README "Evidence index".
-export const KNOWN_INSTALLS = ["borodedamie/telegraph-pr-agent", "borodedamie/grpc-tutorial", "lemind/onewallet-radar"];
+export const KNOWN_INSTALLS = ["borodedamie/telegraph-pr-agent", "borodedamie/grpc-tutorial", "lemind/onewallet-radar",
+  "borodedamie/code-generator", "linda-ochem/temp"];
 
 export const ownerLabel = (repo) => (TEAM_OWNERS.includes(repo.split("/")[0].toLowerCase()) ? "team" : "outside");
 
