@@ -12,8 +12,9 @@ recorded with its receipt, and the dashboard shows the spend and the **cost per 
 - Built for the Telegraph Hackathon Season II, mission [Model Economy](https://hackathon.telegraphprotocol.com/missions/model-economy)
 
 > **Testnet prototype.** Payments are Ethereum Sepolia test USDC, which is not revenue. All
-> installations so far are the team's own, and the miner they buy from (7314) is also the
-> team's, so these purchases are related-party tests. No paid bot PR has been merged yet, so
+> installations with purchases so far are the team's own, and the miner they mostly buy from (7314)
+> is also the team's, so these purchases are related-party tests. One outside installation
+> (`linda-ochem/temp`) has not completed a purchase. No paid bot PR has been merged yet, so
 > cost per merged PR is N/A. Figures: [evidence index](#evidence-index-every-repository-running-the-bot).
 
 ## How it works
@@ -248,19 +249,23 @@ To be filled in as each item exists; nothing below is claimed yet.
 
 ### Evidence index: every repository running the bot
 
-Each installation keeps its own public ledger on its `ledger` branch, so evidence is spread across repositories. This index lists every installation we know of. Each repository is labelled **team** (owned by a team member, so related-party) or **outside**, and totals are split by that label. Figures cover the event window (1 Nov – 1 Dec 2026), as of 19 Nov 2026 12:09 UTC. Each purchase's receipt, Telegraph signal and, for per-call `exact` payments, on-chain transaction are linked from that repository's dashboard and its **Download evidence CSV**.
+Each installation keeps its own public ledger on its `ledger` branch, so evidence is spread across repositories. This index lists every installation we know of. Each repository is labelled **team** (owned by a team member, so related-party) or **outside**, and totals are split by that label. Figures cover the event window (1 Nov – 1 Dec 2026), as of 21 Nov 2026 02:59 UTC. Each purchase's receipt, Telegraph signal and, for per-call `exact` payments, on-chain transaction are linked from that repository's dashboard and its **Download evidence CSV**.
 
 | Repository | Owner | Evidence | Purchases (spend) | Paid PRs: merged / closed / open | Free PRs (merged) | Cost per merged PR |
 | --- | --- | --- | --- | --- | --- | --- |
 | [`borodedamie/telegraph-pr-agent`](https://github.com/borodedamie/telegraph-pr-agent) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=borodedamie/telegraph-pr-agent) · [ledger](https://raw.githubusercontent.com/borodedamie/telegraph-pr-agent/ledger/ledger.jsonl) | 4 (0.06 USDC) | 0 / 1 / 0 | 0 | N/A |
-| [`borodedamie/grpc-tutorial`](https://github.com/borodedamie/grpc-tutorial) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=borodedamie/grpc-tutorial) · [ledger](https://raw.githubusercontent.com/borodedamie/grpc-tutorial/ledger/ledger.jsonl) | 5 (0.10 USDC) | 0 / 4 / 0 | 3 (1) | N/A¹ |
-| [`lemind/onewallet-radar`](https://github.com/lemind/onewallet-radar) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=lemind/onewallet-radar) · [ledger](https://raw.githubusercontent.com/lemind/onewallet-radar/ledger/ledger.jsonl) | 6 (0.11 USDC) | 0 / 0 / 3 | 0 | N/A |
-| **Team total** | | | **15 (0.27 USDC)** | **0 / 5 / 3** | **3 (1)** | **N/A: no paid PR merged yet** |
-| **Outside total** | | | **0** | **0** | **0** | **N/A: no outside installation yet** |
+| [`borodedamie/grpc-tutorial`](https://github.com/borodedamie/grpc-tutorial) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=borodedamie/grpc-tutorial) · [ledger](https://raw.githubusercontent.com/borodedamie/grpc-tutorial/ledger/ledger.jsonl) | 5 (0.10 USDC) | 0 / 4 / 0 | 3 (2) | N/A¹ |
+| [`lemind/onewallet-radar`](https://github.com/lemind/onewallet-radar) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=lemind/onewallet-radar) · [ledger](https://raw.githubusercontent.com/lemind/onewallet-radar/ledger/ledger.jsonl) | 8 (0.15 USDC) | 0 / 0 / 4 | 0 | N/A |
+| [`borodedamie/code-generator`](https://github.com/borodedamie/code-generator) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=borodedamie/code-generator) · [ledger](https://raw.githubusercontent.com/borodedamie/code-generator/ledger/ledger.jsonl) | 5 (0.09 USDC) | 0 / 0 / 4 | 0 | N/A |
+| [`linda-ochem/temp`](https://github.com/linda-ochem/temp) | outside | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=linda-ochem/temp) · [ledger](https://raw.githubusercontent.com/linda-ochem/temp/ledger/ledger.jsonl) | 0² | 0 / 0 / 0 | 0 | N/A |
+| **Team total** | | | **22 (0.40 USDC)** | **0 / 5 / 8** | **3 (2)** | **N/A: no paid PR merged yet** |
+| **Outside total** | | | **0** | **0** | **0** | **N/A: no purchase yet** |
 
 ¹ grpc-tutorial's PR #3 merged into `test/readable-changes`, a test branch, not the default branch. Its merge row was written before merge accounting checked the branch, so it carries no base reference. It is counted as closed, not merged, and never enters cost per merged PR.
 
-How the list is kept: every Monday until 1 Dec, the **Find installs of the Action** workflow (`.github/workflows/find-installs.yml`) runs `scripts/find-installs.mjs`. The script uses a GitHub code search for `borodedamie/telegraph-pr-agent@` in workflow files and the repository's dependents page, then posts each repository's team or outside label, whether it has a ledger, and anything new to the issue "Installs of the Action". It can also be run by hand. The search index lags: on 19 Nov it found only `borodedamie/grpc-tutorial`, although `lemind/onewallet-radar` also uses `@v1`. A repository that runs the bot without appearing here can open an issue to be added.
+² `linda-ochem/temp` is owned outside the team. It ran the bot three times on 20 Nov (10:25–13:29 UTC), before the escrow fallback (#52) reached `@v1`. Every attempt stopped before payment, because Telegraph's devnode no longer offered `exact` payment on Ethereum Sepolia (see the [21 Nov payment-options snapshot](docs/telegraph/payment-options-2026-11-21.json)). A new run needs the one-time escrow deposit in step 3b. No purchase was made, and nothing is claimed as adoption.
+
+How the list is kept: every Monday until 1 Dec, the **Find installs of the Action** workflow (`.github/workflows/find-installs.yml`) runs `scripts/find-installs.mjs`. The script uses a GitHub code search for `borodedamie/telegraph-pr-agent@` in workflow files and the repository's dependents page, then posts each repository's team or outside label, whether it has a ledger, and anything new to the issue "Installs of the Action". It can also be run by hand. The search index lags: on 21 Nov it found `borodedamie/gRPC-tutorial` and `linda-ochem/temp` but missed `lemind/onewallet-radar` and `borodedamie/code-generator`, which also use `@v1`. A repository that runs the bot without appearing here can open an issue to be added.
 
 If you try the Action, open an issue with what you ran, the signal hash and whether the answer was useful. That is the kind of independent test the project needs.
 

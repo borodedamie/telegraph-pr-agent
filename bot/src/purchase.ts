@@ -144,7 +144,14 @@ export const purchaseAssessment = async (options: {
   onPurchase: (purchase: Purchase) => void;
   /** Off when absent. worstCaseUsdc is the most one call can settle (max-price-per-call-usdc). */
   monthlyBudget?: { capUsdc: number; worstCaseUsdc: number };
-}): Promise<Purchase & { assessmentId: string; attemptId: string }> => {
+}): Promise<
+  Purchase & {
+    assessmentId: string;
+    attemptId: string;
+    /** Set when a saved answer is reused: its latest quality from an earlier run. */
+    savedResultStatus?: AttemptRow["resultStatus"];
+  }
+> => {
   const { ledger, repository, baseSha, dependency, intent, query, client } =
     options;
   let assessmentId = createHash("sha256")
@@ -214,10 +221,22 @@ export const purchaseAssessment = async (options: {
         );
       if (typeof row?.attemptId !== "string" || !row.attemptId)
         throw new Error("Saved assessment needs attempt reconciliation");
+      const latestQuality = existing
+        .split("\n")
+        .filter((line) => line.trim())
+        .map((line) => JSON.parse(line))
+        .filter(
+          (quality) =>
+            quality.kind === "attempt" &&
+            quality.attemptId === row.attemptId &&
+            quality.resultStatus,
+        )
+        .at(-1);
       const purchase = {
         ...savedPurchase.parse(row),
         assessmentId,
         attemptId: row.attemptId,
+        savedResultStatus: latestQuality?.resultStatus,
       };
       options.onPurchase(purchase);
       return purchase;

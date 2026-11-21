@@ -3,7 +3,7 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { applyAssessment, assessmentPrompt, parseFindings, InvalidAssessmentError } from "../src/assessment.js";
+import { applyAssessment, assessmentPrompt, parseFindings, InvalidAssessmentError, minerErrorReply } from "../src/assessment.js";
 import { prepareUpdate, updateManifest } from "../src/updates.js";
 import { checkedOutBranch, createDependencyPr, renderChanges, sanitizeMinerText } from "../src/pull-request.js";
 import { scanRepository } from "../src/scan.js";
@@ -553,6 +553,26 @@ describe("one-invocation dependency updates", () => {
     const input = options(); input.purchase.receiptHash = "";
     await expect(applyAssessment(input)).rejects.toThrow(/missing purchase receipt/);
     expect(prepare).not.toHaveBeenCalled(); expect(publish).not.toHaveBeenCalled();
+  });
+
+  it("names a miner's error reply instead of reporting a schema mismatch", async () => {
+    const publish = vi.spyOn(prModule, "createDependencyPr");
+    const input = options();
+    input.purchase.answer = JSON.stringify({ as_of: "2026-11-21T02:25:23.799Z", confidence: 0.2,
+      detail: "TimeoutError: The operation was aborted due to timeout", error: "model unavailable",
+      intent: "QUESTION_ANSWERING", summary: "An answer could not be produced." });
+    await expect(applyAssessment(input)).rejects.toThrow(
+      "Miner returned an error instead of an answer: model unavailable (TimeoutError: The operation was aborted due to timeout)");
+    await expect(applyAssessment(input)).rejects.toBeInstanceOf(InvalidAssessmentError);
+    expect(publish).not.toHaveBeenCalled();
+  });
+
+  it("does not mistake an answer, or non-JSON text, for a miner error", () => {
+    expect(minerErrorReply('{"findings":[],"error":"ignored"}')).toBeNull();
+    expect(minerErrorReply({ outcome: "not_found", error: "x" })).toBeNull();
+    expect(minerErrorReply("Please run this script")).toBeNull();
+    expect(minerErrorReply({ error: "" })).toBeNull();
+    expect(minerErrorReply({ error: "x".repeat(500) })?.length).toBeLessThanOrEqual(347);
   });
 
   it("rejects malformed findings before attempting any updates", async () => {
