@@ -1,0 +1,118 @@
+{
+  "checkedAt": "2026-11-21T03:00:47Z",
+  "signed": false,
+  "paid": false,
+  "request": "POST https://devnode.telegraphprotocol.com/engine/v1/ask/<miner> with a native QA body and no payment header; the 402 PAYMENT-REQUIRED header decoded",
+  "miners": {
+    "7314": {
+      "status": "HTTP/2 402",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "eip155:84532",
+          "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          "amount": "20000",
+          "payTo": "0xC0A3FB6d3F1f4B54617d29ffbdA4663Af5F96e2e"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
+          "asset": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+          "amount": "20000",
+          "payTo": "G53EbeTZSNsAn7bj6iMFUQnq3zpDdEbHhKkPRywo8bix"
+        },
+        {
+          "scheme": "escrow",
+          "network": "eip155:11155111",
+          "asset": null,
+          "amount": "20000",
+          "payTo": "0x72a70e949362670bf8bcead24efc5b8f950aa08b"
+        }
+      ]
+    },
+    "780019": {
+      "status": "HTTP/2 402",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "eip155:84532",
+          "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          "amount": "10000",
+          "payTo": "0xC0A3FB6d3F1f4B54617d29ffbdA4663Af5F96e2e"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
+          "asset": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+          "amount": "10000",
+          "payTo": "G53EbeTZSNsAn7bj6iMFUQnq3zpDdEbHhKkPRywo8bix"
+        },
+        {
+          "scheme": "escrow",
+          "network": "eip155:11155111",
+          "asset": null,
+          "amount": "10000",
+          "payTo": "0x72a70e949362670bf8bcead24efc5b8f950aa08b"
+        }
+      ]
+    },
+    "148006": {
+      "status": "HTTP/2 402",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "eip155:84532",
+          "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          "amount": "10000",
+          "payTo": "0xC0A3FB6d3F1f4B54617d29ffbdA4663Af5F96e2e"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
+          "asset": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+          "amount": "10000",
+          "payTo": "G53EbeTZSNsAn7bj6iMFUQnq3zpDdEbHhKkPRywo8bix"
+        },
+        {
+          "scheme": "escrow",
+          "network": "eip155:11155111",
+          "asset": null,
+          "amount": "10000",
+          "payTo": "0x72a70e949362670bf8bcead24efc5b8f950aa08b"
+        }
+      ]
+    },
+    "148010": {
+      "status": "HTTP/2 402",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "eip155:84532",
+          "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          "amount": "10000",
+          "payTo": "0xC0A3FB6d3F1f4B54617d29ffbdA4663Af5F96e2e"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1",
+          "asset": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+          "amount": "10000",
+          "payTo": "G53EbeTZSNsAn7bj6iMFUQnq3zpDdEbHhKkPRywo8bix"
+        },
+        {
+          "scheme": "escrow",
+          "network": "eip155:11155111",
+          "asset": null,
+          "amount": "10000",
+          "payTo": "0x72a70e949362670bf8bcead24efc5b8f950aa08b"
+        }
+      ]
+    }
+  },
+  "observations": [
+    "`exact` is offered on Base Sepolia (eip155:84532, USDC 0x036CbD53842c5426634e7929541eC2318f3dCF7e) and Solana devnet only; Ethereum Sepolia (eip155:11155111) is offered only as `escrow`, paid to the Diamond 0x72a70e949362670bf8bcead24efc5b8f950aa08b.",
+    "The docs page https://anjoman.ai/docs/using/x402-inference still lists `exact` on Ethereum Sepolia (read 21 Nov 2026).",
+    "borodedamie/code-generator's run still paid `exact` on Ethereum Sepolia at 2026-11-21T02:24:58Z; the first check without that option was 02:38Z. linda-ochem/temp's runs on 20 Nov at 10:25, 13:07 and 13:29 UTC failed with '402 offers no exact payment on eip155:11155111'. The option appears to come and go.",
+    "The Action pays from escrow when no `exact` option is offered on its chain (#52, merged 2026-11-20T13:01Z; in `@v1` since the tag moved to dd9d15a). Escrow payments have a receipt and an epoch, not a transaction hash; the wallet needs a prior `depositUSDC` into the Diamond (README step 3b)."
+  ]
+}
