@@ -9,3 +9,5 @@ dist/
 !bot/dist/
 bot/dist/*
 !bot/dist/index.cjs
+docs/.DS_Store
+bot/.DS_Store
