@@ -147,6 +147,24 @@ export { NotFoundAssessmentError };
 
 export class InvalidAssessmentError extends Error {}
 
+/**
+ * Some miners answer HTTP 200 with an error object instead of an answer, e.g.
+ * {"error":"model unavailable","detail":"TimeoutError…"} (miner 780019, 21 Nov 2026). Telegraph bills
+ * it as delivered. Name it plainly so the ledger reason says what happened. The text is untrusted
+ * and only shown, never acted on.
+ */
+export const minerErrorReply = (answer: unknown): string | null => {
+  let reply = answer;
+  if (typeof reply === "string") {
+    try { reply = JSON.parse(reply); } catch { return null; }
+  }
+  if (!reply || typeof reply !== "object" || Array.isArray(reply)) return null;
+  const { error, detail, findings, outcome } = reply as Record<string, unknown>;
+  if (typeof error !== "string" || !error.trim() || findings !== undefined || outcome !== undefined) return null;
+  const said = typeof detail === "string" && detail.trim() ? `${error.trim()} (${detail.trim()})` : error.trim();
+  return `Miner returned an error instead of an answer: ${said.slice(0, 300)}`;
+};
+
 /** Validate paid findings and receipt, then prepare supported updates before publishing any PR. */
 export const applyAssessment = async (options: {
   root: string;
@@ -164,6 +182,8 @@ export const applyAssessment = async (options: {
 }): Promise<string[]> => {
   let findings: Finding[];
   try {
+    const errorReply = minerErrorReply(options.purchase.result ?? options.purchase.answer);
+    if (errorReply) throw new InvalidAssessmentError(errorReply);
     const answer =
       options.purchase.minerId === MIGRATION_MINER_ID
         ? JSON.stringify({
@@ -175,7 +195,7 @@ export const applyAssessment = async (options: {
         : options.purchase.answer;
     findings = parseFindings(answer, options.dependencies);
   } catch (error) {
-    if (error instanceof NotFoundAssessmentError) throw error;
+    if (error instanceof NotFoundAssessmentError || error instanceof InvalidAssessmentError) throw error;
     throw new InvalidAssessmentError(
       error instanceof Error ? error.message : String(error),
     );
