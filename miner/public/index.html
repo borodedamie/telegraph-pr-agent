@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Package Release Intel</title>
+<meta name="description" content="Telegraph miner 7314: what changed in an npm package between two versions.">
+<style>
+  :root { --bg: #ffffff; --fg: #1a1a1a; --muted: #5c5c5c; --line: #e2e2e2; --code: #f4f4f4; --link: #0b57d0; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #141414; --fg: #ececec; --muted: #a8a8a8; --line: #2e2e2e; --code: #1f1f1f; --link: #8ab4f8; }
+  }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 40px 16px 64px; }
+  h1 { font-size: 1.7rem; margin: 0 0 4px; }
+  h2 { font-size: 1.1rem; margin: 32px 0 8px; }
+  .lead { color: var(--muted); margin: 0 0 24px; }
+  a { color: var(--link); }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; background: var(--code); border-radius: 4px; }
+  code { padding: 1px 4px; }
+  pre { padding: 12px; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Package Release Intel</h1>
+  <p class="lead">Telegraph miner <strong>7314</strong>: what changed in an npm package between two versions.</p>
+
+  <p>Ask about one npm package and two versions. You get the breaking changes, deprecations and security fixes for every
+  release in that range. Each item quotes the release notes word for word and links to its source. Known advisories are
+  checked against OSV. Releases that could not be read are named in the answer, not guessed.</p>
+
+  <h2>Calling it</h2>
+  <p>This page is not the API: questions go through Telegraph and are paid with x402 (0.02 USDC per answer, testnet).
+  Ask miner 7314 by id; auto-routing sends these questions elsewhere.</p>
+  <pre>POST https://devnode.telegraphprotocol.com/engine/v1/ask/7314
+{"method":"GET","endpoint":"/answer","payload":{"query":"What changed in zod from 3.23.8 to 4.0.0?"}}</pre>
+
+  <h2>Asking well</h2>
+  <ul>
+    <li>One npm package per question, both versions, oldest first: <code>What changed in express from 4.21.0 to 5.0.0?</code></li>
+    <li>npm only, at most 2,000 characters.</li>
+    <li>A first answer takes a few seconds, up to about 20 s for a large jump. A repeat comes from the cache in under a second.</li>
+  </ul>
+
+  <h2>What comes back</h2>
+  <table>
+    <tr><th>Outcome</th><th>Meaning</th><th>Charged</th></tr>
+    <tr><td><code>found</code></td><td>changes listed with quotes and sources</td><td>yes</td></tr>
+    <tr><td><code>not_found</code></td><td>no usable release notes, a version that does not exist, or a range too large for one answer</td><td>yes</td></tr>
+    <tr><td><code>needs_clarification</code></td><td>the package or versions are unclear</td><td>yes</td></tr>
+    <tr><td><code>out_of_scope</code></td><td>not a question about an npm package</td><td>yes</td></tr>
+    <tr><td><code>temporarily_unavailable</code></td><td>a source it needs was down</td><td>no</td></tr>
+  </table>
+
+  <h2>More</h2>
+  <p><a href="https://github.com/borodedamie/telegraph-pr-agent/blob/main/miner/USAGE.md">Usage guide</a> ·
+  <a href="https://github.com/borodedamie/telegraph-pr-agent/tree/main/miner">Source code</a> ·
+  <a href="https://github.com/borodedamie/telegraph-pr-agent/issues">Report a wrong answer</a></p>
+</main>
+</body>
+</html>

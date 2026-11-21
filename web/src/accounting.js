@@ -29,6 +29,11 @@ export const chargedWithoutAnswer = (rows) => {
   return { count: charged.length, amountUsdc: charged.reduce((sum, row) => sum + (row.chargedAmountUsdc ?? 0), 0) };
 };
 
+// A merge row carrying `baseRef` was written by #40's branch-checked accounting, so it landed on
+// the default (or a counted release) branch. A merge row without `baseRef` predates that check and
+// may have merged into a test or feature branch, so it must never count as a merged PR.
+const countedMerge = (row) => row.kind === "merge" && typeof row.baseRef === "string";
+
 /** Keep receipt-linked allocation separate from all recorded net spending per merged PR. */
 export const mergedCosts = (rows) => {
   const purchases = new Map(rows.filter((row) => !row.kind && row.status === "settled" && row.receiptHash)
@@ -36,7 +41,7 @@ export const mergedCosts = (rows) => {
   const prs = new Set();
   const receipts = new Set();
   let total = 0;
-  for (const row of rows.filter((row) => row.kind === "merge")) {
+  for (const row of rows.filter(countedMerge)) {
     const purchase = purchases.get(row.receiptHash);
     if (!purchase || purchase.repo !== row.repo || receipts.has(row.receiptHash)) continue;
     receipts.add(row.receiptHash);
@@ -91,8 +96,13 @@ export const inWindow = (rows, { from, to }) =>
  */
 const prOutcomes = (rows) => {
   const pr = (row) => `${row.repo}#${row.prNumber}`;
-  const merged = new Set(rows.filter((row) => row.kind === "merge").map(pr));
-  const closed = new Set(rows.filter((row) => row.kind === "closed").map(pr).filter((key) => !merged.has(key)));
+  const merges = rows.filter((row) => row.kind === "merge");
+  const merged = new Set(merges.filter(countedMerge).map(pr));
+  // A merge without baseRef (pre-#40) is merged outside the default branch, so it counts as closed.
+  const closed = new Set([
+    ...rows.filter((row) => row.kind === "closed").map(pr),
+    ...merges.filter((row) => !countedMerge(row)).map(pr),
+  ].filter((key) => !merged.has(key)));
   const proposed = new Set([...rows.filter((row) => row.kind === "proposal").map(pr), ...merged, ...closed]);
   return { pr, merged, closed, proposed };
 };
@@ -159,8 +169,8 @@ export const evidenceCsv = (rows) => {
   const outcomes = new Map();
   for (const row of rows.filter((row) => row.kind === "proposal" && row.receiptHash)) outcomes.set(row.receiptHash, { pr: row.prNumber, outcome: "open" });
   for (const row of rows.filter((row) => row.kind === "closed" && row.receiptHash)) outcomes.set(row.receiptHash, { pr: row.prNumber, outcome: "closed_unmerged" });
-  // Applied last: a merge outranks an earlier close.
-  for (const row of rows.filter((row) => row.kind === "merge" && row.receiptHash)) outcomes.set(row.receiptHash, { pr: row.prNumber, outcome: "merged" });
+  // Applied last: a counted merge outranks an earlier close.
+  for (const row of rows.filter((row) => countedMerge(row) && row.receiptHash)) outcomes.set(row.receiptHash, { pr: row.prNumber, outcome: "merged" });
   const tx = (row) => (row.txHash && explorerBase(row) ? `${explorerBase(row)}/tx/${row.txHash}` : "");
   const lines = purchaseRows(rows).filter((row) => row.status === "settled").map((row) => {
     const pr = outcomes.get(row.receiptHash);

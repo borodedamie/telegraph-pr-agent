@@ -41,8 +41,13 @@ export interface LedgerRow {
   minerRank: number | null;
   minerScore: number | null;
   amountUsdc: number;
+  /** Empty for an escrow payment, which is billed in a ledger block rather than its own transaction. */
   txHash: string;
   receiptHash: string;
+  /** "escrow" when paid from Telegraph escrow; absent means x402 `exact`. */
+  rail?: "escrow";
+  /** Ledger epoch an escrow charge is billed in. */
+  epochId?: number;
   signalHash: string;
   answer: string;
   timestamp: string;

@@ -118,6 +118,8 @@ const savedPurchase = z.object({
   amountUsdc: z.number().finite().nonnegative(),
   txHash: z.string(),
   receiptHash: z.string(),
+  rail: z.literal("escrow").optional(),
+  epochId: z.number().int().nonnegative().optional(),
   signalHash: z.string(),
   answer: z.string(),
   result: z.unknown().optional(),
@@ -297,8 +299,11 @@ export const purchaseAssessment = async (options: {
   const row: LedgerRow = {
     ...purchase,
     model: options.provenance,
+    // An escrow charge has no transaction of its own; its receipt is the proof.
     evidenceIncomplete:
-      !purchase.receiptHash || !purchase.signalHash || !purchase.txHash,
+      !purchase.receiptHash ||
+      !purchase.signalHash ||
+      (purchase.rail !== "escrow" && !purchase.txHash),
     repo: repository,
     headSha: baseSha,
     assessmentId,
