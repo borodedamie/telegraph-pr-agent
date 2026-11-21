@@ -17,6 +17,10 @@ recorded with its receipt, and the dashboard shows the spend and the **cost per 
 > (`linda-ochem/temp`) has not completed a purchase. No paid bot PR has been merged yet, so
 > cost per merged PR is N/A. Figures: [evidence index](#evidence-index-every-repository-running-the-bot).
 
+## Demo
+
+<video src="docs/demo.mp4" controls muted loop playsinline width="100%"></video>
+
 ## How it works
 
 | Stage | What happens | State |
@@ -242,7 +246,7 @@ To be filled in as each item exists; nothing below is claimed yet.
 | No-post-cutoff, no-spend case | planned on the fixture repository; offline test: no purchase or PR when no dependency is past the cutoff |
 | Failing typecheck, no push case | planned with the `telegraph:fix` stage |
 | Event-period receipts, signal links, transactions, ledger export | Across all installations: see the [evidence index](#evidence-index-every-repository-running-the-bot) below. For this repository alone, the dashboard's **Download evidence CSV** plus the raw `ledger.jsonl`. As of 19 Nov 2026: 4 purchases (0.06 USDC): two CLI test buys from third-party miners (3 and 4 Nov, answers not useful) and two Action assessments from the team's own miner 7314 (8 and 11 Nov, `our_choice`, self-purchases, not independent adoption) |
-| 2–5 minute demo | not recorded |
+| 2–5 minute demo | [demo.mp4](docs/demo.mp4) |
 | Five-question commercial summary | not written |
 | Public updates (at least three, separate dates) | none yet |
 | Technical tutorial and independent reproduction evidence | none yet |
