@@ -1,13 +1,15 @@
-// Find repositories that use the Action, to keep the README evidence index and the dashboard's
-// KNOWN_INSTALLS complete; above all, to notice an outside installation. Run weekly by
-// .github/workflows/find-installs.yml until 1 Dec 2026, or by hand: node scripts/find-installs.mjs
-// Prints a Markdown report. Needs the GitHub CLI (`gh`) signed in, or GH_TOKEN set.
-// Both sources lag: code search and the dependents page can miss a repository that does use the
-// Action (on 19 Nov both missed lemind/onewallet-radar), so a missing repo is not proof of absence.
 import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { KNOWN_INSTALLS, ownerLabel } from "../web/src/accounting.js";
 
 const ACTION = "borodedamie/telegraph-pr-agent";
+const arg = (name) => {
+  const i = process.argv.indexOf(name);
+  return i > 0 ? process.argv[i + 1] : undefined;
+};
+const previousPath = arg("--previous");
+const outPath = arg("--out");
+
 const found = new Map(); // lowercased repo -> { repo, sources }
 const problems = [];
 const add = (repo, source) => {
@@ -17,17 +19,21 @@ const add = (repo, source) => {
   entry.sources.add(source);
   found.set(key, entry);
 };
+const ghSearch = (kind, query, source) => {
+  try {
+    const hits = JSON.parse(execFileSync("gh", ["search", kind, query, "--json", "repository", "--limit", "1000"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }));
+    for (const hit of hits) add(hit.repository.nameWithOwner, source);
+  } catch (err) {
+    problems.push(`${source} failed: ${String(err.stderr || err.message).trim().split("\n")[0]}`);
+  }
+};
 
-// 1. Code search for workflow files that reference the Action. A failure is reported, not hidden.
-try {
-  const hits = JSON.parse(execFileSync("gh", ["search", "code", `${ACTION}@`, "--json", "repository", "--limit", "100"],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }));
-  for (const hit of hits) add(hit.repository.nameWithOwner, "code search");
-} catch (err) {
-  problems.push(`Code search failed: ${String(err.stderr || err.message).trim().split("\n")[0]}`);
-}
-
-// 2. The dependents page (GitHub's dependency graph). First page only: up to 30 repositories.
+// 1. PRs the bot opened: its branches are always fix/telegraph-dependency-<identity>.
+ghSearch("prs", "head:fix/telegraph-dependency-", "PR search");
+// 2. Workflow files that reference the Action.
+ghSearch("code", `${ACTION}@`, "code search");
+// 3. The dependents page (GitHub's dependency graph). First page only: up to 30 repositories.
 try {
   const res = await fetch(`https://github.com/${ACTION}/network/dependents`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -37,24 +43,34 @@ try {
 } catch (err) {
   problems.push(`Dependents page failed: ${err.message}`);
 }
-
-// 3. Known installs that neither source found stay listed, marked as missed by the index.
+// 4. Repositories listed earlier stay listed, so a lagging index never drops one.
+const previous = previousPath && existsSync(previousPath) ? JSON.parse(readFileSync(previousPath, "utf8")).installs ?? [] : [];
+for (const entry of previous) if (!found.has(entry.repo.toLowerCase())) add(entry.repo, "listed earlier");
 for (const repo of KNOWN_INSTALLS) {
-  if (repo.toLowerCase() !== ACTION && !found.has(repo.toLowerCase())) add(repo, "known only (missed by search)");
+  if (repo.toLowerCase() !== ACTION && !found.has(repo.toLowerCase())) add(repo, "known list");
 }
 
-const known = new Set(KNOWN_INSTALLS.map((r) => r.toLowerCase()));
+const firstSeen = new Map(previous.map((entry) => [entry.repo.toLowerCase(), entry.firstSeen]));
+const now = new Date().toISOString();
 const rows = [];
 for (const { repo, sources } of [...found.values()].sort((a, b) => a.repo.localeCompare(b.repo))) {
   const ledger = await fetch(`https://raw.githubusercontent.com/${repo}/ledger/ledger.jsonl`, { method: "HEAD" }).catch(() => null);
-  rows.push({ repo, owner: ownerLabel(repo), ledger: ledger?.ok ? "yes" : "no", sources: [...sources].join(", "),
-    status: known.has(repo.toLowerCase()) ? "known" : "**NEW**: add to `KNOWN_INSTALLS` and the README evidence index" });
+  const isNew = !firstSeen.has(repo.toLowerCase()) && !KNOWN_INSTALLS.some((known) => known.toLowerCase() === repo.toLowerCase());
+  rows.push({ repo, owner: ownerLabel(repo), ledger: Boolean(ledger?.ok), foundBy: [...sources].sort(),
+    firstSeen: firstSeen.get(repo.toLowerCase()) ?? now, isNew });
 }
-const outside = rows.filter((r) => r.owner === "outside");
-const fresh = rows.filter((r) => r.status !== "known");
 
-console.log(`### Installs of \`${ACTION}\`, ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC\n`);
+if (outPath) {
+  const installs = rows.map(({ repo, owner, firstSeen: seen }) => ({ repo, owner, firstSeen: seen }));
+  writeFileSync(outPath, `${JSON.stringify({ action: ACTION, installs }, null, 2)}\n`);
+}
+
+const outside = rows.filter((r) => r.owner === "outside");
+const fresh = rows.filter((r) => r.isNew);
+console.log(`### Installs of \`${ACTION}\`, ${now.slice(0, 16).replace("T", " ")} UTC\n`);
 console.log(`${rows.length} found · ${outside.length} outside · ${fresh.length} new\n`);
 console.log("| Repository | Owner | Ledger (bot has run) | Found by | Status |\n| --- | --- | --- | --- | --- |");
-for (const r of rows) console.log(`| [\`${r.repo}\`](https://github.com/${r.repo}) | ${r.owner} | ${r.ledger} | ${r.sources} | ${r.status} |`);
+for (const r of rows) {
+  console.log(`| [\`${r.repo}\`](https://github.com/${r.repo}) | ${r.owner} | ${r.ledger ? "yes" : "no"} | ${r.foundBy.join(", ")} | ${r.isNew ? "**NEW**" : "known"} |`);
+}
 if (problems.length) console.log(`\n**Not checked fully:** ${problems.join("; ")}`);

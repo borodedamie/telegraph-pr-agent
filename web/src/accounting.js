@@ -11,6 +11,20 @@ export const KNOWN_INSTALLS = ["borodedamie/telegraph-pr-agent", "borodedamie/gr
   "codexempire/crypto-giant", "codexempire/chatUp", "borodedamie/telegraph-fix-fixture", "linda-ochem/temp",
   "shadrxcc/porncrit-fe"];
 
+/**
+ * The known list plus repositories found by the hourly find-installs workflow (installs.json on the
+ * ledger branch). Names compare case-insensitively (search returns gRPC-tutorial, the list has
+ * grpc-tutorial); the known spelling and order come first, then new ones by name.
+ */
+export const mergeInstallLists = (known, discovered) => {
+  const seen = new Set(known.map((repo) => repo.toLowerCase()));
+  const added = discovered.map((entry) => (typeof entry === "string" ? entry : entry?.repo))
+    .filter((repo) => typeof repo === "string" && /^[\w.-]+\/[\w.-]+$/.test(repo))
+    .filter((repo) => !seen.has(repo.toLowerCase()) && seen.add(repo.toLowerCase()))
+    .sort((a, b) => a.localeCompare(b));
+  return [...known, ...added];
+};
+
 export const ownerLabel = (repo) => (TEAM_OWNERS.includes(repo.split("/")[0].toLowerCase()) ? "team" : "outside");
 
 /** Mark each row with the ledger it came from; early rows that predate the `repo` field get it here. */
