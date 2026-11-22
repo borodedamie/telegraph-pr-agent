@@ -27,7 +27,9 @@ export interface CallSite {
 }
 
 /**
- * Code names a breaking change or deprecation mentions in backticks, e.g. `Buffer.from()`.
+ * Code names a breaking change or deprecation mentions in backticks, e.g. `Buffer.from()`. A member
+ * written on its own (`.errors`) or at the end of a chain (`z.string().ip()`) is kept as `.errors`
+ * or `.ip`: the member is what changed, and it is searched for after a dot.
  * Miner text is untrusted: a name is only ever used as a literal search string, never a regex or command.
  */
 export const changedSymbols = (finding: Finding): string[] => {
@@ -38,12 +40,15 @@ export const changedSymbols = (finding: Finding): string[] => {
       const name = span
         .trim()
         .replace(/^new\s+/, "")
-        .replace(/\(.*\)$/, "")
-        .replace(/;$/, "");
+        .replace(/;$/, "")
+        .replace(/^.*\)(?=\.)/, "")
+        .replace(/\(.*\)$/, "");
       if (
-        /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/.test(name) &&
+        /^\.?[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/.test(name) &&
         name.length >= 3 &&
-        !NOT_SYMBOLS.has(name) &&
+        !NOT_SYMBOLS.has(name.replace(/^\./, "")) &&
+        // A commit hash in backticks ("`e177a0ee`") is not code.
+        !/^[0-9a-f]{7,40}$/.test(name) &&
         name !== finding.package
       )
         symbols.add(name);
@@ -78,7 +83,8 @@ export const findCallSites = (root: string, finding: Finding): CallSite[] => {
     .filter((path) => SOURCE_FILES[finding.ecosystem].test(path) && /^[\w./@+-]+$/.test(path));
   const sites = symbols.map((symbol) => ({
     symbol,
-    pattern: new RegExp(`(?<![\\w$])${escapeRegExp(symbol)}(?![\\w$])`),
+    // A member (`.errors`) follows any name ("result.error.errors"); a plain name starts a word.
+    pattern: new RegExp(`${symbol.startsWith(".") ? "" : "(?<![\\w$])"}${escapeRegExp(symbol)}(?![\\w$])`),
     locations: [] as CallSite["locations"],
     more: 0,
   }));

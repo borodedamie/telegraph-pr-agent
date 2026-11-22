@@ -56,6 +56,27 @@ it("names the file and line using a deprecated API, only in tracked source files
   ]);
 });
 
+it("finds members written on their own or at the end of a chain, as zod 4's notes write them", () => {
+  // From the zod 3 → 4 fix-stage fixture (borodedamie/telegraph-fix-fixture), which these names missed on 22 Nov.
+  const changes = [change("breaking", "drops `.errors`"), change("breaking", "drops `z.string().ip()`"),
+    change("breaking", "`z.record()`: drops single argument usage"), change("breaking", "[`e177a0ee`](https://x) docs")];
+  const zod = finding(changes, { package: "zod" });
+  expect(changedSymbols(zod)).toEqual([".errors", ".ip", "z.record"]);
+  const root = repo({ "src/user.ts": [
+    'import { z } from "zod";',
+    "const ip = z.string().ip({ message: \"Not an IP address\" });",
+    "const tags = z.record(z.string());",
+    "const v6 = z.ipv6();",
+    "type Errors = { errors: string[] };",
+    "const list = result.error.errors.map((issue) => issue.message);",
+  ].join("\n") });
+  expect(findCallSites(root, zod)).toEqual([
+    { symbol: ".errors", locations: [{ path: "src/user.ts", line: 6 }], more: 0 },
+    { symbol: ".ip", locations: [{ path: "src/user.ts", line: 2 }], more: 0 },
+    { symbol: "z.record", locations: [{ path: "src/user.ts", line: 3 }], more: 0 },
+  ]);
+});
+
 it("finds Python call sites through the import name", () => {
   const root = repo({
     "app/main.py": "from python_widget import client\n\nclient.old_call()\n",
