@@ -183,7 +183,7 @@ closed: its spend stays in the total but it is not counted as merged.
 
 **6. Run it.** Actions → Telegraph dependency updates → Run workflow. With no dependency
 released after your cutoff it ends with "no purchase made" and spends nothing. Otherwise
-it buys one answer per package and opens one PR per update, ready for review (add
+it buys one answer per package and opens one PR per update. Before buying, it checks that the package manager can install the target next to your current dependencies; an upgrade it refuses (for example `react-dom` 19 while `react` is still 18) is skipped with npm's reason and nothing is bought. Upgrade the package it depends on first, and the next run picks it up. PRs open ready for review (add
 `draft-prs: "true"` under `with:` to open drafts instead); review it, run your CI,
 merge or close it. Each PR starts with **What changed**: the documented breaking changes,
 deprecations and security fixes between your version and the target, breaking changes
