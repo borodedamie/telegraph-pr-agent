@@ -1,0 +1,17 @@
+[
+  {
+    "attempt": "attempt-1",
+    "passed": false,
+    "stage": "typecheck failed"
+  },
+  {
+    "attempt": "attempt-2",
+    "passed": false,
+    "stage": "typecheck failed"
+  },
+  {
+    "attempt": "attempt-3",
+    "passed": false,
+    "stage": "typecheck failed"
+  }
+]

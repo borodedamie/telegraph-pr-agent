@@ -1,0 +1,37 @@
+{
+  "file": "src/user.ts",
+  "qaReceiptHash": "0xac670c43efc3c07ea7059854290c3bc5510f6ba03a5393d937098bda0bf07ba9",
+  "requestChars": 6176,
+  "results": [
+    {
+      "attempt": 1,
+      "usable": false,
+      "amountUsdc": 0.01,
+      "minerId": "1900999002",
+      "receiptHash": "0x3b774bfc160c8059b148e1aae35541297f1af7c76b799c913720f9c99613e367",
+      "signalHash": "0xafe4021187df4fdf716eca13249277c9c5fb599224423e196a77e2dac764ba7e",
+      "txHash": null,
+      "rail": "escrow"
+    },
+    {
+      "attempt": 2,
+      "usable": false,
+      "amountUsdc": 0.01,
+      "minerId": "1900999002",
+      "receiptHash": "0xc2b13fee76bb1975ce0f2e25d50cfd23dc4c8111618b2c83addabda4fb09a735",
+      "signalHash": "0x92fc0412a1335103a2346fe447de13d16a93884a5200728b29e863cf00a4fb07",
+      "txHash": null,
+      "rail": "escrow"
+    },
+    {
+      "attempt": 3,
+      "usable": false,
+      "amountUsdc": 0.01,
+      "minerId": "1900999002",
+      "receiptHash": "0xbc350a68b71fa06f41bdfc28efde2f5ff12fdb1858369de5247f88457eff5d51",
+      "signalHash": "0xb15daf347582c14f795d9f557cbbb3e9e7f10c65812591fb478b7d9f6f5b0a0e",
+      "txHash": null,
+      "rail": "escrow"
+    }
+  ]
+}

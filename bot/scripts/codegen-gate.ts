@@ -85,9 +85,19 @@ const patchRequest = (source: string, finding: Awaited<ReturnType<typeof paidCha
   return request;
 };
 
-/** The single fenced block the miner promises; anything else is not a usable patch. */
+/**
+ * The single fenced block the miner promises; anything else is not a usable patch. The miner
+ * answers in JSON with the code inside `summary`, so read that field when the answer is JSON.
+ */
 const fencedFile = (answer: string): string | null => {
-  const blocks = [...answer.matchAll(/```[\w-]*\n([\s\S]*?)```/g)];
+  let text = answer;
+  try {
+    const parsed = JSON.parse(answer) as { summary?: unknown };
+    if (typeof parsed.summary === "string") text = parsed.summary;
+  } catch {
+    // Not JSON: the answer is the text itself.
+  }
+  const blocks = [...text.matchAll(/```[\w-]*\n([\s\S]*?)```/g)];
   return blocks.length === 1 ? blocks[0][1] : null;
 };
 
@@ -120,7 +130,6 @@ const buy = async () => {
     const dir = join(run, `attempt-${attempt}`);
     mkdirSync(dir);
     writeFileSync(join(dir, "answer.txt"), purchase.answer);
-    if (code) writeFileSync(join(dir, "file.ts"), code);
     const result = {
       attempt, usable: Boolean(code), amountUsdc: purchase.amountUsdc, minerId: purchase.minerId,
       receiptHash: purchase.receiptHash, signalHash: purchase.signalHash, txHash: purchase.txHash || null,
@@ -150,8 +159,11 @@ const check = () => {
   const run = join(outDir, runs.at(-1)!);
   const results = [];
   for (const attempt of readdirSync(run).filter((name) => name.startsWith("attempt-")).sort()) {
+    // Extracted here, not at purchase, so a better extractor never needs a second purchase.
+    const code = fencedFile(readFileSync(join(run, attempt, "answer.txt"), "utf8"));
     const patched = join(run, attempt, "file.ts");
-    if (!existsSync(patched)) {
+    if (code) writeFileSync(patched, code);
+    if (!code) {
       results.push({ attempt, passed: false, stage: "no single code block in the answer" });
       continue;
     }

@@ -1,0 +1,69 @@
+Migrate this TypeScript file from zod 3.25.76 to zod 4.6.7.
+Keep every export, type, behaviour and error message exactly the same, and use only APIs that exist in the new version.
+Return the complete updated file in one fenced code block and nothing else.
+
+File src/user.ts:
+```ts
+import { z } from "zod";
+
+export const User = z.object({
+  name: z.string({
+    required_error: "Name is required",
+    invalid_type_error: "Name must be text",
+  }),
+  tags: z.record(z.string()),
+  ip: z.string().ip({ message: "Not an IP address" }),
+});
+
+export type User = z.infer<typeof User>;
+
+export type ParseResult =
+  | { ok: true; user: User }
+  | { ok: false; errors: string[] };
+
+export const parseUser = (input: unknown): ParseResult => {
+  const result = User.safeParse(input);
+  if (result.success) return { ok: true, user: result.data };
+  return { ok: false, errors: result.error.errors.map((issue) => issue.message) };
+};
+```
+
+Documented changes between these versions, from the release notes:
+- [deprecation] 4.0.0: deprecates `message` parameter Migration: Replaces `message` param with `error`. The old `message` parameter is still supported but deprecated.
+- [breaking] 4.5.0: [`e177a0ee`](https://github.com/colinhacks/zod/commit/e177a0ee) docs(v4): document coerce missing-key breaking change ([#5957](https://github.com/colinhacks/zod/pull/5957)) ([#5964](https://github.com/colinhacks/zod/pull/5964)) by [@dokson](https://github.com/dokson)
+- [deprecation] 4.0.0: deprecates `.strip()` Migration: This was never particularly useful, as it was the default behavior of `z.object()`. To convert a strict object to a "regular" one, use `z.object(A.shape)`.
+- [breaking] 4.0.0: drops `invalid_type_error` and `required_error`
+- [breaking] 4.0.0: changes error map precedence
+- [breaking] 4.0.0: throws `Error` on merge conflict Migration: In Zod 4, this will throw a regular `Error` instead. The existence of unmergable results indicates a structural problem with the schema: an intersection of two incompatible types. Thus, a regular error is more appropriate than a validation error.
+- [breaking] 4.0.0: drops `ZodBranded` Migration: Branding is now handled with a direct modification to the inferred type, instead of a dedicated `ZodBranded` class. The user-facing APIs remain the same.
+- [deprecation] 4.0.0: deprecates `.format()` Migration: The `.format()` method on `ZodError` has been deprecated. Instead use the top-level `z.treeifyError()` function. Read the [Formatting errors docs](/error-formatting) for more information.
+- [deprecation] 4.0.0: deprecates `.flatten()` Migration: The `.flatten()` method on `ZodError` has also been deprecated. Instead use the top-level `z.treeifyError()` function. Read the [Formatting errors docs](/error-formatting) for more information.
+- [breaking] 4.0.0: drops `errorMap` Migration: This is renamed to `error`.
+- [breaking] 4.0.0: changes to `.message`
+- [breaking] 4.0.0: drops `.errors` Migration: This API was an alias for `.issues` in Zod v3 but has been removed. Use `.issues` instead.
+- [breaking] 4.0.0: `.int()` accepts safe integers only Migration: The `z.number().int()` API no longer accepts unsafe integers (outside the range of `Number.MIN_SAFE_INTEGER` and `Number.MAX_SAFE_INTEGER`). Using integers out of this range causes spontaneous rounding errors. (Also: You should switch to `z.int()`.)
+- [breaking] 4.0.0: stricter `.uuid()` Migration: The `z.uuid()` now validates UUIDs more strictly against the RFC 9562/4122 specification; specifically, the variant bits must be `10` per the spec. For a more permissive "UUID-like" validator, use `z.guid()`.
+- [breaking] 4.0.0: drops `z.string().ip()` Migration: This has been replaced with separate `.ipv4()` and `.ipv6()` methods. Use `z.union()` to combine them if you need to accept both.
+- [breaking] 4.0.0: drops `z.string().cidr()` Migration: Similarly, this has been replaced with separate `.cidrv4()` and `.cidrv6()` methods. Use `z.union()` to combine them if you need to accept both.
+- [breaking] 4.0.0: changes `z.unknown()` optionality Migration: // use .optional() for a key that may be absent
+- [breaking] 4.0.0: changes `.nonempty()` type
+- [breaking] 4.5.4: fix(v4): stop the cycle walk from firing a default factory
+- [deprecation] 4.0.0: `z.promise()` deprecated Migration: There's rarely a reason to use `z.promise()`. If you have an input that may be a `Promise`, just `await` it before parsing it with Zod.
+- [breaking] 4.0.0: drops `.formErrors`
+- [breaking] 4.0.0: `.safe()` no longer accepts floats
+- [breaking] 4.0.0: drops `.nonstrict()`
+- [breaking] 4.0.0: drops `.deepPartial()` Migration: This has been long deprecated in Zod 3 and it now removed in Zod 4. There is no direct alternative to this API. There were lots of footguns in its implementation, and its use is generally an anti-pattern.
+- [breaking] 4.0.0: drops `ctx.path`
+- [breaking] 4.0.0: drops function as second argument
+- [breaking] 4.0.0: `z.ostring()`, etc dropped
+- [breaking] 4.0.0: drops `symbol` support
+- [breaking] 4.0.0: static `.create()` factories dropped
+- [breaking] 4.0.0: drops single argument usage
+- [breaking] 4.0.0: moves `._def`
+- [breaking] 4.0.0: drops `ZodEffects`
+- [breaking] 4.0.0: drops `ZodPreprocess` Migration: As with `.transform()`, the `z.preprocess()` function now returns a `ZodPipe` instance instead of a dedicated `ZodPreprocess` instance.
+- [deprecation] 4.0.0: deprecates `.addIssue()` and `.addIssues()` Migration: Directly push to `err.issues` array instead, if necessary.
+- [deprecation] 4.0.0: deprecates `.email()` etc Migration: String formats are now represented as *subclasses* of `ZodString`, instead of simple internal refinements. As such, these APIs have been moved to the top-level `z` namespace. Top-level APIs are also less verbose and more tree-shakable.
+- [deprecation] 4.0.0: deprecates `.strict()` and `.passthrough()` Migration: These methods are generally no longer necessary. Instead use the top-level `z.strictObject()` and `z.looseObject()` functions.
+- [deprecation] 4.0.0: deprecates `.merge()` Migration: // or use destructuring (best tsc performance)
+- [deprecation] 4.0.0: `z.nativeEnum()` deprecated
