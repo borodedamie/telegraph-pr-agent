@@ -1,0 +1,60 @@
+{
+  "action": "borodedamie/telegraph-pr-agent",
+  "installs": [
+    {
+      "repo": "borodedamie/code-generator",
+      "owner": "team",
+      "firstSeen": "2026-11-23T22:43:36.749Z"
+    },
+    {
+      "repo": "borodedamie/gRPC-tutorial",
+      "owner": "team",
+      "firstSeen": "2026-11-23T22:43:36.749Z"
+    },
+    {
+      "repo": "borodedamie/telegraph-fix-fixture",
+      "owner": "team",
+      "firstSeen": "2026-11-23T22:43:36.749Z"
+    },
+    {
+      "repo": "codexempire/chat_space_app",
+      "owner": "team",
+      "firstSeen": "2026-11-23T22:43:36.749Z"
+    },
+    {
+      "repo": "codexempire/chatUp",
+      "owner": "team",
+      "firstSeen": "2026-11-23T22:43:36.749Z"
+    },
+    {
+      "repo": "codexempire/crypto-giant",
+      "owner": "team",
+      "firstSeen": "2026-11-23T22:43:36.749Z"
+    },
+    {
+      "repo": "codexempire/flight-check",
+      "owner": "team",
+      "firstSeen": "2026-11-23T22:43:36.749Z"
+    },
+    {
+      "repo": "codexempire/web-crawler",
+      "owner": "team",
+      "firstSeen": "2026-11-23T22:43:36.749Z"
+    },
+    {
+      "repo": "lemind/onewallet-radar",
+      "owner": "team",
+      "firstSeen": "2026-11-23T22:43:36.749Z"
+    },
+    {
+      "repo": "linda-ochem/temp",
+      "owner": "outside",
+      "firstSeen": "2026-11-23T22:43:36.749Z"
+    },
+    {
+      "repo": "shadrxcc/porncrit-fe",
+      "owner": "outside",
+      "firstSeen": "2026-11-23T22:43:36.749Z"
+    }
+  ]
+}
