@@ -4,9 +4,11 @@
 //
 //   buy    pays the code miner ATTEMPTS times for one file and saves each returned file.
 //          Needs TELEGRAPH_EVM_PRIVATE_KEY. Never runs anything the miner returned.
-//   check  copies the fixture once per saved file, swaps the file in and runs install,
-//          typecheck and tests with an empty environment: no key, no token. Read the saved
-//          files first; they are untrusted code.
+//   check  copies the fixture once per saved file and installs its packages in a container
+//          (network on, lifecycle scripts off, before the miner's file is added). Then it swaps
+//          the file in and runs typecheck and tests in a container with no network, no
+//          capabilities and only that copy mounted. Needs Docker; the miner's code never runs
+//          on the host, which may hold wallet keys in .env files.
 //
 // Run from bot/ (esbuild is already a pinned dev dependency):
 //   npx esbuild scripts/codegen-gate.ts --bundle --platform=node --format=cjs --outfile=/tmp/codegen-gate.cjs
@@ -142,10 +144,19 @@ const buy = async () => {
   console.log(`Saved to ${run}. Read each attempt-*/file.ts before running check.`);
 };
 
-const sh = (cwd: string, command: string, args: string[]) => {
+const NODE_IMAGE = "node:24-slim";
+
+/**
+ * One npm command inside a throwaway container that sees only `copy`. Without network the
+ * miner's code cannot send anything anywhere; without capabilities it cannot escalate.
+ */
+const inContainer = (copy: string, network: boolean, npmArgs: string[]) => {
   try {
-    // Untrusted code runs here: an empty environment apart from PATH and a throwaway HOME.
-    execFileSync(command, args, { cwd, stdio: "pipe", encoding: "utf8", timeout: 300_000, env: { PATH: process.env.PATH ?? "", HOME: cwd } });
+    execFileSync("docker", [
+      "run", "--rm", ...(network ? [] : ["--network", "none"]),
+      "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--pids-limit", "512", "--memory", "2g",
+      "-e", "HOME=/tmp", "-v", `${copy}:/w`, "-w", "/w", NODE_IMAGE, "npm", ...npmArgs,
+    ], { stdio: "pipe", encoding: "utf8", timeout: 600_000 });
     return { ok: true, output: "" };
   } catch (error) {
     const failed = error as { stdout?: string; stderr?: string; message: string };
@@ -154,6 +165,11 @@ const sh = (cwd: string, command: string, args: string[]) => {
 };
 
 const check = () => {
+  try {
+    execFileSync("docker", ["version"], { stdio: "pipe" });
+  } catch {
+    throw new Error("check needs Docker: the miner's code is only ever run in a container, never on this machine");
+  }
   const runs = existsSync(outDir) ? readdirSync(outDir).sort() : [];
   if (!runs.length) throw new Error(`No runs in ${outDir}; run buy first`);
   const run = join(outDir, runs.at(-1)!);
@@ -169,11 +185,17 @@ const check = () => {
     }
     const copy = mkdtempSync(join(tmpdir(), "codegen-gate-"));
     cpSync(fixtureDir, copy, { recursive: true, filter: (path) => !/\/(node_modules|\.git)(\/|$)/.test(path) });
-    cpSync(patched, join(copy, file));
     let stage = "passed";
     let output = "";
-    for (const [name, args] of [["install", ["ci", "--ignore-scripts", "--no-audit", "--no-fund"]], ["typecheck", ["run", "typecheck"]], ["test", ["test"]]] as const) {
-      const step = sh(copy, "npm", [...args]);
+    // The install reads only the fixture's own package.json and lockfile, so it may use the network.
+    const steps = [
+      ["install", true, ["ci", "--ignore-scripts", "--no-audit", "--no-fund"]],
+      ["typecheck", false, ["run", "typecheck"]],
+      ["test", false, ["test"]],
+    ] as const;
+    for (const [name, network, args] of steps) {
+      if (name === "typecheck") cpSync(patched, join(copy, file));
+      const step = inContainer(copy, network, [...args]);
       if (!step.ok) {
         stage = `${name} failed`;
         output = step.output;

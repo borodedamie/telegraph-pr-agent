@@ -19,8 +19,12 @@ pass, using our paid "what changed" answer as input?
   code (the other 12 are data feeds). Unscored, registered 18 Nov 2026, MiniMax-M2.5-highspeed.
 - Request ([request.txt](request.txt), 6,176 characters): the file plus the paid answer's
   documented changes, those naming identifiers used in the file first.
-- Script: `bot/scripts/codegen-gate.ts`. `buy` held the wallet key and never ran miner code;
-  `check` ran install, typecheck and tests on a copy with an empty environment.
+- Script: `bot/scripts/codegen-gate.ts`. `buy` held the wallet key and never ran miner code.
+  On 22 Nov, `check` ran install, typecheck and tests on the host, on a copy with an empty
+  environment, after the returned file had been read: it imports only zod and has no file,
+  network or process access. Review (#64) found that the host check could still read local files,
+  so `check` now runs typecheck and tests in a Docker container with no network, no capabilities
+  and only the copy mounted. Re-checked that way on 23 Nov: same result.
 
 ## Purchases (approved test spend, team wallet `0x85Bb…35C8`, escrow)
 
