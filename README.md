@@ -21,7 +21,7 @@ recorded with its receipt, and the dashboard shows the spend and the **cost per 
 
 ## Demo
 
-<video src="docs/demo.mp4" controls muted loop playsinline width="100%"></video>
+<video src="docs/demo.mp4" controls playsinline width="100%"></video>
 
 ## How it works
 
