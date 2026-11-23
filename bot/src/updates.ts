@@ -37,14 +37,18 @@ const managerReason = (stderr: string): string => {
   return [...new Set(lines)].slice(0, 4).join(" · ").slice(0, 400);
 };
 
-/** Run a package manager; when it fails, say which upgrade and why instead of only "Command failed". */
+/**
+ * Run a package manager; when it refuses the upgrade for a dependency reason (ERESOLVE, a peer, no
+ * matching version), say which upgrade and why. Anything else (a network or registry error, a
+ * missing tool) is passed through unchanged: it is not a fact about the upgrade.
+ */
 const resolving = (finding: Finding, run: () => void): void => {
   try {
     run();
   } catch (error) {
-    const failed = error as { status?: unknown; stderr?: unknown };
-    if (failed.status === undefined && failed.stderr === undefined) throw error;
-    const reason = managerReason(String(failed.stderr ?? "")) || (error instanceof Error ? error.message : String(error)).slice(0, 300);
+    const failed = error as { stderr?: unknown };
+    const reason = managerReason(String(failed.stderr ?? ""));
+    if (!reason) throw error;
     throw new UpdatePreparationError(
       `${finding.package}@${finding.targetVersion} can't be installed alongside the repository's current dependencies (${reason})`,
     );

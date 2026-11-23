@@ -325,9 +325,10 @@ const run = async (): Promise<void> => {
         try {
           await checkUpgradeInstallable(scan.root, dependency);
         } catch (error) {
-          core.warning(
-            `${dependency.package}: ${error instanceof Error ? error.message : String(error)}; skipped, no purchase made`,
-          );
+          const message = `${dependency.package}: ${error instanceof Error ? error.message : String(error)}`;
+          // Only a refusal by the package manager is a skip; an outage or a bug fails the run, unpaid.
+          if (error instanceof UpdatePreparationError) core.warning(`${message}; skipped, no purchase made`);
+          else failures.push(`${message}; no purchase made`);
           continue;
         }
         const purchase = await purchaseAssessment({

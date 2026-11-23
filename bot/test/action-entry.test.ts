@@ -279,6 +279,16 @@ it("skips an upgrade the package manager refuses before paying for it, without f
   expect(mocks.failed).not.toHaveBeenCalled();
 });
 
+it("fails the run, without paying, when the check before paying breaks for any other reason", async () => {
+  mocks.candidates.mockResolvedValue([{ package: "zod", targetVersion: "4.0.0" }, { package: "good" }]);
+  mocks.installable.mockImplementationOnce(async () => { throw new Error("network request to https://registry.npmjs.org failed"); });
+  await run("failed");
+  expect(mocks.purchase).toHaveBeenCalledOnce();
+  expect(mocks.purchase.mock.calls[0][0].dependency.package).toBe("good");
+  expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("zod: network request to https://registry.npmjs.org failed; no purchase made"));
+  expect(mocks.warning).not.toHaveBeenCalledWith(expect.stringContaining("skipped, no purchase made"));
+});
+
 it("keeps a paid answer whose upgrade can't be installed yet, without failing the run or marking it unusable", async () => {
   mocks.apply.mockRejectedValueOnce(new mocks.UpdatePreparationError("react-dom@19.3.1 can't be installed alongside the repository's current dependencies"));
   await run();

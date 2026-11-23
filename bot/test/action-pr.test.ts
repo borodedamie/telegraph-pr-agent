@@ -144,6 +144,17 @@ describe("dependency preparation", () => {
       `zod@4.0.0 can't be installed alongside the repository's current dependencies (ERESOLVE unable to resolve dependency tree · Found: react@18.3.1 · peer react@"^19.3.1" from react-dom@19.3.1)`);
   });
 
+  it("passes a package manager's network or registry failure through, not as a refused upgrade", async () => {
+    const offline = () => Object.assign(new Error("Command failed: npm install --package-lock-only --ignore-scripts"), {
+      status: 1,
+      stderr: ["npm error code ETIMEDOUT", "npm error network request to https://registry.npmjs.org/zod failed, reason: ETIMEDOUT",
+        "npm error network This is a problem related to network connectivity."].join("\n"),
+    });
+    const attempt = prepareUpdate(npmRepository(), finding, zodTarget, () => { throw offline(); });
+    await expect(attempt).rejects.not.toBeInstanceOf(UpdatePreparationError);
+    await expect(prepareUpdate(npmRepository(), finding, zodTarget, () => { throw offline(); })).rejects.toThrow("Command failed");
+  });
+
   it("passes other failures through unchanged", async () => {
     const attempt = prepareUpdate(npmRepository(), finding, zodTarget, () => { throw new Error("disk full"); });
     await expect(attempt).rejects.toThrow("disk full");
