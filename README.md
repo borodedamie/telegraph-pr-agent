@@ -30,7 +30,7 @@ recorded with its receipt, and the dashboard shows the spend and the **cost per 
 | Scan | On a push that changes dependency files, or a manual run, read installed versions from the lockfile (npm, pnpm, Yarn, Bun) or exact Python pins, and find newer stable releases on npm/PyPI | works |
 | Learn | For each release after `MODEL_CUTOFF`, buy one `QUESTION_ANSWERING_GENERAL` answer, from miner 7314 first, then ranked miners | works with per-call `exact` payment (live, 8 and 11 Nov 2026); escrow payment, needed since 20 Nov 2026, is covered by offline tests and its first hosted run is pending |
 | Report | Open one PR per package and target version (never duplicated), listing what changed and where the repository uses it. Releases on or before the cutoff get a free PR with links, no purchase | works |
-| Account | Record every attempt, purchase, PR proposal, merge and close on the repository's `ledger` branch; the dashboard computes cost per merged PR | works; no paid PR merged yet |
+| Account | Record every attempt, purchase, PR proposal, merge and close on the repository's `ledger` branch; the dashboard computes cost per merged PR | works; 2 paid PRs merged (21 Nov, team repos) |
 | Fix | After a maintainer adds `telegraph:fix`, generate the migration patch and run the repository's tests in a job without secrets | planned |
 
 A human reviews and merges; the bot never merges. The bot uses no LLM: its knowledge comes from
@@ -249,9 +249,62 @@ To be filled in as each item exists; nothing below is claimed yet.
 | Failing typecheck, no push case | planned with the `telegraph:fix` stage |
 | Event-period receipts, signal links, transactions, ledger export | Across all installations: see the [evidence index](#evidence-index-every-repository-running-the-bot) below. For this repository alone, the dashboard's **Download evidence CSV** plus the raw `ledger.jsonl`. As of 19 Nov 2026: 4 purchases (0.06 USDC): two CLI test buys from third-party miners (3 and 4 Nov, answers not useful) and two Action assessments from the team's own miner 7314 (8 and 11 Nov, `our_choice`, self-purchases, not independent adoption) |
 | 2–5 minute demo | [demo.mp4](docs/demo.mp4) |
-| Five-question commercial summary | not written |
+| Five-question commercial summary | [below](#commercial-summary) |
 | Public updates (at least three, separate dates) | none yet |
 | Technical tutorial and independent reproduction evidence | none yet |
+
+### Commercial summary
+
+**Who is the user or buyer, and how often do they have this problem?**
+Teams maintaining JavaScript/TypeScript (npm, pnpm, Yarn, Bun) or Python apps who use an AI
+coding assistant. Their dependencies release new versions every week, and some of those
+releases come after the assistant's training cutoff, so it can't know what changed. On our test
+repos, with a 1 Jan 2026 cutoff, the bot found 5 and 6 such dependencies in two small repos. The
+buyer is the maintainer who installs the Action and funds a small wallet.
+
+**What does the app improve over today's options?**
+Dependabot and Renovate bump versions but don't say what will break. An AI assistant guesses
+about releases after its cutoff. Reading release notes by hand is slow. Our Action buys a sourced
+change list for exactly the installed → target version pair (breaking changes, deprecations and
+security fixes, each with a quote and a link), then shows where the repo uses the changed APIs.
+It costs about 0.02 USDC per upgrade, recorded per PR. Upgrades released before the cutoff get a
+PR without any purchase.
+
+**What works today, with proof of Telegraph use, spending, and latency?**
+A GitHub Action that pays Telegraph miners with x402 on Ethereum Sepolia (testnet) and records
+every stage on a public ledger branch in the installer's repo. In the event window, as of 22 Nov
+2026 11:45 UTC (the [evidence index](#evidence-index-every-repository-running-the-bot) below): 110
+purchases, 2.09 USDC, across 9 repos, and 2 paid PRs merged into default branches
+(`lemind/onewallet-radar` #12 and `borodedamie/code-generator` #1, 21 Nov). Cost per merged PR is
+0.83 USDC across the team's repos (1.65 USDC ÷ 2), and 0.17 and 0.09 USDC in the two repos with a
+merge. Each
+purchase links its receipt and Telegraph signal, plus its on-chain transaction for per-call
+payments; see the live dashboard and evidence CSV. Answer time is about 4.5 s median (108
+answers, 95th percentile 20 s) from recording the paid request to recording the answer, ledger
+writes included; the miner's own measured time is 2.1 s median, 9.8 s 95th percentile, for new
+questions. Spend controls are in place: a per-call price cap, a monthly budget, and payments that
+can't be made twice after a crash. Eight of the nine repos are the team's own; the ninth,
+`shadrxcc/porncrit-fe`, is outside the team, but its independence is not yet confirmed. 99 of the
+110 answers came from our own miner 7314, so this is testing, not proven independent adoption.
+
+**Why would someone use or pay for it, and what remains before production?**
+Cents per upgrade, compared with an engineer's time researching release notes; every cent is
+visible per PR, with budget caps. Before production:
+
+- mainnet USDC and mainnet configuration (it's testnet only today);
+- the `telegraph:fix` stage, which buys a patch from a code-generation miner. It's gated on a
+  patch test this week, and if no miner passes, PRs offer the call-site report instead;
+- support for monorepos and workspaces;
+- routing to the best-ranked miner by default, rather than our own;
+- independent users: two outside installations exist, and neither is yet confirmed as independent.
+
+**How can someone try it, and who maintains it?**
+Copy two workflow files into a public repo, add a wallet secret holding Sepolia test USDC,
+deposit some of it into Telegraph escrow once, set the cutoff and model variables, and push. The
+step-by-step guide is [Install in your repository](#install-in-your-repository-5-minutes), and
+the Action is `borodedamie/telegraph-pr-agent@v1`. Results appear at
+`https://telegraph-pr-agent.vercel.app/?repo=<owner>/<repo>`. Maintained by the team:
+@borodedamie, @lemind and @codexempire.
 
 ### Evidence index: every repository running the bot
 
