@@ -61,6 +61,10 @@ describe("extractRules", () => {
     expect(items.find((i) => i.excerpt === "deprecates `message` parameter")?.kind).toBe("deprecation");
     expect(items.find((i) => i.excerpt === "drops `errorMap`")?.kind).toBe("breaking");
     expect(items.every((i) => text.includes(i.excerpt!))).toBe(true);
+    // The API named only by the parent heading goes into the change; the excerpt stays as written.
+    expect(items.find((i) => i.excerpt === "drops single argument usage")?.change).toBe("`z.record()`: drops single argument usage");
+    expect(items.find((i) => i.excerpt === "drops `.errors`")?.change).toBe("drops `.errors`");
+    expect(items.find((i) => i.excerpt === "deprecates `message` parameter")?.change).toBe("deprecates `message` parameter");
   });
 
   it("reads a guide heading without its anchor and skips the headings that group changes", () => {
