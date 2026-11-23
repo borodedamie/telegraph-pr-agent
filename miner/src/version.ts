@@ -7,4 +7,6 @@
 // Production sets PROCESSING_VERSION on Vercel (p7 since 6 Nov), so a deploy of this change sets it to p8 there too.
 // p9: the coverage line groups adjacent releases not covered for the same reason; an oversized release section is sent
 // cut short and reported truncated (10 Nov 2026).
-export const PROCESSING_VERSION = process.env.PROCESSING_VERSION ?? "p9";
+// p10: a migration-guide change named only by its parent heading says which API it is ("`z.record()`: drops
+// single argument usage") (22 Nov 2026). Production sets PROCESSING_VERSION on Vercel: set it to p10 there too.
+export const PROCESSING_VERSION = process.env.PROCESSING_VERSION ?? "p10";

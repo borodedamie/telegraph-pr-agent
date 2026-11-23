@@ -149,13 +149,13 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
   const candidates: Candidate[] = [];
   const handled = new Set<number>();
   const unassessed: RulesResult["unassessed"] = [];
-  const add = (section: number, kind: Kind, excerpt: string, migrationExcerpt: string | null) => {
+  const add = (section: number, kind: Kind, excerpt: string, migrationExcerpt: string | null, subject?: string) => {
     candidates.push({
       ref: `r${candidates.length + 1}`,
       section,
       kind,
       inferred: false,
-      change: excerpt.replace(/^#+\s*/, ""),
+      change: `${subject ? `${subject}: ` : ""}${excerpt.replace(/^#+\s*/, "")}`,
       excerpt,
       inferredFrom: [],
       migration: migrationExcerpt,
@@ -227,7 +227,11 @@ export function extractRules(sections: Section[], sourceType: (section: Section)
         }
         const kind = guideHeadingKind(heading.title);
         if (kind === null) return;
-        add(index, kind, heading.title, migrationLine(body));
+        // zod's "## `z.record()`" › "### drops single argument usage": the API is named only by the parent
+        // heading, so the change says it ("`z.record()`: drops …"). The excerpt stays the heading as written.
+        const parent = headings.slice(0, h).reverse().find((other) => other.level < heading.level);
+        const subject = !heading.title.includes("`") ? parent?.title.match(/`[^`]+`/)?.[0] : undefined;
+        add(index, kind, heading.title, migrationLine(body), subject);
       });
       return;
     }
