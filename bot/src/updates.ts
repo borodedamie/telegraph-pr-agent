@@ -11,11 +11,49 @@ import {
   type PackageLock,
 } from "./lockfiles.js";
 import type { Finding } from "./assessment.js";
+import type { Dependency } from "./scan.js";
 
 export { readRepositoryFile } from "./lockfiles.js";
 
 export type ChangedFile = { path: string; content: string };
 export type PreparedUpdate = { finding: Finding; files: ChangedFile[] };
+
+/**
+ * The package manager refused the upgrade, e.g. react-dom 19 needs react 19 while the repository is
+ * on react 18 (npm ERESOLVE). The answer about it is still valid; the upgrade just can't be made on
+ * its own yet. The message carries the package manager's own reason.
+ */
+export class UpdatePreparationError extends Error {}
+
+// The lines of a package manager's error output that say why, without the noise around them.
+const managerReason = (stderr: string): string => {
+  const lines = stderr.split("\n")
+    .map((line) => line.replace(/^\s*(npm (error|ERR!)|ERR_PNPM_\w+|➤ YN\d+:|error)\s*/i, "").trim())
+    // Headings like "code ERESOLVE" and "Could not resolve dependency:" say nothing on their own.
+    // npm's advice to retry with --force / --legacy-peer-deps is left out: the bot never does that.
+    // Paths to npm's log files point into a temporary directory that is already gone.
+    .filter((line) => !/^code\b/i.test(line) && !line.endsWith(":") && !/--force|--legacy-peer-deps|_logs\/|^\//.test(line))
+    .filter((line) => /ERESOLVE|Could not resolve|peer |Found: |ETARGET|No matching version|conflict|Unsupported/i.test(line));
+  return [...new Set(lines)].slice(0, 4).join(" · ").slice(0, 400);
+};
+
+/**
+ * Run a package manager; when it refuses the upgrade for a dependency reason (ERESOLVE, a peer, no
+ * matching version), say which upgrade and why. Anything else (a network or registry error, a
+ * missing tool) is passed through unchanged: it is not a fact about the upgrade.
+ */
+const resolving = (finding: Finding, run: () => void): void => {
+  try {
+    run();
+  } catch (error) {
+    const failed = error as { stderr?: unknown };
+    const reason = managerReason(String(failed.stderr ?? ""));
+    if (!reason) throw error;
+    throw new UpdatePreparationError(
+      `${finding.package}@${finding.targetVersion} can't be installed alongside the repository's current dependencies (${reason})`,
+    );
+  }
+};
 
 export const updateManifest = (
   content: string,
@@ -265,7 +303,7 @@ export const prepareUpdate = async (
       );
       writeFileSync(join(directory, lockName), lockContent);
       if (lock.manager !== "npm") {
-        runPackageManager(directory, lock);
+        resolving(finding, () => runPackageManager(directory, lock));
         let regenerated = readFileSync(join(directory, lockName), "utf8");
         if (
           lockedVersions(lockPath, regenerated, pinnedManifest)[
@@ -284,7 +322,7 @@ export const prepareUpdate = async (
         );
         writeFileSync(join(directory, "package.json"), updated);
         writeFileSync(join(directory, lockName), regenerated);
-        runPackageManager(directory, lock);
+        resolving(finding, () => runPackageManager(directory, lock));
         regenerated = readFileSync(join(directory, lockName), "utf8");
         if (
           lockedVersions(lockPath, regenerated, JSON.parse(updated))[
@@ -297,7 +335,7 @@ export const prepareUpdate = async (
         }
         files.push({ path: lockPath, content: regenerated });
       } else {
-        runNpm(directory);
+        resolving(finding, () => runNpm(directory));
         const regenerated = JSON.parse(
           readFileSync(join(directory, "package-lock.json"), "utf8"),
         );
@@ -325,4 +363,22 @@ export const prepareUpdate = async (
     }
   }
   return { finding, files };
+};
+
+/**
+ * Prepare the upgrade before paying for an answer about it: the target is already known, so an
+ * upgrade the package manager can't install is found out for free. Throws what prepareUpdate throws.
+ */
+export const checkUpgradeInstallable = async (
+  root: string,
+  dependency: Pick<Dependency, "ecosystem" | "package" | "source" | "currentVersion" | "targetVersion">,
+  fetchImpl: typeof fetch = fetch,
+  runNpm?: Parameters<typeof prepareUpdate>[3],
+): Promise<void> => {
+  if (!dependency.targetVersion) return;
+  await prepareUpdate(root, {
+    ecosystem: dependency.ecosystem, package: dependency.package, source: dependency.source,
+    currentVersion: dependency.currentVersion, targetVersion: dependency.targetVersion,
+    issue: "outdated", reason: "install check before purchase", cves: [], sources: ["https://registry.npmjs.org"],
+  }, fetchImpl, runNpm);
 };

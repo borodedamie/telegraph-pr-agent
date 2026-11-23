@@ -28,7 +28,7 @@ import {
   reconcileAttempt,
   type ReconcileOutcome,
 } from "./reconcile.js";
-import { checkPackageManager } from "./updates.js";
+import { checkPackageManager, checkUpgradeInstallable, UpdatePreparationError } from "./updates.js";
 
 const INTENT_ID = "QUESTION_ANSWERING_GENERAL";
 
@@ -267,6 +267,10 @@ const run = async (): Promise<void> => {
             targetVersion: finding.targetVersion,
           });
         } catch (error) {
+          if (error instanceof UpdatePreparationError) {
+            core.warning(`${dependency.package}: ${error.message}; no free PR opened`);
+            continue;
+          }
           failures.push(
             `${dependency.package}: ${error instanceof Error ? error.message : String(error)}`,
           );
@@ -314,6 +318,17 @@ const run = async (): Promise<void> => {
           core.warning(
             `${dependency.package}: ${error instanceof Error ? error.message : String(error)}; skipped, no purchase made`,
           );
+          continue;
+        }
+        // The target is known before paying, so an upgrade the package manager refuses (react-dom 19
+        // while the repository is on react 18) is skipped for free instead of bought and then failed.
+        try {
+          await checkUpgradeInstallable(scan.root, dependency);
+        } catch (error) {
+          const message = `${dependency.package}: ${error instanceof Error ? error.message : String(error)}`;
+          // Only a refusal by the package manager is a skip; an outage or a bug fails the run, unpaid.
+          if (error instanceof UpdatePreparationError) core.warning(`${message}; skipped, no purchase made`);
+          else failures.push(`${message}; no purchase made`);
           continue;
         }
         const purchase = await purchaseAssessment({
@@ -401,6 +416,12 @@ const run = async (): Promise<void> => {
               core.notice(`${dependency.package}: ${error.message}`);
               continue;
             }
+          }
+          // The answer is fine; the upgrade just can't be made on its own yet. It is reused, not
+          // bought again, once the repository's dependencies allow it.
+          if (error instanceof UpdatePreparationError) {
+            core.warning(`${dependency.package}: ${error.message}; the paid answer is kept for a later run`);
+            continue;
           }
           failures.push(
             `${dependency.package}: ${error instanceof Error ? error.message : String(error)}`,

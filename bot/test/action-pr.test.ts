@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { applyAssessment, assessmentPrompt, parseFindings, InvalidAssessmentError, minerErrorReply } from "../src/assessment.js";
-import { prepareUpdate, updateManifest } from "../src/updates.js";
+import { checkUpgradeInstallable, prepareUpdate, UpdatePreparationError, updateManifest } from "../src/updates.js";
 import { checkedOutBranch, createDependencyPr, renderChanges, sanitizeMinerText } from "../src/pull-request.js";
 import { scanRepository } from "../src/scan.js";
 import * as updateModule from "../src/updates.js";
@@ -117,6 +117,60 @@ describe("dependency preparation", () => {
     expect(JSON.parse(readFileSync(join(root, "package.json"), "utf8"))).toEqual(manifest);
     expect(npm).toHaveBeenCalledOnce();
   });
+  // npm's real output for react-dom 19 in a repository on react 18 (shadrxcc/porncrit-fe, 22 Nov 2026).
+  const eresolve = () => Object.assign(new Error("Command failed: npm install --package-lock-only --ignore-scripts"), {
+    status: 1,
+    stderr: ["npm error code ERESOLVE", "npm error ERESOLVE unable to resolve dependency tree", "npm error",
+      "npm error While resolving: app@1.0.0", "npm error Found: react@18.3.1", "npm error Could not resolve dependency:",
+      'npm error peer react@"^19.3.1" from react-dom@19.3.1',
+      "npm error Fix the upstream dependency conflict, or retry this command with --force or --legacy-peer-deps to accept an incorrect (and potentially broken) dependency resolution.",
+      "npm error /home/runner/.npm/_logs/2026-11-22T11_31_55_000Z-eresolve-report.txt"].join("\n"),
+  });
+  const npmRepository = () => {
+    const root = directory();
+    const manifest = { dependencies: { zod: "^3.23.0" } };
+    writeFileSync(join(root, "package.json"), JSON.stringify(manifest));
+    writeFileSync(join(root, "package-lock.json"), JSON.stringify({ lockfileVersion: 3, packages: {
+      "": manifest, "node_modules/zod": { version: "3.23.8", resolved: "https://registry.npmjs.org/zod/-/zod-3.23.8.tgz" },
+    } }));
+    return root;
+  };
+  const zodTarget = async () => new Response(JSON.stringify({ name: "zod", version: "4.0.0" }));
+
+  it("names the package manager's reason when it refuses the upgrade, leaving out its --force advice and log path", async () => {
+    const attempt = prepareUpdate(npmRepository(), finding, zodTarget, () => { throw eresolve(); });
+    await expect(attempt).rejects.toBeInstanceOf(UpdatePreparationError);
+    await expect(prepareUpdate(npmRepository(), finding, zodTarget, () => { throw eresolve(); })).rejects.toThrow(
+      `zod@4.0.0 can't be installed alongside the repository's current dependencies (ERESOLVE unable to resolve dependency tree · Found: react@18.3.1 · peer react@"^19.3.1" from react-dom@19.3.1)`);
+  });
+
+  it("passes a package manager's network or registry failure through, not as a refused upgrade", async () => {
+    const offline = () => Object.assign(new Error("Command failed: npm install --package-lock-only --ignore-scripts"), {
+      status: 1,
+      stderr: ["npm error code ETIMEDOUT", "npm error network request to https://registry.npmjs.org/zod failed, reason: ETIMEDOUT",
+        "npm error network This is a problem related to network connectivity."].join("\n"),
+    });
+    const attempt = prepareUpdate(npmRepository(), finding, zodTarget, () => { throw offline(); });
+    await expect(attempt).rejects.not.toBeInstanceOf(UpdatePreparationError);
+    await expect(prepareUpdate(npmRepository(), finding, zodTarget, () => { throw offline(); })).rejects.toThrow("Command failed");
+  });
+
+  it("passes other failures through unchanged", async () => {
+    const attempt = prepareUpdate(npmRepository(), finding, zodTarget, () => { throw new Error("disk full"); });
+    await expect(attempt).rejects.toThrow("disk full");
+    await expect(prepareUpdate(npmRepository(), finding, zodTarget, () => { throw new Error("disk full"); }))
+      .rejects.not.toBeInstanceOf(UpdatePreparationError);
+  });
+
+  it("checks an upgrade can be installed before any purchase, and skips the check without a target", async () => {
+    const dependency = { ecosystem: "npm" as const, package: "zod", source: "package.json", currentVersion: "3.23.8", targetVersion: "4.0.0" };
+    await expect(checkUpgradeInstallable(npmRepository(), dependency, zodTarget, () => { throw eresolve(); }))
+      .rejects.toBeInstanceOf(UpdatePreparationError);
+    const fetchImpl = vi.fn();
+    await checkUpgradeInstallable(npmRepository(), { ...dependency, targetVersion: undefined }, fetchImpl);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
   it("runs lock generation without inherited wallet or GitHub credentials", async () => {
     const root = directory();
     const manifest = { dependencies: { zod: "^3.23.0" } };

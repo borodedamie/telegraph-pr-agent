@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  checkManager: vi.fn(), warning: vi.fn(), info: vi.fn(), NotFoundAssessmentError: class extends Error {}, fetchPr: vi.fn(), InvalidAssessmentError: class extends Error {}, unusable: vi.fn(), notice: vi.fn(), merge: vi.fn(), read: vi.fn(), visibility: vi.fn(), candidates: vi.fn(), open: vi.fn(), purchase: vi.fn(),
+  checkManager: vi.fn(), installable: vi.fn(), UpdatePreparationError: class extends Error {}, warning: vi.fn(), info: vi.fn(), NotFoundAssessmentError: class extends Error {}, fetchPr: vi.fn(), InvalidAssessmentError: class extends Error {}, unusable: vi.fn(), notice: vi.fn(), merge: vi.fn(), read: vi.fn(), visibility: vi.fn(), candidates: vi.fn(), open: vi.fn(), purchase: vi.fn(),
   buy: vi.fn(), client: vi.fn(), apply: vi.fn(), failed: vi.fn(), output: vi.fn(),
   free: vi.fn(),
   inputs: {} as Record<string, string>, proposal: vi.fn(), reconcile: vi.fn(), checkReconciliation: vi.fn(),
@@ -17,7 +17,8 @@ vi.mock("../src/accounting.js", () => ({ recordMerge: mocks.merge, fetchMergedPr
 vi.mock("../src/scan.js", () => ({ scanRepository: async () => ({
   root: "/repo", skipped: [], dependencies: [{ package: "zod" }],
 }) }));
-vi.mock("../src/updates.js", () => ({ checkPackageManager: mocks.checkManager }));
+vi.mock("../src/updates.js", () => ({ checkPackageManager: mocks.checkManager, checkUpgradeInstallable: mocks.installable,
+  UpdatePreparationError: mocks.UpdatePreparationError }));
 vi.mock("../src/cutoff.js", () => ({ cutoffCandidates: mocks.candidates }));
 vi.mock("../src/purchase.js", () => ({ openLedger: mocks.open, purchaseAssessment: mocks.purchase, markAssessmentResult: mocks.unusable, recordProposal: mocks.proposal }));
 vi.mock("../src/pull-request.js", () => ({ checkedOutBranch: () => "feature", assertPublicRepository: mocks.visibility }));
@@ -263,6 +264,37 @@ it("continues past a bad saved answer and keeps earlier partial PR outputs", asy
   expect(mocks.output).toHaveBeenCalledWith("pull-requests",
     '["https://github.com/team/repo/pull/1","https://github.com/team/repo/pull/2"]');
   expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("bad: Invalid answer"));
+});
+
+it("skips an upgrade the package manager refuses before paying for it, without failing the run", async () => {
+  mocks.candidates.mockResolvedValue([{ package: "react-dom", targetVersion: "19.3.1" }, { package: "good" }]);
+  mocks.installable.mockImplementationOnce(async () => {
+    throw new mocks.UpdatePreparationError("react-dom@19.3.1 can't be installed alongside the repository's current dependencies (peer react@\"^19.3.1\")");
+  });
+  await run();
+  expect(mocks.purchase).toHaveBeenCalledOnce();
+  expect(mocks.purchase.mock.calls[0][0].dependency.package).toBe("good");
+  expect(mocks.warning).toHaveBeenCalledWith(expect.stringContaining("react-dom@19.3.1 can't be installed"));
+  expect(mocks.warning).toHaveBeenCalledWith(expect.stringContaining("skipped, no purchase made"));
+  expect(mocks.failed).not.toHaveBeenCalled();
+});
+
+it("fails the run, without paying, when the check before paying breaks for any other reason", async () => {
+  mocks.candidates.mockResolvedValue([{ package: "zod", targetVersion: "4.0.0" }, { package: "good" }]);
+  mocks.installable.mockImplementationOnce(async () => { throw new Error("network request to https://registry.npmjs.org failed"); });
+  await run("failed");
+  expect(mocks.purchase).toHaveBeenCalledOnce();
+  expect(mocks.purchase.mock.calls[0][0].dependency.package).toBe("good");
+  expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("zod: network request to https://registry.npmjs.org failed; no purchase made"));
+  expect(mocks.warning).not.toHaveBeenCalledWith(expect.stringContaining("skipped, no purchase made"));
+});
+
+it("keeps a paid answer whose upgrade can't be installed yet, without failing the run or marking it unusable", async () => {
+  mocks.apply.mockRejectedValueOnce(new mocks.UpdatePreparationError("react-dom@19.3.1 can't be installed alongside the repository's current dependencies"));
+  await run();
+  expect(mocks.unusable).not.toHaveBeenCalled();
+  expect(mocks.failed).not.toHaveBeenCalled();
+  expect(mocks.warning).toHaveBeenCalledWith(expect.stringContaining("the paid answer is kept for a later run"));
 });
 
 it("skips a saved answer an earlier run marked unusable, without failing the run or paying", async () => {
