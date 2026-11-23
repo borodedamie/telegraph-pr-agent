@@ -46,7 +46,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          curl -sf "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/ledger/installs.json" -o previous.json || echo '{"installs":[]}' > previous.json
+          # Only "not published yet" (404) starts from an empty list; any other failure stops here, so a
+          # transient error can't reset every firstSeen date or report every repository as new.
+          status=$(curl -s -o previous.json -w '%{http_code}' "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/ledger/installs.json")
+          case "$status" in
+            200) ;;
+            404) echo '{"installs":[]}' > previous.json ;;
+            *) echo "::error::Could not read the published installs.json (HTTP $status); nothing changed"; exit 1 ;;
+          esac
           node scripts/find-installs.mjs --previous previous.json --out installs.json > report.md
           cat report.md
       - name: Publish installs.json to the ledger branch

@@ -71,6 +71,6 @@ console.log(`### Installs of \`${ACTION}\`, ${now.slice(0, 16).replace("T", " ")
 console.log(`${rows.length} found · ${outside.length} outside · ${fresh.length} new\n`);
 console.log("| Repository | Owner | Ledger (bot has run) | Found by | Status |\n| --- | --- | --- | --- | --- |");
 for (const r of rows) {
-  console.log(`| [\`${r.repo}\`](https://github.com/${r.repo}) | ${r.owner} | ${r.ledger ? "yes" : "no"} | ${r.foundBy.join(", ")} | ${r.isNew ? "**NEW**" : "known"} |`);
+  console.log(`| [\`${r.repo}\`](https://github.com/${r.repo}) | ${r.owner} | ${r.ledger ? "yes" : "no"} | ${r.foundBy.join(", ")} | ${KNOWN_INSTALLS.some((known) => known.toLowerCase() === r.repo.toLowerCase()) ? "verified" : r.isNew ? "**NEW**, not verified" : "not verified"} |`);
 }
 if (problems.length) console.log(`\n**Not checked fully:** ${problems.join("; ")}`);

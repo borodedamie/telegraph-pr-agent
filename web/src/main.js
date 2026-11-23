@@ -1,12 +1,13 @@
-import { mergeInstallLists, answerLatency, EVENT_WINDOW, evidenceCsv, explorerBase, inWindow, KNOWN_INSTALLS, mergedCosts, outcomeSummary,
+import { unverifiedInstalls, answerLatency, EVENT_WINDOW, evidenceCsv, explorerBase, inWindow, KNOWN_INSTALLS, mergedCosts, outcomeSummary,
   purchaseRows, repoSummary, SIGNAL_URL, tagRows } from "./accounting.js";
 // ?repo=owner/name views one public repository running the Action; ?repo=a/b,c/d views several together.
 // With no ?repo=, every known installation is shown.
 const REPO_PARAM = new URLSearchParams(location.search).get("repo");
-let REPOS = REPO_PARAM ? REPO_PARAM.split(",").map((repo) => repo.trim()).filter(Boolean) : KNOWN_INSTALLS;
+const REPOS = REPO_PARAM ? REPO_PARAM.split(",").map((repo) => repo.trim()).filter(Boolean) : KNOWN_INSTALLS;
 // Installations found automatically every hour (scripts/find-installs.mjs), published on the ledger branch.
 const INSTALLS_URL = "https://raw.githubusercontent.com/borodedamie/telegraph-pr-agent/ledger/installs.json";
 let installListNote = "";
+let unverified = [];
 const ledgerUrl = (repo) => `https://raw.githubusercontent.com/${repo}/ledger/ledger.jsonl`;
 
 const app = document.getElementById("app");
@@ -333,17 +334,17 @@ function outcomesLine(o) {
       ? ` · charged with no answer ${usdc(o.chargedWithoutAnswer.amountUsdc)} USDC (${o.chargedWithoutAnswer.count}, included in spend)` : "");
 }
 
-// With no ?repo=, show the known list plus every installation the hourly search has found. If the
-// list can't be loaded, fall back to the known list and say so, rather than silently showing less.
+// With no ?repo=, list the installations the hourly search found that nobody has checked yet. They
+// are shown apart and never counted in a total: anyone can make a repository look like one.
 async function loadInstallList() {
   if (REPO_PARAM) return;
   try {
     const res = await fetch(`${INSTALLS_URL}?ts=${Date.now()}`, { cache: "no-store" });
     if (res.status === 404) return; // not published yet: before the workflow's first run
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    REPOS = mergeInstallLists(KNOWN_INSTALLS, (await res.json()).installs ?? []);
+    unverified = unverifiedInstalls(KNOWN_INSTALLS, (await res.json()).installs ?? []);
   } catch (err) {
-    installListNote = `Automatically found installations could not be loaded (${err instanceof Error ? err.message : String(err)}); showing the built-in list only.`;
+    installListNote = `Automatically found installations could not be loaded (${err instanceof Error ? err.message : String(err)}).`;
   }
 }
 
@@ -374,6 +375,10 @@ async function main() {
     )
   );
   if (installListNote) app.append(el("p", { class: "boundary" }, installListNote));
+  if (unverified.length)
+    app.append(el("p", { class: "boundary" },
+      `Found automatically, not verified (${unverified.length}), and not counted in any figure on this page until checked: `,
+      ...unverified.flatMap((repo, i) => [i ? ", " : "", el("a", { href: `?repo=${repo}` }, repo)])));
   try {
     const ledgers = await Promise.all(REPOS.map(loadLedger));
     // The split matches the README evidence index: event window only.

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mergeInstallLists, KNOWN_INSTALLS, ownerLabel, repoSummary, tagRows, answerLatency, chargedWithoutAnswer, EVENT_WINDOW, evidenceCsv, inWindow, mergedCosts, outcomeSummary, purchaseRows } from "./accounting.js";
+import { unverifiedInstalls, KNOWN_INSTALLS, ownerLabel, repoSummary, tagRows, answerLatency, chargedWithoutAnswer, EVENT_WINDOW, evidenceCsv, inWindow, mergedCosts, outcomeSummary, purchaseRows } from "./accounting.js";
 
 test("allocates settled receipt costs once and excludes unmatched, failed and cross-repo records", () => {
   const purchase = { repo: "team/repo", status: "settled", receiptHash: "one", amountUsdc: 0.02 };
@@ -275,15 +275,15 @@ test("adds the owner label to every evidence line", () => {
   assert.deepEqual(line.slice(0, 4), ["purchase", "2026-11-05T00:00:00.000Z", "borodedamie/one", "team"]);
 });
 
-test("adds automatically found installations to the known list, ignoring case and junk", () => {
+test("keeps automatically found installations apart from the known list, ignoring case and junk", () => {
   const known = ["borodedamie/grpc-tutorial", "linda-ochem/temp"];
-  assert.deepEqual(mergeInstallLists(known, [
+  assert.deepEqual(unverifiedInstalls(known, [
     { repo: "borodedamie/gRPC-tutorial", owner: "team" }, // same repository, other spelling
     { repo: "zeta/app", owner: "outside" },
     { repo: "alpha/app", owner: "outside" },
     "beta/lib",
     { repo: "not a repo" }, {}, null,
     { repo: "Alpha/App" }, // duplicate of a new one
-  ]), ["borodedamie/grpc-tutorial", "linda-ochem/temp", "alpha/app", "beta/lib", "zeta/app"]);
-  assert.deepEqual(mergeInstallLists(KNOWN_INSTALLS, []), KNOWN_INSTALLS);
+  ]), ["alpha/app", "beta/lib", "zeta/app"]);
+  assert.deepEqual(unverifiedInstalls(KNOWN_INSTALLS, KNOWN_INSTALLS.map((repo) => ({ repo }))), []);
 });

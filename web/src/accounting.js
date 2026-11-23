@@ -12,17 +12,18 @@ export const KNOWN_INSTALLS = ["borodedamie/telegraph-pr-agent", "borodedamie/gr
   "shadrxcc/porncrit-fe"];
 
 /**
- * The known list plus repositories found by the hourly find-installs workflow (installs.json on the
- * ledger branch). Names compare case-insensitively (search returns gRPC-tutorial, the list has
- * grpc-tutorial); the known spelling and order come first, then new ones by name.
+ * Repositories the hourly find-installs workflow found (installs.json on the ledger branch) that are
+ * not in the known list. Anyone can create a `fix/telegraph-dependency-*` branch and a ledger with
+ * made-up rows, so these are listed apart and never counted in any total until someone checks them
+ * and adds them to KNOWN_INSTALLS. Names compare case-insensitively (search returns gRPC-tutorial,
+ * the list has grpc-tutorial); sorted by name.
  */
-export const mergeInstallLists = (known, discovered) => {
+export const unverifiedInstalls = (known, discovered) => {
   const seen = new Set(known.map((repo) => repo.toLowerCase()));
-  const added = discovered.map((entry) => (typeof entry === "string" ? entry : entry?.repo))
+  return discovered.map((entry) => (typeof entry === "string" ? entry : entry?.repo))
     .filter((repo) => typeof repo === "string" && /^[\w.-]+\/[\w.-]+$/.test(repo))
     .filter((repo) => !seen.has(repo.toLowerCase()) && seen.add(repo.toLowerCase()))
     .sort((a, b) => a.localeCompare(b));
-  return [...known, ...added];
 };
 
 export const ownerLabel = (repo) => (TEAM_OWNERS.includes(repo.split("/")[0].toLowerCase()) ? "team" : "outside");
