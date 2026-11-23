@@ -8,7 +8,8 @@ export const TEAM_OWNERS = ["borodedamie", "lemind", "codexempire"];
 // Known installations, shown when no ?repo= is given. See README "Evidence index".
 export const KNOWN_INSTALLS = ["borodedamie/telegraph-pr-agent", "borodedamie/grpc-tutorial", "lemind/onewallet-radar",
   "borodedamie/code-generator", "codexempire/chat_space_app", "codexempire/flight-check", "codexempire/web-crawler",
-  "codexempire/crypto-giant", "linda-ochem/temp", "shadrxcc/porncrit-fe"];
+  "codexempire/crypto-giant", "codexempire/chatUp", "borodedamie/telegraph-fix-fixture", "linda-ochem/temp",
+  "shadrxcc/porncrit-fe"];
 
 export const ownerLabel = (repo) => (TEAM_OWNERS.includes(repo.split("/")[0].toLowerCase()) ? "team" : "outside");
 
