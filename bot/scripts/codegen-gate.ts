@@ -16,7 +16,8 @@
 //   node /tmp/codegen-gate.cjs check
 //
 // Settings (env): FIXTURE_DIR (checkout of the fixture's paid zod PR branch), FIXTURE_REPO
-// (owner/name, for its ledger), FILE (default src/user.ts), ATTEMPTS (default 3), OUT_DIR.
+// (owner/name, for its ledger), FILE (default src/user.ts), ATTEMPTS (default 3), OUT_DIR,
+// REQUEST_NOTE (one line appended to the request, so a retry is not answered from the miner's cache).
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -79,12 +80,13 @@ const patchRequest = (source: string, finding: Awaited<ReturnType<typeof paidCha
   const items = [...finding.changes!]
     .sort((a, b) => mentions(`${b.change} ${b.migration ?? ""}`) - mentions(`${a.change} ${a.migration ?? ""}`))
     .map((change) => `- [${change.kind}] ${change.version}: ${change.change}${change.migration ? ` Migration: ${change.migration}` : ""}`);
+  const note = (process.env.REQUEST_NOTE ?? "").replace(/\s+/g, " ").trim().slice(0, 200);
   let request = head;
   for (const item of items) {
-    if (request.length + item.length + 1 > MAX_QUERY_CHARS) break;
+    if (request.length + item.length + 1 + note.length + 1 > MAX_QUERY_CHARS) break;
     request += `\n${item}`;
   }
-  return request;
+  return note ? `${request}\n${note}` : request;
 };
 
 /**
