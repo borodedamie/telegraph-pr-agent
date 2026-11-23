@@ -1,0 +1,17 @@
+{
+  "file": "src/user.ts",
+  "qaReceiptHash": "0x93be55cb580d9f02d7eebb7ac8e2fe4f6b50c54ff398456f87e8cc722cc2466b",
+  "requestChars": 6164,
+  "results": [
+    {
+      "attempt": 1,
+      "usable": false,
+      "amountUsdc": 0.01,
+      "minerId": "1900999002",
+      "receiptHash": "0xa7188e2b787a3d7c47470e8cf78380e9b975b5b55a53140d3fea34e33d546f9e",
+      "signalHash": "0x7d63a2491c6aed13cb621142d2d7cfbfbac25670658ba7579f67e6915451120e",
+      "txHash": null,
+      "rail": "escrow"
+    }
+  ]
+}
