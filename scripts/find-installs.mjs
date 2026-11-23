@@ -19,13 +19,27 @@ const add = (repo, source) => {
   entry.sources.add(source);
   found.set(key, entry);
 };
+const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+// GitHub's search API is rate limited (HTTP 429, "try again in 9.2s"; the workflow hit it on 23 Nov):
+// wait as told and try again, up to 3 times, before reporting the search as failed.
 const ghSearch = (kind, query, source) => {
-  try {
-    const hits = JSON.parse(execFileSync("gh", ["search", kind, query, "--json", "repository", "--limit", "1000"],
-      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }));
-    for (const hit of hits) add(hit.repository.nameWithOwner, source);
-  } catch (err) {
-    problems.push(`${source} failed: ${String(err.stderr || err.message).trim().split("\n")[0]}`);
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const hits = JSON.parse(execFileSync("gh", ["search", kind, query, "--json", "repository", "--limit", "1000"],
+        { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }));
+      for (const hit of hits) add(hit.repository.nameWithOwner, source);
+      return;
+    } catch (err) {
+      const message = String(err.stderr || err.message).trim();
+      const limited = /HTTP 429|rate limit/i.test(message);
+      if (limited && attempt < 3) {
+        const wait = Number(/try again in ([\d.]+)s/i.exec(message)?.[1] ?? 15);
+        sleep(Math.min(Math.ceil(wait * 1000) + 1000, 60_000));
+        continue;
+      }
+      problems.push(`${source} failed${limited ? " after 3 tries" : ""}: ${message.split("\n")[0]}`);
+      return;
+    }
   }
 };
 
