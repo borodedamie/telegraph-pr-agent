@@ -1,7 +1,19 @@
 # Miners-track evidence (FR-028)
 
-The package-release miner's submission evidence in one place, as of 10 Nov 2026. Every value links to where it was
+The package-release miner's submission evidence in one place, collected 10 Nov 2026 and updated 24 Nov. Every value links to where it was
 recorded; only the five sample answers were collected for this page.
+
+## Since 10 Nov (updated 24 Nov 2026)
+
+| Item | Value | Recorded in |
+| --- | --- | --- |
+| Processing versions | `p9` (11 Nov): LLM miner 302 → AIWire 7413 after 302 began answering with unrelated feeds, large jumps split over up to two model calls. `p10` (23 Nov): migration-guide changes named only by their parent heading carry the API name ("`z.record()`: drops single argument usage") | [`network.md`](network.md); PR #62 |
+| Live health, 24 Nov | `/api/health` ok, `p10`, npm, GitHub, OSV and Redis ok | [`docs/telegraph/qa-scoring-2026-11-24.md`](../../docs/telegraph/qa-scoring-2026-11-24.md) |
+| Score, 24 Nov | 0, rank 11 of 17, epoch 49, after the node re-registered every miner on 17 Nov and froze a new pool on 18 Nov. Cause not known | same |
+| Traffic and payout, 24 Nov | 145 requests served (catalogue); 0.944071 USDC accrued, published epoch 49, not claimed | same |
+| Real buyer | The team's PR bot buys from 7314 for every post-cutoff upgrade: 12 repositories, two run by outside developers with team-funded wallets; 16 paid PRs merged by 22 Nov. Related-party | [`README.md` evidence index](../../README.md#evidence-index-every-repository-running-the-bot) |
+| Answer used downstream | 22 Nov: a code miner (CodeWire) migrated a zod 3 → 4 file from our paid answer; 3 of 4 breaking uses right, the miss traced to our answer, fixed in `p10` | [`docs/telegraph/codegen-gate-2026-11-22/`](../../docs/telegraph/codegen-gate-2026-11-22/README.md) |
+
 
 ## Miner
 
