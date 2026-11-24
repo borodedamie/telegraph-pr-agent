@@ -1,6 +1,6 @@
 # ADR 0002: Build `telegraph:fix` on Telegraph's ranked miners
 
-Status: **Proposed, for the team to decide** (drafted 23 Nov 2026)
+Status: **Proposed; deferred until after the hackathon** (drafted 23 Nov 2026; team response 24 Nov 2026, below)
 Supersedes, if accepted: the 19 Nov gate rule in SPEC §2.9 ("build only if a pinned miner passes 2–3 test patches")
 
 ## Context
@@ -53,7 +53,13 @@ Build the stage, and let it check itself on every run instead of requiring a one
   - Running untrusted code from a miner needs the same isolation as the gate check, in a job with no secrets.
 - **Unchanged:** the bot still uses no LLM of its own or the installer's (19 Nov decision). Patches only come from Telegraph miners.
 
-## Questions for the team
+## Team response (24 Nov 2026)
+
+- **Questions 1–4:** no fix stage before 1 Dec. Ranked routing resolves to CodeWire alone, which was unavailable twice on 23 Nov, and 4–5 days of work would compete with the public updates and the tutorial. This ADR is merged as **Proposed**: the design for after the hackathon. If it is built before 1 Dec anyway, 28 Nov is a hard cut-off.
+- **Question 5:** keep `PREFERRED_MINER_ID` 7314 as the default for the Q&A purchase. Engine routing sends package questions to another intent, and our rank moves with the evaluation pool, so ranked routing would make PRs worse right before judging.
+- **For the submission:** PRs offer the call-site report (SPEC §2.8, §2.9). The README links here as the post-hackathon design; the "Proposed README text" below is not added until the stage exists.
+
+## Questions for the team (answered above)
 
 1. Accept ranked routing and the per-run self-check, replacing the 19 Nov gate rule?
 2. Skip miners with score 0, and try at most 2 miners per file?
@@ -61,7 +67,7 @@ Build the stage, and let it check itself on every run instead of requiring a one
 4. Cut-off: if the stage isn't merged and run live on the fixture by **28 Nov**, ship the documentation below only, and keep the call-site report as what PRs offer?
 5. Should the Q&A purchase also default to ranked routing instead of `PREFERRED_MINER_ID` 7314, for consistency? It's our own miner, so ranked routing would also help the related-party question.
 
-## Proposed README text for judges (added once the team decides)
+## Proposed README text for judges (only once the stage exists; not before 1 Dec)
 
 > **How the bot chooses a miner.** The bot buys from Telegraph's leaderboard: for each intent it asks
 > the node for the active miners ranked for that intent and tries them in rank order, skipping any
