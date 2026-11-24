@@ -354,7 +354,7 @@ If you try the Action, open an issue with what you ran, the signal hash and whet
 
 - Package-release answer quality has not been demonstrated by existing providers.
 - The team's package-release miner is registered and scored, but the intent's test questions are mostly general, so its rank moves with the pool (6 of 17 on 9 Nov, 11 of 17 on 8 Nov).
-- The `telegraph:fix` label stage is not built: its gate failed on 22–23 Nov ([run 1](docs/telegraph/codegen-gate-2026-11-22/README.md), [run 2](docs/telegraph/codegen-gate-2026-11-23/README.md)). PRs offer the call-site report as migration guidance. The Action, PRs and merge accounting exist.
+- The `telegraph:fix` label stage is not built: its gate failed on 22–23 Nov ([run 1](docs/telegraph/codegen-gate-2026-11-22/README.md), [run 2](docs/telegraph/codegen-gate-2026-11-23/README.md)). PRs offer the call-site report as migration guidance. The design for after the hackathon, buying patches from Telegraph's top-ranked code miner and pushing only when the repository's tests pass, is [ADR 0002](docs/adr/0002-fix-stage-ranked-routing.md) (proposed, deferred). The Action, PRs and merge accounting exist.
 - `CODE_GENERATION`, `CODE_PATCH_VERIFY` and `REGRESSION_VERIFY` are conditional on providers passing quality tests.
 - Public repositories only. Testnet only; no revenue or adoption claim.
 
