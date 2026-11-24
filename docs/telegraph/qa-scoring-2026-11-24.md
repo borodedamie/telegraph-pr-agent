@@ -43,4 +43,4 @@ Miner 7314: `registered_at` 2026-11-17T07:25:16Z (every miner on the node shows 
 
 ## Not known
 
-Why miner 7314 scores 0. The public API gives no per-question scores. It served paid requests through the node on 22–23 Nov (`p10` answer on fixture PR #2), so it is reachable. Possible causes: the new snapshot's qualification half is general questions, which a package-only miner answers `out_of_scope`, or answers the general judge rates low. Asked Telegraph.
+Why miner 7314 scores 0. The public API gives no per-question scores. It served paid requests through the node on 22–23 Nov (`p10` answer on fixture PR #2), so it is reachable. Possible causes: the new snapshot's qualification half is general questions, which a package-only miner answers `out_of_scope`, or answers the general judge rates low. To ask Telegraph.
