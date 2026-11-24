@@ -35,6 +35,12 @@ Miner 7314: `registered_at` 2026-11-17T07:25:16Z (every miner on the node shows 
 
 `GET /v1/entitlements/miner/5083`: `lifetime` 944071 (0.944071 USDC), published epoch 49, claimable with `claimMinerEntitlement` and a Merkle proof. On 9 Nov the entitlement was paid in MACHINA; it is now stated in USDC.
 
+## Checks made on 24 Nov
+
+- Our 30 evaluation rows (9 Nov) are still in the pool: re-uploading the same rows, signed by the payout wallet, returned `received 30, duplicate 30, accepted 0`.
+- The miner's own request records since 17 Nov (`pnpm stats --since 2026-11-17`): 194 answered, none failed at the origin; 46 questions named no npm package and got `out_of_scope` or `needs_clarification`. Packages from our own rows (react-router, uuid, minimist, vue) do not appear among the questions asked.
+- The miner's spend wallet escrow was empty (`available` 0), so 89 model calls failed on payment since 17 Nov and answers came from the rules alone. Refilled with 1 USDC on 24 Nov (`depositUSDCFor` tx `0xd16d0bc53feda9a0ec089424d0d71ef65f7d66caf624e7537eb7609618808372`).
+
 ## Not known
 
-Why miner 7314 scores 0. The public API gives no per-question scores. It served paid requests through the node on 22–23 Nov (`p10` answer on fixture PR #2), so it is reachable. Possible causes: the new pool's general questions get `out_of_scope` from a package-only miner, or answers the general judge rates low. To ask Telegraph.
+Why miner 7314 scores 0. The public API gives no per-question scores. It served paid requests through the node on 22–23 Nov (`p10` answer on fixture PR #2), so it is reachable. Possible causes: the new snapshot's qualification half is general questions, which a package-only miner answers `out_of_scope`, or answers the general judge rates low. Asked Telegraph.
