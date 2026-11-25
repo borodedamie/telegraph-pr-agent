@@ -104,6 +104,10 @@ export ADDRESS=<the Address>
 export KEY=<the Private key>
 ```
 
+> This is a throwaway testnet wallet, so passing the key with `--private-key` is fine here. Never do
+> this with a real key: use `cast wallet import` (an encrypted keystore) or Foundry's Docker image
+> (`ghcr.io/foundry-rs/foundry`) instead.
+
 **B3. Get test ETH (for transaction fees).** Open the
 [Google Cloud Sepolia faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia),
 paste your Address, request. It's free.
