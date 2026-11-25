@@ -45,8 +45,9 @@ Runs on testnet: payments are Ethereum Sepolia test USDC. Nothing here spends re
 - Public repository. Private ones fail closed before any purchase.
 - Standalone projects with npm `package-lock.json` v2/v3, pnpm `pnpm-lock.yaml` v6/v9,
   Yarn Classic/modern `yarn.lock`, or Bun text `bun.lock`; and/or Python exact pins
-  (`name==1.2.3`) in `requirements*.txt` or `requirements/*.txt`. Workspaces remain
-  excluded. Install the matching package manager on the action runner first.
+  (`name==1.2.3`) in `requirements*.txt` or `requirements/*.txt`. Not yet supported: `uv.lock`
+  and `poetry.lock` (workaround: `uv export --no-hashes --format requirements-txt -o
+  requirements.txt`). Workspaces remain excluded. Install the matching package manager on the action runner first.
 
 **2. Repository settings (the step most often missed).** Settings → Actions → General →
 Workflow permissions: tick **Allow GitHub Actions to create and approve pull requests** and
