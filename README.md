@@ -11,6 +11,13 @@ recorded with its receipt, and the dashboard shows the spend and the **cost per 
 - **Install:** [5 minutes](#install-in-your-repository-5-minutes), testnet only
 - Built for the Telegraph Hackathon Season II, mission [Model Economy](https://hackathon.telegraphprotocol.com/missions/model-economy)
 
+> **Works with:** a single JavaScript/TypeScript project (npm, pnpm, Yarn or Bun lockfile in its
+> root) whose dependencies all come from the npm registry. **Not yet:** monorepos (workspaces),
+> projects with any `github:`, URL or `file:` dependency (the bot then skips every package), private
+> repositories, other languages. Python is limited to exact `==` pins in `requirements*.txt`, and
+> its answers come from other miners. New here? Follow the [tutorial](docs/TUTORIAL.md), which
+> starts from a test project known to work.
+
 > **Testnet prototype.** Payments are Ethereum Sepolia test USDC, which is not revenue. Most
 > purchases come from the team's own installations, and the miner bought from (7314) is also the
 > team's, so those are related-party tests. In team repositories 2 paid bot PRs have been merged
@@ -373,6 +380,15 @@ If you try the Action, open an issue with what you ran, the signal hash and whet
 - The `telegraph:fix` label stage is not built: its gate failed on 22–23 Nov ([run 1](docs/telegraph/codegen-gate-2026-11-22/README.md), [run 2](docs/telegraph/codegen-gate-2026-11-23/README.md)). PRs offer the call-site report as migration guidance. The design for after the hackathon, buying patches from Telegraph's top-ranked code miner and pushing only when the repository's tests pass, is [ADR 0002](docs/adr/0002-fix-stage-ranked-routing.md) (proposed, deferred). The Action, PRs and merge accounting exist.
 - `CODE_GENERATION`, `CODE_PATCH_VERIFY` and `REGRESSION_VERIFY` are conditional on providers passing quality tests.
 - Public repositories only. Testnet only; no revenue or adoption claim.
+- Repository support is narrow (see **Works with** at the top). Next step: when the lockfile can't
+  be regenerated (workspaces, `github:`/`file:` dependencies, overrides), still deliver the paid
+  report, in the run summary or an issue, instead of skipping the whole repository. Not built:
+  it would pay for upgrades the bot can't verify install.
+- Payments need the installer's wallet key as a repository secret (a dedicated, low-balance
+  testnet wallet). Next step, from an outside tester's feedback (25 Nov): keyless payments. The
+  installer approves or deposits once, a signer on the team's side pays Telegraph, and the Action
+  proves which repository it runs in with GitHub's OIDC token instead of holding a key. The
+  catch: the team would then hold users' balances and pay gas (custodial). Not built.
 
 ## Development
 

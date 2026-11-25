@@ -5,10 +5,23 @@ Testnet only: you use free test tokens, never real money.
 > **The bot:** checks a GitHub repository for outdated dependencies and opens a pull request for
 > each update: the new version, plus what changed in it and where your code is affected.
 >
-> **Works with:** JavaScript/TypeScript (npm, pnpm, Yarn, Bun) and Python pins in
-> `requirements*.txt`. Not yet: `uv.lock` and `poetry.lock` (workaround:
-> `uv export --no-hashes --format requirements-txt -o requirements.txt`). Not C/C++ (Meson, CMake),
-> Rust or Go.
+> **Works with:** a single JavaScript/TypeScript project with `package-lock.json`,
+> `pnpm-lock.yaml`, `yarn.lock` or `bun.lock` in its root, whose dependencies all come from the npm
+> registry.
+>
+> **Doesn't work with (yet):**
+> - monorepos (workspaces);
+> - projects with any dependency from GitHub, a URL or a local folder (`github:…`, `git+…`,
+>   `file:…`): the bot then skips every package, not just those;
+> - private repositories;
+> - C/C++ (Meson, CMake), Rust, Go.
+>
+> **Python is limited:** only exact `==` pins in `requirements*.txt` are read (not ranges,
+> `uv.lock` or `poetry.lock`; workaround:
+> `uv export --no-hashes --format requirements-txt -o requirements.txt`), and Python answers come
+> from other Telegraph miners, which may answer badly.
+>
+> **Not sure? Start with our test project**, which is known to work (A1).
 >
 > **The goal of this test:** set up the bot as a GitHub Action in a repository (a fork is best),
 > run it once, and check the pull requests it opens.
@@ -62,12 +75,18 @@ web page showing what was bought and what it cost.
 
 ## Part A: the repository (5 min, all in the browser)
 
-**A1. Fork a small JavaScript project.** Use a fork, not a repository you care about: the bot
-opens pull requests and needs a permission (A3). Pick any public project that has a
-`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock` or `bun.lock` in its root folder and hasn't
-updated its dependencies in a while. Click **Fork** on its GitHub page.
+**A1. Fork a project.** Use a fork, not a repository you care about: the bot opens pull requests
+and needs a permission (A3).
 
-Not supported yet: monorepos (workspaces) and private repositories.
+- **Easiest, known to work:** fork
+  [borodedamie/telegraph-fix-fixture](https://github.com/borodedamie/telegraph-fix-fixture), a
+  small TypeScript project on zod 3 with a real breaking upgrade to zod 4. It already has both
+  workflow files: in C3, open `.github/workflows/telegraph-dependency-updates.yml` in your fork,
+  click the pencil (edit), replace its content with the C3 file and commit; skip C4.
+- **Your own choice:** any public project that fits **Works with** at the top and hasn't updated
+  its dependencies in a while.
+
+Click **Fork** on its GitHub page.
 
 **A2. Turn on Actions in the fork.** In your fork open the **Actions** tab and click **I understand
 my workflows, go ahead and enable them**. (GitHub turns Actions off in new forks.)
@@ -316,6 +335,7 @@ what one merged upgrade really cost.
 | No **Run workflow** button | The file from C3 isn't in `.github/workflows/` on the main branch, or Actions is off (A2) |
 | Payment refused / nothing bought | Check `available` from B5 is above 0 |
 | Warning `… can't be installed alongside the repository's current dependencies (…); skipped, no purchase made` | That upgrade needs another package upgraded first, e.g. `react-dom` 19 needs `react` 19. Nothing was bought. It's picked up once the other package is upgraded |
+| Warning `Lock regeneration does not support local, URL, Git or alias dependencies` on every package | The project has a dependency from GitHub, a URL or a local folder, so the bot can't update the lockfile safely and skips everything. Nothing was bought. Use another project (A1) |
 | Doesn't run on its own after a push | `branches: [main]` in the C3 file doesn't match your default branch. Change it |
 | Green run but no PRs, no `ledger` branch, empty spend page | The bot found nothing it supports. Open the run and look at the yellow warnings at the top. `Python manifest is not resolved here` means a `pyproject.toml`/uv project, which isn't supported yet: use a JavaScript project. No warning means no dependency has a newer release: try another project |
 
