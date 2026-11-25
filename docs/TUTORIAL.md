@@ -86,11 +86,31 @@ yet: wait a few seconds and run it again. Check `available` at
    temporary token GitHub gives each run. The bot never approves or merges anything; you do. This
    is the step most often missed: without it, the run buys its answers and then fails with a 403
    when opening PRs. A re-run reuses the saved answers and buys nothing again.
-2. Settings → Secrets and variables → Actions:
-   - secret `TELEGRAPH_EVM_PRIVATE_KEY`: the new key;
-   - variable `MODEL_CUTOFF`: your coding model's training cutoff, e.g. `2026-01-01`;
-   - variable `MODEL_CUTOFF_SOURCE_URL`: an HTTPS page that documents or explains the cutoff;
-   - variable `MODEL_CUTOFF_STATUS`: `provider-documented` or `team-assumed`.
+2. Settings → Secrets and variables → Actions. On the **Secrets** tab click **New repository
+   secret**:
+   - `TELEGRAPH_EVM_PRIVATE_KEY`: the private key `cast wallet new` printed in step 1 (starts
+     with `0x`).
+
+   On the **Variables** tab click **New repository variable** three times. These tell the bot
+   which releases your coding AI (Claude, ChatGPT, Copilot…) can't know about: it buys answers only
+   for releases published after the cutoff date.
+
+   | Variable | What it is | Example |
+   | --- | --- | --- |
+   | `MODEL_CUTOFF` | The date your AI model's training data ends, `YYYY-MM-DD` | `2026-01-01` |
+   | `MODEL_CUTOFF_SOURCE_URL` | An HTTPS page where that date comes from | `https://docs.anthropic.com/en/docs/about-claude/models/overview` |
+   | `MODEL_CUTOFF_STATUS` | `team-assumed` if you picked the date yourself; `provider-documented` if it's from the provider's page | `team-assumed` |
+
+   **Where to find the date:** the provider lists it on its models page as "training data
+   cutoff" or "knowledge cutoff" (Anthropic:
+   https://docs.anthropic.com/en/docs/about-claude/models/overview, OpenAI:
+   https://platform.openai.com/docs/models). Copy the date from there and use that page as
+   `MODEL_CUTOFF_SOURCE_URL`.
+
+   **Just trying it out?** Use exactly the example column: `2026-01-01`, the Anthropic link and
+   `team-assumed`. `provider-documented` also needs the optional `MODEL_PROVIDER` and `MODEL_ID`
+   variables below; `team-assumed` doesn't. An earlier date means more updates count as "after
+   the cutoff", so more answers are bought.
 
 Optional variables (`MODEL_PROVIDER`, `MODEL_ID`, `MONTHLY_BUDGET_USDC`, `PREFERRED_MINER_ID`,
 `MERGE_BRANCHES`) are listed in the [README](../README.md#install-in-your-repository-5-minutes).
