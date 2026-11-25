@@ -266,7 +266,7 @@ To be filled in as each item exists; nothing below is claimed yet.
 | 2–5 minute demo | [demo.mp4](docs/demo.mp4) |
 | Five-question commercial summary | [below](#commercial-summary) |
 | Public updates (at least three, separate dates) | three on X by a team member ([@Ovah_LK](https://x.com/ovah_lk)), on three dates: [14 Nov 2026](https://x.com/ovah_lk/status/2121465858749087985), a thread on how the bot works and its honest testnet status (3 purchases, 0.04 test USDC, no merged PR yet); [22 Nov](https://x.com/ovah_lk/status/2124484670817509655), the bot at work on `borodedamie/code-generator`; [24 Nov](https://x.com/ovah_lk/status/2125103825899978957) |
-| Technical tutorial and independent reproduction evidence | none yet |
+| Technical tutorial and independent reproduction evidence | tutorial: [docs/TUTORIAL.md](docs/TUTORIAL.md) (wallet, escrow deposit, install, first run; not yet posted publicly). Independent reproduction: none yet |
 
 ### Commercial summary
 
