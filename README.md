@@ -250,7 +250,7 @@ To be filled in as each item exists; nothing below is claimed yet.
 | Event-period receipts, signal links, transactions, ledger export | Across all installations: see the [evidence index](#evidence-index-every-repository-running-the-bot) below. For this repository alone, the dashboard's **Download evidence CSV** plus the raw `ledger.jsonl`. As of 19 Nov 2026: 4 purchases (0.06 USDC): two CLI test buys from third-party miners (3 and 4 Nov, answers not useful) and two Action assessments from the team's own miner 7314 (8 and 11 Nov, `our_choice`, self-purchases, not independent adoption) |
 | 2–5 minute demo | [demo.mp4](docs/demo.mp4) |
 | Five-question commercial summary | [below](#commercial-summary) |
-| Public updates (at least three, separate dates) | none yet |
+| Public updates (at least three, separate dates) | three on X by a team member ([@Ovah_LK](https://x.com/ovah_lk)), on three dates: [14 Nov 2026](https://x.com/ovah_lk/status/2121465858749087985), a thread on how the bot works and its honest testnet status (3 purchases, 0.04 test USDC, no merged PR yet); [22 Nov](https://x.com/ovah_lk/status/2124484670817509655), the bot at work on `borodedamie/code-generator`; [24 Nov](https://x.com/ovah_lk/status/2125103825899978957) |
 | Technical tutorial and independent reproduction evidence | none yet |
 
 ### Commercial summary
