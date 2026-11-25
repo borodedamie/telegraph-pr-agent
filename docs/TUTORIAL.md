@@ -37,6 +37,12 @@ with the purchase records. Nothing is merged without you.
 
 ## You need
 
+**Try it on a fork or a throwaway repository first, not on a repository you care about.** The bot
+opens PRs and needs a repository-wide permission (step 3). The easy way: fork any small public
+JavaScript project with a lockfile and a few outdated dependencies. On the fork, open the
+**Actions** tab and click **I understand my workflows, go ahead and enable them**, because GitHub
+turns Actions off on new forks.
+
 - A **public** GitHub repository (private ones fail closed before any purchase).
 - A standalone project with one of: npm `package-lock.json` v2/v3, pnpm `pnpm-lock.yaml` v6/v9,
   `yarn.lock`, Bun `bun.lock`, or exact Python pins (`name==1.2.3`) in `requirements*.txt`.
@@ -83,7 +89,7 @@ yet: wait a few seconds and run it again. Check `available` at
 1. Settings → Actions → General → Workflow permissions: tick **Allow GitHub Actions to create
    and approve pull requests** and save. **Why:** the bot's whole output is pull requests, and by
    default GitHub doesn't let automation open them. This setting lets the bot open PRs with the
-   temporary token GitHub gives each run. The bot never approves or merges anything; you do. This
+   temporary token GitHub gives each run. The bot never approves or merges anything; you do. **Note:** this checkbox is repository-wide and also allows approving: any workflow in the repository with `pull-requests: write` can then open and approve PRs. If your branch protection relies on one approval, that matters, which is another reason to try it on a fork first. This
    is the step most often missed: without it, the run buys its answers and then fails with a 403
    when opening PRs. A re-run reuses the saved answers and buys nothing again.
 2. Settings → Secrets and variables → Actions. On the **Secrets** tab click **New repository
