@@ -333,6 +333,8 @@ what one merged upgrade really cost.
 - What's charged: every answer miner 7314 gives, including "not found" (no usable release notes)
   and "unclear question". Only "temporarily unavailable", when a source it needs is down, is free.
   An answer is bought once and reused on later runs.
+- Python packages are answered by other ranked miners, not 7314; their answers are charged too,
+  even when the bot rejects one as unusable.
 - A human merges. The bot never merges, and it uses no AI of its own: everything it knows, it buys.
 
 ## What we learned building on Telegraph
