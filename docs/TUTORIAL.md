@@ -134,8 +134,12 @@ For real use, set your own model's date: **Variables tab → New repository vari
 - In the file name box type exactly `.github/workflows/telegraph-dependency-updates.yml`. Typing
   the `/` creates the folders.
 - Paste the text below.
-- If your fork's main branch isn't called `main` (e.g. `master`), change `branches: [main]`.
 - Click **Commit changes** → **Commit directly to the main branch** → **Commit changes**.
+
+> **Check your branch name.** In the file below, line 5 says `branches: [main]`. Replace `main`
+> with your repository's default branch: the name shown on the branch button on its main page
+> (often `main`, sometimes `master` or `develop`). Without this, the bot still runs with **Run
+> workflow**, but not automatically after a push.
 
 ```yaml
 name: Telegraph dependency updates
@@ -244,6 +248,7 @@ workflow**. Wait about a minute until it turns green.
 | The run fails with `403` when opening PRs | Step A3 wasn't saved. Tick it and re-run: answers already bought are reused, not paid again |
 | No **Run workflow** button | The file from C3 isn't in `.github/workflows/` on the main branch, or Actions is off (A2) |
 | Payment refused / nothing bought | Check `available` from B5 is above 0 |
+| Doesn't run on its own after a push | `branches: [main]` in the C3 file doesn't match your default branch. Change it |
 | Green run but no PRs | No dependency has a newer release. Try another project |
 
 ---
