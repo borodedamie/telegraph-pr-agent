@@ -66,13 +66,24 @@ PRs; tick it and re-run, and the saved answers are reused with nothing bought ag
 
 | Secret | Value |
 | --- | --- |
-| `TELEGRAPH_EVM_PRIVATE_KEY` | Private key of a dedicated, low-balance wallet holding Sepolia test USDC (`0xcc194e1a843B658526D0D5C431f670028582Ae17`, chain `11155111`) and a little Sepolia ETH for the deposit below. Each answer costs about 0.02 USDC. |
+| `TELEGRAPH_EVM_PRIVATE_KEY` | Private key (`0x` followed by 64 hex characters) of a dedicated, low-balance wallet holding Sepolia test USDC (`0xcc194e1a843B658526D0D5C431f670028582Ae17`, chain `11155111`) and a little Sepolia ETH for the deposit below. Each answer costs about 0.02 USDC. |
 
 **Funding the wallet (free, testnet).** Create a new wallet for this; never reuse one that holds
-anything real. Commands below use Foundry's `cast` ([install](https://getfoundry.sh/)).
+anything real. Commands below use Foundry's `cast` ([install](https://getfoundry.sh/)). No
+terminal? The tutorial does the same in the browser with MetaMask and Remix:
+[Part B in the browser](docs/TUTORIAL.md#part-b-in-the-browser-instead-metamask-and-remix).
+
+- **Create the wallet** and keep its key in your terminal session for the commands below. The
+  key starts with `0x`; the Action rejects one without it.
+
+```sh
+cast wallet new            # prints an Address and a Private key
+export TELEGRAPH_EVM_PRIVATE_KEY=<the Private key>
+```
 
 - **Sepolia ETH for gas:** a few transactions need about 0.001 ETH. Free from the
   [Google Cloud Sepolia faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia).
+  Check it arrived with `cast balance <wallet address> --ether --rpc-url https://ethereum-sepolia-rpc.publicnode.com`.
 - **Test USDC:** the Sepolia test token has an open `mint`, so any wallet can mint its own. For
   example 1 USDC (`1000000`, 6 decimals) to the wallet's address:
 
