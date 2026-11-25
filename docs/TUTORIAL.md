@@ -5,6 +5,9 @@ Testnet only: you use free test tokens, never real money.
 > **The bot:** checks a GitHub repository for outdated dependencies and opens a pull request for
 > each update: the new version, plus what changed in it and where your code is affected.
 >
+> **Works with:** JavaScript/TypeScript (npm, pnpm, Yarn, Bun) and Python dependencies. Not
+> C/C++ (Meson, CMake), Rust or Go.
+>
 > **The goal of this test:** set up the bot as a GitHub Action in a repository (a fork is best),
 > run it once, and check the pull requests it opens.
 
@@ -140,7 +143,7 @@ name: Telegraph dependency updates
 on:
   push:
     branches: [main]
-    paths: ['**/package.json', '**/package-lock.json', '**/requirements*.txt', 'requirements/**']
+    paths: ['**/package.json', '**/package-lock.json', '**/pnpm-lock.yaml', '**/yarn.lock', '**/bun.lock', '**/requirements*.txt', 'requirements/**']
   workflow_dispatch:
 
 concurrency:

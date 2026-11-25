@@ -119,7 +119,7 @@ name: Telegraph dependency updates
 on:
   push:
     branches: [main]
-    paths: ['**/package.json', '**/package-lock.json', '**/requirements*.txt', 'requirements/**']
+    paths: ['**/package.json', '**/package-lock.json', '**/pnpm-lock.yaml', '**/yarn.lock', '**/bun.lock', '**/requirements*.txt', 'requirements/**']
   workflow_dispatch:
 
 concurrency:
