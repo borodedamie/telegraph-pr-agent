@@ -211,6 +211,25 @@ jobs:
 This one does the work: reads your dependencies, buys the answers, opens the pull requests. The
 line `uses: borodedamie/telegraph-pr-agent@v1` is where GitHub downloads the bot from.
 
+<details>
+<summary><b>Don't want to commit to the main branch?</b> Use a test branch instead (click to expand)</summary>
+
+The bot opens its pull requests into the branch it ran on, so it can live entirely on a test
+branch:
+
+1. Create a branch, e.g. `telegraph-test`, from the branch button on the repository's main page.
+2. In C3 and C4, switch to `telegraph-test` before **Add file**, and commit to it.
+3. In the C3 file, set `branches: [telegraph-test]` and **delete the `paths:` line**. Then
+   committing the workflow file is itself the push that starts the first run.
+4. Skip D1: the **Run workflow** button only appears for files on the default branch. Watch the
+   run in the **Actions** tab instead; to run it again, push any commit to `telegraph-test`.
+
+The bot's PRs then target `telegraph-test`, and your main branch is never touched. On the spend
+page, a PR merged into `telegraph-test` shows as closed, not merged, unless you add the variable
+`MERGE_BRANCHES` = `telegraph-test`.
+
+</details>
+
 **C4. Add the second workflow file** the same way, named
 `.github/workflows/telegraph-pr-outcomes.yml`:
 
