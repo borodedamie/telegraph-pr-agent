@@ -2,6 +2,12 @@
 
 Testnet only: you use free test tokens, never real money.
 
+> **The bot:** checks a GitHub repository for outdated dependencies and opens a pull request for
+> each update: the new version, plus what changed in it and where your code is affected.
+>
+> **The goal of this test:** set up the bot as a GitHub Action in a repository (a fork is best),
+> run it once, and check the pull requests it opens.
+
 **What it does.** AI coding assistants don't know about package releases that came out after
 their training. This tool checks your repository's dependencies. For each update released after
 that date, it pays a few cents of *test* money for an answer to "what changed between your
