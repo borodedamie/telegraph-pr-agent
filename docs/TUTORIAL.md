@@ -41,12 +41,14 @@ migrate, a quote and a link for each, and the lines in your code that are affect
 
 **How it runs.** No server, nothing to install on your machine except one command-line tool for
 the test wallet. You add two files to a GitHub repository; GitHub runs them on its own machines
-(this is called GitHub Actions). The service that answers the questions is already hosted by our
-team.
+(this is called GitHub Actions). The bot buys each answer on **Telegraph**, a marketplace for
+machine answers; the answers come from Telegraph miner **7314**, Package Release Intel, which our
+team runs and hosts ([its page](https://telegraph-pr-miner-n30sk.vercel.app),
+[usage guide](../miner/USAGE.md)).
 
 ```
-your repository ──▶ GitHub runs the bot ──▶ bot pays 0.02 test USDC ──▶ our answering service
-                                       ◀── answer ──────────────────────┘
+your repository ──▶ GitHub runs the bot ──▶ bot pays 0.02 test USDC to Telegraph ──▶ miner 7314
+                                       ◀── answer + receipt ─────────────────────────────┘
                     bot opens a pull request in your repository
 ```
 
@@ -54,7 +56,7 @@ your repository ──▶ GitHub runs the bot ──▶ bot pays 0.02 test USDC 
 web page showing what was bought and what it cost.
 
 > Entry in the Telegraph Hackathon Season II (a prize competition). The team runs both the bot and
-> the answering service, so the team's own purchases are tests, not demand.
+> miner 7314, so the team's own purchases are tests, not demand.
 
 ---
 
@@ -144,8 +146,7 @@ Secrets tab → New repository secret**.
 - Secret: the Private key from B2
 
 **C2. Nothing else to set for a test.** The workflow file in C3 already contains defaults: the bot
-pays only for releases published after **1 Jan 2026**, and gives free PRs (links only) for older
-ones. Why a date: an AI coding assistant can't know about releases after its training data ends,
+pays only for releases published after **1 Jan 2026**, and opens free PRs for older ones (see D2). Why a date: an AI coding assistant can't know about releases after its training data ends,
 so that's where paid answers help. If you don't use an AI assistant, it's simply the date that
 limits what gets bought.
 
@@ -217,6 +218,10 @@ jobs:
 This one does the work: reads your dependencies, buys the answers, opens the pull requests. The
 line `uses: borodedamie/telegraph-pr-agent@v1` is where GitHub downloads the bot from.
 
+This copy differs from the [README's template](../README.md#install-in-your-repository-5-minutes)
+in one way: it fills in the cutoff variables with defaults, so a test runs without setting them.
+The README's template expects you to set them.
+
 <details>
 <summary><b>Don't want to commit to the main branch?</b> Use a test branch instead (click to expand)</summary>
 
@@ -280,8 +285,10 @@ workflow**. Wait about a minute until it turns green.
 **D2. Look at the result.**
 
 - **Pull requests tab:** one PR per dependency update. Paid ones have **What changed** and
-  **Where this repository uses what changed**. Updates released before the cutoff get a free PR
-  with links only.
+  **Where this repository uses what changed**. Updates released before the cutoff get a **free
+  PR**, with no purchase: for npm packages the bot reads the release notes itself and lists what
+  it finds (usually fewer items than a paid answer) and where your code uses them; otherwise the
+  PR links the release notes. At most 5 free PRs per run (input `max-free-prs`).
 - **Spend page:** `https://telegraph-pr-agent.vercel.app/?repo=OWNER/REPO`, where `OWNER/REPO` is
   your fork exactly as in its GitHub URL. For `https://github.com/alice/my-fork` it's
   `https://telegraph-pr-agent.vercel.app/?repo=alice/my-fork`. It shows every purchase with its
@@ -289,7 +296,17 @@ workflow**. Wait about a minute until it turns green.
 - A branch `ledger` appears in your fork with the purchase records, but only once the bot has
   bought something or opened a PR. Leave it there.
 
-**D3. Optional:** merge one PR. The spend page then shows "cost per merged PR".
+**D3. Use the PR: you or your coding assistant.** This is the point of the bot. Your AI coding
+assistant (Claude Code, Copilot, Cursor…) can't know a release that came out after its training
+data ends, so left alone it guesses. The PR gives it sourced facts instead: point the assistant at
+the PR and ask it to apply the steps under **What changed** to the lines listed under **Where
+this repository uses what changed**, then run your tests. Without an assistant, the same two
+sections are a checklist for doing it by hand. The bot itself doesn't edit your code.
+
+**D4. Optional:** merge the PR. The spend page then shows **cost per merged PR**: everything the
+bot spent in the repository divided by the bot's PRs merged into your default branch (or a branch
+in `MERGE_BRANCHES`). A PR closed without merging still counts its spend, so the number shows
+what one merged upgrade really cost.
 
 ## If something goes wrong
 
@@ -298,6 +315,7 @@ workflow**. Wait about a minute until it turns green.
 | The run fails with `403` when opening PRs | Step A3 wasn't saved. Tick it and re-run: answers already bought are reused, not paid again |
 | No **Run workflow** button | The file from C3 isn't in `.github/workflows/` on the main branch, or Actions is off (A2) |
 | Payment refused / nothing bought | Check `available` from B5 is above 0 |
+| Warning `… can't be installed alongside the repository's current dependencies (…); skipped, no purchase made` | That upgrade needs another package upgraded first, e.g. `react-dom` 19 needs `react` 19. Nothing was bought. It's picked up once the other package is upgraded |
 | Doesn't run on its own after a push | `branches: [main]` in the C3 file doesn't match your default branch. Change it |
 | Green run but no PRs, no `ledger` branch, empty spend page | The bot found nothing it supports. Open the run and look at the yellow warnings at the top. `Python manifest is not resolved here` means a `pyproject.toml`/uv project, which isn't supported yet: use a JavaScript project. No warning means no dependency has a newer release: try another project |
 
@@ -312,6 +330,9 @@ workflow**. Wait about a minute until it turns green.
 - An upgrade already proposed is not proposed again.
 - Limits: 0.10 USDC per answer and 2 USDC per run by default, plus an optional monthly budget. A
   payment interrupted halfway can't be paid twice.
+- What's charged: every answer miner 7314 gives, including "not found" (no usable release notes)
+  and "unclear question". Only "temporarily unavailable", when a source it needs is down, is free.
+  An answer is bought once and reused on later runs.
 - A human merges. The bot never merges, and it uses no AI of its own: everything it knows, it buys.
 
 ## What we learned building on Telegraph
