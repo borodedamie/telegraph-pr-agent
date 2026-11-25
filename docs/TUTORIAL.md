@@ -133,7 +133,7 @@ cast send 0x72a70e949362670Bf8bceAd24eFC5b8f950aa08b "depositUSDC(uint256)" 2000
 If the second one fails with "insufficient allowance", wait 10 seconds and run it again.
 
 Check: open `https://devnode.telegraphprotocol.com/v1/ledger/account/<your Address>`. `available`
-should be about `0.2`.
+should be `200000`: USDC has 6 decimals, so `200000` = 0.20 USDC.
 
 ## Part C: connect the bot (5 min, in the browser)
 
@@ -280,9 +280,12 @@ workflow**. Wait about a minute until it turns green.
 - **Pull requests tab:** one PR per dependency update. Paid ones have **What changed** and
   **Where this repository uses what changed**. Updates released before the cutoff get a free PR
   with links only.
-- **Spend page:** `https://telegraph-pr-agent.vercel.app/?repo=<your user>/<your fork>`, every
-  purchase with its receipt. The run log and every PR also link it.
-- A new branch `ledger` in your fork holds the purchase records. Leave it there.
+- **Spend page:** `https://telegraph-pr-agent.vercel.app/?repo=OWNER/REPO`, where `OWNER/REPO` is
+  your fork exactly as in its GitHub URL. For `https://github.com/alice/my-fork` it's
+  `https://telegraph-pr-agent.vercel.app/?repo=alice/my-fork`. It shows every purchase with its
+  receipt.
+- A branch `ledger` appears in your fork with the purchase records, but only once the bot has
+  bought something or opened a PR. Leave it there.
 
 **D3. Optional:** merge one PR. The spend page then shows "cost per merged PR".
 
@@ -294,7 +297,7 @@ workflow**. Wait about a minute until it turns green.
 | No **Run workflow** button | The file from C3 isn't in `.github/workflows/` on the main branch, or Actions is off (A2) |
 | Payment refused / nothing bought | Check `available` from B5 is above 0 |
 | Doesn't run on its own after a push | `branches: [main]` in the C3 file doesn't match your default branch. Change it |
-| Green run but no PRs | No dependency has a newer release. Try another project |
+| Green run but no PRs, no `ledger` branch, empty spend page | The bot found nothing it supports. Open the run and look at the yellow warnings at the top. `Python manifest is not resolved here` means a `pyproject.toml`/uv project, which isn't supported yet: use a JavaScript project. No warning means no dependency has a newer release: try another project |
 
 ---
 
