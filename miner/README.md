@@ -4,16 +4,70 @@ Answers one kind of question: what changed in an npm package between two version
 
 The full spec is [specs/001-package-release-miner/spec.md](specs/001-package-release-miner/spec.md); the plan, data model and tasks sit next to it.
 
-## Status (9 Nov 2026)
+## Status (24 Nov 2026)
 
 | | |
 | --- | --- |
-| Endpoint | `https://telegraph-pr-miner-n30sk.vercel.app` (Vercel production) |
-| Telegraph | miner id 7314, slug `package-release-intel`, intent `QUESTION_ANSWERING_GENERAL`, `active`, floor price 0.02 USDC |
-| Score | rank 6 of 17, score 0.9732 (epoch 2046; was rank 11, 0.7955, at epoch 2042 before our pool questions and the `p8` answer layout). Rank 6 was measured with our own 30 questions in the pool (1 of 6 contributors), so it is not independent evidence of quality; the benchmark is the quality evidence. The intent's judge is general, see [docs/telegraph/qa-scoring-2026-11-09.md](../docs/telegraph/qa-scoring-2026-11-09.md) |
-| Benchmark | 67.1% of reviewed breaking changes found by word matching, 82.6% with matches counted by an LLM judge (target 80%); every quote checked against its source ([bench/report.md](bench/report.md), [bench/judge-report.md](bench/judge-report.md)) |
+| Endpoint | `https://telegraph-pr-miner-n30sk.vercel.app` (Vercel production), processing version `p10` (23 Nov); `/api/health` ok with npm, GitHub, OSV and Redis |
+| Telegraph | miner id 7314, slug `package-release-intel`, intent `QUESTION_ANSWERING_GENERAL`, `active`, floor price 0.02 USDC. Telegraph's catalogue lists it as registered on 17 Nov, when every miner on the node was re-registered |
+| Traffic and payout | 145 requests served (Telegraph catalogue, 24 Nov). 0.944071 USDC accrued to the miner at published epoch 49 (`GET /v1/entitlements/miner/5083`), not claimed. Almost all of it is the team's own PR bot, so it is related-party, not independent demand |
+| Score | **0, rank 11 of 17** at epoch 49 (24 Nov). On the old network it was rank 6, 0.9732 (9 Nov), measured with our own 30 questions in the pool. The cause of 0 is not known: the node was reset around 17 Nov, the pool is a new snapshot (570 rows, 6 submitters, 18 Nov), and the intent's judge is a general model. Telegraph's public API shows no per-question scores. Snapshot: [docs/telegraph/qa-scoring-2026-11-24.md](../docs/telegraph/qa-scoring-2026-11-24.md) |
+| Benchmark | 67.1% of reviewed breaking changes found by word matching, 82.6% with matches counted by an LLM judge (target 80%); every quote checked against its source; 0 invented versions, dates or links ([bench/report.md](bench/report.md), [bench/judge-report.md](bench/judge-report.md)) |
 
-Every step, with transactions and dates, is in [bench/network.md](bench/network.md).
+Every step, with transactions and dates, is in [bench/network.md](bench/network.md). Submission evidence: [bench/evidence.md](bench/evidence.md).
+
+## Miners-track submission
+
+| Item | Where |
+| --- | --- |
+| Public endpoint | `https://telegraph-pr-miner-n30sk.vercel.app/api/answer` (only answers Telegraph: `X-Telegraph-Key`), `/api/health` is public |
+| Registration YAML | [contracts/telegraph-miner.yaml](specs/001-package-release-miner/contracts/telegraph-miner.yaml) |
+| Validation, registration tx, key install, wallets | [bench/evidence.md](bench/evidence.md), [bench/network.md](bench/network.md) (6 Nov) |
+| Five sample requests with complete answers | [bench/samples/](bench/samples/), listed in [bench/evidence.md](bench/evidence.md) |
+| Evaluation rows and provenance | 30 `preference_pair` rows signed by the payout wallet, 9 Nov ([bench/network.md](bench/network.md)) |
+| Scoring and ranking | [Status](#status-24-nov-2026) above; snapshots in [docs/telegraph/](../docs/telegraph/) |
+| Repeatable answer-quality test | `pnpm --filter ./miner bench` (40 reviewed cases, writes [bench/report.md](bench/report.md)); setup in [quickstart.md](specs/001-package-release-miner/quickstart.md) |
+| Latency and failure behaviour | first answer p50 2.1 s, p95 9.8 s; repeat about 0.45 s; source outages answer `temporarily_unavailable` and are not billed ([Outcomes and billing](#outcomes-and-billing)) |
+| Demo | the last part of the project demo, [docs/demo.mp4](../docs/demo.mp4) |
+| Real use | the PR bot buys from 7314 on every post-cutoff upgrade: 12 repositories, 16 paid PRs merged by 22 Nov (2 team, 14 outside) ([evidence index](../README.md#evidence-index-every-repository-running-the-bot)) |
+
+### Commercial summary
+
+**Who buys it, and how often?** Agents that change code: dependency bots, coding assistants and
+CI agents. Their models have a training cutoff, and npm packages ship breaking releases every week.
+Every upgrade past the cutoff is a question this miner answers.
+
+**What does it improve on?** A general web-search or LLM miner paraphrases or guesses. This miner
+resolves the exact versions against the registry, reads the matching release notes, changelogs and
+migration guides, and returns each change with a verbatim quote and its link. Every quote is
+checked against the source, and versions, dates and links never come from a model. It says
+`not_found` instead of inventing, and names every release it couldn't read.
+
+**What works today, with proof?** Registered and active since 6 Nov. Real paid traffic comes from
+our PR bot in 12 repositories, two of them run by outside developers. Benchmark: 100% of quotes
+verified and 0 invented facts; recall of reviewed breaking changes is 67% (83% judged). In the
+code-generation test of 22 Nov, our answer was the input that a code miner migrated zod 3 → 4
+from (3 of 4 uses right; the miss led to `p10`).
+
+**Why pay for it, and what's left?** 0.02 USDC per answer compared with an engineer reading release
+notes. Repeats come from the cache, so a popular upgrade is answered once and sold many times.
+Left before production: higher recall on messy release notes, PyPI, a dedicated package-release
+intent (engine routing sends these questions to `WEB_SEARCH_GENERAL`, so buyers ask by id today),
+and a score on the new network.
+
+**How to try it, and who runs it?** `POST https://devnode.telegraphprotocol.com/engine/v1/ask/7314`
+with `{"method":"GET","endpoint":"/answer","payload":{"query":"What changed in express from 4.21.0 to 5.0.0?"}}`
+([USAGE.md](USAGE.md)), or install the PR bot. Run by the Telegraph PR Agent team
+(@borodedamie, @lemind, @codexempire).
+
+### Disclosure
+
+- The same team runs this miner and the PR bot, its main buyer. Bot purchases from 7314 are
+  related-party tests, and the two outside developers' purchases were paid from team wallets.
+- The 30 evaluation rows are ours, signed by the payout wallet. The organizers allowed it on 9 Nov;
+  the miner has no trained model and never reads them.
+- The miner pays other Telegraph miners for model calls (AIWire 7413) from its own spend wallet.
+- Testnet only: Ethereum Sepolia test USDC.
 
 ## Asking it
 
