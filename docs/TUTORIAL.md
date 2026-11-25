@@ -1,139 +1,137 @@
-# Tutorial: give your repo an agent that buys what its AI doesn't know
+# Try Telegraph PR Agent on a repository (about 15 minutes)
 
-About 10 minutes, testnet only. Nothing here spends real money.
+Testnet only: you use free test tokens, never real money.
 
-Your AI coding assistant has a training cutoff; your dependencies don't. Every week packages ship
-majors, deprecations and security fixes the model has never seen. Telegraph PR Agent notices when
-a dependency update was released after your model's cutoff and **buys** a sourced answer to "what
-changed between my version and the new one?" from a miner on [Telegraph](https://docs.telegraphprotocol.com).
-It then opens one PR per update.
+**What it does.** AI coding assistants don't know about package releases that came out after
+their training. This tool checks your repository's dependencies. For each update released after
+that date, it pays a few cents of *test* money for an answer to "what changed between your
+version and the new one" and opens a pull request with that answer: the breaking changes, how to
+migrate, a quote and a link for each, and the lines in your code that are affected.
 
-**What you get:** for each update past the cutoff, a PR that lists the documented breaking changes,
-deprecations and security fixes, breaking changes first. Each one comes with its migration step, a
-verbatim quote and the source link. The PR also links the lines in your repository that use the
-changed APIs (a text search, not a type check). Each answer costs about 0.02 test USDC and is
-recorded, with its receipt, in your own repository.
+**How it runs.** No server, nothing to install on your machine except one command-line tool for
+the test wallet. You add two files to a GitHub repository; GitHub runs them on its own machines
+(this is called GitHub Actions). The service that answers the questions is already hosted by our
+team.
 
-## What is what
+```
+your repository ──▶ GitHub runs the bot ──▶ bot pays 0.02 test USDC ──▶ our answering service
+                                       ◀── answer ──────────────────────┘
+                    bot opens a pull request in your repository
+```
 
-- **The bot** is not a chat bot. It's a program that runs as a **GitHub Action**: GitHub's built-in
-  automation, which runs scripts on GitHub's own machines when something happens in your
-  repository. You add two small config files to your repository and GitHub does the rest. You
-  don't host, download or install anything, and you need no server.
-- **Telegraph** is a marketplace where programs sell answers to other programs, paid per answer in
-  test USDC on the Ethereum Sepolia testnet.
-- **Miner 7314** is the service on Telegraph that the bot buys answers from: "what changed in
-  package X between version A and B". The team built it and hosts it.
-- **Vercel** is just the hosting the team uses for the miner and for the dashboard
-  (`telegraph-pr-agent.vercel.app`). You never touch it.
-- **The dashboard** is a web page that reads your repository's purchase records and shows what was
-  bought and what it cost.
+**At the end you'll have:** pull requests in your repository, one per dependency update, and a
+web page showing what was bought and what it cost.
 
-What ends up in your repository: pull requests (one per dependency update) and a `ledger` branch
-with the purchase records. Nothing is merged without you.
+> Entry in the Telegraph Hackathon Season II (a prize competition). The team runs both the bot and
+> the answering service, so the team's own purchases are tests, not demand.
 
-> Entry in the Telegraph Hackathon Season II (a prize competition). The team runs both the Action
-> and the default miner (7314), so the team's own purchases are tests, not demand.
+---
 
-## You need
+## Part A: the repository (5 min, all in the browser)
 
-**Try it on a fork or a throwaway repository first, not on a repository you care about.** The bot
-opens PRs and needs a repository-wide permission (step 3). The easy way: fork any small public
-JavaScript project with a lockfile and a few outdated dependencies. On the fork, open the
-**Actions** tab and click **I understand my workflows, go ahead and enable them**, because GitHub
-turns Actions off on new forks.
+**A1. Fork a small JavaScript project.** Use a fork, not a repository you care about: the bot
+opens pull requests and needs a permission (A3). Pick any public project that has a
+`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock` or `bun.lock` in its root folder and hasn't
+updated its dependencies in a while. Click **Fork** on its GitHub page.
 
-- A **public** GitHub repository (private ones fail closed before any purchase).
-- A standalone project with one of: npm `package-lock.json` v2/v3, pnpm `pnpm-lock.yaml` v6/v9,
-  `yarn.lock`, Bun `bun.lock`, or exact Python pins (`name==1.2.3`) in `requirements*.txt`.
-  Workspaces aren't supported yet.
-- Foundry's `cast` ([install](https://getfoundry.sh/)) for three testnet transactions.
+Not supported yet: monorepos (workspaces) and private repositories.
 
-## 1. A fresh testnet wallet
+**A2. Turn on Actions in the fork.** In your fork open the **Actions** tab and click **I understand
+my workflows, go ahead and enable them**. (GitHub turns Actions off in new forks.)
 
-Never reuse a wallet that holds anything real.
+**A3. Let Actions open pull requests.** In your fork: **Settings → Actions → General**, scroll to
+**Workflow permissions**, tick **Allow GitHub Actions to create and approve pull requests**,
+click **Save**.
+
+- Why: the bot's whole output is pull requests, and GitHub blocks automation from opening them by
+  default.
+- Be aware: this checkbox applies to every workflow in the repository and also allows approving
+  PRs. Our bot only opens them; it never approves or merges. That's why we use a fork.
+
+## Part B: the test wallet (5–10 min, in a terminal)
+
+The bot pays for each answer from a wallet. You make a new one just for this, with free test
+tokens on the Ethereum Sepolia test network.
+
+**B1. Install Foundry** (the `cast` command):
+
+```sh
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+```
+
+**B2. Create the wallet.**
 
 ```sh
 cast wallet new
-export TELEGRAPH_EVM_PRIVATE_KEY=<the new private key>
 ```
 
-- **Gas:** about 0.001 Sepolia ETH, free from the
-  [Google Cloud Sepolia faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia).
-- **Test USDC:** the Sepolia test token has an open `mint`. Mint 1 USDC (6 decimals):
+It prints an **Address** and a **Private key**. Keep both. Then put them in your terminal session:
 
 ```sh
-cast send 0xcc194e1a843B658526D0D5C431f670028582Ae17 "mint(address,uint256)" <wallet address> 1000000 \
-  --rpc-url https://ethereum-sepolia-rpc.publicnode.com --private-key "$TELEGRAPH_EVM_PRIVATE_KEY"
+export ADDRESS=<the Address>
+export KEY=<the Private key>
 ```
 
-## 2. Deposit into Telegraph escrow (one time)
+**B3. Get test ETH (for transaction fees).** Open the
+[Google Cloud Sepolia faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia),
+paste your Address, request. It's free.
 
-Telegraph takes payment on Sepolia only from a pre-funded escrow balance. Approve the escrow
-contract, then deposit. 0.20 USDC is about 10 answers:
+**B4. Get 1 test USDC.** The test token lets anyone mint it:
+
+```sh
+cast send 0xcc194e1a843B658526D0D5C431f670028582Ae17 "mint(address,uint256)" $ADDRESS 1000000 \
+  --rpc-url https://ethereum-sepolia-rpc.publicnode.com --private-key $KEY
+```
+
+**B5. Put 0.20 USDC into Telegraph's payment account** (about 10 answers). Telegraph takes
+payment from this pre-paid balance. Run these two, one after the other:
 
 ```sh
 cast send 0xcc194e1a843B658526D0D5C431f670028582Ae17 "approve(address,uint256)" \
   0x72a70e949362670Bf8bceAd24eFC5b8f950aa08b 200000 \
-  --rpc-url https://ethereum-sepolia-rpc.publicnode.com --private-key "$TELEGRAPH_EVM_PRIVATE_KEY"
+  --rpc-url https://ethereum-sepolia-rpc.publicnode.com --private-key $KEY
 cast send 0x72a70e949362670Bf8bceAd24eFC5b8f950aa08b "depositUSDC(uint256)" 200000 \
-  --rpc-url https://ethereum-sepolia-rpc.publicnode.com --private-key "$TELEGRAPH_EVM_PRIVATE_KEY"
+  --rpc-url https://ethereum-sepolia-rpc.publicnode.com --private-key $KEY
 ```
 
-If the deposit reverts with "insufficient allowance", the RPC hasn't caught up with the approve
-yet: wait a few seconds and run it again. Check `available` at
-`https://devnode.telegraphprotocol.com/v1/ledger/account/<wallet address>`.
+If the second one fails with "insufficient allowance", wait 10 seconds and run it again.
 
-## 3. Repository settings
+Check: open `https://devnode.telegraphprotocol.com/v1/ledger/account/<your Address>`. `available`
+should be about `0.2`.
 
-1. Settings → Actions → General → Workflow permissions: tick **Allow GitHub Actions to create
-   and approve pull requests** and save. **Why:** the bot's whole output is pull requests, and by
-   default GitHub doesn't let automation open them. This setting lets the bot open PRs with the
-   temporary token GitHub gives each run. The bot never approves or merges anything; you do. **Note:** this checkbox is repository-wide and also allows approving: any workflow in the repository with `pull-requests: write` can then open and approve PRs. If your branch protection relies on one approval, that matters, which is another reason to try it on a fork first. This
-   is the step most often missed: without it, the run buys its answers and then fails with a 403
-   when opening PRs. A re-run reuses the saved answers and buys nothing again.
-2. Settings → Secrets and variables → Actions. On the **Secrets** tab click **New repository
-   secret**:
-   - `TELEGRAPH_EVM_PRIVATE_KEY`: the private key `cast wallet new` printed in step 1 (starts
-     with `0x`).
+## Part C: connect the bot (5 min, in the browser)
 
-   On the **Variables** tab click **New repository variable** three times. These tell the bot
-   which releases your coding AI (Claude, ChatGPT, Copilot…) can't know about: it buys answers only
-   for releases published after the cutoff date.
+**C1. Give the bot the wallet key.** In your fork: **Settings → Secrets and variables → Actions →
+Secrets tab → New repository secret**.
 
-   | Variable | What it is | Example |
-   | --- | --- | --- |
-   | `MODEL_CUTOFF` | The date your AI model's training data ends, `YYYY-MM-DD` | `2026-01-01` |
-   | `MODEL_CUTOFF_SOURCE_URL` | An HTTPS page where that date comes from | `https://docs.anthropic.com/en/docs/about-claude/models/overview` |
-   | `MODEL_CUTOFF_STATUS` | `team-assumed` if you picked the date yourself; `provider-documented` if it's from the provider's page | `team-assumed` |
+- Name: `TELEGRAPH_EVM_PRIVATE_KEY`
+- Secret: the Private key from B2
 
-   **Where to find the date:** the provider lists it on its models page as "training data
-   cutoff" or "knowledge cutoff" (Anthropic:
-   https://docs.anthropic.com/en/docs/about-claude/models/overview, OpenAI:
-   https://platform.openai.com/docs/models). Copy the date from there and use that page as
-   `MODEL_CUTOFF_SOURCE_URL`.
+**C2. Tell the bot the AI's cutoff date.** Same page, **Variables tab → New repository variable**,
+three times. For a test, copy these exactly:
 
-   **Just trying it out?** Use exactly the example column: `2026-01-01`, the Anthropic link and
-   `team-assumed`. `provider-documented` also needs the optional `MODEL_PROVIDER` and `MODEL_ID`
-   variables below; `team-assumed` doesn't. An earlier date means more updates count as "after
-   the cutoff", so more answers are bought.
+| Name | Value |
+| --- | --- |
+| `MODEL_CUTOFF` | `2026-01-01` |
+| `MODEL_CUTOFF_SOURCE_URL` | `https://docs.anthropic.com/en/docs/about-claude/models/overview` |
+| `MODEL_CUTOFF_STATUS` | `team-assumed` |
 
-Optional variables (`MODEL_PROVIDER`, `MODEL_ID`, `MONTHLY_BUDGET_USDC`, `PREFERRED_MINER_ID`,
-`MERGE_BRANCHES`) are listed in the [README](../README.md#install-in-your-repository-5-minutes).
+What they mean: the bot pays only for releases published after `MODEL_CUTOFF`, because your AI
+can't know about those. For real use, take the "training data cutoff" of the model your team uses
+from its provider's models page (Anthropic's above, or
+[OpenAI's](https://platform.openai.com/docs/models)) and put that page in
+`MODEL_CUTOFF_SOURCE_URL`. `team-assumed` means "we picked this date"; `provider-documented`
+needs two more variables, `MODEL_PROVIDER` and `MODEL_ID` (see the
+[README](../README.md#install-in-your-repository-5-minutes)).
 
-## 4. Two workflow files
+**C3. Add the first workflow file.** On your fork's main page: **Add file → Create new file**.
 
-A workflow file tells GitHub what to run and when. They live in the folder `.github/workflows/` at
-the root of your repository (create it if it doesn't exist). You can do it all in the browser:
-
-1. On your repository's main page click **Add file → Create new file**.
-2. In the name box type `.github/workflows/telegraph-dependency-updates.yml` (typing the `/`
-   creates the folders).
-3. Paste the first file below and click **Commit changes**, straight to your default branch.
-4. Repeat for `.github/workflows/telegraph-pr-outcomes.yml` with the second file.
-
-**File 1: `.github/workflows/telegraph-dependency-updates.yml`.** Scans your lockfile, buys the
-answers and opens the PRs. If your default branch isn't called `main`, change `branches: [main]`.
+- In the file name box type exactly `.github/workflows/telegraph-dependency-updates.yml`. Typing
+  the `/` creates the folders.
+- Paste the text below.
+- If your fork's main branch isn't called `main` (e.g. `master`), change `branches: [main]`.
+- Click **Commit changes** → **Commit directly to the main branch** → **Commit changes**.
 
 ```yaml
 name: Telegraph dependency updates
@@ -180,9 +178,11 @@ jobs:
           PREFERRED_MINER_ID: ${{ vars.PREFERRED_MINER_ID || '7314' }}
 ```
 
-**File 2: `.github/workflows/telegraph-pr-outcomes.yml`.** Records each dependency PR's merge or
-close on the ledger, which is what "cost per merged PR" is computed from. It checks out your
-default branch, never the PR's code, and has no wallet key.
+This one does the work: reads your dependencies, buys the answers, opens the pull requests. The
+line `uses: borodedamie/telegraph-pr-agent@v1` is where GitHub downloads the bot from.
+
+**C4. Add the second workflow file** the same way, named
+`.github/workflows/telegraph-pr-outcomes.yml`:
 
 ```yaml
 name: Telegraph PR outcomes
@@ -214,25 +214,46 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 ```
 
-## 5. Run it
+This one only records when you merge or close one of the bot's pull requests. It has no wallet
+key and never runs the pull request's code.
 
-Actions → **Telegraph dependency updates** → **Run workflow**. Then open
-`https://telegraph-pr-agent.vercel.app/?repo=<owner>/<repo>`. Every run that buys something prints
-that link, and every dependency PR ends with it.
+## Part D: run it and look (2 min)
+
+**D1. Run.** **Actions tab → Telegraph dependency updates** (left list) **→ Run workflow → Run
+workflow**. Wait about a minute until it turns green.
+
+**D2. Look at the result.**
+
+- **Pull requests tab:** one PR per dependency update. Paid ones have **What changed** and
+  **Where this repository uses what changed**. Updates released before the cutoff get a free PR
+  with links only.
+- **Spend page:** `https://telegraph-pr-agent.vercel.app/?repo=<your user>/<your fork>`, every
+  purchase with its receipt. The run log and every PR also link it.
+- A new branch `ledger` in your fork holds the purchase records. Leave it there.
+
+**D3. Optional:** merge one PR. The spend page then shows "cost per merged PR".
+
+## If something goes wrong
+
+| What you see | Fix |
+| --- | --- |
+| The run fails with `403` when opening PRs | Step A3 wasn't saved. Tick it and re-run: answers already bought are reused, not paid again |
+| No **Run workflow** button | The file from C3 isn't in `.github/workflows/` on the main branch, or Actions is off (A2) |
+| Payment refused / nothing bought | Check `available` from B5 is above 0 |
+| Green run but no PRs | No dependency has a newer release. Try another project |
+
+---
 
 ## How it decides to spend
 
-- It buys only for releases dated after `MODEL_CUTOFF`. That's a deterministic registry check, not
-  a model's guess. Newer releases before the cutoff get a free PR with links to the release notes
-  (up to 5 per run).
-- Before paying, it checks that your package manager can actually install the target. If it can't,
-  the update is skipped with the package manager's reason and nothing is bought.
+- It buys only for releases dated after `MODEL_CUTOFF`. That's a lookup of the release date on the
+  package registry, not a model's guess.
+- Before paying, it checks that your package manager can actually install the new version. If it
+  can't, it skips the update and buys nothing.
 - An upgrade already proposed is not proposed again.
-- Limits: 0.10 USDC per call and 2 USDC per run by default, plus an optional monthly budget. A
-  payment interrupted mid-flight blocks a repeat purchase until it is reconciled, so it can't be
-  paid twice.
-- A human merges. The bot never merges and its own code uses no LLM: all of its knowledge comes
-  from Telegraph miners.
+- Limits: 0.10 USDC per answer and 2 USDC per run by default, plus an optional monthly budget. A
+  payment interrupted halfway can't be paid twice.
+- A human merges. The bot never merges, and it uses no AI of its own: everything it knows, it buys.
 
 ## What we learned building on Telegraph
 
