@@ -123,12 +123,96 @@ Optional variables (`MODEL_PROVIDER`, `MODEL_ID`, `MONTHLY_BUDGET_USDC`, `PREFER
 
 ## 4. Two workflow files
 
-Copy both files from [the README, step 5](../README.md#install-in-your-repository-5-minutes):
+A workflow file tells GitHub what to run and when. They live in the folder `.github/workflows/` at
+the root of your repository (create it if it doesn't exist). You can do it all in the browser:
 
-- `telegraph-dependency-updates.yml` scans the lockfile, buys the answers and opens the PRs.
-- `telegraph-pr-outcomes.yml` records each dependency PR's merge or close on the ledger, which is
-  what "cost per merged PR" is computed from. It checks out your default branch, never the PR's
-  code, and has no wallet key.
+1. On your repository's main page click **Add file → Create new file**.
+2. In the name box type `.github/workflows/telegraph-dependency-updates.yml` (typing the `/`
+   creates the folders).
+3. Paste the first file below and click **Commit changes**, straight to your default branch.
+4. Repeat for `.github/workflows/telegraph-pr-outcomes.yml` with the second file.
+
+**File 1: `.github/workflows/telegraph-dependency-updates.yml`.** Scans your lockfile, buys the
+answers and opens the PRs. If your default branch isn't called `main`, change `branches: [main]`.
+
+```yaml
+name: Telegraph dependency updates
+
+on:
+  push:
+    branches: [main]
+    paths: ['**/package.json', '**/package-lock.json', '**/requirements*.txt', 'requirements/**']
+  workflow_dispatch:
+
+concurrency:
+  group: telegraph-dependency-updates-${{ github.repository }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  update-dependencies:
+    if: github.ref_type == 'branch' && github.event.deleted != true && !startsWith(github.ref_name, 'fix/telegraph-dependency-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - uses: borodedamie/telegraph-pr-agent@v1
+        with:
+          monthly-budget-usdc: ${{ vars.MONTHLY_BUDGET_USDC }}
+        env:
+          TELEGRAPH_EVM_PRIVATE_KEY: ${{ secrets.TELEGRAPH_EVM_PRIVATE_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+          MODEL_CUTOFF: ${{ vars.MODEL_CUTOFF }}
+          MODEL_PROVIDER: ${{ vars.MODEL_PROVIDER }}
+          MODEL_ID: ${{ vars.MODEL_ID }}
+          MODEL_CUTOFF_SOURCE_URL: ${{ vars.MODEL_CUTOFF_SOURCE_URL }}
+          MODEL_CUTOFF_STATUS: ${{ vars.MODEL_CUTOFF_STATUS }}
+          PREFERRED_MINER_ID: ${{ vars.PREFERRED_MINER_ID || '7314' }}
+```
+
+**File 2: `.github/workflows/telegraph-pr-outcomes.yml`.** Records each dependency PR's merge or
+close on the ledger, which is what "cost per merged PR" is computed from. It checks out your
+default branch, never the PR's code, and has no wallet key.
+
+```yaml
+name: Telegraph PR outcomes
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  record-outcome:
+    if: github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'fix/telegraph-dependency-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: borodedamie/telegraph-pr-agent@v1
+        with:
+          merge-pr-number: ${{ github.event.pull_request.number }}
+          merge-branches: ${{ vars.MERGE_BRANCHES }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+```
 
 ## 5. Run it
 
