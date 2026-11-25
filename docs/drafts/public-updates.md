@@ -143,7 +143,8 @@ opens PRs. The other records merges and closes, which is what "cost per merged P
 
 **How it decides to spend (worth knowing):**
 - It buys only for releases dated after `MODEL_CUTOFF`. That's a deterministic registry check,
-  not a guess by a model. Older updates get a free PR with links.
+  not a guess by a model. Older updates get a free PR, with no purchase: for npm packages the bot
+  reads the release notes itself and lists what it finds; otherwise the PR links them.
 - Before paying, it checks that your package manager can actually install the target; if not, it
   skips the update with npm's reason.
 - There's a per-call cap (0.10), a per-run cap (2 USDC) and an optional monthly budget. An

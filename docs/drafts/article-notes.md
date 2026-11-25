@@ -197,7 +197,7 @@ Gotchas:
 | Learn | Buy one answer per package + target version, miner 7314 first, then ranked miners. Unusable answers are saved and skipped, never paid for twice |
 | Report | One PR per upgrade, never duplicated: **What changed** (breaking first, each with migration step and quote) and **Where this repository uses what changed** (links to the lines, pinned to the scanned commit; a text search, not a type check). Releases *before* the cutoff get a **free PR**: no purchase, the rules pass of the miner run inside the Action |
 | Account | Attempts, purchases (receipt, signal, tx), PR opened, merge or close: all appended to `ledger.jsonl` on a `ledger` branch in the installer's own repo. A `pull_request_target` workflow records outcomes; a merge counts only when it lands on the default branch (or `MERGE_BRANCHES`) |
-| Fix (planned) | After a maintainer adds `telegraph:fix`, buy a patch from a code-generation miner and run tests in a job with no secrets. Gated on a quality test, see §7 |
+| Fix (not built) | Design: after a maintainer adds `telegraph:fix`, buy a patch from a code-generation miner and push it only if the repo's tests pass in a job with no secrets. Its quality gate failed on 22–23 Nov, so it isn't in the submission; the design is ADR 0002, deferred until after the hackathon (§7) |
 
 Design points worth writing about:
 
@@ -230,6 +230,11 @@ GitHub Action ──0.02 USDC──▶ Telegraph ──▶ miner 7314 (ours)
 opens PR, writes ledger row
 ```
 
+Check before publishing: the model hop doesn't run on every answer. The p10 answer the fixture
+bought on 23 Nov (telegraph-fix-fixture PR #2) was rules-only
+(`processingVersion: p10-miners_7413-nollm-rules_only-s1`). Confirm on the miner's metrics how often
+the model pass ran recently before writing "every upgrade".
+
 So the agent buys from a miner, and that miner buys from another miner. Every hop is paid per
 call with a receipt. The miner's margin on a first-time answer is about 0.02 − 0.01…0.02 model
 cost. **On repeats it's the full 0.02**, because the cache serves them with zero model calls.
@@ -251,6 +256,14 @@ paid "what changed" answer, so that the repo's own typecheck and tests pass?
 - **Fix:** processing version p10 (23 Nov). Migration-guide items now carry the parent
   heading's API name ("`z.record()`: drops single argument usage"). The quote itself is
   unchanged, so verification still holds.
+- **Run 2 (23 Nov), with the fixed answer:** CodeWire was asked once and retried once with a
+  slightly different request. Both times it returned its error reply ("model unavailable",
+  "minimax returned no answer text") and no code, and both replies were charged (2 × 0.01 USDC).
+- **Decision:** the fix stage is not built for the submission; PRs offer the call-site report.
+  ADR 0002 records the design for after the hackathon: buy from Telegraph's top-ranked code
+  miner and push only when the repo's tests pass. The team deferred it because ranked routing
+  resolved to CodeWire alone. Evidence: `docs/telegraph/codegen-gate-2026-11-22/` and
+  `docs/telegraph/codegen-gate-2026-11-23/`.
 - **Lessons:**
   - Identical requests are answered from cache and **still charged**, so retries must differ.
   - The quality of a downstream agent's work is bounded by the precision of the knowledge it
@@ -267,8 +280,8 @@ As of 22 Nov 2026, from the README evidence index:
   and `borodedamie/code-generator` #1, 21 Nov), 8 closed, 39 open. **Cost per merged PR:
   0.88 USDC (n=2).**
 - **Outside repos** (`linda-ochem/temp`, `shadrxcc/porncrit-fe`): 37 purchases (0.74 USDC);
-  **14 paid PRs merged**, including `next` 14 → 16, `react` 18 → 19 and `tailwindcss` 3 → 4.
-  Cost per merged PR 0.05 USDC.
+  **19 paid PRs merged** (6 and 13, all on 22 Nov; ledgers checked 25 Nov), including `next`
+  14 → 16, `react` 18 → 19 and `tailwindcss` 3 → 4. Cost per merged PR about 0.04 USDC.
   - Caveats: team testnet wallets paid, the miner is ours, all merges happened within 16
     minutes, and Vercel deploy checks failed on the sampled PRs. "Merged" doesn't mean
     "verified to build".
@@ -277,9 +290,10 @@ As of 22 Nov 2026, from the README evidence index:
 - **Example run** (21 Nov, onewallet-radar): the bot skipped `@types/node` (saved unusable
   answer, nothing paid), bought `undici` for 0.02, and opened #12, which was merged. The
   dashboard immediately showed 1 merged, 0.17 USDC per merged PR.
-- **Independent reproduction** (issue #69, a fresh GitHub account following only the README):
-  3 minutes of setup, a 1-minute run, 0.06 USDC spent, PRs opened. It also found real bugs (next
-  section).
+- **Clean-room reproduction by a team member** (issue #69, filed from `lemind-bt`, a second
+  account of a team member, following only the README): 3 minutes of setup, a 1-minute run,
+  0.06 USDC spent, PRs opened. It also found real bugs (next section). Not independent: the
+  README rightly lists "Independent reproduction: none yet".
 - **Demo video:** 3:08, narrated (PR #71).
 
 ## 9. Honesty section: say this in the article, don't hide it
@@ -336,8 +350,8 @@ the open question is whether outside buyers and sellers show up."
 | 13 Nov | First install on a team member's real repo (onewallet-radar) |
 | 20 Nov | Telegraph goes escrow-only on Sepolia; escrow payment in the Action (#52) |
 | 21 Nov | First paid PRs merged (onewallet-radar #12, code-generator #1); v1.3.0 |
-| 22 Nov | Outside developers merge 14 paid PRs; the code-gen gate fails 0/3 |
-| 23 Nov | p10 deployed; reproduction issue #69; new demo video |
+| 22 Nov | Outside developers merge 19 paid PRs; code-gen gate run 1 fails 0/3 |
+| 23 Nov | p10 deployed; gate run 2: code miner unavailable twice, fix stage not built (ADR 0002 deferred); team reproduction issue #69; new demo video |
 | 1 Dec | Deadline |
 
 ## 12. Possible article angles
@@ -354,8 +368,9 @@ the open question is whether outside buyers and sellers show up."
 
 ## 13. Still open before 1 Dec
 
-- Public updates: 0 of the 3 required (separate dates).
-- Technical tutorial.
+- Public updates: done, three on X on 14, 22 and 24 Nov (README, #74). Extra drafts in
+  `public-updates.md`.
+- Technical tutorial: drafted in `docs/TUTORIAL.md`; still to be posted publicly.
 - Bug-fix PRs from #69: README funding, call sites, miner quality.
 - A bot attribution line in PRs; closing superseded PRs.
 - Genuinely independent buyers, and other miners chosen on rank rather than our own.
