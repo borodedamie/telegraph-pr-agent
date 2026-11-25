@@ -143,9 +143,11 @@ Secrets tab → New repository secret**.
 - Name: `TELEGRAPH_EVM_PRIVATE_KEY`
 - Secret: the Private key from B2
 
-**C2. Nothing else to set for a test.** The workflow file in C3 already contains defaults: the
-bot pays only for releases published after **1 Jan 2026**, a date assumed to be after your AI
-model's training cutoff, so it can't know about those releases.
+**C2. Nothing else to set for a test.** The workflow file in C3 already contains defaults: the bot
+pays only for releases published after **1 Jan 2026**, and gives free PRs (links only) for older
+ones. Why a date: an AI coding assistant can't know about releases after its training data ends,
+so that's where paid answers help. If you don't use an AI assistant, it's simply the date that
+limits what gets bought.
 
 For real use, set your own model's date: **Variables tab → New repository variable**:
 
