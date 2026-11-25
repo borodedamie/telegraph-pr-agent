@@ -114,22 +114,17 @@ Secrets tab → New repository secret**.
 - Name: `TELEGRAPH_EVM_PRIVATE_KEY`
 - Secret: the Private key from B2
 
-**C2. Tell the bot the AI's cutoff date.** Same page, **Variables tab → New repository variable**,
-three times. For a test, copy these exactly:
+**C2. Nothing else to set for a test.** The workflow file in C3 already contains defaults: the
+bot pays only for releases published after **1 Jan 2026**, a date assumed to be after your AI
+model's training cutoff, so it can't know about those releases.
+
+For real use, set your own model's date: **Variables tab → New repository variable**:
 
 | Name | Value |
 | --- | --- |
-| `MODEL_CUTOFF` | `2026-01-01` |
-| `MODEL_CUTOFF_SOURCE_URL` | `https://docs.anthropic.com/en/docs/about-claude/models/overview` |
-| `MODEL_CUTOFF_STATUS` | `team-assumed` |
-
-What they mean: the bot pays only for releases published after `MODEL_CUTOFF`, because your AI
-can't know about those. For real use, take the "training data cutoff" of the model your team uses
-from its provider's models page (Anthropic's above, or
-[OpenAI's](https://platform.openai.com/docs/models)) and put that page in
-`MODEL_CUTOFF_SOURCE_URL`. `team-assumed` means "we picked this date"; `provider-documented`
-needs two more variables, `MODEL_PROVIDER` and `MODEL_ID` (see the
-[README](../README.md#install-in-your-repository-5-minutes)).
+| `MODEL_CUTOFF` | the "training data cutoff" from your model provider's page, e.g. `2025-03-01` |
+| `MODEL_CUTOFF_SOURCE_URL` | that page, e.g. [Anthropic's](https://docs.anthropic.com/en/docs/about-claude/models/overview) or [OpenAI's](https://platform.openai.com/docs/models) |
+| `MODEL_CUTOFF_STATUS` | `team-assumed`, or `provider-documented` together with `MODEL_PROVIDER` and `MODEL_ID` (see the [README](../README.md#install-in-your-repository-5-minutes)) |
 
 **C3. Add the first workflow file.** On your fork's main page: **Add file → Create new file**.
 
@@ -176,11 +171,11 @@ jobs:
         env:
           TELEGRAPH_EVM_PRIVATE_KEY: ${{ secrets.TELEGRAPH_EVM_PRIVATE_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
-          MODEL_CUTOFF: ${{ vars.MODEL_CUTOFF }}
+          MODEL_CUTOFF: ${{ vars.MODEL_CUTOFF || '2026-01-01' }}
           MODEL_PROVIDER: ${{ vars.MODEL_PROVIDER }}
           MODEL_ID: ${{ vars.MODEL_ID }}
-          MODEL_CUTOFF_SOURCE_URL: ${{ vars.MODEL_CUTOFF_SOURCE_URL }}
-          MODEL_CUTOFF_STATUS: ${{ vars.MODEL_CUTOFF_STATUS }}
+          MODEL_CUTOFF_SOURCE_URL: ${{ vars.MODEL_CUTOFF_SOURCE_URL || 'https://docs.anthropic.com/en/docs/about-claude/models/overview' }}
+          MODEL_CUTOFF_STATUS: ${{ vars.MODEL_CUTOFF_STATUS || 'team-assumed' }}
           PREFERRED_MINER_ID: ${{ vars.PREFERRED_MINER_ID || '7314' }}
 ```
 
