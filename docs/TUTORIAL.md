@@ -14,6 +14,11 @@ verbatim quote and the source link. The PR also links the lines in your reposito
 changed APIs (a text search, not a type check). Each answer costs about 0.02 test USDC and is
 recorded, with its receipt, in your own repository.
 
+**No server, nothing to host or download.** The bot is a GitHub Action: you add two workflow files
+to your repository, and GitHub runs them on its own machines, pulling the bot's code from
+`borodedamie/telegraph-pr-agent@v1`. The miner that answers and the dashboard are already hosted by
+the team. Your repository gets the PRs and a `ledger` branch with the purchase records.
+
 > Entry in the Telegraph Hackathon Season II (a prize competition). The team runs both the Action
 > and the default miner (7314), so the team's own purchases are tests, not demand.
 
