@@ -31,7 +31,7 @@ recorded with its receipt, and the dashboard shows the spend and the **cost per 
 | Learn | For each release after `MODEL_CUTOFF`, buy one `QUESTION_ANSWERING_GENERAL` answer, from miner 7314 first, then ranked miners | works with per-call `exact` payment (live, 8 and 11 Nov 2026); escrow payment, needed since 20 Nov 2026, is covered by offline tests and its first hosted run is pending |
 | Report | Open one PR per package and target version (never duplicated), listing what changed and where the repository uses it. Releases on or before the cutoff get a free PR with links, no purchase | works |
 | Account | Record every attempt, purchase, PR proposal, merge and close on the repository's `ledger` branch; the dashboard computes cost per merged PR | works; 2 paid PRs merged (21 Nov, team repos) |
-| Fix | After a maintainer adds `telegraph:fix`, generate the migration patch and run the repository's tests in a job without secrets | planned |
+| Fix | After a maintainer adds `telegraph:fix`, generate the migration patch and run the repository's tests in a job without secrets | not built: the gate failed on 22–23 Nov (the only code-writing miner gave one failing patch, then two outages; [SPEC §2.9](docs/SPEC.md)). PRs offer the call-site report instead |
 
 A human reviews and merges; the bot never merges. The bot uses no LLM: its knowledge comes from
 Telegraph miners ([SPEC §2](docs/SPEC.md)).
@@ -233,7 +233,7 @@ Status is a snapshot, not a promise.
 | Last live contract check (no payment) | 14 Nov 2026, unsigned and unpaid catalogue and quote check: [preflight snapshot](docs/telegraph/four-package-tests-preflight-2026-11-14.json) |
 | Purchases in other installations | see each repository's dashboard in the [evidence index](#evidence-index-every-repository-running-the-bot) |
 | Package-release miner | Miner 7314 (`package-release-intel`, `QUESTION_ANSWERING_GENERAL`, 0.02 USDC), at `https://telegraph-pr-miner-n30sk.vercel.app`, registered since 6 Nov 2026. Engine routing sends this kind of question to another intent (`WEB_SEARCH_GENERAL`), so buyers ask it by id. Answers what changed in an npm package between two versions, each change with a verbatim quote and its source. Benchmark: 82.6% of reviewed breaking changes with an LLM judge (67.1% by word matching), every quote checked. Details: [miner/README.md](miner/README.md) |
-| Not done yet | the `telegraph:fix` stage; a merged paid PR; an installation outside the team; a public fixture repository for reviewers ([TEAM.md](docs/TEAM.md)) |
+| Not done yet | the `telegraph:fix` stage (not built: the gate failed, [SPEC §2.9](docs/SPEC.md)) |
 
 ## For reviewers and the hackathon submission
 
@@ -246,7 +246,7 @@ To be filled in as each item exists; nothing below is claimed yet.
 | Testnet and token in use | from the live 402 challenge; Ethereum Sepolia test USDC as of 2 Nov 2026 |
 | One command for a new realistic input | planned: the Action on a public fixture repository ([TEAM.md](docs/TEAM.md)) |
 | No-post-cutoff, no-spend case | planned on the fixture repository; offline test: no purchase or PR when no dependency is past the cutoff |
-| Failing typecheck, no push case | planned with the `telegraph:fix` stage |
+| Failing typecheck, no push case | not applicable: the `telegraph:fix` stage was not built. The gate's own check shows a failing patch being rejected ([run 1](docs/telegraph/codegen-gate-2026-11-22/README.md)) |
 | Event-period receipts, signal links, transactions, ledger export | Across all installations: see the [evidence index](#evidence-index-every-repository-running-the-bot) below. For this repository alone, the dashboard's **Download evidence CSV** plus the raw `ledger.jsonl`. As of 19 Nov 2026: 4 purchases (0.06 USDC): two CLI test buys from third-party miners (3 and 4 Nov, answers not useful) and two Action assessments from the team's own miner 7314 (8 and 11 Nov, `our_choice`, self-purchases, not independent adoption) |
 | 2–5 minute demo | [demo.mp4](docs/demo.mp4) |
 | Five-question commercial summary | [below](#commercial-summary) |
@@ -292,8 +292,9 @@ Cents per upgrade, compared with an engineer's time researching release notes; e
 visible per PR, with budget caps. Before production:
 
 - mainnet USDC and mainnet configuration (it's testnet only today);
-- the `telegraph:fix` stage, which buys a patch from a code-generation miner. It's gated on a
-  patch test this week, and if no miner passes, PRs offer the call-site report instead;
+- the `telegraph:fix` stage, which would buy a patch from a code-generation miner. Its gate failed
+  on 22–23 Nov (the only code-writing miner gave one failing patch, then two outages), so PRs
+  offer the call-site report instead;
 - support for monorepos and workspaces;
 - routing to the best-ranked miner by default, rather than our own;
 - independent users: two outside installations exist, and neither is yet confirmed as independent.
@@ -353,7 +354,7 @@ If you try the Action, open an issue with what you ran, the signal hash and whet
 
 - Package-release answer quality has not been demonstrated by existing providers.
 - The team's package-release miner is registered and scored, but the intent's test questions are mostly general, so its rank moves with the pool (6 of 17 on 9 Nov, 11 of 17 on 8 Nov).
-- The `telegraph:fix` label stage is planned: patch generation, install/typecheck/tests in a job without secrets, and pushing only a validated patch. The Action, draft PRs and merge accounting exist.
+- The `telegraph:fix` label stage is not built: its gate failed on 22–23 Nov ([run 1](docs/telegraph/codegen-gate-2026-11-22/README.md), [run 2](docs/telegraph/codegen-gate-2026-11-23/README.md)). PRs offer the call-site report as migration guidance. The design for after the hackathon, buying patches from Telegraph's top-ranked code miner and pushing only when the repository's tests pass, is [ADR 0002](docs/adr/0002-fix-stage-ranked-routing.md) (proposed, deferred). The Action, PRs and merge accounting exist.
 - `CODE_GENERATION`, `CODE_PATCH_VERIFY` and `REGRESSION_VERIFY` are conditional on providers passing quality tests.
 - Public repositories only. Testnet only; no revenue or adoption claim.
 
