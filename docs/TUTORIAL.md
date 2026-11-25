@@ -13,6 +13,26 @@ Testnet only: you use free test tokens, never real money.
 > **The goal of this test:** set up the bot as a GitHub Action in a repository (a fork is best),
 > run it once, and check the pull requests it opens.
 
+<details>
+<summary><b>What is Telegraph?</b> (click to expand)</summary>
+
+[Telegraph](https://docs.telegraphprotocol.com) is a marketplace where programs buy answers from
+other programs and pay per answer.
+
+- **Miners** are the sellers: web services that each answer one kind of question. Our team runs
+  miner **7314**, which answers "what changed in npm package X between version A and B", with a
+  quote and a source link for every change.
+- **Buyers** are programs like our bot. They send a question to Telegraph, pay for it, and get the
+  answer with a receipt.
+- **Payment** is in USDC, a dollar stablecoin. During the hackathon everything runs on Ethereum's
+  **Sepolia test network** with free test USDC, so no real money is involved.
+- **Escrow** is a pre-paid balance with Telegraph. You deposit once; each answer is deducted from
+  it, with no blockchain transaction per answer.
+- Telegraph keeps 2% of each payment and passes the rest to the miner. Miners are scored on test
+  questions and ranked.
+
+</details>
+
 **What it does.** AI coding assistants don't know about package releases that came out after
 their training. This tool checks your repository's dependencies. For each update released after
 that date, it pays a few cents of *test* money for an answer to "what changed between your
