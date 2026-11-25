@@ -14,10 +14,23 @@ verbatim quote and the source link. The PR also links the lines in your reposito
 changed APIs (a text search, not a type check). Each answer costs about 0.02 test USDC and is
 recorded, with its receipt, in your own repository.
 
-**No server, nothing to host or download.** The bot is a GitHub Action: you add two workflow files
-to your repository, and GitHub runs them on its own machines, pulling the bot's code from
-`borodedamie/telegraph-pr-agent@v1`. The miner that answers and the dashboard are already hosted by
-the team. Your repository gets the PRs and a `ledger` branch with the purchase records.
+## What is what
+
+- **The bot** is not a chat bot. It's a program that runs as a **GitHub Action**: GitHub's built-in
+  automation, which runs scripts on GitHub's own machines when something happens in your
+  repository. You add two small config files to your repository and GitHub does the rest. You
+  don't host, download or install anything, and you need no server.
+- **Telegraph** is a marketplace where programs sell answers to other programs, paid per answer in
+  test USDC on the Ethereum Sepolia testnet.
+- **Miner 7314** is the service on Telegraph that the bot buys answers from: "what changed in
+  package X between version A and B". The team built it and hosts it.
+- **Vercel** is just the hosting the team uses for the miner and for the dashboard
+  (`telegraph-pr-agent.vercel.app`). You never touch it.
+- **The dashboard** is a web page that reads your repository's purchase records and shows what was
+  bought and what it cost.
+
+What ends up in your repository: pull requests (one per dependency update) and a `ledger` branch
+with the purchase records. Nothing is merged without you.
 
 > Entry in the Telegraph Hackathon Season II (a prize competition). The team runs both the Action
 > and the default miner (7314), so the team's own purchases are tests, not demand.
@@ -68,9 +81,11 @@ yet: wait a few seconds and run it again. Check `available` at
 ## 3. Repository settings
 
 1. Settings → Actions → General → Workflow permissions: tick **Allow GitHub Actions to create
-   and approve pull requests** and save. This is the step most often missed. Without it, the run
-   buys its answers and then fails with a 403 when opening PRs. A re-run reuses the saved answers
-   and buys nothing again.
+   and approve pull requests** and save. **Why:** the bot's whole output is pull requests, and by
+   default GitHub doesn't let automation open them. This setting lets the bot open PRs with the
+   temporary token GitHub gives each run. The bot never approves or merges anything; you do. This
+   is the step most often missed: without it, the run buys its answers and then fails with a 403
+   when opening PRs. A re-run reuses the saved answers and buys nothing again.
 2. Settings → Secrets and variables → Actions:
    - secret `TELEGRAPH_EVM_PRIVATE_KEY`: the new key;
    - variable `MODEL_CUTOFF`: your coding model's training cutoff, e.g. `2026-01-01`;
