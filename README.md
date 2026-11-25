@@ -60,6 +60,19 @@ PRs; tick it and re-run, and the saved answers are reused with nothing bought ag
 | --- | --- |
 | `TELEGRAPH_EVM_PRIVATE_KEY` | Private key of a dedicated, low-balance wallet holding Sepolia test USDC (`0xcc194e1a843B658526D0D5C431f670028582Ae17`, chain `11155111`) and a little Sepolia ETH for the deposit below. Each answer costs about 0.02 USDC. |
 
+**Funding the wallet (free, testnet).** Create a new wallet for this; never reuse one that holds
+anything real. Commands below use Foundry's `cast` ([install](https://getfoundry.sh/)).
+
+- **Sepolia ETH for gas:** a few transactions need about 0.001 ETH. Free from the
+  [Google Cloud Sepolia faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia).
+- **Test USDC:** the Sepolia test token has an open `mint`, so any wallet can mint its own. For
+  example 1 USDC (`1000000`, 6 decimals) to the wallet's address:
+
+```sh
+cast send 0xcc194e1a843B658526D0D5C431f670028582Ae17 "mint(address,uint256)" <wallet address> 1000000 \
+  --rpc-url https://ethereum-sepolia-rpc.publicnode.com --private-key "$TELEGRAPH_EVM_PRIVATE_KEY"
+```
+
 **3b. Deposit test USDC into Telegraph escrow (one time).** Since 20 Nov 2026 Telegraph takes
 payment on Sepolia only from a pre-funded escrow balance, so the wallet above needs a deposit
 before the first purchase. Without one, every call is refused and nothing is charged. Two
@@ -74,7 +87,9 @@ cast send 0x72a70e949362670Bf8bceAd24eFC5b8f950aa08b "depositUSDC(uint256)" 2000
   --rpc-url https://ethereum-sepolia-rpc.publicnode.com --private-key "$TELEGRAPH_EVM_PRIVATE_KEY"
 ```
 
-Check the balance at `https://devnode.telegraphprotocol.com/v1/ledger/account/<wallet address>`
+Run the deposit after the approve has confirmed (`cast send` waits for it). If the deposit
+reverts with "insufficient allowance", the RPC hasn't caught up yet: wait a few seconds and run it
+again. Check the balance at `https://devnode.telegraphprotocol.com/v1/ledger/account/<wallet address>`
 (`available`). Telegraph's guide, including withdrawal:
 [escrow inference](https://anjoman.ai/docs/using/escrow-inference).
 
