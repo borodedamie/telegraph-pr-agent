@@ -53,7 +53,7 @@ version and the new one" and opens a pull request with that answer: the breaking
 migrate, a quote and a link for each, and the lines in your code that are affected.
 
 **How it runs.** No server, nothing to install on your machine except one command-line tool for
-the test wallet. You add two files to a GitHub repository; GitHub runs them on its own machines
+the test wallet (or, if you'd rather not use a terminal, a browser wallet extension). You add two files to a GitHub repository; GitHub runs them on its own machines
 (this is called GitHub Actions). The bot buys each answer on **Telegraph**, a marketplace for
 machine answers; the answers come from Telegraph miner **7314**, Package Release Intel, which our
 team runs and hosts ([its page](https://telegraph-pr-miner-n30sk.vercel.app),
@@ -105,6 +105,10 @@ click **Save**.
 The bot pays for each answer from a wallet. You make a new one just for this, with free test
 tokens on the Ethereum Sepolia test network.
 
+Prefer the browser? Skip to [Part B in the browser](#part-b-in-the-browser-instead-metamask-and-remix)
+and come back for Part C. Both routes end the same way: a wallet with test USDC in Telegraph
+escrow, and its private key.
+
 **B1. Install Foundry** (the `cast` command):
 
 ```sh
@@ -133,11 +137,24 @@ export KEY=<the Private key>
 [Google Cloud Sepolia faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia),
 paste your Address, request. It's free.
 
+Check it arrived (a minute or so) before going on; without ETH the next commands fail:
+
+```sh
+cast balance $ADDRESS --ether --rpc-url https://ethereum-sepolia-rpc.publicnode.com
+```
+
 **B4. Get 1 test USDC.** The test token lets anyone mint it:
 
 ```sh
 cast send 0xcc194e1a843B658526D0D5C431f670028582Ae17 "mint(address,uint256)" $ADDRESS 1000000 \
   --rpc-url https://ethereum-sepolia-rpc.publicnode.com --private-key $KEY
+```
+
+Check: this should print `1000000` (1 USDC, 6 decimals):
+
+```sh
+cast call 0xcc194e1a843B658526D0D5C431f670028582Ae17 "balanceOf(address)(uint256)" $ADDRESS \
+  --rpc-url https://ethereum-sepolia-rpc.publicnode.com
 ```
 
 **B5. Put 0.20 USDC into Telegraph's payment account** (about 10 answers). Telegraph takes
@@ -156,13 +173,79 @@ If the second one fails with "insufficient allowance", wait 10 seconds and run i
 Check: open `https://devnode.telegraphprotocol.com/v1/ledger/account/<your Address>`. `available`
 should be `200000`: USDC has 6 decimals, so `200000` = 0.20 USDC.
 
+### Part B in the browser instead (MetaMask and Remix)
+
+> **Not yet tested end to end; the terminal route above is.** The three contract calls were checked
+> on Sepolia, but nobody has clicked through these steps yet. If a button or label differs, please
+> open an issue.
+
+The same steps without a terminal: MetaMask holds the wallet, and Remix, a browser editor for
+Ethereum contracts, sends the three transactions. (Etherscan's "Write Contract" page doesn't work
+here: the test USDC contract isn't verified on Etherscan.)
+
+**W1. Install MetaMask** from [metamask.io](https://metamask.io) and create a wallet. Already have
+one? Add a new account just for this (account menu → **Add account**). Never use an account that
+holds anything real: in W7 you give this account's key to GitHub.
+
+**W2. Switch to Sepolia.** In MetaMask's network menu, turn on **Show test networks** and pick
+**Sepolia**. Copy your account's address.
+
+**W3. Get test ETH.** Open the
+[Google Cloud Sepolia faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia),
+paste the address, request. Wait until MetaMask shows some SepoliaETH.
+
+**W4. Open Remix and add the contracts.** Go to [remix.ethereum.org](https://remix.ethereum.org).
+In the **File explorer**, create a file `telegraph.sol` and paste:
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface TestUSDC {
+    function mint(address to, uint256 amount) external;
+    function approve(address spender, uint256 amount) external returns (bool);
+}
+
+interface TelegraphEscrow {
+    function depositUSDC(uint256 amount) external;
+}
+```
+
+Open the **Solidity compiler** tab and click **Compile telegraph.sol**. This only describes the
+functions to Remix; nothing is deployed.
+
+**W5. Connect MetaMask.** Open the **Deploy & run transactions** tab. Set **Environment** to
+**Injected Provider - MetaMask** and approve the connection in MetaMask. Check that it shows
+Sepolia (`11155111`) and your address.
+
+**W6. Mint, approve, deposit.** Each **transact** opens MetaMask; confirm it and wait until Remix
+shows the transaction as done before the next one.
+
+1. In **Contract**, pick `TestUSDC`. Paste `0xcc194e1a843B658526D0D5C431f670028582Ae17` next to
+   **At Address** and click it. Under **Deployed Contracts**, open it:
+   - `mint`: `to` = your address, `amount` = `1000000` (1 USDC) → **transact**.
+   - `approve`: `spender` = `0x72a70e949362670Bf8bceAd24eFC5b8f950aa08b`, `amount` = `200000`
+     → **transact**.
+2. In **Contract**, pick `TelegraphEscrow`. Paste `0x72a70e949362670Bf8bceAd24eFC5b8f950aa08b`
+   next to **At Address** and click it. Open it:
+   - `depositUSDC`: `amount` = `200000` (0.20 USDC) → **transact**.
+
+If the deposit fails with "insufficient allowance", the approve hasn't landed yet: wait 10 seconds
+and transact again. Check: open
+`https://devnode.telegraphprotocol.com/v1/ledger/account/<your address>`; `available` should be
+`200000`.
+
+**W7. Copy the private key.** In MetaMask: account menu → **Account details** → **Show private
+key**, enter your password, copy it. That's the secret for C1. The bot needs it to start with
+`0x`: if MetaMask shows 64 characters without it, type `0x` in front.
+
 ## Part C: connect the bot (5 min, in the browser)
 
 **C1. Give the bot the wallet key.** In your fork: **Settings → Secrets and variables → Actions →
 Secrets tab → New repository secret**.
 
 - Name: `TELEGRAPH_EVM_PRIVATE_KEY`
-- Secret: the Private key from B2
+- Secret: the Private key from B2 (or W7), starting with `0x`
 
 **C2. Nothing else to set for a test.** The workflow file in C3 already contains defaults: the bot
 pays only for releases published after **1 Jan 2026**, and opens free PRs for older ones (see D2). Why a date: an AI coding assistant can't know about releases after its training data ends,
