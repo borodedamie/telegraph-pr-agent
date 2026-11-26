@@ -175,69 +175,143 @@ should be `200000`: USDC has 6 decimals, so `200000` = 0.20 USDC.
 
 ### Part B in the browser instead (MetaMask and Remix)
 
-> **Not yet tested end to end; the terminal route above is.** The three contract calls were checked
-> on Sepolia, but nobody has clicked through these steps yet. If a button or label differs, please
-> open an issue.
+> **Tested end to end on 26 Nov 2026** with the MetaMask browser extension and Remix 2.6.17: the
+> deposit below, then the bot paying for an answer with this wallet's key. These apps change their
+> screens often: if a button has moved or been renamed, look for the nearest match, and please open
+> an issue so we can fix this page.
 
-The same steps without a terminal: MetaMask holds the wallet, and Remix, a browser editor for
-Ethereum contracts, sends the three transactions. (Etherscan's "Write Contract" page doesn't work
-here: the test USDC contract isn't verified on Etherscan.)
+No terminal needed. You use two free tools in your web browser:
 
-**W1. Install MetaMask** from [metamask.io](https://metamask.io) and create a wallet. Already have
-one? Add a new account just for this (account menu → **Add account**). Never use an account that
-holds anything real: in W7 you give this account's key to GitHub.
+- **MetaMask** is a wallet. It holds your test account and asks you to approve every transaction.
+- **Remix** is a website for talking to blockchain contracts. You use it to press three buttons:
+  get test USDC, allow Telegraph to take some of it, and put it in.
 
-**W2. Switch to Sepolia.** In MetaMask's network menu, turn on **Show test networks** and pick
-**Sepolia**. Copy your account's address.
+Use a computer (Chrome, Brave, Firefox or Edge). The MetaMask phone app is fine for W1 to W3, but
+Remix needs the browser extension.
 
-**W3. Get test ETH.** Open the
-[Google Cloud Sepolia faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia),
-paste the address, request. Wait until MetaMask shows some SepoliaETH.
+Two rules for the whole of this part:
 
-**W4. Open Remix and add the contracts.** Go to [remix.ethereum.org](https://remix.ethereum.org).
-In the **File explorer**, create a file `telegraph.sol` and paste:
+- **Everything happens on Sepolia**, the test network. If Remix or MetaMask ever says **Main**,
+  **Mainnet** or **Ethereum** instead of Sepolia, stop and switch back (W2). Main uses real money.
+- **Never click Remix's big Deploy button, and leave Value at 0.** You only use contracts that
+  already exist.
+
+**W1. Install MetaMask and make a test account.**
+
+1. Install the extension from [metamask.io](https://metamask.io) and follow its set-up. Write the
+   recovery phrase down somewhere safe.
+2. Already use MetaMask? Make a separate account just for this: open the account list at the top
+   and click **Add account**. Not **Add wallet**, which is for importing an existing one.
+
+![MetaMask account list with the Add account button](tutorial-images/browser-1-add-account.png)
+
+Never use an account that holds anything real: in W7 you give this account's key to GitHub.
+
+**W2. Switch to the Sepolia test network.**
+
+1. Open MetaMask's network list (**Manage networks**) and turn on **Show test networks**.
+2. Click **Sepolia** to switch to it. It's already set up: don't edit or save its settings.
+
+![Manage networks with Show test networks turned on and Sepolia listed](tutorial-images/browser-2-test-networks.png)
+
+**W3. Get free test ETH.** The three transactions below each cost a tiny fee in test ETH.
+
+1. Copy your account's address: click the `0x…` address under the account name.
+2. Open the [Google Cloud Sepolia faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia),
+   choose **Ethereum Sepolia**, paste the address and click to receive. You may need to sign in to
+   Google.
+3. Wait a minute until MetaMask shows SepoliaETH (the faucet gives 0.05; you need about 0.002).
+
+![Google faucet: Transaction complete, 0.05 Sepolia ETH sent](tutorial-images/browser-3-faucet.png)
+
+Don't use MetaMask's **Add funds** or **Buy** buttons: they buy real crypto with real money.
+
+**W4. Open Remix and describe the contracts to it.**
+
+1. Go to [remix.ethereum.org](https://remix.ethereum.org) (it may move you to `app.remix.live`;
+   that's the same thing). If it asks you to sign in, sign in with your MetaMask wallet. It's free.
+2. Click **Files** in the left bar, then the **new file** icon. Name the file `telegraph.sol`.
+3. Paste this into it:
 
 ```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface TestUSDC {
+interface TelegraphTest {
     function mint(address to, uint256 amount) external;
     function approve(address spender, uint256 amount) external returns (bool);
-}
-
-interface TelegraphEscrow {
     function depositUSDC(uint256 amount) external;
 }
 ```
 
-Open the **Solidity compiler** tab and click **Compile telegraph.sol**. This only describes the
-functions to Remix; nothing is deployed.
+4. Click **Compile** in the left bar, then **Compile telegraph.sol**. A green tick means it worked.
 
-**W5. Connect MetaMask.** Open the **Deploy & run transactions** tab. Set **Environment** to
-**Injected Provider - MetaMask** and approve the connection in MetaMask. Check that it shows
-Sepolia (`11155111`) and your address.
+This file only tells Remix the names of three buttons on contracts that already exist. Nothing new
+is created.
 
-**W6. Mint, approve, deposit.** Each **transact** opens MetaMask; confirm it and wait until Remix
-shows the transaction as done before the next one.
+**W5. Connect Remix to MetaMask.**
 
-1. In **Contract**, pick `TestUSDC`. Paste `0xcc194e1a843B658526D0D5C431f670028582Ae17` next to
-   **At Address** and click it. Under **Deployed Contracts**, open it:
-   - `mint`: `to` = your address, `amount` = `1000000` (1 USDC) → **transact**.
-   - `approve`: `spender` = `0x72a70e949362670Bf8bceAd24eFC5b8f950aa08b`, `amount` = `200000`
-     → **transact**.
-2. In **Contract**, pick `TelegraphEscrow`. Paste `0x72a70e949362670Bf8bceAd24eFC5b8f950aa08b`
-   next to **At Address** and click it. Open it:
-   - `depositUSDC`: `amount` = `200000` (0.20 USDC) → **transact**.
+1. Click **Deploy** in the left bar.
+2. Under **Environment**, choose **Browser Extension**, then **MetaMask** in the box next to it.
+   Approve the connection in MetaMask.
 
-If the deposit fails with "insufficient allowance", the approve hasn't landed yet: wait 10 seconds
-and transact again. Check: open
-`https://devnode.telegraphprotocol.com/v1/ledger/account/<your address>`; `available` should be
-`200000`.
+![Remix Environment list: choose Browser Extension](tutorial-images/browser-4-environment.png)
 
-**W7. Copy the private key.** In MetaMask: account menu → **Account details** → **Show private
-key**, enter your password, copy it. That's the secret for C1. The bot needs it to start with
-`0x`: if MetaMask shows 64 characters without it, type `0x` in front.
+3. Check three things: the badge says **Sepolia (11155111)**, the account is your test address, and
+   the balance is your test ETH (about 0.05). If the badge says **Main (1)**, switch MetaMask back
+   to Sepolia (W2): MetaMask has a network choice per website at the bottom of its window.
+
+![Remix connected: Browser Extension, MetaMask, Sepolia (11155111), TelegraphTest compiled](tutorial-images/browser-5-compiled-sepolia.png)
+
+**W6. Get test USDC and put 0.20 of it into Telegraph.** You add two contracts to Remix, one per
+address, then press three buttons in this order: **mint**, **approve**, **depositUSDC**. Each
+button opens MetaMask: check it says Sepolia, confirm, and wait for the green tick in Remix's
+console at the bottom before the next one.
+
+1. Open the **Deployed Contracts** tab and click **+ Add Contract**. Keep `telegraph.sol` open in
+   the editor: Remix uses it for the buttons.
+2. **Delete anything already in the address box**, paste the test USDC address
+   `0xcc194e1a843B658526D0D5C431f670028582Ae17` and click **Add**. Remix sometimes fills in your
+   own address here; that's wrong and the buttons will fail.
+
+![Add a deployed contract, with the USDC address pasted](tutorial-images/browser-6-add-contract.png)
+
+3. A card appears: **TelegraphTest**, **Sepolia**, `0xcc1…Ae17`. On this card:
+   - **mint**: `to` = your address, `amount` = `1000000` (that's 1 USDC; USDC counts in millionths).
+     Click **Transact**.
+   - **approve**: `spender` = `0x72a70e949362670Bf8bceAd24eFC5b8f950aa08b` (Telegraph's payment
+     contract), `amount` = `200000` (0.20 USDC). Click **Transact**.
+
+![The approve button filled in on the 0xcc1…Ae17 card, and the green tick in the console](tutorial-images/browser-7-approve.png)
+
+4. Click **+ Add Contract** again, delete what's in the box, paste Telegraph's payment contract
+   `0x72a70e949362670Bf8bceAd24eFC5b8f950aa08b` and click **Add**. A second card appears:
+   `0x72a…aa08b`.
+5. On **that** card: **depositUSDC**: `amount` = `200000`. Click **Transact**.
+
+![depositUSDC 200000 on the 0x72a…aa08b card, both transactions green](tutorial-images/browser-8-deposit.png)
+
+Each card shows all three buttons, but only some work there: **mint** and **approve** on the
+`0xcc1…` card, **depositUSDC** on the `0x72a…` card. If MetaMask or Remix says **gas estimation
+failed** or **execution reverted**, cancel: you're on the wrong card, or approve hasn't finished
+yet. Don't choose to send anyway.
+
+MetaMask may also offer to turn your account into a **smart account**, and Remix may then show a
+different "to" address (a MetaMask contract). That's fine: your address and key stay the same, and
+the bot can still pay with the key (checked on 26 Nov 2026 with such an account).
+
+**Check:** open `https://devnode.telegraphprotocol.com/v1/ledger/account/<your address>`.
+`available` should say `200000`, which is 0.20 USDC, enough for about 10 answers.
+
+**W7. Copy the private key.** This is the password-like secret the bot uses to pay.
+
+1. In MetaMask, open the account list, click **⋮** next to your test account, then **Account
+   details** → **Show private key**, and enter your MetaMask password.
+2. Copy it. It must be `0x` followed by 64 letters and digits (66 characters in all). If what
+   MetaMask shows already starts with `0x`, use it as it is. If it doesn't, type `0x` in front.
+3. Keep it to yourself: anyone with it controls this account. Don't paste it into chats or issues.
+
+You'll paste it into GitHub in C1.
 
 ## Part C: connect the bot (5 min, in the browser)
 
@@ -419,6 +493,7 @@ what one merged upgrade really cost.
 | Payment refused / nothing bought | Check `available` from B5 is above 0 |
 | Warning `… can't be installed alongside the repository's current dependencies (…); skipped, no purchase made` | That upgrade needs another package upgraded first, e.g. `react-dom` 19 needs `react` 19. Nothing was bought. It's picked up once the other package is upgraded |
 | Warning `Lock regeneration does not support local, URL, Git or alias dependencies` on every package | The project has a dependency from GitHub, a URL or a local folder, so the bot can't update the lockfile safely and skips everything. Nothing was bought. Use another project (A1) |
+| Warning `Lock regeneration only supports public npm registry packages` on many packages, each starting with a folder name | That folder's lockfile gets some packages from somewhere other than the public npm registry (a mirror or GitHub), so the bot skips that folder. Nothing was bought for it. Other projects in the repository still run normally |
 | Doesn't run on its own after a push | `branches: [main]` in the C3 file doesn't match your default branch. Change it |
 | Green run but no PRs, no `ledger` branch, empty spend page | The bot found nothing it supports. Open the run and look at the yellow warnings at the top. `Python manifest is not resolved here` means a `pyproject.toml`/uv project, which isn't supported yet: use a JavaScript project. No warning means no dependency has a newer release: try another project |
 
