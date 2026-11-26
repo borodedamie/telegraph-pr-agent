@@ -21,7 +21,7 @@ recorded with its receipt, and the dashboard shows the spend and the **cost per 
 > **Testnet prototype.** Payments are Ethereum Sepolia test USDC, which is not revenue. Most
 > purchases come from the team's own installations, and the miner bought from (7314) is also the
 > team's, so those are related-party tests. In team repositories 2 paid bot PRs have been merged
-> (cost per merged PR 0.89 USDC, n=2). Two independent developers, invited to try it, ran the bot on
+> (cost per merged PR 0.90 USDC, n=2). Two independent developers, invited to try it, ran the bot on
 > their own repositories (`linda-ochem/temp`, `shadrxcc/porncrit-fe`) and merged 19 of its paid PRs
 > on 22 Nov. They used team testnet wallets, so their 37 purchases are team-funded, related-party
 > spend, not outside demand (see the footnotes in the evidence index). A third outside developer
@@ -37,7 +37,7 @@ recorded with its receipt, and the dashboard shows the spend and the **cost per 
 | Stage | What happens | State |
 | --- | --- | --- |
 | Scan | On a push that changes dependency files, or a manual run, read installed versions from the lockfile (npm, pnpm, Yarn, Bun) or exact Python pins, and find newer stable releases on npm/PyPI | works |
-| Learn | For each release after `MODEL_CUTOFF`, buy one `QUESTION_ANSWERING_GENERAL` answer, from miner 7314 first, then ranked miners | works with per-call `exact` payment (live, 8 and 11 Nov 2026) and with escrow payment, needed since 20 Nov 2026 (live from the Action since 20 Nov 2026; 117 of the 132 event-window purchases) |
+| Learn | For each release after `MODEL_CUTOFF`, buy one `QUESTION_ANSWERING_GENERAL` answer, from miner 7314 first, then ranked miners | works with per-call `exact` payment (live, 8 and 11 Nov 2026) and with escrow payment, needed since 20 Nov 2026 (live from the Action since 20 Nov 2026; 118 of the 133 event-window purchases) |
 | Report | Open one PR per package and target version (never duplicated), listing what changed and where the repository uses it. Releases on or before the cutoff get a free PR with links, no purchase | works |
 | Account | Record every attempt, purchase, PR proposal, merge and close on the repository's `ledger` branch; the dashboard computes cost per merged PR | works; 21 paid PRs merged: 2 in team repos (21 Nov), 19 by two outside developers (22 Nov) |
 | Fix | After a maintainer adds `telegraph:fix`, generate the migration patch and run the repository's tests in a job without secrets | not built: the gate failed on 22–23 Nov (the only code-writing miner gave one failing patch, then two outages; [SPEC §2.9](docs/SPEC.md)). PRs offer the call-site report instead |
@@ -309,19 +309,19 @@ PR without any purchase.
 **What works today, with proof of Telegraph use, spending, and latency?**
 A GitHub Action that pays Telegraph miners with x402 on Ethereum Sepolia (testnet) and records
 every stage on a public ledger branch in the installer's repo. In the event window, as of 26 Nov
-2026 06:48 UTC (the [evidence index](#evidence-index-every-repository-running-the-bot) below): 132
-purchases, 2.52 USDC, across 13 repos, and 21 paid PRs merged into default branches. In the team's
+2026 17:44 UTC (the [evidence index](#evidence-index-every-repository-running-the-bot) below): 133
+purchases, 2.54 USDC, across 14 repos, and 21 paid PRs merged into default branches. In the team's
 repos 2 were merged (`lemind/onewallet-radar` #12 and `borodedamie/code-generator` #1, 21 Nov), so
-cost per merged PR is 0.89 USDC (1.77 USDC ÷ 2). Two outside developers merged the other 19 on
+cost per merged PR is 0.90 USDC (1.79 USDC ÷ 2). Two outside developers merged the other 19 on
 22 Nov: 0.04 USDC per merged PR (0.74 USDC ÷ 19), paid from team wallets. Each
 purchase links its receipt and Telegraph signal, plus its on-chain transaction for per-call
-payments; see the live dashboard and evidence CSV. Answer time is about 4.6 s median (130
+payments; see the live dashboard and evidence CSV. Answer time is about 4.6 s median (131
 answers, 95th percentile 19.5 s) from recording the paid request to recording the answer, ledger
 writes included; the miner's own measured time is 2.1 s median, 9.8 s 95th percentile, for new
 questions. Spend controls are in place: a per-call price cap, a monthly budget, and payments that
-can't be made twice after a crash. Ten of the 13 repos are the team's own. Two belong to
+can't be made twice after a crash. Eleven of the 14 repos are the team's own. Two belong to
 developers with no connection to the team (confirmed 23 Nov 2026), who used team testnet wallets.
-The third outside developer paid from their own wallet: one purchase, 0.01 USDC. 120 of the 132
+The third outside developer paid from their own wallet: one purchase, 0.01 USDC. 121 of the 133
 answers came from our own miner 7314, so this is testing, not proven independent demand.
 
 **Why would someone use or pay for it, and what remains before production?**
@@ -348,7 +348,7 @@ the Action is `borodedamie/telegraph-pr-agent@v1`. Results appear at
 
 ### Evidence index: every repository running the bot
 
-Each installation keeps its own public ledger on its `ledger` branch, so evidence is spread across repositories. This index lists every installation we know of. Each repository is labelled **team** (owned by a team member, so related-party) or **outside**, and totals are split by that label. Figures cover the event window (1 Nov – 1 Dec 2026), as of 26 Nov 2026 06:48 UTC. Each purchase's receipt, Telegraph signal and, for per-call `exact` payments, on-chain transaction are linked from that repository's dashboard and its **Download evidence CSV**.
+Each installation keeps its own public ledger on its `ledger` branch, so evidence is spread across repositories. This index lists every installation we know of. Each repository is labelled **team** (owned by a team member, so related-party) or **outside**, and totals are split by that label. Figures cover the event window (1 Nov – 1 Dec 2026), as of 26 Nov 2026 17:44 UTC. Each purchase's receipt, Telegraph signal and, for per-call `exact` payments, on-chain transaction are linked from that repository's dashboard and its **Download evidence CSV**.
 
 | Repository | Owner | Evidence | Purchases (spend) | Paid PRs: merged / closed / open | Free PRs (merged) | Cost per merged PR |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -362,10 +362,11 @@ Each installation keeps its own public ledger on its `ledger` branch, so evidenc
 | [`codexempire/flight-check`](https://github.com/codexempire/flight-check) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=codexempire/flight-check) · [ledger](https://raw.githubusercontent.com/codexempire/flight-check/ledger/ledger.jsonl) | 6 (0.12 USDC) | 0 / 0 / 6 | 3 (0) | N/A |
 | [`codexempire/web-crawler`](https://github.com/codexempire/web-crawler) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=codexempire/web-crawler) · [ledger](https://raw.githubusercontent.com/codexempire/web-crawler/ledger/ledger.jsonl) | 30 (0.57 USDC) | 0 / 0 / 7 | 11 (0) | N/A |
 | [`codexempire/crypto-giant`](https://github.com/codexempire/crypto-giant) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=codexempire/crypto-giant) · [ledger](https://raw.githubusercontent.com/codexempire/crypto-giant/ledger/ledger.jsonl) | 23 (0.43 USDC) | 0 / 0 / 11 | 5 (0) | N/A |
+| [`borodedamie/csr-roadmap`](https://github.com/borodedamie/csr-roadmap) | team | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=borodedamie/csr-roadmap) · [ledger](https://raw.githubusercontent.com/borodedamie/csr-roadmap/ledger/ledger.jsonl) | 1 (0.02 USDC)⁶ | 0 / 0 / 1 | 0 | N/A |
 | [`linda-ochem/temp`](https://github.com/linda-ochem/temp) | outside | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=linda-ochem/temp) · [ledger](https://raw.githubusercontent.com/linda-ochem/temp/ledger/ledger.jsonl) | 15 (0.30 USDC)² | 6 / 0 / 0 | 0 | 0.05 USDC (n=6) |
 | [`shadrxcc/porncrit-fe`](https://github.com/shadrxcc/porncrit-fe) | outside | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=shadrxcc/porncrit-fe) · [ledger](https://raw.githubusercontent.com/shadrxcc/porncrit-fe/ledger/ledger.jsonl) | 22 (0.44 USDC)³ | 13 / 0 / 0 | 5 (5) | 0.03 USDC (n=13) |
 | [`telegraph-pr-agent-plm-tests/shuttle-gate-pr-tests`](https://github.com/telegraph-pr-agent-plm-tests/shuttle-gate-pr-tests) | outside | [dashboard](https://telegraph-pr-agent.vercel.app/?repo=telegraph-pr-agent-plm-tests/shuttle-gate-pr-tests) · [ledger](https://raw.githubusercontent.com/telegraph-pr-agent-plm-tests/shuttle-gate-pr-tests/ledger/ledger.jsonl) | 1 (0.01 USDC)⁵ | 0 / 0 / 0 | 0 | N/A |
-| **Team total** | | | **94 (1.77 USDC)** | **2 / 9 / 39** | **23 (2)** | **0.89 USDC (n=2)** |
+| **Team total** | | | **95 (1.79 USDC)** | **2 / 9 / 40** | **23 (2)** | **0.90 USDC (n=2)** |
 | **Outside total** | | | **38 (0.75 USDC: 0.74 team-funded⁴, 0.01 own⁵)** | **19 / 0 / 0** | **5 (5)** | **0.04 USDC (n=19)⁴** |
 
 ¹ grpc-tutorial's PR #3 merged into `test/readable-changes`, a test branch, not the default branch. Its merge row was written before merge accounting checked the branch, so it carries no base reference. It is counted as closed, not merged, and never enters cost per merged PR.
@@ -378,6 +379,8 @@ Each installation keeps its own public ledger on its `ledger` branch, so evidenc
 
 ⁵ `telegraph-pr-agent-plm-tests/shuttle-gate-pr-tests` is a fork of `polymorphm/shuttle-gate` set up by its author, an outside tester, on 25 Nov 2026. It is the first purchase funded from outside the team: wallet [`0x0405F16BD5b0Ac0091e2959e014332262C379B02`](https://sepolia.etherscan.io/address/0x0405F16BD5b0Ac0091e2959e014332262C379B02), not a team wallet, deposited 0.20 USDC into Telegraph escrow, and Telegraph's ledger shows 0.01 USDC charged. One run (15:23 UTC) bought one answer for the Python package `sshuttle` 1.3.2 → 2.0.0 from miner 780019 (ZK Source-Excerpt QA Candidate, rank 2, chosen by rank; receipt `0xc515ccf1…7047d6`, epoch 55). The answer did not match the expected change-list format, so the bot marked it unusable and opened no PR. The repository was never found automatically because the search looks for the bot's PR branches.
 
+⁶ `borodedamie/csr-roadmap` is a team repository used on 26 Nov 2026 to test the tutorial's browser route end to end: wallet `0xA013…1713` was funded with MetaMask and Remix (MetaMask turned it into a smart account with EIP-7702 delegation code), and the Action then paid with its key from escrow. One purchase from miner 7314 (`our_choice`, related-party): `bootstrap` 5.1.3 → 5.3.9, 0.02 USDC, epoch 61, marked useful; it opened PR #1. Telegraph's ledger for the wallet shows the 0.02 USDC as accepted usage (`unbilled` 20000, `available` 180000 on 26 Nov), so a key whose address has delegation code still pays.
+
 How the list is kept: every hour until 1 Dec, the **Find installs of the Action** workflow (`.github/workflows/find-installs.yml`) runs `scripts/find-installs.mjs`. Its main source is a GitHub PR search for the bot's branch prefix `fix/telegraph-dependency-`, which finds every repository where the bot has opened a PR, usually within minutes; code search and the repository's dependents page are extra sources. It publishes the list as `installs.json` on this repository's `ledger` branch. The dashboard's default view lists a repository found that way under "Found automatically, not verified", with a link to its own view, and leaves it out of every total: anyone can create a branch with that prefix and a ledger with made-up rows. It joins the totals and this index only after a team member checks it and adds it to the known list (`KNOWN_INSTALLS` in `web/src/accounting.js`). Each new repository, team or outside, is also reported on the issue "Installs of the Action". An installation whose runs never reached a PR can still be missing; it can open an issue to be added.
 
 If you try the Action, open an issue with what you ran, the signal hash and whether the answer was useful. That is the kind of independent test the project needs.
@@ -386,7 +389,7 @@ If you try the Action, open an issue with what you ran, the signal hash and whet
 
 - The same team controls the agent and the package-release miner (payout wallet `0x74f2840C8A564F791f50aD76c38EF078258588dC`). Any agent purchase from that miner is related-party testing, not independent demand, adoption or third-party validation.
 - Cutoff provenance on old rows (note added 19 Nov 2026): the Action purchases of 8 and 11 Nov 2026 record `MODEL_PROVIDER=telegraph` and `MODEL_ID=7314`. Those values named the miner, not a coding model; the cutoff (2026-01-01, team-assumed) belongs to the installer's coding model. The rows are left as written. From 19 Nov 2026 (#46) the Action rejects Telegraph or a miner id in these fields.
-- Buyer wallets (both team-controlled): [`0x85Bb8c5Db7505a348af0C2aC03819827d4e435C8`](https://sepolia.etherscan.io/address/0x85Bb8c5Db7505a348af0C2aC03819827d4e435C8) paid on 3, 4 and 11 Nov 2026, and [`0x30A33F953a9bCc9Aff927caC815984ab2Eab305f`](https://sepolia.etherscan.io/address/0x30A33F953a9bCc9Aff927caC815984ab2Eab305f) paid on 8 Nov 2026. Payments go to Telegraph's payment contract [`0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b`](https://sepolia.etherscan.io/address/0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b), not directly to a miner. On 22 Nov 2026 the same two wallets also paid for two invited outside developers who had no Telegraph wallet (`0x85Bb…` for `shadrxcc/porncrit-fe`, `0x30A3…` for `linda-ochem/temp`), so those purchases are team-funded too. Purchases from miner 7314 by these wallets are related-party. Keys are never published.
+- Buyer wallets (team-controlled): [`0x85Bb8c5Db7505a348af0C2aC03819827d4e435C8`](https://sepolia.etherscan.io/address/0x85Bb8c5Db7505a348af0C2aC03819827d4e435C8) paid on 3, 4 and 11 Nov 2026, and [`0x30A33F953a9bCc9Aff927caC815984ab2Eab305f`](https://sepolia.etherscan.io/address/0x30A33F953a9bCc9Aff927caC815984ab2Eab305f) paid on 8 Nov 2026, and [`0xA013Dd38d242E24751066846D41059d260fb1713`](https://sepolia.etherscan.io/address/0xA013Dd38d242E24751066846D41059d260fb1713) paid on 26 Nov 2026 (the tutorial's browser-route test wallet, see footnote ⁶). Payments go to Telegraph's payment contract [`0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b`](https://sepolia.etherscan.io/address/0x3624EB012B5E998BB57B6bE6C9Cfc9c4bc5eb99b), not directly to a miner. On 22 Nov 2026 the same two wallets also paid for two invited outside developers who had no Telegraph wallet (`0x85Bb…` for `shadrxcc/porncrit-fe`, `0x30A3…` for `linda-ochem/temp`), so those purchases are team-funded too. Purchases from miner 7314 by these wallets are related-party. Keys are never published.
 - Code written before 1 Nov 2026: the CLI vertical slice (commit `9faf16a` and earlier; removed on 11 Nov 2026). Work added during the event will be summarised here.
 - Event window: purchases, transactions, usage, demos and adoption evidence claimed for Season II fall between 1 Nov and 1 Dec 2026. Package release notes and registry records keep their original dates, including dates before the event.
 - Reused open source, with licences read from each package on 19 Nov 2026. Runtime: `@x402/fetch`, `@x402/evm`, `@renovatebot/pep440` (Apache-2.0); `@actions/core`, `viem`, `zod`, `jsonc-parser`, `@upstash/redis` (MIT); `@yarnpkg/parsers` (BSD-2-Clause); `semver` (ISC). Development only: `typescript`, `@vercel/node` (Apache-2.0); `vitest`, `vite`, `esbuild`, `tsx`, `@types/node`, `@types/semver` (MIT).
