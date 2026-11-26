@@ -175,9 +175,10 @@ should be `200000`: USDC has 6 decimals, so `200000` = 0.20 USDC.
 
 ### Part B in the browser instead (MetaMask and Remix)
 
-> **Tested end to end on 26 Nov 2026** with the MetaMask browser extension and Remix 2.6.17. These
-> apps change their screens often: if a button has moved or been renamed, look for the nearest
-> match, and please open an issue so we can fix this page.
+> **Tested end to end on 26 Nov 2026** with the MetaMask browser extension and Remix 2.6.17: the
+> deposit below, then the bot paying for an answer with this wallet's key. These apps change their
+> screens often: if a button has moved or been renamed, look for the nearest match, and please open
+> an issue so we can fix this page.
 
 No terminal needed. You use two free tools in your web browser:
 
@@ -296,7 +297,8 @@ failed** or **execution reverted**, cancel: you're on the wrong card, or approve
 yet. Don't choose to send anyway.
 
 MetaMask may also offer to turn your account into a **smart account**, and Remix may then show a
-different "to" address (a MetaMask contract). That's fine: your address and key stay the same.
+different "to" address (a MetaMask contract). That's fine: your address and key stay the same, and
+the bot can still pay with the key (checked on 26 Nov 2026 with such an account).
 
 **Check:** open `https://devnode.telegraphprotocol.com/v1/ledger/account/<your address>`.
 `available` should say `200000`, which is 0.20 USDC, enough for about 10 answers.
@@ -491,6 +493,7 @@ what one merged upgrade really cost.
 | Payment refused / nothing bought | Check `available` from B5 is above 0 |
 | Warning `… can't be installed alongside the repository's current dependencies (…); skipped, no purchase made` | That upgrade needs another package upgraded first, e.g. `react-dom` 19 needs `react` 19. Nothing was bought. It's picked up once the other package is upgraded |
 | Warning `Lock regeneration does not support local, URL, Git or alias dependencies` on every package | The project has a dependency from GitHub, a URL or a local folder, so the bot can't update the lockfile safely and skips everything. Nothing was bought. Use another project (A1) |
+| Warning `Lock regeneration only supports public npm registry packages` on many packages, each starting with a folder name | That folder's lockfile gets some packages from somewhere other than the public npm registry (a mirror or GitHub), so the bot skips that folder. Nothing was bought for it. Other projects in the repository still run normally |
 | Doesn't run on its own after a push | `branches: [main]` in the C3 file doesn't match your default branch. Change it |
 | Green run but no PRs, no `ledger` branch, empty spend page | The bot found nothing it supports. Open the run and look at the yellow warnings at the top. `Python manifest is not resolved here` means a `pyproject.toml`/uv project, which isn't supported yet: use a JavaScript project. No warning means no dependency has a newer release: try another project |
 
