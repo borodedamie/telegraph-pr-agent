@@ -175,6 +175,10 @@ should be `200000`: USDC has 6 decimals, so `200000` = 0.20 USDC.
 
 ### Part B in the browser instead (MetaMask and Remix)
 
+> **Not yet tested end to end; the terminal route above is.** The three contract calls were checked
+> on Sepolia, but nobody has clicked through these steps yet. If a button or label differs, please
+> open an issue.
+
 The same steps without a terminal: MetaMask holds the wallet, and Remix, a browser editor for
 Ethereum contracts, sends the three transactions. (Etherscan's "Write Contract" page doesn't work
 here: the test USDC contract isn't verified on Etherscan.)
