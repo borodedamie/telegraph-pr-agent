@@ -266,6 +266,17 @@ it("continues past a bad saved answer and keeps earlier partial PR outputs", asy
   expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("bad: Invalid answer"));
 });
 
+it("stops buying when a payment fails but still reports the earlier PR failure", async () => {
+  mocks.candidates.mockResolvedValue([{ package: "axios" }, { package: "react" }, { package: "zod" }]);
+  mocks.apply.mockRejectedValueOnce(new Error("GitHub Actions is not allowed to create pull requests in this repository"));
+  mocks.purchase.mockImplementationOnce(async ({ client, intent, query }) => client.buy(intent, query))
+    .mockRejectedValueOnce(new Error("QUESTION_ANSWERING_GENERAL: no ranked miner answered — 7314: HTTP 402"));
+  await run("failed");
+  expect(mocks.purchase).toHaveBeenCalledTimes(2);
+  expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("axios: GitHub Actions is not allowed to create pull requests"));
+  expect(mocks.failed).toHaveBeenCalledWith(expect.stringContaining("react: QUESTION_ANSWERING_GENERAL: no ranked miner answered — 7314: HTTP 402"));
+});
+
 it("skips an upgrade the package manager refuses before paying for it, without failing the run", async () => {
   mocks.candidates.mockResolvedValue([{ package: "react-dom", targetVersion: "19.3.1" }, { package: "good" }]);
   mocks.installable.mockImplementationOnce(async () => {
