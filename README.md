@@ -26,7 +26,7 @@ recorded with its receipt, and the dashboard shows the spend and the **cost per 
 > `officialpaul/code-generator`) used team testnet wallets, so those 41 purchases are team-funded,
 > related-party spend, not outside demand. Two paid from their own wallets: one 0.01 USDC answer on
 > 25 Nov (unusable, no PR), and on 27 Nov `shadrxcc`, returning on a second repository, deposited
-> 0.40 USDC and bought 10 answers, but that run stopped before opening PRs (footnote ⁷). Figures: [evidence index](#evidence-index-every-repository-running-the-bot).
+> 0.40 USDC and bought 10 answers, but no PRs opened (footnote ⁷). Figures: [evidence index](#evidence-index-every-repository-running-the-bot).
 
 ## Demo
 
@@ -335,8 +335,8 @@ visible per PR, with budget caps. Before production:
 - support for monorepos and workspaces;
 - routing to the best-ranked miner by default, rather than our own;
 - independent buyers: two developers have paid from their own wallets so far (11 purchases,
-  0.21 USDC): one unusable answer on 25 Nov, and 10 answers on 27 Nov whose run stopped before
-  opening PRs. No PR paid for by an outside wallet has been merged yet.
+  0.21 USDC): one unusable answer on 25 Nov, and 10 answers on 27 Nov that opened no PRs
+  yet. No PR paid for by an outside wallet has been merged yet.
 
 **How can someone try it, and who maintains it?**
 Copy two workflow files into a public repo, add a wallet secret holding Sepolia test USDC,
@@ -383,7 +383,7 @@ Each installation keeps its own public ledger on its `ledger` branch, so evidenc
 
 ⁶ `borodedamie/csr-roadmap` is a team repository used on 26 Nov 2026 to test the tutorial's browser route end to end: wallet `0xA013…1713` was funded with MetaMask and Remix (MetaMask turned it into a smart account with EIP-7702 delegation code), and the Action then paid with its key from escrow. One purchase from miner 7314 (`our_choice`, related-party): `bootstrap` 5.1.3 → 5.3.9, 0.02 USDC, epoch 61, marked useful; it opened PR #1. Telegraph's ledger for the wallet shows the 0.02 USDC as accepted usage (`unbilled` 20000, `available` 180000 on 26 Nov), so a key whose address has delegation code still pays.
 
-⁷ `shadrxcc/lifelineai` belongs to the same outside developer as `shadrxcc/porncrit-fe`, returning on a second repository on 27 Nov 2026, this time with their own wallet: [`0xBBA53fdCA54a53f76c6dEC06CB882600Bb8c32AE`](https://sepolia.etherscan.io/address/0xBBA53fdCA54a53f76c6dEC06CB882600Bb8c32AE), funded from a public Sepolia faucet, which minted its own test USDC and deposited 0.40 USDC into Telegraph escrow (18:20 and 18:43 UTC); Telegraph's ledger shows 0.20 USDC charged. One manual run (from 18:32 UTC) bought 10 answers from miner 7314 (`our_choice`, so related-party on the seller side; 3 were "not found"). The 11th payment was refused because the first deposit was used up, and the run stopped with an error before opening any PR, so the 10 answers have no PR yet. A re-run reuses them without paying again.
+⁷ `shadrxcc/lifelineai` belongs to the same outside developer as `shadrxcc/porncrit-fe`, returning on a second repository on 27 Nov 2026, this time with their own wallet: [`0xBBA53fdCA54a53f76c6dEC06CB882600Bb8c32AE`](https://sepolia.etherscan.io/address/0xBBA53fdCA54a53f76c6dEC06CB882600Bb8c32AE), funded from a public Sepolia faucet, which minted its own test USDC and deposited 0.40 USDC into Telegraph escrow (18:20 and 18:43 UTC); Telegraph's ledger shows 0.20 USDC charged. One manual run (from 18:32 UTC) bought 10 answers from miner 7314 (`our_choice`, so related-party on the seller side; 3 were "not found"). Six answers had documented changes and the bot pushed their `fix/telegraph-dependency-*` branches, but the repository has no PRs: GitHub refused to open them, most likely because "Allow GitHub Actions to create and approve pull requests" was off. The 11th payment was then refused because the first deposit was used up, and that error hid the PR refusal from the log (fixed in #84). With the setting on, a re-run reuses the 10 answers without paying again.
 
 ⁸ `officialpaul/code-generator` is a fork of `borodedamie/code-generator` by a developer with no connection to the team. They had no Telegraph wallet, so a team member gave them the key of the team test wallet `0xA013…1713` (footnote ⁶); Telegraph's signal records show that payer. One run on 27 Nov 2026 (11:54 UTC) bought 4 answers: 3 from miner 7314 and 1 from ranked miner 780019 (unusable), and opened 3 PRs; the owner merged PR #1 (`express` 4.22.3 → 5.3.0) into the default branch `main` at 12:08 UTC.
 
