@@ -331,32 +331,42 @@ const run = async (): Promise<void> => {
           else failures.push(`${message}; no purchase made`);
           continue;
         }
-        const purchase = await purchaseAssessment({
-          ledger,
-          repository,
-          baseSha,
-          dependency,
-          client,
-          provenance,
-          intent: INTENT_ID,
-          query: assessmentPrompt([dependency]),
-          monthlyBudget:
-            monthlyCap === null
-              ? undefined
-              : { capUsdc: monthlyCap, worstCaseUsdc: maxPrice },
-          onPurchase: (paid) => {
-            core.setOutput("message", JSON.stringify(paid));
-            if (
-              !paid.receiptHash ||
-              !paid.signalHash ||
-              (paid.rail !== "escrow" && !paid.txHash)
-            ) {
-              core.warning(
-                `${dependency.package}: paid evidence is incomplete; reconcile missing hashes from the node or wallet`,
-              );
-            }
-          },
-        });
+        let purchase: Awaited<ReturnType<typeof purchaseAssessment>>;
+        try {
+          purchase = await purchaseAssessment({
+            ledger,
+            repository,
+            baseSha,
+            dependency,
+            client,
+            provenance,
+            intent: INTENT_ID,
+            query: assessmentPrompt([dependency]),
+            monthlyBudget:
+              monthlyCap === null
+                ? undefined
+                : { capUsdc: monthlyCap, worstCaseUsdc: maxPrice },
+            onPurchase: (paid) => {
+              core.setOutput("message", JSON.stringify(paid));
+              if (
+                !paid.receiptHash ||
+                !paid.signalHash ||
+                (paid.rail !== "escrow" && !paid.txHash)
+              ) {
+                core.warning(
+                  `${dependency.package}: paid evidence is incomplete; reconcile missing hashes from the node or wallet`,
+                );
+              }
+            },
+          });
+        } catch (error) {
+          // A failed payment (an empty escrow balance, an ambiguous attempt) stops buying for this
+          // run, but failures already collected, such as a PR GitHub refused to open, are still reported.
+          failures.push(
+            `${dependency.package}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+          break;
+        }
         // An earlier run already reported this saved answer as unusable; failing every later run on it again
         // only hides new problems. A newer target version is a new assessment and is bought again.
         if (purchase.savedResultStatus === "unusable") {
