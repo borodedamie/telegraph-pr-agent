@@ -10,7 +10,7 @@ export const KNOWN_INSTALLS = ["borodedamie/telegraph-pr-agent", "borodedamie/gr
   "borodedamie/code-generator", "codexempire/chat_space_app", "codexempire/flight-check", "codexempire/web-crawler",
   "codexempire/crypto-giant", "codexempire/chatUp", "borodedamie/telegraph-fix-fixture", "linda-ochem/temp",
   "shadrxcc/porncrit-fe", "telegraph-pr-agent-plm-tests/shuttle-gate-pr-tests",
-  "borodedamie/csr-roadmap"];
+  "borodedamie/csr-roadmap", "shadrxcc/lifelineai", "officialpaul/code-generator"];
 
 /**
  * Repositories the hourly find-installs workflow found (installs.json on the ledger branch) that are
