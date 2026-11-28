@@ -192,7 +192,7 @@ Remix needs the browser extension.
 Two rules for the whole of this part:
 
 - **Everything happens on Sepolia**, the test network. If Remix or MetaMask ever says **Main**,
-  **Mainnet** or **Ethereum** instead of Sepolia, stop and switch back (W2). Main uses real money.
+  **Mainnet** or **Ethereum** instead of Sepolia, stop and switch back (see the end of W5). Main uses real money.
 - **Never click Remix's big Deploy button, and leave Value at 0.** You only use contracts that
   already exist.
 
@@ -258,10 +258,21 @@ is created.
 ![Remix Environment list: choose Browser Extension](tutorial-images/browser-4-environment.png)
 
 3. Check three things: the badge says **Sepolia (11155111)**, the account is your test address, and
-   the balance is your test ETH (about 0.05). If the badge says **Main (1)**, switch MetaMask back
-   to Sepolia (W2): MetaMask has a network choice per website at the bottom of its window.
+   the balance is your test ETH (about 0.05).
 
 ![Remix connected: Browser Extension, MetaMask, Sepolia (11155111), TelegraphTest compiled](tutorial-images/browser-5-compiled-sepolia.png)
+
+**If the badge says Main (1) instead**, MetaMask has connected Remix to the real Ethereum network.
+Switch it back before doing anything else:
+
+1. Open the MetaMask extension (the fox icon in your browser toolbar).
+2. At the bottom of its window you'll see **app.remix.live** with a small network icon and a ⌄
+   arrow next to it. That's the network for this website only. Click it.
+3. Choose **Sepolia**. If Sepolia isn't in the list, turn on **Show test networks** first (W2).
+4. Back in Remix, the badge should now say **Sepolia (11155111)**. If it still says Main, choose
+   **Browser Extension** and **MetaMask** under **Environment** again so Remix picks up the change.
+
+Don't click **Transact** on anything until the badge says Sepolia.
 
 **W6. Get test USDC and put 0.20 of it into Telegraph.** You add two contracts to Remix, one per
 address, then press three buttons in this order: **mint**, **approve**, **depositUSDC**. Each
@@ -276,9 +287,11 @@ console at the bottom before the next one.
 
 ![Add a deployed contract, with the USDC address pasted](tutorial-images/browser-6-add-contract.png)
 
-3. A card appears: **TelegraphTest**, **Sepolia**, `0xcc1…Ae17`. On this card:
-   - **mint**: `to` = your address, `amount` = `1000000` (that's 1 USDC; USDC counts in millionths).
-     Click **Transact**.
+3. A card appears. **Check its address: it must say `0xcc1…Ae17`.** If it shows your own wallet
+   address instead, remove the card (its **⋮** menu) and add it again. On the `0xcc1…Ae17` card:
+   - **mint**: `to` = **your own wallet address** (copy it from MetaMask), `amount` = `1000000`
+     (that's 1 USDC; USDC counts in millionths). Click **Transact**. Don't put the `0xcc1…` address
+     from the card in `to`: tokens sent there are lost, and the deposit later fails.
    - **approve**: `spender` = `0x72a70e949362670Bf8bceAd24eFC5b8f950aa08b` (Telegraph's payment
      contract), `amount` = `200000` (0.20 USDC). Click **Transact**.
 
@@ -286,7 +299,7 @@ console at the bottom before the next one.
 
 4. Click **+ Add Contract** again, delete what's in the box, paste Telegraph's payment contract
    `0x72a70e949362670Bf8bceAd24eFC5b8f950aa08b` and click **Add**. A second card appears:
-   `0x72a…aa08b`.
+   check that it says `0x72a…aa08b`.
 5. On **that** card: **depositUSDC**: `amount` = `200000`. Click **Transact**.
 
 ![depositUSDC 200000 on the 0x72a…aa08b card, both transactions green](tutorial-images/browser-8-deposit.png)
@@ -295,6 +308,15 @@ Each card shows all three buttons, but only some work there: **mint** and **appr
 `0xcc1…` card, **depositUSDC** on the `0x72a…` card. If MetaMask or Remix says **gas estimation
 failed** or **execution reverted**, cancel: you're on the wrong card, or approve hasn't finished
 yet. Don't choose to send anyway.
+
+What the common errors mean:
+
+- **`Cannot continue the execution, no code found at address`** followed by your own address: the
+  card was added at your wallet, not the contract. Remove it and add it again with the right
+  address.
+- **`ERC20: transfer amount exceeds balance`** on **depositUSDC**: your wallet has no test USDC.
+  The mint went somewhere else, usually because `to` wasn't your own address. Mint again with
+  `to` = your address. Approve doesn't need repeating.
 
 MetaMask may also offer to turn your account into a **smart account**, and Remix may then show a
 different "to" address (a MetaMask contract). That's fine: your address and key stay the same, and
@@ -491,6 +513,7 @@ what one merged upgrade really cost.
 | The run fails with `403` when opening PRs | Step A3 wasn't saved. Tick it and re-run: answers already bought are reused, not paid again |
 | No **Run workflow** button | The file from C3 isn't in `.github/workflows/` on the main branch, or Actions is off (A2) |
 | Payment refused / nothing bought | Check `available` from B5 is above 0 |
+| The run fails with `no ranked miner answered` and `HTTP 402` after buying some answers, and opens no PRs | Your escrow balance ran out partway through. Deposit more (end of Part B) and click **Run workflow** again: answers already bought are reused, not paid again, and their PRs open |
 | Warning `… can't be installed alongside the repository's current dependencies (…); skipped, no purchase made` | That upgrade needs another package upgraded first, e.g. `react-dom` 19 needs `react` 19. Nothing was bought. It's picked up once the other package is upgraded |
 | Warning `Lock regeneration does not support local, URL, Git or alias dependencies` on every package | The project has a dependency from GitHub, a URL or a local folder, so the bot can't update the lockfile safely and skips everything. Nothing was bought. Use another project (A1) |
 | Warning `Lock regeneration only supports public npm registry packages` on many packages, each starting with a folder name | That folder's lockfile gets some packages from somewhere other than the public npm registry (a mirror or GitHub), so the bot skips that folder. Nothing was bought for it. Other projects in the repository still run normally |
